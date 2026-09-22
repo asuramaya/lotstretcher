@@ -1,0 +1,478 @@
+{
+  "$comment": [
+    "ONE source of truth for every constant both surfaces need.",
+    "",
+    "The Python pipeline and the browser client are necessarily two",
+    "implementations, but they must not be two SPECIFICATIONS. Before this",
+    "file existed, the browser client retyped HERO_STILL_FORMATS,",
+    "VIDEO_FORMATS, the palette bands, the glow colours and the cutout",
+    "gates as JavaScript literals, and nothing would have caught them",
+    "drifting apart except someone noticing that the two surfaces produced",
+    "different output.",
+    "",
+    "Both sides now READ this file:",
+    "  Python  src/lotstretcher/spec.py",
+    "  Browser web/public/js/spec.js",
+    "and tests/test_spec_parity.py asserts the Python modules agree with",
+    "it, so a constant changed in only one place fails the suite.",
+    "",
+    "What belongs here: values both surfaces use. What does not: anything",
+    "only one can do (NVENC, SwinIR, scraping, audio), and any logic.",
+    "This is a data file, not a program."
+  ],
+  "version": 1,
+  "canvas": {
+    "default": [
+      1254,
+      1254
+    ],
+    "$comment": "compose/hero.py::DEFAULT_CANVAS_SIZE"
+  },
+  "heroStillFormats": {
+    "$comment": "compose/pipeline.py::HERO_STILL_FORMATS",
+    "default": "square",
+    "formats": {
+      "square": {
+        "size": [
+          1254,
+          1254
+        ],
+        "label": "Square",
+        "note": "Marketplace, Facebook feed"
+      },
+      "portrait": {
+        "size": [
+          1080,
+          1350
+        ],
+        "label": "Portrait",
+        "note": "Instagram and Facebook feed"
+      },
+      "vertical": {
+        "size": [
+          1080,
+          1920
+        ],
+        "label": "Story",
+        "note": "Stories, Reels, TikTok"
+      }
+    }
+  },
+  "videoFormats": {
+    "$comment": "compose/hero_video.py::VIDEO_FORMATS",
+    "default": "square",
+    "formats": {
+      "square": {
+        "size": [
+          1254,
+          1254
+        ],
+        "budgetMb": 50.0,
+        "label": "Square",
+        "note": "Marketplace, Facebook feed"
+      },
+      "vertical": {
+        "size": [
+          1080,
+          1920
+        ],
+        "budgetMb": 66.0,
+        "label": "Vertical",
+        "note": "Reels, Stories, TikTok, Shorts"
+      },
+      "horizontal": {
+        "size": [
+          1920,
+          1080
+        ],
+        "budgetMb": 66.0,
+        "label": "Horizontal",
+        "note": "YouTube, landscape feed"
+      }
+    }
+  },
+  "video": {
+    "$comment": [
+      "compose/hero_video.py. fpsBrowser differs from fps deliberately:",
+      "the CLI renders at 25 to match its audio-bar timing, and the",
+      "browser has no audio to sync to, so it uses the web-standard 30.",
+      "Stated here rather than hidden in one implementation."
+    ],
+    "fps": 25.0,
+    "fpsBrowser": 30,
+    "gradientTurns": 1.0,
+    "heroMarginFrac": 0.02,
+    "accentMarginFrac": 0.03,
+    "pulseStrength": 0.035,
+    "pulseDecay": 0.3,
+    "barsPerLoop": 4,
+    "beatsPerBar": 4,
+    "transitionFrac": 0.35,
+    "minTransitionS": 0.3,
+    "maxTransitionS": 0.9,
+    "panBars": 2,
+    "minPanOverflowFrac": 0.2,
+    "panAngleLabel": "side",
+    "defaultBpm": 100.0,
+    "sizeSafetyFrac": 0.1
+  },
+  "cutout": {
+    "$comment": "imaging/cutout.py",
+    "alphaThreshold": 16,
+    "maxAmbiguousFraction": 0.05,
+    "frameFillMinEdges": 2,
+    "minCoverage": 0.02,
+    "maxCoverage": 0.92
+  },
+  "confidence": {
+    "$comment": [
+      "Browser-side routing floors. No CLI counterpart yet: the CLI has a",
+      "richer cascade (tiebreak and wheel-detail classifiers) that the",
+      "distilled students do not reproduce, so the browser leans on",
+      "confidence where the CLI leans on a second opinion."
+    ],
+    "minAngle": 0.45,
+    "minScene": 0.4
+  },
+  "glow": {
+    "$comment": "compose/effects.py::GLOW_COLORS",
+    "default": "white",
+    "radius": 24,
+    "intensity": 0.75,
+    "colors": {
+      "white": [
+        255,
+        255,
+        255
+      ],
+      "blue": [
+        70,
+        140,
+        255
+      ],
+      "gold": [
+        255,
+        200,
+        80
+      ],
+      "red": [
+        255,
+        70,
+        70
+      ]
+    }
+  },
+  "compose": {
+    "$comment": "compose/hero.py and compose/background.py",
+    "marginFrac": 0.06,
+    "spotlight": {
+      "innerRadiusFrac": 0.28,
+      "outerRadiusFrac": 0.85,
+      "dimMargin": 35.0,
+      "minDim": 0.35,
+      "maxDim": 1.0
+    },
+    "gradientBuildMax": 320,
+    "gradientHueBands": [
+      [
+        0.55,
+        0.7
+      ],
+      [
+        0.45,
+        0.55
+      ],
+      [
+        0.92,
+        1.04
+      ],
+      [
+        0.74,
+        0.86
+      ],
+      [
+        0.02,
+        0.08
+      ],
+      [
+        0.58,
+        0.62
+      ]
+    ]
+  },
+  "palette": {
+    "$comment": "imaging/palette.py",
+    "backdropValueMin": 0.1,
+    "backdropValueMax": 0.52,
+    "minStopSeparation": 0.14,
+    "neutralSaturationCeiling": 0.1,
+    "matchingHueShift": 0.055,
+    "neutralTintHue": 0.6,
+    "neutralTintSaturation": 0.3,
+    "backdropSaturationRange": [
+      0.28,
+      0.78
+    ],
+    "colorWords": {
+      "black": [
+        26,
+        26,
+        30
+      ],
+      "white": [
+        232,
+        233,
+        236
+      ],
+      "silver": [
+        188,
+        190,
+        195
+      ],
+      "platinum": [
+        198,
+        200,
+        204
+      ],
+      "gray": [
+        124,
+        127,
+        132
+      ],
+      "grey": [
+        124,
+        127,
+        132
+      ],
+      "charcoal": [
+        62,
+        64,
+        69
+      ],
+      "graphite": [
+        78,
+        81,
+        86
+      ],
+      "carbonized": [
+        88,
+        91,
+        96
+      ],
+      "gunmetal": [
+        84,
+        88,
+        94
+      ],
+      "slate": [
+        98,
+        106,
+        118
+      ],
+      "steel": [
+        110,
+        122,
+        138
+      ],
+      "navy": [
+        26,
+        42,
+        88
+      ],
+      "blue": [
+        38,
+        84,
+        168
+      ],
+      "teal": [
+        30,
+        118,
+        128
+      ],
+      "turquoise": [
+        48,
+        150,
+        156
+      ],
+      "aqua": [
+        60,
+        150,
+        160
+      ],
+      "cyan": [
+        50,
+        150,
+        170
+      ],
+      "green": [
+        40,
+        112,
+        72
+      ],
+      "olive": [
+        98,
+        104,
+        60
+      ],
+      "lime": [
+        120,
+        160,
+        60
+      ],
+      "red": [
+        168,
+        34,
+        44
+      ],
+      "maroon": [
+        108,
+        30,
+        46
+      ],
+      "burgundy": [
+        100,
+        28,
+        48
+      ],
+      "crimson": [
+        152,
+        28,
+        48
+      ],
+      "ruby": [
+        150,
+        30,
+        52
+      ],
+      "rose": [
+        180,
+        90,
+        105
+      ],
+      "pink": [
+        198,
+        110,
+        140
+      ],
+      "purple": [
+        96,
+        60,
+        142
+      ],
+      "violet": [
+        104,
+        66,
+        150
+      ],
+      "orange": [
+        206,
+        108,
+        38
+      ],
+      "amber": [
+        198,
+        140,
+        46
+      ],
+      "gold": [
+        176,
+        144,
+        70
+      ],
+      "yellow": [
+        214,
+        184,
+        56
+      ],
+      "bronze": [
+        136,
+        98,
+        60
+      ],
+      "copper": [
+        166,
+        100,
+        58
+      ],
+      "brown": [
+        92,
+        64,
+        46
+      ],
+      "espresso": [
+        72,
+        52,
+        42
+      ],
+      "chestnut": [
+        110,
+        70,
+        50
+      ],
+      "tan": [
+        188,
+        160,
+        124
+      ],
+      "beige": [
+        196,
+        178,
+        148
+      ],
+      "sand": [
+        196,
+        180,
+        150
+      ],
+      "stone": [
+        168,
+        164,
+        154
+      ],
+      "cream": [
+        218,
+        208,
+        186
+      ],
+      "ivory": [
+        222,
+        214,
+        196
+      ]
+    }
+  },
+  "cutTypes": {
+    "$comment": [
+      "server/processing.py::CUT_TYPES. 'blur' is accepted by the server",
+      "for request-shape compatibility and currently maps to 'complete',",
+      "which is a real tracked gap there. browserExposed marks what the",
+      "web client offers, so the gap is recorded in one place instead of",
+      "being rediscovered."
+    ],
+    "all": [
+      "complete",
+      "normal",
+      "blur",
+      "none"
+    ],
+    "browserExposed": [
+      "complete",
+      "none"
+    ],
+    "notImplemented": [
+      "blur"
+    ]
+  },
+  "browserUnsupported": {
+    "$comment": [
+      "CLI capabilities a browser cannot do. Listed so the web client can",
+      "say WHY something is missing rather than silently omitting it."
+    ],
+    "upscale": "SwinIR and Real-ESRGAN are far too heavy for a browser tab",
+    "nvenc": "No GPU encoder access from a page",
+    "scraping": "Cross-origin HTML is unreadable, and dealer sites sit behind Cloudflare challenges",
+    "inventorySync": "Long-running batch work with no browser equivalent",
+    "audio": "The CLI's beat-synced video needs an audio loop and ffmpeg muxing",
+    "assets": "Borders and stock backgrounds need an asset library (Tier 1)"
+  }
+}

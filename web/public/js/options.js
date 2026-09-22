@@ -18,31 +18,38 @@
  * no --frame/--border/--background (those need an asset library, which
  * is Tier 1), no --nvenc, no scraping flags. */
 
-/* From imaging/compose/pipeline.py::HERO_STILL_FORMATS. */
-export const HERO_FORMATS = {
-  square:   { size: [1254, 1254], label: 'Square',   note: 'Marketplace, Facebook feed' },
-  portrait: { size: [1080, 1350], label: 'Portrait', note: 'Instagram and Facebook feed' },
-  vertical: { size: [1080, 1920], label: 'Story',    note: 'Stories, Reels, TikTok' },
-};
+import { get, formats as specFormats } from './spec.js';
 
-/* From imaging/compose/hero_video.py::VIDEO_FORMATS. */
-export const VIDEO_FORMATS = {
-  square:     { size: [1254, 1254], label: 'Square',     note: 'Marketplace, Facebook feed' },
-  vertical:   { size: [1080, 1920], label: 'Vertical',   note: 'Reels, Stories, TikTok, Shorts' },
-  horizontal: { size: [1920, 1080], label: 'Horizontal', note: 'YouTube, landscape feed' },
-};
+/* Formats, glow colours and cut types all come from
+ * shared/pipeline-spec.json, the same file src/lotstretcher/spec.py
+ * reads. They used to be JavaScript literals retyped from the Python,
+ * which is the precise drift this indirection exists to prevent. */
+export let HERO_FORMATS = {};
+export let VIDEO_FORMATS = {};
+export let GLOW_COLORS = [];
+export let CUT_TYPES = {};
 
-/* server/processing.py::CUT_TYPES. "blur" is deliberately omitted rather
- * than accepted-and-ignored: the server takes it for request-shape
- * compatibility and maps it to "complete", which is a documented gap
- * there. Offering a control here that silently does something else would
- * be worse than not offering it. */
-export const CUT_TYPES = {
-  complete: 'Cut out and compose',
-  none: 'Sort only, no cutouts',
-};
+/* Called once after loadSpec(). Everything above is empty until then,
+ * so nothing can read a stale default by accident. */
+export function initFromSpec() {
+  HERO_FORMATS = Object.fromEntries(
+    Object.entries(specFormats('heroStillFormats'))
+      .map(([k, f]) => [k, { size: f.size, label: f.label, note: f.note }]));
+  VIDEO_FORMATS = Object.fromEntries(
+    Object.entries(specFormats('videoFormats'))
+      .map(([k, f]) => [k, { size: f.size, label: f.label, note: f.note, budgetMb: f.budgetMb }]));
+  GLOW_COLORS = Object.keys(get('glow', 'colors'));
+  CUT_TYPES = Object.fromEntries(get('cutTypes', 'browserExposed').map((k) => [k, {
+    complete: 'Cut out and compose',
+    none: 'Sort only, no cutouts',
+  }[k] || k]));
 
-export const GLOW_COLORS = ['white', 'blue', 'gold', 'red'];
+  DEFAULTS.heroFormats = [get('heroStillFormats', 'default')];
+  DEFAULTS.glowColor = get('glow', 'default');
+  DEFAULTS.glowRadius = get('glow', 'radius');
+  DEFAULTS.glowIntensity = get('glow', 'intensity');
+  DEFAULTS.margin = get('compose', 'marginFrac');
+}
 
 export const DEFAULTS = {
   heroFormats: ['square'],
@@ -85,6 +92,9 @@ export function loadOptions() {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...DEFAULTS };
     const saved = JSON.parse(raw);
+    // A stored blob with no still format would produce nothing; the run
+    // used to paper over it with a silent fallback to square.
+    if (!saved.heroFormats?.length) saved.heroFormats = [...DEFAULTS.heroFormats];
     // Merge over defaults so a new option added later does not arrive
     // undefined for anyone who already has a saved blob.
     return { ...DEFAULTS, ...saved };
@@ -123,10 +133,8 @@ export function summarise(o) {
 export function toCliFlags(o) {
   const flags = [];
   for (const f of o.heroFormats) flags.push(`--hero-format ${f}`);
-  /* Video always echoes --no-video for now: the browser cannot render it
-   * yet, so echoing a --video-format the web app will not honour would
-   * misdescribe the run this page is about to do. */
-  flags.push('--no-video');
+  for (const f of o.videoFormats) flags.push(`--video-format ${f}`);
+  if (!o.videoFormats.length) flags.push('--no-video');
   if (o.cutType === 'none') flags.push('--no-hero');
   if (!o.photoSort) flags.push('--no-photo-sort');
   if (!o.interiors) flags.push('--no-interiors');

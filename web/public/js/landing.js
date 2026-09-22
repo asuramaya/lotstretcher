@@ -1,6 +1,8 @@
 /* Landing page behaviour. Two small things, no dependencies. */
 
 import { vehicleGradientColors } from './pipeline/palette.js';
+import { loadSpec, get as specGet } from './spec.js';
+import { initConfigFromSpec } from './config.js';
 
 /* ---------- sticky nav border, only once actually stuck ---------- */
 const nav = document.getElementById('topnav');
@@ -126,6 +128,8 @@ if (liveRun) {
         import('./lib/imageio.js'),
       ]);
 
+      await loadSpec();
+      initConfigFromSpec(specGet);
       await initRuntime();
       note.textContent = runtime.isolated
         ? `${runtime.threads} threads, SIMD on`

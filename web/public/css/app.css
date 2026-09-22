@@ -373,3 +373,12 @@
 
 .chip:disabled { opacity: .45; cursor: not-allowed; }
 .chip:disabled:active { transform: none; }
+
+/* ---------- rendered clips ---------- */
+.clipgrid { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.clip { margin: 0; }
+.clip video {
+  width: 100%; border-radius: var(--r-md);
+  border: 1px solid var(--line); background: var(--sunken);
+}
+.clip figcaption { margin-top: var(--s-2); }

@@ -37,12 +37,12 @@ CONVEYOR_MARGIN_FRAC = 0.03
 # 4:5 rather than another 9:16 for the feed shape -- 1080x1350 is the
 # tallest Instagram and Facebook render in-feed without cropping, so it is
 # the most screen a still can occupy there.
-HERO_STILL_FORMATS = {
-    "square": (1254, 1254),      # Marketplace, and the existing hero.png
-    "portrait": (1080, 1350),    # 4:5, Instagram/Facebook feed
-    "vertical": (1080, 1920),    # 9:16, Stories
-}
-DEFAULT_HERO_STILL_FORMAT = "square"
+# Sizes come from shared/pipeline-spec.json so the browser client cannot
+# drift from them -- see src/lotstretcher/spec.py for why.
+from ... import spec as _spec
+
+HERO_STILL_FORMATS = _spec.sizes("heroStillFormats")
+DEFAULT_HERO_STILL_FORMAT = _spec.get("heroStillFormats", "default", default="square")
 
 
 def _backdrop(background_path, out_dir: Path, image_key: str, gradient: bool,

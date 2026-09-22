@@ -100,7 +100,9 @@ def _get_session(model_name: str):
     return _sessions[model_name]
 
 
-MAX_AMBIGUOUS_FRACTION = 0.05  # above this, treat the segmentation as unreliable
+from .. import spec as _spec
+
+MAX_AMBIGUOUS_FRACTION = _spec.get("cutout", "maxAmbiguousFraction")  # above this, treat the segmentation as unreliable
 
 # How close the foreground bbox can sit to an edge of the ORIGINAL
 # (pre-crop) frame before that side counts as "touching" it. Below, how
@@ -117,7 +119,7 @@ MAX_AMBIGUOUS_FRACTION = 0.05  # above this, treat the segmentation as unreliabl
 # untouched gap between the legitimate 1-edge cases and the confirmed-bad
 # 3-edge cases, so it catches the bug with zero observed false positives.
 FRAME_FILL_MARGIN_THRESHOLD = 0.03
-FRAME_FILL_MIN_EDGES = 2
+FRAME_FILL_MIN_EDGES = _spec.get("cutout", "frameFillMinEdges")
 
 
 @dataclass

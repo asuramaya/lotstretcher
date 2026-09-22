@@ -10,20 +10,22 @@
  * Never write to the DOM from anywhere else. */
 
 import {
-  LIMITS, IMAGE_EXTS, CANVAS, PORTRAIT,
+  initConfigFromSpec, LIMITS, IMAGE_EXTS,
   MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE,
 } from './config.js';
 import { initRuntime, runtime, loadModel, totalBytes } from './pipeline/runtime.js';
 import { classifyScene, classifyAngle, loadLabels } from './pipeline/classify.js';
 import { matte, applyMatte, gateCutout } from './pipeline/matte.js';
 import { composeHero } from './pipeline/compose.js';
+import { renderHeroVideo, isSupported as videoSupported } from './pipeline/video.js';
 import { buildAllPosts, vehicleTitle, PLATFORMS } from './pipeline/copy.js';
 import { decode, makeCanvas, ctxOf, canvasToBlob } from './lib/imageio.js';
 import { makeZip, deliver } from './lib/zip.js';
+import * as OPTS from './options.js';
 import {
-  HERO_FORMATS, VIDEO_FORMATS, GLOW_COLORS,
-  loadOptions, saveOptions, resetOptions, toCliFlags,
+  loadOptions, saveOptions, resetOptions, toCliFlags, initFromSpec,
 } from './options.js';
+import { loadSpec, get as specGet } from './spec.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -41,6 +43,7 @@ const state = {
   running: false,
   done: false,
   posts: null,
+  videos: null,
   sticker: null,
   options: null,
   errors: [],
@@ -236,6 +239,24 @@ function renderResults() {
     grid.appendChild(tile);
   }
 
+  const videoHost = $('videoGrid');
+  if (videoHost) {
+    const clips = Object.entries(state.videos || {});
+    $('videoSection').hidden = clips.length === 0;
+    videoHost.innerHTML = '';
+    for (const [fmt, blob] of clips) {
+      const wrap = el('figure', 'clip');
+      const v = document.createElement('video');
+      v.src = URL.createObjectURL(blob);
+      v.controls = true; v.loop = true; v.muted = true; v.playsInline = true;
+      v.preload = 'metadata';
+      const cap = el('figcaption', 'xs dim',
+        `${OPTS.VIDEO_FORMATS[fmt].label} \u00b7 ${(blob.size / 1e6).toFixed(1)} MB`);
+      wrap.append(v, cap);
+      videoHost.appendChild(wrap);
+    }
+  }
+
   const copyList = $('copyList');
   copyList.innerHTML = '';
   if (state.posts) {
@@ -310,25 +331,22 @@ function selectRow(label, hint, value, choices, onChange) {
 function renderOptions() {
   const o = state.options;
 
-  const toggleIn = (list, key) => {
+  const toggleIn = (list, key, atLeastOne = false) => {
     const i = list.indexOf(key);
-    if (i >= 0) list.splice(i, 1); else list.push(key);
+    // Deselecting the last still format would leave the run with nothing
+    // to produce, and it silently fell back to square anyway, so the
+    // echo and the behaviour disagreed. Keep one selected instead.
+    if (i >= 0 && !(atLeastOne && list.length === 1)) list.splice(i, 1);
+    else if (i < 0) list.push(key);
     commitOptions();
   };
 
-  chipRow($('heroFormats'), HERO_FORMATS, o.heroFormats, (k) => toggleIn(o.heroFormats, k));
-  /* Video is not implemented yet, so the chips are shown DISABLED rather
-   * than selectable. A control that silently does nothing is worse than
-   * a control that says it is not ready: the first teaches people the
-   * app is unreliable, the second just tells them the truth. */
-  chipRow($('videoFormats'), VIDEO_FORMATS, o.videoFormats, () => {});
-  for (const chip of $('videoFormats').querySelectorAll('.chip')) {
-    chip.disabled = true;
-    chip.setAttribute('aria-disabled', 'true');
-  }
-  $('videoNote').textContent =
-    'Not built yet. WebCodecs measures 3-4x realtime in this browser, so '
-    + 'it is coming; today the CLI is the way to render video.';
+  chipRow($('heroFormats'), OPTS.HERO_FORMATS, o.heroFormats, (k) => toggleIn(o.heroFormats, k, true));
+  chipRow($('videoFormats'), OPTS.VIDEO_FORMATS, o.videoFormats, (k) => toggleIn(o.videoFormats, k));
+  $('videoNote').textContent = o.videoFormats.length
+    ? 'Rendered after the stills. Measured around 5x realtime here, so a '
+      + 'six second clip takes a second or two on a laptop.'
+    : 'No video. Stills only, which is faster on a phone.';
 
   const pipeline = $('pipelineOpts');
   pipeline.innerHTML = '';
@@ -354,7 +372,7 @@ function renderOptions() {
       o.glow, (v) => { o.glow = v; commitOptions(); renderOptions(); }),
   );
   if (o.glow) {
-    look.append(selectRow('Glow colour', '', o.glowColor, GLOW_COLORS,
+    look.append(selectRow('Glow colour', '', o.glowColor, OPTS.GLOW_COLORS,
       (v) => { o.glowColor = v; commitOptions(); }));
   }
 
@@ -492,7 +510,7 @@ async function run() {
       const p = cut[i];
       p.heroes = {};
       for (const fmt of formats) {
-        const [w, h] = HERO_FORMATS[fmt].size;
+        const [w, h] = OPTS.HERO_FORMATS[fmt].size;
         /* Each format is composed from the cutout, never cropped from
          * another format. Cropping a square down to 4:5 cuts the
          * vehicle's nose off; recomposing re-fits it to the new box. */
@@ -508,8 +526,41 @@ async function run() {
       }
       // The first format is the one shown in the grid.
       p.hero = p.heroes[formats[0]];
-      setProgress(0.8 + 0.2 * ((i + 1) / Math.max(1, cut.length)));
+      /* Reserve the tail of the bar for video when it is coming, or the
+       * bar reaches 100% and then the app carries on working, which
+       * reads as a hang. */
+      const composeCeiling = state.options.videoFormats.length ? 0.85 : 1.0;
+      setProgress(0.8 + (composeCeiling - 0.8) * ((i + 1) / Math.max(1, cut.length)));
       renderResults();
+    }
+
+    /* Video last, and only when asked. It is by far the heaviest stage,
+     * and the stills are what most people came for, so they land first
+     * and stay usable while this runs. */
+    const wantVideo = state.options.videoFormats.filter((f) => OPTS.VIDEO_FORMATS[f]);
+    if (wantVideo.length && cut.length && videoSupported()) {
+      stages.push({ n: 5, label: 'Rendering video', state: 'active' });
+      renderStages(stages);
+      state.videos = {};
+      for (const fmt of wantVideo) {
+        const [w, h] = OPTS.VIDEO_FORMATS[fmt].size;
+        try {
+          state.videos[fmt] = await renderHeroVideo(cut.map((p) => p.cutout), {
+            width: w, height: h,
+            seed: `${vid}:video:${fmt}`,
+            exterior: state.vehicle.exterior_color,
+            interior: state.vehicle.interior_color,
+            generic: state.options.backdrop === 'generic',
+            onProgress: (f) => setProgress(0.85 + 0.15 * f),
+          });
+        } catch (e) {
+          state.errors.push(`video ${fmt}: ${e.message || e}`);
+        }
+      }
+      const made = Object.keys(state.videos).length;
+      stages[4].state = 'done';
+      stages[4].detail = made ? `${made} clip${made === 1 ? '' : 's'}` : 'failed';
+      renderStages(stages);
     }
 
     state.posts = buildAllPosts(state.vehicle, {
@@ -606,6 +657,10 @@ async function downloadBundle() {
       }
     }
 
+    for (const [fmt, blob] of Object.entries(state.videos || {})) {
+      files.push({ name: fmt === 'square' ? 'hero-video.mp4' : `hero-video-${fmt}.mp4`, data: blob });
+    }
+
     if (state.posts) {
       for (const [platform, text] of Object.entries(state.posts)) {
         files.push({ name: `${platform}.txt`, data: text });
@@ -681,7 +736,22 @@ async function importSticker(source, label) {
 }
 
 /* ---------- wiring --------------------------------------------------- */
-function init() {
+async function init() {
+  /* The shared spec loads BEFORE anything reads a constant. Both this
+   * client and the Python pipeline read shared/pipeline-spec.json, so a
+   * value changed in one place cannot silently differ in the other. */
+  try {
+    await loadSpec();
+    initConfigFromSpec(specGet);
+    initFromSpec();
+  } catch (e) {
+    document.body.insertAdjacentHTML('afterbegin',
+      `<div class="banner banner-err" style="margin:var(--s-4)">`
+      + `Could not load the pipeline spec: ${e.message}. `
+      + `The app cannot run without it.</div>`);
+    throw e;
+  }
+
   state.options = loadOptions();
   loadDealer();
   $('f-dealer').value = state.dealer.name || '';
