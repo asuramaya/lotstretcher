@@ -94,6 +94,51 @@ export async function scrapeOnServer(url, { signal } = {}) {
   return res.json();
 }
 
+/* Library management on a self-hosted server. Each of these is a thing
+ * a process with the folder can do and a browser cannot; the Library
+ * pane offers them only when the host reports the capability. */
+async function postJson(path, body) {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {}),
+  });
+  if (!res.ok) {
+    let detail = `${res.status}`;
+    try { detail = (await res.json()).detail || detail; } catch { /* not JSON */ }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+export const libraryOps = {
+  async status() {
+    const res = await fetch('library/status', { cache: 'no-store' });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  },
+  /* Rebuild one vehicle's bundle with the app's current control values:
+   * the same rebuild the `recompose` CLI does. Returns a job to poll. */
+  recompose(v, options) {
+    return postJson(`library/${encodeURIComponent(v.bucket)}/${encodeURIComponent(v.folder)}/recompose`, { options });
+  },
+  sync() { return postJson('library/sync'); },
+  async job(id) {
+    const res = await fetch(`jobs/${encodeURIComponent(id)}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(String(res.status));
+    return res.json();
+  },
+  /* Poll until the job settles. */
+  async wait(id, onTick, intervalMs = 1500) {
+    for (;;) {
+      const job = await this.job(id);
+      onTick?.(job);
+      if (job.status !== 'running') return job;
+      await new Promise((r) => setTimeout(r, intervalMs));
+    }
+  },
+};
+
 /* Compose one cutout on the server.
  *
  * Returns { blob, warnings }. Warnings are things the server could not

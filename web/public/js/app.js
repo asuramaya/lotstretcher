@@ -29,7 +29,7 @@ import { loadSpec, get as specGet } from './spec.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlDefaults, controlsToFlags } from './controls.js';
-import { loadAssets, needsServer, composeOnServer, scrapeOnServer } from './lib/delegate.js';
+import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { normalizeListing, takeListingFromHash, bookmarkletSource } from './pipeline/listing.js';
 import { LibraryView } from './library/view.js';
 import { HttpSource, DirectorySource } from './library/source.js';
@@ -1060,6 +1060,10 @@ async function init() {
    * picked. Loading a vehicle's originals back in is how a library
    * entry gets rerun with today's options, on either surface. */
   const libraryView = new LibraryView($('libraryHost'), {
+    // Management is a capability, not an edition: the edge site's host
+    // reports none of it, and the pane simply has less to offer there.
+    ops: can('recompose') ? libraryOps : null,
+    getOptions: () => state.options,
     onLoadVehicle: ({ details, files }) => {
       clearPhotos();
       addFiles(files);

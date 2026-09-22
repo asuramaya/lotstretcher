@@ -240,6 +240,90 @@ def library_file(bucket: str, folder: str, rel: str):
     return FileResponse(path, headers={"Cache-Control": "no-cache"})
 
 
+@app.get("/library/status")
+def library_status():
+    """Sync and run history at the library root, plus what is running now."""
+    from . import jobs, library
+    root = _state.get("library")
+    if not root:
+        raise HTTPException(404, "no library configured on this host")
+    out = library.status(Path(root))
+    out["jobs"] = jobs.recent()
+    out["syncConfigured"] = _sync_configured()
+    return out
+
+
+def _sync_configured() -> bool:
+    from ..dealer_config import get as dealer
+    try:
+        cfg = dealer()
+    except Exception:
+        return False
+    return bool(cfg.inventory_url or cfg.inventory_urls)
+
+
+class RecomposeRequest(BaseModel):
+    options: dict = {}
+
+
+@app.post("/library/{bucket}/{folder}/recompose")
+def library_recompose(bucket: str, folder: str, body: RecomposeRequest):
+    """Rebuild one vehicle's bundle from its existing cutouts with the
+    given control values: the same path as the `recompose` CLI, started
+    from the Library pane. Returns a job to poll."""
+    from . import jobs, library
+    from ..library_ops import recompose_folder, resolve_recompose_options
+    root = _state.get("library")
+    if not root:
+        raise HTTPException(404, "no library configured on this host")
+    try:
+        library.resolve_file(Path(root), bucket, folder, "details.json")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except FileNotFoundError:
+        raise HTTPException(404, "no such vehicle")
+    try:
+        resolved = resolve_recompose_options(body.options)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    target = Path(root) / bucket / folder
+    return jobs.start(_state["executor"], "recompose", f"{bucket}/{folder}",
+                      lambda: recompose_folder(target, resolved))
+
+
+@app.post("/library/sync")
+def library_sync():
+    """Run one inventory sync cycle into the library, as `inventory-sync`
+    would with the configured dealer inventory URL. One at a time."""
+    from . import jobs
+    from ..dealer_config import get as dealer
+    root = _state.get("library")
+    if not root:
+        raise HTTPException(404, "no library configured on this host")
+    if jobs.running("sync"):
+        raise HTTPException(409, "a sync is already running")
+    cfg = dealer()
+    url = cfg.inventory_url or next(iter(cfg.inventory_urls.values()), None)
+    if not url:
+        raise HTTPException(409, "no inventory URL configured; set inventory_url in the dealer config "
+                                 "or LOTSTRETCHER_INVENTORY_URL")
+
+    def run():
+        from ..inventory_sync import run_sync
+        return run_sync({"inventory_url": url, "listings_root": str(root)})
+
+    return jobs.start(_state["executor"], "sync", url, run)
+
+
+@app.get("/jobs/{job_id}")
+def job_status(job_id: str):
+    from . import jobs
+    job = jobs.get(job_id)
+    if job is None:
+        raise HTTPException(404, "no such job")
+    return job
+
+
 class ScrapeRequest(BaseModel):
     url: str
 

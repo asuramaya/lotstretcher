@@ -81,6 +81,9 @@ server when, and only when, you switch on a control that needs one:
 | `POST /compose` | composes one cutout with the server's assets and GPU |
 | `POST /scrape` | reads one vehicle page with the server's headless browser and returns the record `lotstretcher <url>` would build; the *From a listing* sheet offers a URL field against a host that reports `scrape` |
 | `GET /library`, `GET /library/{bucket}/{folder}/{file}` | the listings library (`--library`, default `~/Documents/listings`, the CLI's default `--out`), for the app's Library pane |
+| `GET /library/status` | the last run, recent run history, fetched and delisted counts, running jobs |
+| `POST /library/{bucket}/{folder}/recompose` | rebuild one vehicle's bundle in place with the app's current options; the same path as the `recompose` CLI (`library_ops.py`), returned as a job to poll at `GET /jobs/{id}` |
+| `POST /library/sync` | one inventory sync cycle into the library, as `inventory-sync` would, when a dealer inventory URL is configured |
 
 **The Library pane** browses what the pipeline has produced: every vehicle folder under `new/` and
 `used/`, its hero stills, framed and interior sets, clips, the three posts, and the record it was built

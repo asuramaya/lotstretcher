@@ -100,6 +100,62 @@ def index(root: Path) -> dict:
     return {"root": str(root), "buckets": layout["buckets"], "vehicles": vehicles, "summary": summary}
 
 
+def status(root: Path, recent_runs: int = 20) -> dict:
+    """What the sync and batch runs have recorded at the library root.
+
+    run-summary.json is the last run; runs.jsonl is the append-only
+    history (cli.py writes both). The manifest counts what has ever been
+    fetched; delisted vehicles are the ones whose details.json carries
+    delisted_at, which is how inventory_sync marks them.
+    """
+    layout = _layout()
+    files = layout["rootFiles"]
+
+    def read_json(name):
+        p = root / name
+        if not p.is_file():
+            return None
+        try:
+            return json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+
+    runs: list[dict] = []
+    log = root / files["runs"]
+    if log.is_file():
+        try:
+            lines = log.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            lines = []
+        for line in lines[-recent_runs:]:
+            try:
+                runs.append(json.loads(line))
+            except ValueError:
+                continue
+        runs.reverse()
+
+    manifest = read_json(files["manifest"]) or {}
+    fetched = sum(1 for k in manifest if str(k).startswith("vin:"))
+
+    delisted = 0
+    for bucket in layout["buckets"]:
+        bucket_dir = root / bucket
+        if not bucket_dir.is_dir():
+            continue
+        for folder in bucket_dir.iterdir():
+            d = read_json(f"{bucket}/{folder.name}/{layout['details']}") if folder.is_dir() else None
+            if d and (d.get("vehicle", d)).get("delisted_at"):
+                delisted += 1
+
+    return {
+        "root": str(root),
+        "lastRun": read_json(files["runSummary"]),
+        "runs": runs,
+        "fetched": fetched,
+        "delisted": delisted,
+    }
+
+
 def resolve_file(root: Path, bucket: str, folder: str, rel: str) -> Path:
     """A file inside one vehicle folder, or ValueError.
 

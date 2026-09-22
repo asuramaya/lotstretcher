@@ -27,46 +27,10 @@ import sys
 from pathlib import Path
 
 from lotstretcher.imaging import assets
-from lotstretcher.imaging.compose import compose_interiors, compose_vehicle, compose_wheel_shots
-
-
-def find_vehicle_folders(root: Path) -> list[Path]:
-    """Every vehicle folder at or under `root`, at any depth -- listings
-    are bucketed into new/ and used/, so a fixed one-level scan would
-    silently find nothing when pointed at the root."""
-    if (root / "images" / "exterior" / "cutout").is_dir():
-        return [root]
-    return sorted(p.parent.parent.parent for p in root.glob("*/**/images/exterior/cutout")
-                  if p.is_dir())
-
-
-def vehicle_colors(folder: Path) -> dict:
-    """{exterior_color, interior_color} from the folder's details.json --
-    the scraped record is the source of truth for what color this vehicle
-    is, and it's already sitting next to the cutouts. Missing or
-    unreadable details.json yields Nones, which the palette treats as
-    "measure the paint off the cutout instead"."""
-    try:
-        data = json.loads((folder / "details.json").read_text())
-    except (OSError, ValueError):
-        return {"exterior_color": None, "interior_color": None}
-    v = data.get("vehicle", data)
-    return {"exterior_color": v.get("exterior_color_factory") or v.get("exterior_color"),
-            "interior_color": v.get("interior_color")}
-
-
-def vehicle_record(folder: Path) -> dict:
-    """The scraped Vehicle record as a plain dict, for the feature list the
-    interior callouts confirm against (imaging/interior.py::collect_features).
-    An unreadable details.json yields {}, which means "no features", which
-    means every interior photo still gets its exposure fix and simply no
-    caption -- the same outcome as a vehicle that advertises nothing
-    depictable."""
-    try:
-        data = json.loads((folder / "details.json").read_text())
-    except (OSError, ValueError):
-        return {}
-    return data.get("vehicle", data)
+# The rebuild itself lives in library_ops so the server's
+# POST /library/.../recompose runs the identical path.
+from lotstretcher.library_ops import (find_vehicle_folders, recompose_folder,  # noqa: F401
+                                      resolve_recompose_options, vehicle_colors, vehicle_record)
 
 
 def resolve_asset_arg(category: str, value: str | None, default_name: str | None = None) -> Path:
@@ -216,9 +180,16 @@ def main():
                      f"{', '.join(HERO_STILL_FORMATS)} or 'all'")
         hero_formats = tuple(dict.fromkeys(args.hero_format))
 
-    style = dict(glow=not args.no_glow, glow_color=args.glow_color,
-                 glow_radius=args.glow_radius, glow_intensity=args.glow_intensity,
-                 gradient=gradient)
+    resolved = {
+        "background_path": background_path,
+        "border_path": border_path,
+        "hero_formats": hero_formats,
+        "style": dict(glow=not args.no_glow, glow_color=args.glow_color,
+                      glow_radius=args.glow_radius, glow_intensity=args.glow_intensity,
+                      gradient=gradient),
+        "interiors": args.interiors,
+        "interior_captions": args.interior_captions,
+    }
     interior_classifier = None
     if args.interiors and args.interior_captions:
         from lotstretcher.imaging.interior import InteriorSubjectClassifier
@@ -226,28 +197,18 @@ def main():
 
     total_hero = total_framed = total_interior = 0
     for folder in folders:
-        images = folder / "images" / "exterior"
-        bundle = folder / "bundle"
-        colors = vehicle_colors(folder)
-        result = compose_vehicle(images / "cutout", bundle, background_path, border_path,
-                                  hero_formats=hero_formats, **style, **colors)
-        wheels = compose_wheel_shots(images / "wheels", bundle, background_path, border_path, **style, **colors)
-        n_framed = len(result["framed"]) + len(wheels)
-        total_hero += 1 if result["hero"] else 0
-        total_framed += n_framed
-        hero_note = (f"hero x{len(result['heroes'])}" if len(result["heroes"]) > 1
-                      else "hero" if result["hero"] else "no hero (no usable cutouts)")
-        wheel_note = f" (+{len(wheels)} wheel)" if wheels else ""
+        r = recompose_folder(folder, resolved, interior_classifier)
+        total_hero += 1 if r["hero"] else 0
+        total_framed += r["framed"]
+        total_interior += r["interior"]
+        hero_note = (f"hero x{len(r['heroes'])}" if len(r["heroes"]) > 1
+                      else "hero" if r["hero"] else "no hero (no usable cutouts)")
+        wheel_note = f" (+{r['wheels']} wheel)" if r["wheels"] else ""
         interior_note = ""
         if args.interiors:
-            processed = compose_interiors(folder / "images" / "interior", folder / "bundle",
-                                           vehicle_record(folder), interior_classifier,
-                                           args.interior_captions)
-            total_interior += len(processed)
-            captioned = sum(1 for p in processed if p["callout"])
-            cap_note = f" ({captioned} captioned)" if args.interior_captions else ""
-            interior_note = f", {len(processed)} interior{cap_note}"
-        print(f"  {folder.parent.name}/{folder.name}: {hero_note}, {n_framed} framed{wheel_note}{interior_note}")
+            cap_note = f" ({r['interior_captioned']} captioned)" if args.interior_captions else ""
+            interior_note = f", {r['interior']} interior{cap_note}"
+        print(f"  {folder.parent.name}/{folder.name}: {hero_note}, {r['framed']} framed{wheel_note}{interior_note}")
 
     interior_total = f" and {total_interior} interior image(s)" if args.interiors else ""
     print(f"\nRebuilt {total_hero} hero image(s), {total_framed} framed image(s){interior_total}.")

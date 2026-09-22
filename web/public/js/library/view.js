@@ -36,9 +36,16 @@ function titleOf(card, folder) {
 }
 
 export class LibraryView {
-  constructor(host, { onLoadVehicle } = {}) {
+  /* `ops` is the server's management surface (lib/delegate.js::libraryOps)
+   * or null: rebuild in place, sync, job status. `getOptions` supplies
+   * the app's current control values for a rebuild. Neither exists on
+   * the edge site, and the pane simply has less to offer there. */
+  constructor(host, { onLoadVehicle, ops = null, getOptions = null } = {}) {
     this.host = host;
     this.onLoadVehicle = onLoadVehicle;
+    this.ops = ops;
+    this.getOptions = getOptions;
+    this.status = null;
     this.source = null;
     this.index = null;
     this.bucket = 'all';
@@ -60,6 +67,76 @@ export class LibraryView {
       this.error = String(e.message || e);
     }
     this.render();
+    if (this.ops && source.kind === 'server') this.refreshStatus();
+  }
+
+  async refreshStatus() {
+    try {
+      this.status = await this.ops.status();
+    } catch (e) {
+      this.status = { error: String(e.message || e) };
+    }
+    if (!this.open) this.render();
+  }
+
+  /* Re-read the index after a rebuild, keeping the open vehicle open. */
+  async reload() {
+    const openFolder = this.open?.folder;
+    try {
+      this.index = await this.source.index();
+    } catch (e) {
+      this.error = String(e.message || e);
+    }
+    if (openFolder) this.open = this.index?.vehicles.find((v) => v.folder === openFolder) || null;
+    this.render();
+  }
+
+  /* The management strip: what the sync last did, and the way to run
+   * one. Only against a server; a folder on disk has no history to
+   * show and nothing that could run. */
+  renderStatus() {
+    const s = this.status;
+    if (!s) return null;
+    const box = el('div', 'lib-status');
+    if (s.error) { box.appendChild(el('span', 'small muted', `Status unavailable: ${s.error}`)); return box; }
+
+    const facts = [];
+    const last = s.lastRun;
+    if (last?.run_at) {
+      const n = Array.isArray(last.results) ? last.results.length : null;
+      facts.push(`Last run ${new Date(last.run_at).toLocaleString()}${n !== null ? `, ${n} vehicle${n === 1 ? '' : 's'}` : ''}`);
+    } else {
+      facts.push('No run recorded yet');
+    }
+    facts.push(`${s.fetched} fetched`);
+    if (s.delisted) facts.push(`${s.delisted} delisted`);
+    box.appendChild(el('span', 'small muted grow', facts.join(' · ')));
+
+    const running = (s.jobs || []).filter((j) => j.status === 'running');
+    for (const j of running) {
+      box.appendChild(el('span', 'pill pill-ok', `${j.kind}: ${j.target.split('/').pop()}`));
+    }
+
+    const sync = el('button', 'btn btn-sm', running.some((j) => j.kind === 'sync') ? 'Syncing...' : 'Sync now');
+    sync.disabled = !s.syncConfigured || running.some((j) => j.kind === 'sync');
+    sync.title = s.syncConfigured
+      ? 'Run one inventory sync into this library, as inventory-sync would'
+      : 'No inventory URL configured on the server (dealer config inventory_url)';
+    sync.onclick = async () => {
+      sync.disabled = true;
+      try {
+        const job = await this.ops.sync();
+        this.refreshStatus();
+        await this.ops.wait(job.id, () => {}, 5000);
+        await this.reload();
+      } catch (e) {
+        this.error = String(e.message || e);
+        this.render();
+      }
+      this.refreshStatus();
+    };
+    box.appendChild(sync);
+    return box;
   }
 
   get vehicles() {
@@ -112,6 +189,9 @@ export class LibraryView {
       h.appendChild(el('p', 'small muted', 'Reading the library...'));
       return;
     }
+
+    const status = this.renderStatus();
+    if (status) h.appendChild(status);
 
     // Filters: bucket chips and a search box.
     const bar = el('div', 'row wrap', null);
@@ -214,6 +294,33 @@ export class LibraryView {
         }
       };
       actions.appendChild(load);
+    }
+    /* Rebuild in place, with whatever the Options pane says right now.
+     * The same rebuild the `recompose` CLI does, without the round trip
+     * through the browser: the cutouts never leave the server. */
+    if (this.ops && src.kind === 'server') {
+      const re = el('button', 'btn btn-sm', 'Recompose on your server with current options');
+      const note = el('span', 'small dim');
+      re.onclick = async () => {
+        re.disabled = true;
+        note.textContent = 'Rebuilding...';
+        try {
+          const job = await this.ops.recompose(v, this.getOptions ? this.getOptions() : {});
+          const done = await this.ops.wait(job.id, (j) => { note.textContent = `Rebuilding... ${j.status}`; });
+          if (done.status === 'failed') {
+            note.textContent = done.error;
+            re.disabled = false;
+            return;
+          }
+          const r = done.result || {};
+          note.textContent = `${r.hero ? 'hero' : 'no hero'}, ${r.framed} framed${r.interior ? `, ${r.interior} interior` : ''}. Refreshing.`;
+          await this.reload();
+        } catch (e) {
+          note.textContent = String(e.message || e);
+          re.disabled = false;
+        }
+      };
+      actions.append(re, note);
     }
     h.appendChild(actions);
 

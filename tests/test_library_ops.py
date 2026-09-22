@@ -1,0 +1,109 @@
+"""Rebuild-in-place and the job routes behind the Library pane.
+
+resolve_recompose_options() turns the app's control values into what
+the composers take, and refuses before touching a folder when an asset
+or format does not exist. The routes are thin shells over it and over
+jobs.start(); they are exercised with the rebuild itself stubbed, since
+composing needs real cutouts and a model.
+"""
+from __future__ import annotations
+
+import json
+import time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+import pytest
+
+from lotstretcher import library_ops
+from lotstretcher.server import jobs
+
+
+def test_defaults_match_the_recompose_cli():
+    r = library_ops.resolve_recompose_options({})
+    assert r["background_path"] is None and r["border_path"] is None
+    assert r["style"] == {"glow": True, "glow_color": "white", "glow_radius": 24,
+                          "glow_intensity": 0.75, "gradient": True}
+    assert r["hero_formats"] == ("square",)
+
+
+def test_unknown_hero_format_is_refused():
+    with pytest.raises(ValueError, match="unknown hero format"):
+        library_ops.resolve_recompose_options({"heroFormats": ["cinema"]})
+
+
+def test_all_formats_expand():
+    r = library_ops.resolve_recompose_options({"heroFormats": ["all"]})
+    assert len(r["hero_formats"]) >= 3 and "square" in r["hero_formats"]
+
+
+def test_frame_without_a_library_is_refused(monkeypatch):
+    from lotstretcher.imaging import assets
+    monkeypatch.setattr(assets, "_load_manifest", lambda: {})
+    with pytest.raises(ValueError):
+        library_ops.resolve_recompose_options({"frame": True})
+
+
+def test_jobs_track_success_and_failure():
+    ex = ThreadPoolExecutor(max_workers=2)
+    ok = jobs.start(ex, "recompose", "new/x", lambda: {"framed": 3})
+    bad = jobs.start(ex, "recompose", "new/y", lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    deadline = time.time() + 5
+    while time.time() < deadline and any(jobs.get(j["id"])["status"] == "running" for j in (ok, bad)):
+        time.sleep(0.02)
+    assert jobs.get(ok["id"])["status"] == "done" and jobs.get(ok["id"])["result"] == {"framed": 3}
+    assert jobs.get(bad["id"])["status"] == "failed" and "boom" in jobs.get(bad["id"])["error"]
+    assert not jobs.running("recompose")
+
+
+@pytest.fixture
+def served(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+    from lotstretcher.server import app as server_app
+    d = tmp_path / "new" / "2026-Ford-Maverick-XLT-RB41981"
+    (d / "images" / "exterior" / "cutout").mkdir(parents=True)
+    (d / "details.json").write_text(json.dumps({"title": "2026 Ford Maverick XLT"}))
+    (tmp_path / "run-summary.json").write_text(json.dumps({"run_at": "2026-09-16", "results": []}))
+    (tmp_path / "runs.jsonl").write_text('{"run_at": "a"}\n{"run_at": "b"}\nnot json\n')
+    monkeypatch.setitem(server_app._state, "library", tmp_path)
+    monkeypatch.setitem(server_app._state, "executor", ThreadPoolExecutor(max_workers=1))
+    return TestClient(server_app.app), tmp_path
+
+
+def test_status_reads_the_root_files(served):
+    client, _ = served
+    s = client.get("/library/status").json()
+    assert s["lastRun"]["run_at"] == "2026-09-16"
+    assert [r["run_at"] for r in s["runs"]] == ["b", "a"], "newest first, bad lines skipped"
+    assert "syncConfigured" in s and isinstance(s["jobs"], list)
+
+
+def test_recompose_route_runs_the_shared_rebuild(served, monkeypatch):
+    client, root = served
+    seen = {}
+
+    def fake(folder, resolved, classifier=None):
+        seen["folder"] = folder
+        seen["glow"] = resolved["style"]["glow"]
+        return {"framed": 2}
+    monkeypatch.setattr(library_ops, "recompose_folder", fake)
+
+    r = client.post("/library/new/2026-Ford-Maverick-XLT-RB41981/recompose", json={"options": {"glow": False}})
+    assert r.status_code == 200, r.text
+    job = r.json()
+    deadline = time.time() + 5
+    while time.time() < deadline and client.get(f"/jobs/{job['id']}").json()["status"] == "running":
+        time.sleep(0.02)
+    final = client.get(f"/jobs/{job['id']}").json()
+    assert final["status"] == "done" and final["result"] == {"framed": 2}
+    assert seen["folder"] == root / "new" / "2026-Ford-Maverick-XLT-RB41981"
+    assert seen["glow"] is False
+
+
+def test_recompose_refuses_unknown_vehicle_and_bad_options(served):
+    client, _ = served
+    assert client.post("/library/new/nope/recompose", json={"options": {}}).status_code == 404
+    assert client.post("/library/new/../recompose", json={"options": {}}).status_code in (400, 404)
+    r = client.post("/library/new/2026-Ford-Maverick-XLT-RB41981/recompose",
+                    json={"options": {"heroFormats": ["cinema"]}})
+    assert r.status_code == 422
