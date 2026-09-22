@@ -106,6 +106,8 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         glow_intensity=hero_opts.glow_intensity,
         encoder=hero_opts.video_encoder,
         hood_sides=hood_sides,
+        target_duration_s=hero_opts.video_duration_s,
+        **({"fps": hero_opts.video_fps} if hero_opts.video_fps else {}),
     )
 
 
@@ -122,7 +124,15 @@ class HeroOptions:
     background_path: Path | None = None
     border_path: Path | None = None
     gradient: bool = True
+    # --no-spotlight and --margin-frac. Both were accepted by the CLI and
+    # never applied until the control-parity work found them dead.
+    spotlight: bool = True
+    margin_frac: float = 0.06
     video: bool = True
+    # --video-fps / --video-duration; None means the renderer's own
+    # defaults (25 fps, one full pass of the shot library).
+    video_fps: float | None = None
+    video_duration_s: float | None = None
     video_background: Path | None = None
     video_audio: Path | None = None
     video_bars_per_loop: int = 4
@@ -293,6 +303,8 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 exterior_color=v.exterior_color_factory,
                 interior_color=v.interior_color,
                 hero_formats=hero_opts.hero_formats,
+                spotlight=hero_opts.spotlight,
+                margin_frac=hero_opts.margin_frac,
             )
             if compose_result["hero"]:
                 n_framed = len(compose_result["framed"])
@@ -317,6 +329,8 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 gradient=hero_opts.gradient,
                 exterior_color=v.exterior_color_factory,
                 interior_color=v.interior_color,
+                spotlight=hero_opts.spotlight,
+                margin_frac=hero_opts.margin_frac,
             )
             if wheel_shots:
                 log(f"    wheel money shot{'s' if len(wheel_shots) != 1 else ''}: "

@@ -315,6 +315,54 @@ def library_sync():
     return jobs.start(_state["executor"], "sync", url, run)
 
 
+class RescrapeRequest(BaseModel):
+    options: dict = {}
+
+
+def _models():
+    """The classifier set, built once per server process on first use:
+    one CLIP load shared by every re-scrape after it."""
+    if "models" not in _state:
+        from ..library_ops import Models
+        _state["models"] = Models()
+    return _state["models"]
+
+
+@app.post("/library/{bucket}/{folder}/rescrape")
+def library_rescrape(bucket: str, folder: str, body: RescrapeRequest):
+    """Fetch the vehicle's page again and run the whole pipeline into the
+    library with the given control values: `lotstretcher <url> --force`,
+    started from the Library pane. The URL comes from the folder's own
+    record. Returns a job to poll."""
+    from . import jobs, library
+    from ..library_ops import hero_options_from_controls, rescrape
+    root = _state.get("library")
+    if not root:
+        raise HTTPException(404, "no library configured on this host")
+    try:
+        details_path = library.resolve_file(Path(root), bucket, folder, "details.json")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except FileNotFoundError:
+        raise HTTPException(404, "no such vehicle")
+    import json as _json
+    try:
+        url = (_json.loads(details_path.read_text(encoding="utf-8")) or {}).get("url")
+    except ValueError:
+        url = None
+    if not url or not str(url).startswith(("http://", "https://")):
+        raise HTTPException(409, "this vehicle's record carries no listing URL to fetch from")
+    try:
+        hero_options_from_controls(body.options)   # refuse bad assets/formats before starting
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    if jobs.running("rescrape"):
+        raise HTTPException(409, "a re-scrape is already running; one at a time keeps the site's "
+                                 "challenge from escalating")
+    return jobs.start(_state["executor"], "rescrape", f"{bucket}/{folder}",
+                      lambda: rescrape(url, Path(root), body.options, _models()))
+
+
 @app.get("/jobs/{job_id}")
 def job_status(job_id: str):
     from . import jobs

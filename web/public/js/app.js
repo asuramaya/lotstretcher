@@ -1064,6 +1064,7 @@ async function init() {
     // reports none of it, and the pane simply has less to offer there.
     ops: can('recompose') ? libraryOps : null,
     getOptions: () => state.options,
+    can,
     onLoadVehicle: ({ details, files }) => {
       clearPhotos();
       addFiles(files);

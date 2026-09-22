@@ -122,6 +122,11 @@ export const libraryOps = {
   recompose(v, options) {
     return postJson(`library/${encodeURIComponent(v.bucket)}/${encodeURIComponent(v.folder)}/recompose`, { options });
   },
+  /* Fetch the vehicle's page again and run the whole pipeline: the
+   * `lotstretcher <url> --force` of the Library pane. */
+  rescrape(v, options) {
+    return postJson(`library/${encodeURIComponent(v.bucket)}/${encodeURIComponent(v.folder)}/rescrape`, { options });
+  },
   sync() { return postJson('library/sync'); },
   async job(id) {
     const res = await fetch(`jobs/${encodeURIComponent(id)}`, { cache: 'no-store' });

@@ -40,11 +40,12 @@ export class LibraryView {
    * or null: rebuild in place, sync, job status. `getOptions` supplies
    * the app's current control values for a rebuild. Neither exists on
    * the edge site, and the pane simply has less to offer there. */
-  constructor(host, { onLoadVehicle, ops = null, getOptions = null } = {}) {
+  constructor(host, { onLoadVehicle, ops = null, getOptions = null, can = null } = {}) {
     this.host = host;
     this.onLoadVehicle = onLoadVehicle;
     this.ops = ops;
     this.getOptions = getOptions;
+    this.can = can;
     this.status = null;
     this.source = null;
     this.index = null;
@@ -321,6 +322,35 @@ export class LibraryView {
         }
       };
       actions.append(re, note);
+
+      /* The full rerun: fetch the listing again, re-sort, re-cut,
+       * recompose, re-render video, rewrite the posts. Minutes, not
+       * seconds, and it needs the record to carry a listing URL. */
+      if (this.can?.('rescrape')) {
+        const rs = el('button', 'btn btn-sm btn-ghost', 'Re-scrape from the listing');
+        const rsNote = el('span', 'small dim');
+        rs.onclick = async () => {
+          rs.disabled = true;
+          rsNote.textContent = 'Fetching the page and running the whole pipeline. This takes a few minutes.';
+          try {
+            const job = await this.ops.rescrape(v, this.getOptions ? this.getOptions() : {});
+            this.refreshStatus();
+            const done = await this.ops.wait(job.id, () => {}, 4000);
+            if (done.status === 'failed') {
+              rsNote.textContent = done.error;
+              rs.disabled = false;
+            } else {
+              rsNote.textContent = `Done: ${done.result?.title || done.result?.folder || 'rebuilt'}. Refreshing.`;
+              await this.reload();
+            }
+          } catch (e) {
+            rsNote.textContent = String(e.message || e);
+            rs.disabled = false;
+          }
+          this.refreshStatus();
+        };
+        actions.append(rs, rsNote);
+      }
     }
     h.appendChild(actions);
 

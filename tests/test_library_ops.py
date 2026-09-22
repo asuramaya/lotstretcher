@@ -107,3 +107,64 @@ def test_recompose_refuses_unknown_vehicle_and_bad_options(served):
     r = client.post("/library/new/2026-Ford-Maverick-XLT-RB41981/recompose",
                     json={"options": {"heroFormats": ["cinema"]}})
     assert r.status_code == 422
+
+
+def test_hero_options_defaults_are_the_cli_defaults():
+    """hero_options_from_controls({}) must equal what the CLI produced
+    with no flags before the refactor: HeroOptions() plus the CLI's own
+    format defaults."""
+    from lotstretcher.vehicle_pipeline import HeroOptions
+    from lotstretcher.imaging.compose.hero_video import VIDEO_FORMATS
+    got = library_ops.hero_options_from_controls({})
+    base = HeroOptions()
+    for field in ("enabled", "glow", "glow_color", "glow_radius", "glow_intensity", "spotlight",
+                  "margin_frac", "gradient", "video", "video_encoder", "interiors",
+                  "interior_captions", "vision_seat_check", "background_path", "border_path",
+                  "video_fps", "video_duration_s"):
+        assert getattr(got, field) == getattr(base, field), field
+    assert got.video_formats == tuple(VIDEO_FORMATS)
+    assert got.hero_formats == ("square", "portrait")
+
+
+def test_hero_options_apply_the_once_dead_flags():
+    got = library_ops.hero_options_from_controls(
+        {"spotlight": False, "margin": 0.1, "videoFps": 30, "videoDuration": 8, "videoFormats": []})
+    assert got.spotlight is False and got.margin_frac == 0.1
+    assert got.video_fps == 30.0 and got.video_duration_s == 8.0
+    assert got.video is False, "an empty format list is --no-video"
+
+
+def test_rescrape_route_needs_a_url_and_runs_one_at_a_time(served, monkeypatch):
+    client, root = served
+    # No url in the record: refused before anything starts.
+    r = client.post("/library/new/2026-Ford-Maverick-XLT-RB41981/rescrape", json={"options": {}})
+    assert r.status_code == 409
+
+    d = root / "new" / "2026-Ford-Maverick-XLT-RB41981" / "details.json"
+    d.write_text(json.dumps({"title": "x", "url": "https://d.example/vehicle/1/x/"}))
+    import threading
+    gate = threading.Event()
+    seen = {}
+
+    def fake(url, out_root, options, models):
+        seen["url"] = url
+        gate.wait(5)
+        return {"status": "success", "folder": "2026-Ford-Maverick-XLT-RB41981"}
+    monkeypatch.setattr(library_ops, "rescrape", fake)
+    monkeypatch.setattr(server_module(), "_models", lambda: object())
+
+    first = client.post("/library/new/2026-Ford-Maverick-XLT-RB41981/rescrape", json={"options": {}})
+    assert first.status_code == 200, first.text
+    second = client.post("/library/new/2026-Ford-Maverick-XLT-RB41981/rescrape", json={"options": {}})
+    assert second.status_code == 409, "a second re-scrape must wait for the first"
+    gate.set()
+    deadline = time.time() + 5
+    while time.time() < deadline and client.get(f"/jobs/{first.json()['id']}").json()["status"] == "running":
+        time.sleep(0.02)
+    assert client.get(f"/jobs/{first.json()['id']}").json()["status"] == "done"
+    assert seen["url"] == "https://d.example/vehicle/1/x/"
+
+
+def server_module():
+    from lotstretcher.server import app as server_app
+    return server_app

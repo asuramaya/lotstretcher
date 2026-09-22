@@ -75,7 +75,8 @@ from lotstretcher.imaging.dedupe import DEFAULT_TEMPLATES_DIR, JunkFilter
 from lotstretcher.listing import expand_listing_url, is_vdp_url
 from lotstretcher.local_source import is_local_source, load_local_vehicle, local_vehicle_key
 from lotstretcher.scrape import USER_AGENT, vin_from_url
-from lotstretcher.vehicle_pipeline import HeroOptions, log, process_vehicle, process_vehicle_record
+from lotstretcher.library_ops import hero_options_from_controls
+from lotstretcher.vehicle_pipeline import log, process_vehicle, process_vehicle_record
 
 
 def expand_urls(raw_urls: list[str], headed: bool) -> tuple[list[str], list[str]]:
@@ -212,6 +213,36 @@ def write_batch_summary(out_root: Path, results: list[dict]) -> Path:
         "results": [{k: v for k, v in r.items() if not k.startswith("_")} for r in results],
     }, indent=2))
     return summary_path
+
+
+def controls_from_args(args) -> dict:
+    """argparse flags -> the app's control values (shared/pipeline-spec.json
+    controls block). Every composition flag lands here, and
+    tests/test_control_parity.py fails if a flag is defined but never
+    read, so a new flag cannot be accepted and silently ignored."""
+    return {
+        "hero": not args.no_hero,
+        "glow": not args.no_glow,
+        "glowColor": args.glow_color,
+        "glowRadius": args.glow_radius,
+        "glowIntensity": args.glow_intensity,
+        "spotlight": not args.no_spotlight,
+        "margin": args.margin_frac,
+        "backdrop": "asset" if (args.photo_background or args.background) else "vehicle",
+        "background": args.background,
+        "frame": bool(args.frame or args.border),
+        "border": args.border,
+        "videoFormats": [] if args.no_video else list(resolve_video_formats(args.video_format)),
+        "heroFormats": list(resolve_hero_formats(args.hero_format)),
+        "videoMusic": args.video_music,
+        "videoFlagBackground": args.video_flag_background,
+        "nvenc": args.nvenc,
+        "videoDuration": args.video_duration,
+        "videoFps": args.video_fps,
+        "interiors": not args.no_interiors and not args.no_photo_sort,
+        "interiorCaptions": args.interior_captions,
+        "visionSeatCheck": args.vision_seat_check and not args.no_photo_sort and not args.no_interiors,
+    }
 
 
 def main():
@@ -433,37 +464,16 @@ def main():
                             if ((args.interior_captions or args.vision_seat_check)
                                 and not args.no_photo_sort and not args.no_interiors) else None)
 
-    hero_opts = HeroOptions(enabled=not args.no_hero, glow=not args.no_glow, glow_color=args.glow_color,
-                             glow_radius=args.glow_radius, glow_intensity=args.glow_intensity,
-                             gradient=not args.photo_background, video=not args.no_video,
-                             video_encoder="h264_nvenc" if args.nvenc else "libx264",
-                             video_formats=resolve_video_formats(args.video_format),
-                             hero_formats=resolve_hero_formats(args.hero_format),
-                             interiors=not args.no_interiors and not args.no_photo_sort,
-                             interior_captions=args.interior_captions,
-                             interior_classifier=interior_classifier,
-                             vision_seat_check=args.vision_seat_check and not args.no_photo_sort
-                             and not args.no_interiors)
-    if hero_opts.enabled:
-        # Left as None, each of these means the generated/absent variant;
-        # only resolve an asset when the flag (or an explicit name) asks
-        # for one, so the manifest isn't consulted for things we won't use.
-        try:
-            if args.photo_background or args.background:
-                hero_opts.background_path = assets.resolve_arg("backgrounds", args.background,
-                                                                 default_name="American Flag")
-                hero_opts.gradient = False
-            if args.frame or args.border:
-                hero_opts.border_path = assets.resolve_arg("borders", args.border)
-            if args.video_flag_background:
-                hero_opts.video_background = assets.resolve_arg("videos", None,
-                                                                 default_name="American Flag Waving")
-            if args.video_music:
-                entry = assets.entry_for("audio", None, default_name="Its Mine")
-                hero_opts.video_audio = assets.resolve(entry)
-                hero_opts.video_bars_per_loop = int(entry.get("bars", 4))
-        except ValueError as e:
-            parser.error(str(e))
+    # The flags become the same control values the app sends, and ONE
+    # builder (library_ops.hero_options_from_controls) turns them into
+    # HeroOptions for both surfaces. This is what makes "the app's
+    # Options pane and the CLI's flags describe the same run" a fact
+    # rather than a hope; it is also what found four flags this file
+    # accepted and never applied.
+    try:
+        hero_opts = hero_options_from_controls(controls_from_args(args), interior_classifier=interior_classifier)
+    except ValueError as e:
+        parser.error(str(e))
 
     run_at = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     results = []

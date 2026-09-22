@@ -184,6 +184,19 @@ COMPOSITION_FLAGS = {
 }
 
 
+def test_every_cli_flag_is_read():
+    """A flag cli.py defines but never reads is accepted and ignored,
+    which is worse than missing: the user typed it and got nothing.
+    Found four this way (--no-spotlight, --margin-frac, --video-duration,
+    --video-fps), all defined, all dead."""
+    unread = []
+    for flag in cli_flags():
+        dest = flag.lstrip("-").replace("-", "_")
+        if not re.search(rf"\bargs\.{dest}\b", CLI_SOURCE):
+            unread.append(flag)
+    assert not unread, f"cli.py defines but never reads {sorted(unread)}"
+
+
 def test_every_composition_flag_has_a_control():
     """The reverse direction: a flag with no control is a capability the
     CLI has and the UI cannot reach."""

@@ -83,7 +83,14 @@ server when, and only when, you switch on a control that needs one:
 | `GET /library`, `GET /library/{bucket}/{folder}/{file}` | the listings library (`--library`, default `~/Documents/listings`, the CLI's default `--out`), for the app's Library pane |
 | `GET /library/status` | the last run, recent run history, fetched and delisted counts, running jobs |
 | `POST /library/{bucket}/{folder}/recompose` | rebuild one vehicle's bundle in place with the app's current options; the same path as the `recompose` CLI (`library_ops.py`), returned as a job to poll at `GET /jobs/{id}` |
+| `POST /library/{bucket}/{folder}/rescrape` | fetch the vehicle's page again and run the whole pipeline into the library, as `lotstretcher <url> --force` would; one at a time |
 | `POST /library/sync` | one inventory sync cycle into the library, as `inventory-sync` would, when a dealer inventory URL is configured |
+
+The CLI's flags and the app's controls meet in one place: `library_ops.hero_options_from_controls()` builds
+the pipeline's options from the app's control values, and `cli.py` converts its own flags to those same
+values before calling it. A control-parity test also fails if `cli.py` defines a flag it never reads,
+which is how `--no-spotlight`, `--margin-frac`, `--video-duration` and `--video-fps` were found to be
+accepted and ignored, and fixed.
 
 **The Library pane** browses what the pipeline has produced: every vehicle folder under `new/` and
 `used/`, its hero stills, framed and interior sets, clips, the three posts, and the record it was built

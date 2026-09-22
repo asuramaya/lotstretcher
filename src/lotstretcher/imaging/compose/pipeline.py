@@ -74,11 +74,18 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
                      glow_radius: int = 24, glow_intensity: float = 0.75,
                      gradient: bool = False, exterior_color: str | None = None,
                      interior_color: str | None = None,
-                     hero_formats: tuple[str, ...] = (DEFAULT_HERO_STILL_FORMAT,)) -> dict:
+                     hero_formats: tuple[str, ...] = (DEFAULT_HERO_STILL_FORMAT,),
+                     spotlight: bool = True, margin_frac: float | None = None) -> dict:
     """Returns {"hero": Path|None, "framed": [Path, ...]}. Produces nothing
     (empty result, no error) if cutout_dir has no usable cutouts -- e.g. a
     used vehicle with no clean exterior shots to cut out at all; callers
-    should treat that as "nothing to compose", not a failure."""
+    should treat that as "nothing to compose", not a failure.
+
+    `margin_frac` is --margin-frac: the breathing room in the single and
+    adaptive layouts and every framed image. The conveyor keeps its own
+    tuned margin (CONVEYOR_MARGIN_FRAC), because its three boxes were
+    proportioned together with the video's and a global knob would pull
+    the still and the clip apart."""
     cutout_dir = Path(cutout_dir)
     out_dir = Path(out_dir)
     cutout_files = sorted(cutout_dir.glob("*.png")) if cutout_dir.is_dir() else []
@@ -92,11 +99,12 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
     # left, tail right) instead of just "two more angles". Needs 3
     # distinct angles to fill; below that pick_adaptive()'s corners/single
     # fallback still looks better than a conveyor with a hole in it.
+    single_margin = 0.06 if margin_frac is None else margin_frac
     hero_cutouts = pick_for_conveyor(cutout_dir)
-    layout, margin_frac = "conveyor", CONVEYOR_MARGIN_FRAC
+    layout, hero_margin = "conveyor", CONVEYOR_MARGIN_FRAC
     if len(hero_cutouts) < 3:
         layout, hero_cutouts = pick_adaptive(cutout_dir)
-        margin_frac = 0.06
+        hero_margin = single_margin
 
     if hero_cutouts:
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -108,7 +116,8 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
             hero_bg = _backdrop(background_path, out_dir, f"hero/{fmt}", gradient,
                                  exterior_color, interior_color, hero_cutouts[0], canvas)
             hero_img = compose_hero(hero_bg, border_path, hero_cutouts, layout=layout,
-                                     glow=glow, glow_color=glow_color, margin_frac=margin_frac,
+                                     spotlight=spotlight,
+                                     glow=glow, glow_color=glow_color, margin_frac=hero_margin,
                                      glow_radius=glow_radius, glow_intensity=glow_intensity,
                                      canvas_size=canvas)
             hero_path = out_dir / hero_still_name(fmt)
@@ -137,6 +146,7 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
         bg = _backdrop(background_path, out_dir, f"framed/{cutout.name}", gradient,
                         exterior_color, interior_color, cutout)
         img = compose_hero(bg, border_path, [cutout], layout="single",
+                            spotlight=spotlight, margin_frac=single_margin,
                             glow=glow, glow_color=glow_color,
                             glow_radius=glow_radius, glow_intensity=glow_intensity)
         framed_path = framed_dir / cutout.name
@@ -161,7 +171,8 @@ def compose_wheel_shots(wheel_cutout_dir: Path, out_dir: Path, background_path, 
                          glow: bool = True, glow_color: str = "white",
                          glow_radius: int = 24, glow_intensity: float = 0.75,
                          gradient: bool = False, exterior_color: str | None = None,
-                         interior_color: str | None = None) -> list[Path]:
+                         interior_color: str | None = None,
+                         spotlight: bool = True, margin_frac: float | None = None) -> list[Path]:
     """One solo composition per confirmed wheel-money-shot cutout (see
     imaging/wheel.py and photos.py's images/exterior/wheels/), same
     single-layout/background/glow treatment as compose_vehicle()'s framed
@@ -186,6 +197,7 @@ def compose_wheel_shots(wheel_cutout_dir: Path, out_dir: Path, background_path, 
         bg = _backdrop(background_path, out_dir, f"framed/{cutout.name}", gradient,
                         exterior_color, interior_color, cutout)
         img = compose_hero(bg, border_path, [cutout], layout="single",
+                            spotlight=spotlight, margin_frac=0.06 if margin_frac is None else margin_frac,
                             glow=glow, glow_color=glow_color,
                             glow_radius=glow_radius, glow_intensity=glow_intensity)
         out_path = framed_dir / cutout.name
