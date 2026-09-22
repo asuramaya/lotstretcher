@@ -56,6 +56,7 @@ because it *is* the other.
 |---|---|---|
 | **For** | one car, right now, from a phone | a whole lot, on a schedule |
 | **Input** | photos, camera, pasted image URLs, window sticker PDF, a listing via the bookmarklet | that, plus **scraping** and full inventory sync |
+| **Library** | open a listings folder from disk and browse it | the configured library is served, always there |
 | **Where it runs** | entirely in your browser; photos never upload | your machine or your server |
 | **Costs** | nothing to you, nothing to host | your own compute |
 | **Install** | none | Python 3.11+, a GPU helps |
@@ -79,6 +80,16 @@ server when, and only when, you switch on a control that needs one:
 | `GET /assets` | the background and border library, filling those selects |
 | `POST /compose` | composes one cutout with the server's assets and GPU |
 | `POST /scrape` | reads one vehicle page with the server's headless browser and returns the record `lotstretcher <url>` would build; the *From a listing* sheet offers a URL field against a host that reports `scrape` |
+| `GET /library`, `GET /library/{bucket}/{folder}/{file}` | the listings library (`--library`, default `~/Documents/listings`, the CLI's default `--out`), for the app's Library pane |
+
+**The Library pane** browses what the pipeline has produced: every vehicle folder under `new/` and
+`used/`, its hero stills, framed and interior sets, clips, the three posts, and the record it was built
+from, with a button to load the originals back in and rerun it with today's options. The layout it reads
+is `library` in the shared spec, the same names `vehicle_pipeline` writes. Against your server the
+configured library is simply there; on lotstretcher.org, or anywhere, you can open a listings folder
+from disk and the same pane reads it in the browser. One reader, two sources, and
+[`tests/test_library_parity.py`](tests/test_library_parity.py) feeds both the same synthetic library and
+requires the same index back.
 
 `POST /compose` receives the **cutout, never the source photograph**. Matting already happened on
 your device, so the original image stays there; only the cut-out vehicle travels, and only when you

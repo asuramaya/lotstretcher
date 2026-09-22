@@ -211,6 +211,35 @@ async def compose_delegated(cutout: UploadFile = File(...), options: str = Form(
     return Response(content=png, media_type="image/png", headers=headers)
 
 
+@app.get("/library")
+def library_index():
+    """The listings library on this host, for the app's Library pane."""
+    from . import library
+    root = _state.get("library")
+    if not root:
+        raise HTTPException(404, "no library configured on this host (lotstretcher-serve --library)")
+    return library.index(Path(root))
+
+
+@app.get("/library/{bucket}/{folder}/{rel:path}")
+def library_file(bucket: str, folder: str, rel: str):
+    """One file from one vehicle folder: a hero, a clip, a post."""
+    from fastapi.responses import FileResponse
+    from . import library
+    root = _state.get("library")
+    if not root:
+        raise HTTPException(404, "no library configured on this host")
+    try:
+        path = library.resolve_file(Path(root), bucket, folder, rel)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except FileNotFoundError:
+        raise HTTPException(404, "no such file")
+    # Finished output does not change under its name; a folder rewritten
+    # by a rerun gets a new mtime, which the browser revalidates on.
+    return FileResponse(path, headers={"Cache-Control": "no-cache"})
+
+
 class ScrapeRequest(BaseModel):
     url: str
 
@@ -330,6 +359,10 @@ def main() -> None:
     parser.add_argument("--out-dir", default=None, help="Where processed images are saved "
                                                           "(default: <data-dir>/images)")
     parser.add_argument("--workers", type=int, default=4, help="Async batch worker thread pool size")
+    parser.add_argument("--library", default=str(Path.home() / "Documents" / "listings"),
+                         help="The listings library to serve to the app's Library pane: the folder "
+                              "`lotstretcher --out` writes (default: ~/Documents/listings, the CLI's "
+                              "default too). Pass an empty string to serve none.")
     args = parser.parse_args()
 
     import uvicorn
@@ -337,6 +370,12 @@ def main() -> None:
     data_dir = Path(args.data_dir).expanduser()
     out_dir = Path(args.out_dir).expanduser() if args.out_dir else data_dir / "images"
     configure(data_dir, out_dir, max_workers=args.workers)
+    library = Path(args.library).expanduser() if args.library else None
+    if library and library.is_dir():
+        _state["library"] = library
+        print(f"  library: {library}")
+    elif library:
+        print(f"  library: {library} does not exist yet; the Library pane will offer a folder picker only")
 
     # Mounted LAST so the catch-all static route cannot shadow an API
     # path: FastAPI matches routes in registration order.

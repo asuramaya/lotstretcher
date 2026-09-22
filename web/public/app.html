@@ -48,6 +48,10 @@
       <span>Results</span>
       <span class="dot hidden" id="resultsDot"></span>
     </button>
+    <button class="nav-btn" data-go="library">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      <span>Library</span>
+    </button>
   </nav>
 
   <header class="topbar">
@@ -165,6 +169,13 @@
             <div class="span-2"><label class="label" for="f-citytags">City hashtags</label><input class="field" id="f-citytags" placeholder="e.g. Austin, AustinTX, ATXCars" autocomplete="off"></div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- ---------- library ---------- -->
+    <section class="pane" id="pane-library" hidden aria-label="Library">
+      <div class="pane-inner">
+        <div class="section" id="libraryHost"></div>
       </div>
     </section>
 

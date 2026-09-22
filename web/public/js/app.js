@@ -31,6 +31,8 @@ import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './hos
 import { renderControls, controlDefaults, controlsToFlags } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer } from './lib/delegate.js';
 import { normalizeListing, takeListingFromHash, bookmarkletSource } from './pipeline/listing.js';
+import { LibraryView } from './library/view.js';
+import { HttpSource, DirectorySource } from './library/source.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -77,7 +79,7 @@ function saveDealer() {
 /* ---------- navigation --------------------------------------------- */
 function go(pane) {
   state.pane = pane;
-  for (const p of ['source', 'details', 'options', 'results']) {
+  for (const p of ['source', 'details', 'options', 'results', 'library']) {
     $(`pane-${p}`).hidden = p !== pane;
   }
   for (const btn of document.querySelectorAll('.nav-btn')) {
@@ -1052,6 +1054,30 @@ async function init() {
   renderOptions();
   renderPhotos();
   renderResults();
+
+  /* The Library pane. One view, two sources: a self-hosted server's
+   * designated folder is opened for you; anywhere, a folder can be
+   * picked. Loading a vehicle's originals back in is how a library
+   * entry gets rerun with today's options, on either surface. */
+  const libraryView = new LibraryView($('libraryHost'), {
+    onLoadVehicle: ({ details, files }) => {
+      clearPhotos();
+      addFiles(files);
+      if (details && Object.keys(details).length) applyVehicle(details);
+      else go('source');
+    },
+  });
+  libraryView.onPick = async () => {
+    try {
+      await libraryView.setSource(await DirectorySource.pick());
+    } catch (e) {
+      if (!/no folder chosen|abort/i.test(String(e))) {
+        libraryView.error = String(e.message || e);
+        libraryView.render();
+      }
+    }
+  };
+  if (can('library')) libraryView.setSource(new HttpSource());
 
   // Opened by the bookmarklet? The record rides in the fragment, which
   // the browser never sends anywhere; take it, then clear it.

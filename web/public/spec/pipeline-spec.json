@@ -852,5 +852,45 @@
     "descriptionMaxChars": 4000,
     "hashParam": "listing",
     "version": 1
+  },
+  "library": {
+    "_": [
+      "The on-disk layout of a listings library, as vehicle_pipeline writes it and as both",
+      "library readers (server/library.py and web/public/js/library/) read it. One vehicle is",
+      "<root>/<bucket>/<folder>/ with details.json beside a bundle/ of finished output.",
+      "tests/test_library_parity.py asserts the pipeline writes exactly these names."
+    ],
+    "buckets": [
+      "new",
+      "used"
+    ],
+    "details": "details.json",
+    "images": "images",
+    "sticker": {
+      "pdf": "window-sticker.pdf",
+      "json": "window-sticker.json"
+    },
+    "bundle": {
+      "dir": "bundle",
+      "hero": "hero.png",
+      "heroPortrait": "hero-portrait.png",
+      "framed": "framed",
+      "interior": "interior",
+      "videos": {
+        "square": "hero-video.mp4",
+        "vertical": "hero-video-vertical.mp4",
+        "horizontal": "hero-video-horizontal.mp4"
+      },
+      "posts": {
+        "facebook": "facebook.txt",
+        "instagram": "instagram.txt",
+        "threads": "threads.txt"
+      }
+    },
+    "rootFiles": {
+      "runSummary": "run-summary.json",
+      "runs": "runs.jsonl",
+      "manifest": "manifest.json"
+    }
   }
 }

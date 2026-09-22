@@ -68,6 +68,11 @@ def capabilities(state: dict) -> dict:
         # Where output lands, so the app can say so instead of only
         # offering a download.
         "outDir": str(state.get("out_dir")) if state.get("out_dir") else None,
+        # The listings library this host serves through /library. A
+        # browser alone can still open a folder; the served one is what
+        # makes "it is simply there" a capability.
+        "library": bool(state.get("library")),
+        "libraryRoot": str(state.get("library")) if state.get("library") else None,
         "servingWebApp": root is not None,
     }
 
