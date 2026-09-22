@@ -51,7 +51,10 @@
   </nav>
 
   <header class="topbar">
-    <span class="brand" style="flex:1"><span class="brand-mark"></span> lotstretcher</span>
+    <!-- Shared with the landing page; see js/chrome.js. The app used to
+         have no way back, which made it a place you could reach and not
+         leave. -->
+    <div class="brand-slot grow" id="brandSlot"></div>
     <button class="btn btn-ghost btn-sm" id="aboutBtn" aria-label="About this app">About</button>
     <button class="btn btn-primary btn-sm" id="runBtn" disabled>Process</button>
   </header>

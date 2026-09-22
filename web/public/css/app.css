@@ -28,12 +28,6 @@
   border-bottom: 1px solid var(--line);
   z-index: 20;
 }
-.brand { display: flex; align-items: center; gap: var(--s-2); font-weight: 680; letter-spacing: -.02em; }
-.brand-mark {
-  width: 22px; height: 22px; border-radius: 6px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-lo));
-  flex: none;
-}
 
 /* ---------- main ------------------------------------------------- */
 .main { grid-area: main; position: relative; overflow: hidden; }

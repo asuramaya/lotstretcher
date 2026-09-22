@@ -7,9 +7,9 @@
 .shell { max-width: 1140px; margin: 0 auto; padding: 0 max(var(--gutter), var(--safe-l)) 0 max(var(--gutter), var(--safe-r)); }
 .shell.narrow { max-width: 760px; }
 
-.brand { display: flex; align-items: center; gap: var(--s-2); font-weight: 700; letter-spacing: -.02em; color: var(--ink); text-decoration: none; }
-.brand img { width: 26px; height: 26px; border-radius: 7px; }
-.brand:hover { text-decoration: none; }
+/* .brand and .brand-mark come from base.css, shared with the app. Only
+   the landing page's slightly larger weight is set here. */
+.brand { font-weight: 700; }
 
 .hide-sm { display: none; }
 @media (min-width: 620px) { .hide-sm { display: inline-flex; } }

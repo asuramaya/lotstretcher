@@ -2,7 +2,11 @@
 
 import { vehicleGradientColors } from './pipeline/palette.js';
 import { loadSpec, get as specGet } from './spec.js';
+import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { initConfigFromSpec } from './config.js';
+
+mountBrand(document.getElementById('brandSlot'), { compact: true });
+wireSurfaceLinks();
 
 /* ---------- sticky nav border, only once actually stuck ---------- */
 const nav = document.getElementById('topnav');

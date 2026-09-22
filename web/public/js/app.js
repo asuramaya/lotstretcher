@@ -26,6 +26,7 @@ import {
   loadOptions, saveOptions, resetOptions, toCliFlags, initFromSpec,
 } from './options.js';
 import { loadSpec, get as specGet } from './spec.js';
+import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlDefaults, controlsToFlags } from './controls.js';
 import { loadAssets, needsServer, composeOnServer } from './lib/delegate.js';
@@ -807,6 +808,11 @@ async function importSticker(source, label) {
 
 /* ---------- wiring --------------------------------------------------- */
 async function init() {
+  // Chrome first: it must not depend on the spec loading, or a spec
+  // failure would also strand the user with no way back.
+  mountBrand($('brandSlot'));
+  wireSurfaceLinks();
+
   /* The shared spec loads BEFORE anything reads a constant. Both this
    * client and the Python pipeline read shared/pipeline-spec.json, so a
    * value changed in one place cannot silently differ in the other. */

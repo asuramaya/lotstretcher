@@ -149,6 +149,30 @@ def install(app, state: dict) -> bool:
             response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
             response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
             response.headers["X-Content-Type-Options"] = "nosniff"
+
+            """Cache policy, and it is not the CDN's.
+
+            StaticFiles sends only ETag and Last-Modified, which lets a
+            browser reuse a cached module without revalidating. On
+            lotstretcher.org that is fine because a deploy changes the
+            URL; here it is a real bug, because the app updates when the
+            PACKAGE updates and the path never changes. A self-hosted
+            user would upgrade lotstretcher and keep running the old UI.
+            Found exactly that way: a freshly edited module kept loading
+            from cache.
+
+            Source revalidates every time (cheap, it is a 304 when
+            unchanged). Weights do not: they are large, immutable, and
+            the whole point of caching them is that the 44MB matting
+            model downloads once per device.
+            """
+            path = request.url.path
+            if path.startswith("/models/") or path.startswith("/ort/"):
+                response.headers.setdefault(
+                    "Cache-Control", "public, max-age=31536000, immutable")
+            else:
+                response.headers.setdefault("Cache-Control", "no-cache")
+
             return response
 
     app.add_middleware(IsolationHeaders)
