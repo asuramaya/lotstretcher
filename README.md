@@ -38,12 +38,40 @@ server. It's free and open source (MIT), not a crippled trial of a paid product.
 That's the tradeoff, stated plainly: you run it yourself (a GPU with 4+ GB VRAM recommended, see below), and
 in exchange you own the pipeline outright.
 
-lotstretcher runs in **two modes on the same pipeline**: the CLI (the default, one-shot scripts and cron) and an
-opt-in **server mode** exposing a [CarCutter](https://cloud.car-cutter.com/doc/api.html)-API-shaped HTTP
-surface — see [Server Mode](#server-mode) below. The point isn't cloning CarCutter; it's that a lot of
-dealer-software integrations already speak that shape, so switching the base URL to a self-hosted, fully
-open alternative is a realistic option rather than a rewrite. Nothing about your inventory photos leaves
-your own server either way.
+---
+
+## Two Surfaces, One Product
+
+lotstretcher is **one pipeline reachable two ways**. Which one you want depends on how many vehicles you
+have and where you want the work to happen — not on paying for a better version. There is no paid tier,
+no feature gate, and no crippled free build: it is all MIT, in this one repository.
+
+| | **The website** *(planned)* | **Self-hosted** *(this repo, today)* |
+|---|---|---|
+| **For** | one car, right now, from a phone | a whole lot, on a schedule |
+| **Input** | upload a folder of photos, or paste image URLs | that, plus **scraping** a dealer site and full inventory sync |
+| **Where it runs** | entirely in your browser — photos never upload anywhere | your machine or your server |
+| **Costs** | nothing to you, nothing to host | your own compute |
+| **Install** | none | Python 3.11+, a GPU helps |
+
+**Why the website can't scrape, and why that's fine.** A browser can't read another site's HTML
+(cross-origin rules), and dealer sites sit behind Cloudflare challenges that a serverless function can't
+pass either — measured, not assumed. But that only blocks *discovering* photo URLs, never *using* them:
+dealer image CDNs serve cross-origin fine, so anything you hand the browser it can process. Upload a
+folder, paste URLs, or point it at the photo list from your DMS export. Scraping lives on the self-hosted
+surface because that's the surface that can actually do it.
+
+Keeping the hosted side free is a deliberate constraint, not a limitation we backed into — it's what lets
+the website stay open to anyone with a phone and some photos, permanently.
+
+### Self-hosted runs in two modes
+
+The CLI (the default — one-shot scripts and cron) and an opt-in **server mode** exposing a
+[CarCutter](https://cloud.car-cutter.com/doc/api.html)-API-shaped HTTP surface — see
+[Server Mode](#server-mode) below. The point isn't cloning CarCutter; it's that a lot of dealer-software
+integrations already speak that shape, so switching the base URL to a self-hosted, fully open alternative
+is a realistic option rather than a rewrite. Nothing about your inventory photos leaves your own server
+in either mode.
 
 ---
 
@@ -234,6 +262,9 @@ you know (year/make/model/price/description/... -- see `src/lotstretcher/local_s
 through the exact same CLIP/cutout/compose/copy pipeline as a scraped vehicle. Mix local folders
 and URLs freely in the same command; each is auto-detected by whether the argument is an existing
 directory.
+
+This is also exactly what the browser client does — same input, same pipeline, different surface (see
+[Two Surfaces, One Product](#two-surfaces-one-product)).
 
 ```bash
 # my-trade-in/01.jpg, 02.jpg, ... + an optional vehicle.json
