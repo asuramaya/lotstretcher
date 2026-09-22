@@ -610,6 +610,11 @@ async function run() {
      * and stay usable while this runs. */
     const wantVideo = state.options.videoFormats.filter((f) => OPTS.VIDEO_FORMATS[f]);
     if (wantVideo.length && cut.length && videoSupported()) {
+      // Video is always rendered here, and a stock photo is a server
+      // asset. Saying so beats a clip that quietly ignores the choice.
+      if (state.options.backdrop === 'asset') {
+        state.errors.push('video: stock backgrounds apply to stills only; the clip uses the gradient');
+      }
       stages.push({ n: 5, label: 'Rendering video', state: 'active' });
       renderStages(stages);
       state.videos = {};

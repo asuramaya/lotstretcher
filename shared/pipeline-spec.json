@@ -555,7 +555,7 @@
           {
             "key": "backdrop",
             "label": "Source",
-            "hint": "Where the generated gradient takes its colours",
+            "hint": "Where the backdrop comes from",
             "type": "select",
             "default": "vehicle",
             "choices": [
@@ -572,11 +572,32 @@
               {
                 "value": "asset",
                 "label": "Stock background",
-                "hint": "A named image from the asset library",
-                "requires": "filesystem"
+                "hint": "A photo from the asset library",
+                "requires": "filesystem",
+                "cli": "--photo-background"
               }
             ],
-            "cli": "--background"
+            "cliNote": "The CLI's gradient is always measured from the vehicle's own paint, so only the 'Stock background' choice has a flag; the generated hue bands are a browser-only look."
+          },
+          {
+            "key": "background",
+            "label": "Background",
+            "hint": "Which stock photo",
+            "type": "select",
+            "default": null,
+            "choices": [],
+            "dynamic": "backgrounds",
+            "cli": "--background",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "filesystem",
+            "showWhen": {
+              "key": "backdrop",
+              "equals": "asset"
+            },
+            "emptyNote": "Falls back to the library's default photo"
           },
           {
             "key": "spotlight",
@@ -586,19 +607,6 @@
             "default": true,
             "cli": "--no-spotlight",
             "cliInvert": true
-          },
-          {
-            "key": "photoBackground",
-            "label": "Photo backdrop",
-            "hint": "Use a stock photo rather than a gradient",
-            "type": "toggle",
-            "default": false,
-            "cli": "--photo-background",
-            "surfaces": [
-              "cli",
-              "server"
-            ],
-            "requires": "filesystem"
           }
         ]
       },

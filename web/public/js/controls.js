@@ -75,6 +75,22 @@ function choicesFor(control) {
   return [];
 }
 
+/* `showWhen` is either a key (shown while that value is truthy) or
+ * { key, equals } (shown while that value matches). The second form is
+ * what lets a dependent select follow one choice of another select, as
+ * the background picker follows "Stock background". */
+export function shownBy(control, values) {
+  const cond = control.showWhen;
+  if (!cond) return true;
+  if (typeof cond === 'string') return !!values[cond];
+  return values[cond.key] === cond.equals;
+}
+
+/* The chosen entry of a select, if it is a static one. */
+function chosen(control, value) {
+  return (control.choices || []).find((c) => c.value === value);
+}
+
 function buildToggle(control, value, onChange, disabled) {
   const sw = el('label', 'switch');
   const input = document.createElement('input');
@@ -94,7 +110,7 @@ function buildSelect(control, value, onChange, disabled) {
   const choices = choicesFor(control);
   if (!choices.length) {
     const o = document.createElement('option');
-    o.textContent = 'none available';
+    o.textContent = control.emptyNote || 'none available';
     sel.appendChild(o);
     sel.disabled = true;
     return sel;
@@ -103,6 +119,15 @@ function buildSelect(control, value, onChange, disabled) {
     const o = document.createElement('option');
     o.value = String(c.value);
     o.textContent = c.label ?? String(c.value);
+    /* A choice can be gated on its own ("Stock background" needs an
+     * asset library the browser has not got). It stays listed and
+     * disabled, for the same reason a whole control does: a choice that
+     * vanishes reads as a bug, one that says why reads as a feature of
+     * self-hosting. */
+    if (c.requires && !can(c.requires)) {
+      o.disabled = true;
+      o.textContent += isSelfHosted() ? ' (host lacks it)' : ' (your server only)';
+    }
     if (String(c.value) === String(value)) o.selected = true;
     sel.appendChild(o);
   }
@@ -146,7 +171,7 @@ export function renderControls(host, values, onChange) {
   host.innerHTML = '';
 
   for (const group of get('controls', 'groups')) {
-    const visible = group.controls.filter((c) => !c.showWhen || values[c.showWhen]);
+    const visible = group.controls.filter((c) => shownBy(c, values));
     if (!visible.length) continue;
 
     const section = el('div', 'ctrl-group');
@@ -198,14 +223,23 @@ export function controlsToFlags(values) {
     for (const control of group.controls) {
       const value = values[control.key];
       if (value === undefined || value === null) continue;
+      // A hidden control is not in effect, so its flag must not be
+      // echoed either: --background with no stock backdrop chosen would
+      // switch the CLI to a photo the UI is not showing.
+      if (!shownBy(control, values)) continue;
       const isDefault = value === control.default;
 
-      if (control.type === 'toggle') {
+      if (control.type === 'select' && !control.cli) {
+        // The flag lives on the choice: a select whose options are not
+        // all expressible on the CLI carries a flag only where one exists.
+        const choice = chosen(control, value);
+        if (choice?.cli) flags.push(choice.cli);
+      } else if (control.type === 'toggle') {
         // An inverted flag (--no-glow) is emitted when the value is OFF;
         // a plain flag when it is ON.
         if (control.cliInvert && !value) flags.push(control.cli);
         else if (!control.cliInvert && value) flags.push(control.cli);
-      } else if (!isDefault) {
+      } else if (!isDefault && control.cli) {
         // Quote anything with a space, or the echo is not pasteable:
         // --border Generic Dealer Frame reads as three arguments.
         const text = String(value);

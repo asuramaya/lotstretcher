@@ -77,6 +77,18 @@ def _resolve_asset(category: str, name: str | None, warnings: list[str]):
         return None
 
 
+def _default_asset(category: str, default_name: str, warnings: list[str]):
+    """The library's default for a category, or None with a warning when
+    the library is empty. Mirrors assets.resolve_arg's fallback chain so
+    the delegated run lands on the same file the CLI would."""
+    from ..imaging import assets
+    try:
+        return assets.resolve_arg(category, None, default_name=default_name)
+    except (ValueError, KeyError, OSError):
+        warnings.append(f"no {category} in this host's asset library; used the generated backdrop instead")
+        return None
+
+
 def compose(cutout_png: bytes, options: dict[str, Any],
             out_dir: Path) -> tuple[bytes, list[str]]:
     """Compose one cutout with the server's assets and hardware.
@@ -125,8 +137,22 @@ def compose(cutout_png: bytes, options: dict[str, Any],
             # un-upscaled composite, not fail the whole request -- but say so.
             warnings.append(f"upscaling failed ({type(e).__name__}); composed at source resolution")
 
-    background = _resolve_asset("backgrounds", options.get("background"), warnings) \
-        if options.get("backdrop") == "asset" or options.get("photoBackground") else None
+    # `photoBackground` is the pre-spec key; options saved on a device
+    # before the control was folded into the backdrop select still carry
+    # it, and honouring it costs nothing.
+    wants_photo = options.get("backdrop") == "asset" or options.get("photoBackground")
+    background = None
+    if wants_photo:
+        name = options.get("background")
+        if name:
+            background = _resolve_asset("backgrounds", name, warnings)
+        else:
+            # Unnamed means the library's default, exactly as
+            # `--photo-background` with no `--background` does in cli.py.
+            background = _default_asset("backgrounds", "American Flag", warnings)
+    elif options.get("backdrop") == "generic":
+        warnings.append("the generated hue-band backdrop is browser-only; "
+                        "used the vehicle gradient instead")
     if background is None:
         start, end = vehicle_gradient_colors(
             options.get("exteriorColor"), options.get("interiorColor"), sample_path=cutout_path)

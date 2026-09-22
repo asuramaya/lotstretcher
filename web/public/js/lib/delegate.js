@@ -37,10 +37,18 @@ export function serverOnlyKeys(specGet) {
  * faster and keeps the round trip out of the common path. */
 export function needsServer(options, specGet) {
   if (!isSelfHosted()) return false;
-  return serverOnlyKeys(specGet).some((key) => {
-    const value = options[key];
-    return value !== undefined && value !== null && value !== false && value !== '';
-  });
+  const on = (value) => value !== undefined && value !== null && value !== false && value !== '';
+  if (serverOnlyKeys(specGet).some((key) => on(options[key]))) return true;
+  /* A browser-capable select can still hold one choice the browser
+   * cannot honour: "Stock background" is a real option of the backdrop
+   * select, and picking it is what sends the run to the server. */
+  for (const group of specGet('controls', 'groups')) {
+    for (const control of group.controls) {
+      const choice = (control.choices || []).find((c) => c.value === options[control.key]);
+      if (choice?.requires) return true;
+    }
+  }
+  return false;
 }
 
 let assetCache = null;

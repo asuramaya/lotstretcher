@@ -33,12 +33,27 @@ def surfaces(control: dict) -> list[str]:
     return control.get("surfaces", ["browser", "cli", "server"])
 
 
+def choice_flags(control: dict) -> list[str]:
+    """Flags carried by a select's individual choices. A select whose
+    options are not all expressible on the CLI (the backdrop: the CLI's
+    gradient is always vehicle-measured) puts the flag on the one choice
+    that has one, instead of pretending the whole select maps."""
+    return [ch["cli"] for ch in control.get("choices", []) if "cli" in ch]
+
+
+def all_flags(control: dict) -> list[str]:
+    return ([control["cli"]] if control.get("cli") else []) + choice_flags(control)
+
+
 def test_controls_block_is_well_formed():
     assert CONTROLS, "no controls defined"
     seen = set()
     for c in CONTROLS:
-        for field in ("key", "label", "type", "cli"):
+        for field in ("key", "label", "type"):
             assert field in c, f"control {c.get('key', c)!r} is missing {field!r}"
+        assert all_flags(c) or "cli" not in surfaces(c), (
+            f"control {c['key']!r} has no cli flag on itself or any choice"
+        )
         assert c["key"] not in seen, f"duplicate control key {c['key']!r}"
         seen.add(c["key"])
         assert c["type"] in ("toggle", "select", "range", "chips"), c["type"]
@@ -49,11 +64,17 @@ def test_controls_block_is_well_formed():
 def test_every_control_names_a_real_cli_flag(control):
     """The binding half of "one route". A control whose flag does not
     exist means the UI can express something the CLI cannot."""
-    flag = control["cli"]
-    assert flag in cli_flags(), (
-        f"control {control['key']!r} maps to {flag!r}, which cli.py does not define. "
-        f"Add the flag, or correct the mapping in shared/pipeline-spec.json."
-    )
+    for flag in all_flags(control):
+        assert flag in cli_flags(), (
+            f"control {control['key']!r} maps to {flag!r}, which cli.py does not define. "
+            f"Add the flag, or correct the mapping in shared/pipeline-spec.json."
+        )
+    if not control.get("cli"):
+        # Flags on some choices only: the omission needs a stated reason,
+        # the same rule as a browser-only control.
+        assert len(control.get("cliNote", "")) > 30, (
+            f"{control['key']} maps only some choices to flags but does not say why"
+        )
 
 
 @pytest.mark.parametrize("control", [c for c in CONTROLS if "cli" not in surfaces(c)],
@@ -109,6 +130,36 @@ def test_gated_controls_name_a_real_capability(control):
     )
 
 
+@pytest.mark.parametrize("control,choice",
+                         [(c, ch) for c in CONTROLS for ch in c.get("choices", []) if ch.get("requires")],
+                         ids=lambda x: x.get("key") or str(x.get("value")))
+def test_gated_choices_name_a_real_capability(control, choice):
+    """Same rule, one level down: a single choice of a select may be
+    gated (the backdrop's "Stock background"), and it is rendered
+    disabled with a reason, so the capability must be one a host can
+    actually report."""
+    from lotstretcher.server import webapp
+    reported = set(webapp.capabilities({"out_dir": None}))
+    assert choice["requires"] in reported, (
+        f"{control['key']}={choice['value']!r} requires {choice['requires']!r}, "
+        f"which /capabilities never reports"
+    )
+
+
+@pytest.mark.parametrize("control", [c for c in CONTROLS if isinstance(c.get("showWhen"), dict)],
+                         ids=lambda c: c["key"])
+def test_conditional_controls_follow_a_real_choice(control):
+    """`showWhen: {key, equals}` must name an existing select and one of
+    its actual choices, or the control can never appear."""
+    cond = control["showWhen"]
+    parent = next((c for c in CONTROLS if c["key"] == cond["key"]), None)
+    assert parent is not None, f"{control['key']} follows unknown control {cond['key']!r}"
+    values = [ch["value"] for ch in parent.get("choices", [])]
+    assert cond["equals"] in values, (
+        f"{control['key']} follows {cond['key']}={cond['equals']!r}, not among {values}"
+    )
+
+
 def test_browser_only_controls_are_not_gpu_dependent():
     """Anything offered in the browser must be doable there. A control
     that needs a GPU or a filesystem has to be marked cli/server only,
@@ -136,7 +187,7 @@ COMPOSITION_FLAGS = {
 def test_every_composition_flag_has_a_control():
     """The reverse direction: a flag with no control is a capability the
     CLI has and the UI cannot reach."""
-    mapped = {c["cli"] for c in CONTROLS}
+    mapped = {flag for c in CONTROLS for flag in all_flags(c)}
     missing = sorted(COMPOSITION_FLAGS - mapped)
     assert not missing, (
         f"cli.py offers {missing} with no control in shared/pipeline-spec.json. "
