@@ -15,3 +15,6 @@ htmlcov/
 node_modules/
 .DS_Store
 .osiris*
+
+# Rust core build output; web/public/core/ (the wasm) is committed so the static site needs no toolchain
+core/target/

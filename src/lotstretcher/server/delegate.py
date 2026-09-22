@@ -104,8 +104,6 @@ def compose(cutout_png: bytes, options: dict[str, Any],
     from PIL import Image
 
     from ..imaging.compose import compose_hero
-    from ..imaging.compose.background import make_linear_gradient
-    from ..imaging.palette import vehicle_gradient_colors
 
     if len(cutout_png) > MAX_CUTOUT_BYTES:
         raise ValueError(f"cutout exceeds {MAX_CUTOUT_BYTES // (1024 * 1024)}MB")
@@ -154,12 +152,10 @@ def compose(cutout_png: bytes, options: dict[str, Any],
         warnings.append("the generated hue-band backdrop is browser-only; "
                         "used the vehicle gradient instead")
     if background is None:
-        start, end = vehicle_gradient_colors(
-            options.get("exteriorColor"), options.get("interiorColor"), sample_path=cutout_path)
-        import random
-        background = make_linear_gradient(
-            (width, height), random.Random(str(options.get("seed", ""))).uniform(0, 360),
-            start, end).convert("RGBA")
+        # A spec for the core rather than pixels: the same gradient the
+        # browser would have drawn for this seed, since it is the same code.
+        background = {"kind": "vehicle", "seed": str(options.get("seed", "")),
+                      "exterior": options.get("exteriorColor"), "interior": options.get("interiorColor")}
 
     border = _resolve_asset("borders", options.get("border"), warnings) if options.get("frame") else None
     if options.get("frame") and border is None and not options.get("border"):

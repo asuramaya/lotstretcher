@@ -26,6 +26,7 @@ import {
   loadOptions, saveOptions, resetOptions, toCliFlags, initFromSpec,
 } from './options.js';
 import { loadSpec, get as specGet } from './spec.js';
+import { loadCore, version as coreVersion } from './core.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlDefaults, controlsToFlags } from './controls.js';
@@ -898,6 +899,9 @@ async function init() {
   try {
     await loadSpec();
     initConfigFromSpec(specGet);
+    // The Rust core does the compositing. There is no JavaScript
+    // fallback: a host that cannot load it says so, loudly, here.
+    await loadCore();
     initFromSpec();
     // Which host this is decides what to unlock. Asked once, and a
     // failed probe leaves everything locked rather than open.
@@ -907,7 +911,7 @@ async function init() {
   } catch (e) {
     document.body.insertAdjacentHTML('afterbegin',
       `<div class="banner banner-err" style="margin:var(--s-4)">`
-      + `Could not load the pipeline spec: ${e.message}. `
+      + `Could not load the pipeline spec or the core: ${e.message}. `
       + `The app cannot run without it.</div>`);
     throw e;
   }
@@ -985,9 +989,10 @@ async function init() {
     }
   };
   $('aboutBtn').onclick = () => {
-    $('aboutRuntime').textContent = runtime.isolated
+    $('aboutRuntime').textContent = (runtime.isolated
       ? `threads: ${runtime.threads} · SIMD: on · cross-origin isolated`
-      : 'single-threaded (no cross-origin isolation)';
+      : 'single-threaded (no cross-origin isolation)')
+      + ` · core: wasm v${coreVersion()}`;
     openSheet('aboutSheet');
   };
 

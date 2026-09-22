@@ -10,6 +10,7 @@
 import { CANVAS } from '../config.js';
 import { makeCanvas, ctxOf, coverFit } from '../lib/imageio.js';
 import { vehicleGradientColors, hsvToRgb } from './palette.js';
+import * as core from '../core.js';
 
 /* Deterministic PRNG, seeded from a string.
  *
@@ -222,7 +223,13 @@ export function computePlacement(car, box, marginFrac = 0.06, anchor = 'center')
   return { x, y, w, h };
 }
 
-/* Compose one hero image. `cutout` is a cropped RGBA canvas. */
+/* Compose one hero image. `cutout` is a cropped RGBA canvas.
+ *
+ * This is now the Rust core (core/, loaded by ../core.js): the same
+ * code the CLI and server run natively. This function only packs the
+ * canvases into bytes and unpacks the result. The gradient, spotlight
+ * and placement helpers above are kept for video.js, which has not
+ * moved into the core yet, and are deleted with it when it does. */
 export function composeHero(cutout, {
   width = CANVAS,
   height = CANVAS,
@@ -231,40 +238,29 @@ export function composeHero(cutout, {
   interior = null,
   background = null,          // a canvas/bitmap to use instead of a gradient
   spotlight = true,
-  marginFrac = 0.06,
+  marginFrac = null,
   generic = false,
+  glow = false,
+  glowColor = null,
+  glowRadius = null,
+  glowIntensity = null,
 } = {}) {
-  const canvas = makeCanvas(width, height);
-  const ctx = ctxOf(canvas, { willReadFrequently: true });
-
-  // The cutout's own pixels are what the palette measures when the
-  // vehicle's color name is missing or is pure branding.
-  const cutCtx = ctxOf(cutout, { willReadFrequently: true });
-  const cutData = cutCtx.getImageData(0, 0, cutout.width, cutout.height);
-
+  const cutData = ctxOf(cutout, { willReadFrequently: true }).getImageData(0, 0, cutout.width, cutout.height);
   let bg;
-  if (background) bg = coverFit(background, width, height);
-  else if (generic) bg = genericGradient(width, height, seed);
-  else bg = vehicleGradient(width, height, seed, exterior, interior, cutData);
-  ctx.drawImage(bg, 0, 0);
-
-  const place = computePlacement(cutout, [0, 0, width, height], marginFrac, 'center');
-
-  if (spotlight) {
-    const region = ctx.getImageData(place.x, place.y, place.w, place.h);
-    // Measure the car at its PLACED size so the two luminances are
-    // comparable; measuring the full-res cutout against a small
-    // background patch compares different things.
-    const scaled = makeCanvas(place.w, place.h);
-    ctxOf(scaled).drawImage(cutout, 0, 0, place.w, place.h);
-    const scaledData = ctxOf(scaled, { willReadFrequently: true })
-      .getImageData(0, 0, place.w, place.h);
-
-    const dim = computeDimStrength(region, scaledData);
-    applySpotlight(canvas, place.x + place.w / 2, place.y + place.h / 2, dim);
+  let backgroundImage = null;
+  if (background) {
+    const fitted = coverFit(background, width, height);
+    backgroundImage = ctxOf(fitted, { willReadFrequently: true }).getImageData(0, 0, width, height);
+    bg = { kind: 'image' };
+  } else if (generic) {
+    bg = { kind: 'generic', seed: String(seed) };
+  } else {
+    bg = { kind: 'vehicle', seed: String(seed), exterior: exterior || null, interior: interior || null };
   }
-
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(cutout, place.x, place.y, place.w, place.h);
+  const out = core.composeHero([cutData], width, height, bg, {
+    layout: 'single', spotlight, glow, glowColor, glowRadius, glowIntensity, marginFrac, backgroundImage,
+  });
+  const canvas = makeCanvas(width, height);
+  ctxOf(canvas).putImageData(out, 0, 0);
   return canvas;
 }

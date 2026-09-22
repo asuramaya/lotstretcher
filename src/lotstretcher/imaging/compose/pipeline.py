@@ -57,11 +57,14 @@ def _backdrop(background_path, out_dir: Path, image_key: str, gradient: bool,
     churning the whole bundle."""
     if not gradient:
         return background_path
-    from .background import vehicle_gradient_background
-    from .hero import DEFAULT_CANVAS_SIZE
-    return vehicle_gradient_background(canvas or DEFAULT_CANVAS_SIZE,
-                                        f"{out_dir.parent.name}/{image_key}",
-                                        exterior, interior, sample_path)
+    # A SPEC, not pixels: compose_hero() hands it to the Rust core, which
+    # builds the gradient from these colours at a seeded angle. The
+    # cutout's own paint is the fallback when the name has no colour
+    # word, and the core measures it from car 0, so no sample path is
+    # needed here. `canvas` is decided by the caller of compose_hero.
+    del canvas, sample_path
+    return {"kind": "vehicle", "seed": f"{out_dir.parent.name}/{image_key}",
+            "exterior": exterior, "interior": interior}
 
 
 def hero_still_name(fmt: str) -> str:

@@ -133,6 +133,7 @@ if (liveRun) {
       ]);
 
       await loadSpec();
+      await (await import('./core.js')).loadCore();
       initConfigFromSpec(specGet);
       await initRuntime();
       note.textContent = runtime.isolated

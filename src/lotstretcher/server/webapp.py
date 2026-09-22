@@ -79,7 +79,16 @@ def capabilities(state: dict) -> dict:
         "rescrape": bool(state.get("library")),
         "libraryRoot": str(state.get("library")) if state.get("library") else None,
         "servingWebApp": root is not None,
+        # The Rust core (core/): native here, wasm in the browser. Both
+        # surfaces report which build they composited with.
+        "core": _core_state(),
     }
+
+
+def _core_state() -> dict:
+    from .. import core
+    return {"available": core.available(), "path": str(core.path()) if core.path() else None,
+            "why": core.why_unavailable()}
 
 
 def _torch_cuda_available() -> bool:

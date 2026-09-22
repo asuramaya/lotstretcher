@@ -81,6 +81,27 @@ def compose_hero(background_path, border_path: Path | None, car_paths: list[Path
     if layout not in LAYOUTS:
         raise ValueError(f"Unknown layout {layout!r}, pick one of {list(LAYOUTS)}")
 
+    # The frameless composition runs in the Rust core (core/), the same
+    # code the browser runs: gradient, placement, spotlight, glow, all
+    # of it. background_path may then also be a background SPEC dict
+    # ({"kind": "vehicle", "seed", "exterior", "interior"} or
+    # {"kind": "generic", "seed"}), in which case the core builds the
+    # gradient itself and no Python gradient is ever drawn. The framed
+    # path (window detection, collision against the border art) is the
+    # part not yet in the core and still runs below.
+    if border_path is None:
+        from ... import core
+        cars = [Image.open(p).convert("RGBA") if not isinstance(p, Image.Image) else p.convert("RGBA")
+                for p in car_paths]
+        if isinstance(background_path, dict):
+            background, bg_image = background_path, None
+        else:
+            bg = background_path if isinstance(background_path, Image.Image) else Image.open(background_path)
+            background, bg_image = {"kind": "image"}, bg.convert("RGB")
+        return core.compose_hero(cars, canvas_size[0], canvas_size[1], background, background_image=bg_image,
+                                 layout=layout, spotlight=spotlight, glow=glow, glow_color=str(glow_color),
+                                 glow_radius=glow_radius, glow_intensity=glow_intensity, margin_frac=margin_frac)
+
     if border_path is not None:
         border, window, border_mask = _load_border(str(border_path))
         canvas_size = border.size
