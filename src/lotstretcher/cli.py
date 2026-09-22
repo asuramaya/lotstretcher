@@ -297,6 +297,19 @@ def main():
                               "the blocking changes.")
     parser.add_argument("--nvenc", action="store_true",
                          help="Encode the hero video on the GPU (h264_nvenc).")
+    parser.add_argument("--no-spotlight", action="store_true",
+                         help="Disable the adaptive spotlight dim behind the vehicle. See "
+                              "compose/background.py::compute_dim_strength -- the dim is measured "
+                              "from the actual contrast, so turning it off flattens light cars "
+                              "against light backdrops.")
+    parser.add_argument("--margin-frac", type=float, default=0.06, metavar="FRAC",
+                         help="Breathing room inside each layout box, as a fraction (default: 0.06).")
+    parser.add_argument("--video-duration", type=float, default=None, metavar="SECONDS",
+                         help="Target video length. Rounded to whole audio loops when music is on, "
+                              "since the carousel is beat-synced; exact when it is off.")
+    parser.add_argument("--video-fps", type=float, default=None, metavar="FPS",
+                         help="Video frame rate (default: 25 for the beat-synced CLI render, "
+                              "30 in the browser, which has no audio to sync to).")
     parser.add_argument("--no-glow", action="store_true", help="Disable the glow behind composed car cutouts")
     parser.add_argument("--glow-color", default="white", choices=["white", "blue", "gold", "red"])
     parser.add_argument("--glow-radius", type=int, default=24,

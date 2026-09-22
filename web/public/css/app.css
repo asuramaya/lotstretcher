@@ -382,3 +382,21 @@
   border: 1px solid var(--line); background: var(--sunken);
 }
 .clip figcaption { margin-top: var(--s-2); }
+
+/* ---------- spec-driven controls ---------- */
+.ctrl-group + .ctrl-group { margin-top: var(--s-6); }
+.ctrl-group-head {
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: var(--s-2);
+}
+.opt.is-locked .opt-text strong { color: var(--ink-3); }
+.opt.is-locked { opacity: .72; }
+
+.range-wrap { display: flex; align-items: center; gap: var(--s-3); flex: none; }
+.range-wrap input[type="range"] { width: 130px; accent-color: var(--accent); }
+.range-out {
+  min-width: 46px; text-align: right;
+  font-size: var(--t-sm); font-variant-numeric: tabular-nums; color: var(--ink-2);
+}

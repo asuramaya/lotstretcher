@@ -474,5 +474,328 @@
     "inventorySync": "Long-running batch work with no browser equivalent",
     "audio": "The CLI's beat-synced video needs an audio loop and ffmpeg muxing",
     "assets": "Borders and stock backgrounds need an asset library (Tier 1)"
+  },
+  "controls": {
+    "$comment": [
+      "EVERY composition control, defined ONCE.",
+      "",
+      "The browser renders its Options pane from this block, and",
+      "tests/test_control_parity.py asserts each control's `cli` flag",
+      "really exists in cli.py. Adding a control is therefore a single",
+      "spec edit plus the CLI flag it names: the UI picks it up with no",
+      "JavaScript change, and forgetting the CLI side fails the suite.",
+      "",
+      "Fields: key (the option name both sides use), type, default,",
+      "cli (the flag it maps to), cliInvert (the flag DISABLES it, as",
+      "--no-glow does), surfaces (where it applies), requires (a host",
+      "capability it needs), unit/min/max/step for ranges.",
+      "",
+      "A control may be browser-only (surfaces without 'cli'), but ONLY with a cliNote saying why. That keeps the exemption visible instead of letting 'no flag yet' quietly become permanent divergence."
+    ],
+    "groups": [
+      {
+        "id": "pipeline",
+        "label": "Pipeline",
+        "controls": [
+          {
+            "key": "photoSort",
+            "label": "Sort photos",
+            "hint": "Separate exteriors, interiors and detail shots",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-photo-sort",
+            "cliInvert": true
+          },
+          {
+            "key": "interiors",
+            "label": "Include interiors",
+            "hint": "Keep interior shots in the bundle",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-interiors",
+            "cliInvert": true
+          },
+          {
+            "key": "hero",
+            "label": "Cut out and compose",
+            "hint": "Off means classify only",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-hero",
+            "cliInvert": true
+          },
+          {
+            "key": "strictCutouts",
+            "label": "Strict cutouts",
+            "hint": "Skip a cutout whose edges came out uncertain",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-strict-cutouts",
+            "cliInvert": true
+          },
+          {
+            "key": "upscale",
+            "label": "Upscale cutouts",
+            "hint": "SwinIR or Real-ESRGAN on a GPU",
+            "type": "toggle",
+            "default": false,
+            "cli": "--upscale",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "upscale"
+          }
+        ]
+      },
+      {
+        "id": "backdrop",
+        "label": "Backdrop",
+        "controls": [
+          {
+            "key": "backdrop",
+            "label": "Source",
+            "hint": "Where the generated gradient takes its colours",
+            "type": "select",
+            "default": "vehicle",
+            "choices": [
+              {
+                "value": "vehicle",
+                "label": "From the vehicle",
+                "hint": "Measured from its own paint"
+              },
+              {
+                "value": "generic",
+                "label": "Generated",
+                "hint": "Seeded hue bands, no vehicle input"
+              },
+              {
+                "value": "asset",
+                "label": "Stock background",
+                "hint": "A named image from the asset library",
+                "requires": "filesystem"
+              }
+            ],
+            "cli": "--background"
+          },
+          {
+            "key": "spotlight",
+            "label": "Spotlight",
+            "hint": "Dim the backdrop around the vehicle",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-spotlight",
+            "cliInvert": true
+          },
+          {
+            "key": "photoBackground",
+            "label": "Photo backdrop",
+            "hint": "Use a stock photo rather than a gradient",
+            "type": "toggle",
+            "default": false,
+            "cli": "--photo-background",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "filesystem"
+          }
+        ]
+      },
+      {
+        "id": "frame",
+        "label": "Frame",
+        "controls": [
+          {
+            "key": "frame",
+            "label": "Branded frame",
+            "hint": "Border artwork around the composition",
+            "type": "toggle",
+            "default": false,
+            "cli": "--frame",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "filesystem"
+          },
+          {
+            "key": "border",
+            "label": "Border",
+            "hint": "Named border from the asset library",
+            "type": "select",
+            "default": null,
+            "choices": [],
+            "dynamic": "borders",
+            "cli": "--border",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "filesystem"
+          },
+          {
+            "key": "margin",
+            "label": "Margin",
+            "hint": "Breathing room inside the frame",
+            "type": "range",
+            "default": 0.06,
+            "min": 0.0,
+            "max": 0.2,
+            "step": 0.01,
+            "unit": "fraction",
+            "cli": "--margin-frac"
+          }
+        ]
+      },
+      {
+        "id": "glow",
+        "label": "Glow",
+        "controls": [
+          {
+            "key": "glow",
+            "label": "Glow",
+            "hint": "Halo behind the cutout",
+            "type": "toggle",
+            "default": false,
+            "cli": "--no-glow",
+            "cliInvert": true
+          },
+          {
+            "key": "glowColor",
+            "label": "Colour",
+            "hint": "",
+            "type": "select",
+            "default": "white",
+            "choices": [],
+            "dynamic": "glowColors",
+            "cli": "--glow-color",
+            "showWhen": "glow"
+          },
+          {
+            "key": "glowRadius",
+            "label": "Radius",
+            "hint": "",
+            "type": "range",
+            "default": 24,
+            "min": 4,
+            "max": 64,
+            "step": 2,
+            "unit": "px",
+            "cli": "--glow-radius",
+            "showWhen": "glow"
+          },
+          {
+            "key": "glowIntensity",
+            "label": "Intensity",
+            "hint": "",
+            "type": "range",
+            "default": 0.75,
+            "min": 0.1,
+            "max": 1.0,
+            "step": 0.05,
+            "cli": "--glow-intensity",
+            "showWhen": "glow"
+          }
+        ]
+      },
+      {
+        "id": "video",
+        "label": "Video",
+        "controls": [
+          {
+            "key": "videoDuration",
+            "label": "Length",
+            "hint": "How long the clip runs",
+            "type": "range",
+            "default": 8,
+            "min": 3,
+            "max": 20,
+            "step": 1,
+            "unit": "s",
+            "cli": "--video-duration"
+          },
+          {
+            "key": "videoFps",
+            "label": "Frame rate",
+            "hint": "",
+            "type": "select",
+            "default": 30,
+            "choices": [
+              {
+                "value": 24,
+                "label": "24"
+              },
+              {
+                "value": 25,
+                "label": "25"
+              },
+              {
+                "value": 30,
+                "label": "30"
+              }
+            ],
+            "cli": "--video-fps"
+          },
+          {
+            "key": "videoPush",
+            "label": "Push",
+            "hint": "How far each shot scales across its dwell",
+            "type": "range",
+            "default": 0.06,
+            "min": 0.0,
+            "max": 0.2,
+            "step": 0.01,
+            "cli": "--video-push",
+            "surfaces": [
+              "browser"
+            ],
+            "cliNote": "The CLI's video is beat-synced: shot motion is driven by the audio bar, not by a fixed push. There is no equivalent flag to map to."
+          },
+          {
+            "key": "videoCrossfade",
+            "label": "Crossfade",
+            "hint": "Seconds of blend between shots",
+            "type": "range",
+            "default": 0.5,
+            "min": 0.0,
+            "max": 2.0,
+            "step": 0.1,
+            "unit": "s",
+            "cli": "--video-crossfade",
+            "surfaces": [
+              "browser"
+            ],
+            "cliNote": "The CLI transitions on the bar via the conveyor morph (TRANSITION_FRAC), so a crossfade duration has no meaning there."
+          },
+          {
+            "key": "videoMusic",
+            "label": "Music",
+            "hint": "Beat-synced audio track",
+            "type": "toggle",
+            "default": false,
+            "cli": "--video-music",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "filesystem"
+          },
+          {
+            "key": "nvenc",
+            "label": "GPU encode",
+            "hint": "NVENC hardware encoder",
+            "type": "toggle",
+            "default": false,
+            "cli": "--nvenc",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "nvenc"
+          }
+        ]
+      }
+    ]
   }
 }

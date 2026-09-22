@@ -27,6 +27,7 @@ import {
 } from './options.js';
 import { loadSpec, get as specGet } from './spec.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
+import { renderControls, controlDefaults, controlsToFlags } from './controls.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -349,36 +350,22 @@ function renderOptions() {
       + 'six second clip takes a second or two on a laptop.'
     : 'No video. Stills only, which is faster on a phone.';
 
-  const pipeline = $('pipelineOpts');
-  pipeline.innerHTML = '';
-  pipeline.append(
-    toggleRow('Sort photos', 'Separate exteriors, interiors and detail shots',
-      o.photoSort, (v) => { o.photoSort = v; commitOptions(); }),
-    toggleRow('Include interiors', 'Keep interior shots in the bundle',
-      o.interiors, (v) => { o.interiors = v; commitOptions(); }),
-    toggleRow('Cut out and compose', 'Off means classify only, no images composed',
-      o.cutType === 'complete', (v) => { o.cutType = v ? 'complete' : 'none'; commitOptions(); }),
-    toggleRow('Strict cutouts', 'Skip a cutout whose edges came out uncertain',
-      o.strictCutouts, (v) => { o.strictCutouts = v; commitOptions(); }),
-  );
-
-  const look = $('lookOpts');
-  look.innerHTML = '';
-  look.append(
-    selectRow('Backdrop', 'Where the generated gradient gets its colours',
-      o.backdrop, ['vehicle', 'generic'], (v) => { o.backdrop = v; commitOptions(); }),
-    toggleRow('Spotlight', 'Dim the backdrop around the vehicle',
-      o.spotlight, (v) => { o.spotlight = v; commitOptions(); }),
-    toggleRow('Glow', 'Halo behind the cutout',
-      o.glow, (v) => { o.glow = v; commitOptions(); renderOptions(); }),
-  );
-  if (o.glow) {
-    look.append(selectRow('Glow colour', '', o.glowColor, OPTS.GLOW_COLORS,
-      (v) => { o.glowColor = v; commitOptions(); }));
-  }
+  // One host, filled from the spec. The old hand-built Pipeline and
+  // Look sections are gone: a new control now needs no code here.
+  renderControls($('controlsHost'), o, (key, value) => {
+    o[key] = value;
+    commitOptions();
+  });
 
   renderHost();
-  $('cliEcho').textContent = toCliFlags(o);
+  // Built from the same control definitions the pane renders, so the
+  // echo cannot describe a flag the UI does not actually have.
+  const formatFlags = o.heroFormats.map((f) => `--hero-format ${f}`)
+    .concat(o.videoFormats.length
+      ? o.videoFormats.map((f) => `--video-format ${f}`)
+      : ['--no-video']);
+  $('cliEcho').textContent =
+    `lotstretcher ./photos ${[...formatFlags, ...controlsToFlags(o)].join(' ')}`;
 }
 
 /* The host panel.
@@ -795,7 +782,10 @@ async function init() {
     throw e;
   }
 
-  state.options = loadOptions();
+  // Spec defaults first, then anything this device saved. A control
+  // added since the last visit therefore arrives at its spec default
+  // rather than undefined.
+  state.options = { ...controlDefaults(), ...loadOptions() };
   loadDealer();
   $('f-dealer').value = state.dealer.name || '';
   $('f-phone').value = state.dealer.phone || '';
