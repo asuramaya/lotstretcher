@@ -127,6 +127,13 @@ export const libraryOps = {
   rescrape(v, options) {
     return postJson(`library/${encodeURIComponent(v.bucket)}/${encodeURIComponent(v.folder)}/rescrape`, { options });
   },
+  delist(v) {
+    return postJson(`library/${encodeURIComponent(v.bucket)}/${encodeURIComponent(v.folder)}/delist`);
+  },
+  /* For good. The server demands the folder name back as confirmation. */
+  remove(v) {
+    return postJson(`library/${encodeURIComponent(v.bucket)}/${encodeURIComponent(v.folder)}/delete`, { confirm: v.folder });
+  },
   sync() { return postJson('library/sync'); },
   async job(id) {
     const res = await fetch(`jobs/${encodeURIComponent(id)}`, { cache: 'no-store' });

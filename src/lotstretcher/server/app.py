@@ -315,6 +315,48 @@ def library_sync():
     return jobs.start(_state["executor"], "sync", url, run)
 
 
+def _vehicle_folder(bucket: str, folder: str) -> Path:
+    from . import library
+    root = _state.get("library")
+    if not root:
+        raise HTTPException(404, "no library configured on this host")
+    try:
+        library.resolve_file(Path(root), bucket, folder, "details.json")
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except FileNotFoundError:
+        raise HTTPException(404, "no such vehicle")
+    return Path(root) / bucket / folder
+
+
+@app.post("/library/{bucket}/{folder}/delist")
+def library_delist(bucket: str, folder: str):
+    """Stamp the vehicle delisted, as the sync does when the site drops
+    it. Nothing is deleted."""
+    from ..library_ops import mark_delisted
+    target = _vehicle_folder(bucket, folder)
+    return {"folder": f"{bucket}/{folder}", "marked": mark_delisted(target)}
+
+
+class DeleteRequest(BaseModel):
+    confirm: str
+
+
+@app.post("/library/{bucket}/{folder}/delete")
+def library_delete(bucket: str, folder: str, body: DeleteRequest):
+    """Remove the vehicle folder for good. The body must repeat the folder
+    name: a delete that a stray click can trigger is not a delete anyone
+    asked for."""
+    from ..library_ops import delete_vehicle
+    _vehicle_folder(bucket, folder)
+    if body.confirm != folder:
+        raise HTTPException(422, "confirm must repeat the folder name exactly")
+    try:
+        return delete_vehicle(Path(_state["library"]), bucket, folder)
+    except FileNotFoundError:
+        raise HTTPException(404, "no such vehicle")
+
+
 class RescrapeRequest(BaseModel):
     options: dict = {}
 
@@ -506,6 +548,17 @@ def main() -> None:
     if library and library.is_dir():
         _state["library"] = library
         print(f"  library: {library}")
+        # The library carries its own dealer settings when a config file
+        # sits at its root: sync's inventory URL, the post boilerplate,
+        # city tags. Same file the CLI takes with --dealer-config.
+        cfg_path = library / "lotstretcher-config.json"
+        if cfg_path.is_file():
+            from ..dealer_config import reload as reload_dealer
+            reload_dealer(cfg_path)
+            print(f"  dealer config: {cfg_path}")
+        # Warm the classifiers now, off the request path, so the first
+        # re-scrape does not sit silent for a minute loading CLIP.
+        _state["executor"].submit(_models)
     elif library:
         print(f"  library: {library} does not exist yet; the Library pane will offer a folder picker only")
 

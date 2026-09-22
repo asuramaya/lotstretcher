@@ -85,6 +85,12 @@ server when, and only when, you switch on a control that needs one:
 | `POST /library/{bucket}/{folder}/recompose` | rebuild one vehicle's bundle in place with the app's current options; the same path as the `recompose` CLI (`library_ops.py`), returned as a job to poll at `GET /jobs/{id}` |
 | `POST /library/{bucket}/{folder}/rescrape` | fetch the vehicle's page again and run the whole pipeline into the library, as `lotstretcher <url> --force` would; one at a time |
 | `POST /library/sync` | one inventory sync cycle into the library, as `inventory-sync` would, when a dealer inventory URL is configured |
+| `POST /library/{bucket}/{folder}/delist` | stamp the vehicle `delisted_at`, the same mark `inventory-sync` makes; nothing is deleted |
+| `POST /library/{bucket}/{folder}/delete` | remove the folder and its manifest entry for good; the body must repeat the folder name |
+
+A `lotstretcher-config.json` at the library root is read at startup as the dealer config, so the library
+carries its own inventory URL, greeting, address and city tags. Classifiers are warmed in the background
+at startup so the first re-scrape does not wait on a model load.
 
 The CLI's flags and the app's controls meet in one place: `library_ops.hero_options_from_controls()` builds
 the pipeline's options from the app's control values, and `cli.py` converts its own flags to those same

@@ -65,11 +65,15 @@ def _vehicle_entry(root: Path, bucket: str, folder: Path) -> dict | None:
     # in full to draw 237 cards.
     card_keys = ("vin", "stock_number", "year", "make", "model", "trim", "title",
                  "condition", "mileage", "display_price", "exterior_color_factory")
+    record = details.get("vehicle", details) if isinstance(details, dict) else {}
     return {
         "bucket": bucket,
         "folder": folder.name,
         "modified": int(folder.stat().st_mtime),
         "card": {k: details.get(k) for k in card_keys},
+        # inventory_sync's mark, or the pane's: the vehicle is still on
+        # disk but no longer on the lot.
+        "delisted": record.get("delisted_at") or None,
         "files": files,
         "images": images,
     }

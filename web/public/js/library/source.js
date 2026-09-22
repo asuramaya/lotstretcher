@@ -160,7 +160,8 @@ export class DirectorySource {
         const card = Object.fromEntries(CARD_KEYS.map((k) => [k, details[k] ?? null]));
         const entry = map.get(layout.details);
         const modified = entry instanceof File ? Math.floor(entry.lastModified / 1000) : 0;
-        vehicles.push({ bucket, folder, modified, card, files, images });
+        const record = details.vehicle || details;
+        vehicles.push({ bucket, folder, modified, card, files, images, delisted: record.delisted_at || null });
       }
     }
     vehicles.sort((a, b) => b.modified - a.modified);

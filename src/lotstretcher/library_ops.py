@@ -224,6 +224,49 @@ def rescrape(url: str, out_root: Path, options: dict, models: Models) -> dict:
     return {k: v for k, v in row.items() if not k.startswith("_")}
 
 
+def mark_delisted(folder: Path, now: str | None = None) -> bool:
+    """Stamp delisted_at into the folder's details.json, the way
+    inventory_sync marks a vehicle the site no longer lists. Returns
+    False when it was already stamped or the record is unreadable.
+    Nothing is deleted: a delisted vehicle stays in the library and the
+    pane can filter it."""
+    from datetime import datetime, timezone
+    details_path = Path(folder) / "details.json"
+    try:
+        data = json.loads(details_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    v = data.get("vehicle", data)
+    if v.get("delisted_at"):
+        return False
+    v["delisted_at"] = now or datetime.now(timezone.utc).isoformat()
+    details_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    return True
+
+
+def delete_vehicle(root: Path, bucket: str, folder_name: str) -> dict:
+    """Remove a vehicle folder for good, and its manifest entry, so a
+    later sync fetches it afresh rather than believing it is still on
+    disk. The caller has already confirmed; this does not ask."""
+    import shutil
+
+    from lotstretcher.manifest import load_manifest, save_manifest
+
+    root = Path(root)
+    folder = (root / bucket / folder_name).resolve()
+    if folder.parent != (root / bucket).resolve() or not folder.is_dir():
+        raise FileNotFoundError(folder_name)
+    key = f"{bucket}/{folder_name}"
+    manifest = load_manifest(root)
+    dropped = [k for k, e in manifest.items() if isinstance(e, dict) and e.get("folder") == key]
+    for k in dropped:
+        del manifest[k]
+    if dropped:
+        save_manifest(root, manifest)
+    shutil.rmtree(folder)
+    return {"folder": key, "manifest_entries_removed": len(dropped)}
+
+
 def recompose_folder(folder: Path, resolved: dict, interior_classifier=None) -> dict:
     """Rebuild one vehicle's bundle from its existing cutouts.
 

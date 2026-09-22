@@ -168,3 +168,41 @@ def test_rescrape_route_needs_a_url_and_runs_one_at_a_time(served, monkeypatch):
 def server_module():
     from lotstretcher.server import app as server_app
     return server_app
+
+
+def test_mark_delisted_stamps_once(tmp_path):
+    d = tmp_path / "used" / "x"
+    d.mkdir(parents=True)
+    (d / "details.json").write_text(json.dumps({"vin": "1"}))
+    assert library_ops.mark_delisted(d, "2026-09-22T00:00:00+00:00") is True
+    assert json.loads((d / "details.json").read_text())["delisted_at"] == "2026-09-22T00:00:00+00:00"
+    assert library_ops.mark_delisted(d) is False, "a second mark must not overwrite the first stamp"
+    assert json.loads((d / "details.json").read_text())["delisted_at"] == "2026-09-22T00:00:00+00:00"
+
+
+def test_delete_vehicle_removes_folder_and_manifest_entry(tmp_path):
+    from lotstretcher.manifest import load_manifest, save_manifest
+    d = tmp_path / "used" / "2018-Ford-F-150-JFA30327"
+    (d / "bundle").mkdir(parents=True)
+    (d / "details.json").write_text("{}")
+    save_manifest(tmp_path, {"vin:1FTEW1E58JFA30327": {"folder": "used/2018-Ford-F-150-JFA30327"},
+                             "vin:OTHER": {"folder": "used/other"}})
+    out = library_ops.delete_vehicle(tmp_path, "used", "2018-Ford-F-150-JFA30327")
+    assert not d.exists()
+    assert out["manifest_entries_removed"] == 1
+    assert list(load_manifest(tmp_path)) == ["vin:OTHER"]
+    with pytest.raises(FileNotFoundError):
+        library_ops.delete_vehicle(tmp_path, "used", "../used")
+
+
+def test_delete_route_demands_the_folder_name(served):
+    client, root = served
+    name = "2026-Ford-Maverick-XLT-RB41981"
+    assert client.post(f"/library/new/{name}/delete", json={"confirm": "yes"}).status_code == 422
+    assert (root / "new" / name).exists()
+    r = client.post(f"/library/new/{name}/delist")
+    assert r.status_code == 200 and r.json()["marked"] is True
+    r = client.post(f"/library/new/{name}/delete", json={"confirm": name})
+    assert r.status_code == 200, r.text
+    assert not (root / "new" / name).exists()
+    assert client.post(f"/library/new/{name}/delete", json={"confirm": name}).status_code == 404

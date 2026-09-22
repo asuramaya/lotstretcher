@@ -414,19 +414,23 @@ def run_sync(config: dict, dry_run: bool = False, headed: bool = False,
         summary["duration_seconds"] = round(time.time() - start, 1)
         return summary
 
+    from lotstretcher.library_ops import mark_delisted
+
     newly_flagged = 0
     for entry in delisted:
-        details_path = out_root / entry["folder"] / "details.json"
-        try:
-            data = json.loads(details_path.read_text())
-        except (OSError, ValueError):
+        folder = out_root / entry["folder"]
+        if dry_run:
+            try:
+                data = json.loads((folder / "details.json").read_text())
+            except (OSError, ValueError):
+                continue
+            if data.get("vehicle", data).get("delisted_at"):
+                continue
+        elif not mark_delisted(folder, now):
+            # Already stamped in an earlier cycle, or unreadable: same
+            # skip the inline version made. The Library pane's own
+            # "mark delisted" runs this identical function.
             continue
-        v = data.get("vehicle", data)
-        if v.get("delisted_at"):
-            continue
-        if not dry_run:
-            v["delisted_at"] = now
-            details_path.write_text(json.dumps(data, indent=2) + "\n")
         newly_flagged += 1
         print(f"  [delisted] {entry['folder']}" +
               (" (dry-run)" if dry_run else ""))

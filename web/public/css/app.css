@@ -423,3 +423,5 @@
   padding: var(--s-3) var(--s-4); margin-bottom: var(--s-4);
   border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface);
 }
+.lib-danger { color: var(--err); }
+.lib-danger:hover:not(:disabled) { border-color: var(--err); }

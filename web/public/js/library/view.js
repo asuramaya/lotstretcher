@@ -144,7 +144,11 @@ export class LibraryView {
     if (!this.index) return [];
     const q = this.query.trim().toLowerCase();
     return this.index.vehicles.filter((v) => {
-      if (this.bucket !== 'all' && v.bucket !== this.bucket) return false;
+      // "delisted" is a filter of its own; the bucket chips show what
+      // is still on the lot, since that is what someone posts from.
+      if (this.bucket === 'delisted') { if (!v.delisted) return false; }
+      else if (v.delisted) return false;
+      else if (this.bucket !== 'all' && v.bucket !== this.bucket) return false;
       if (!q) return true;
       const hay = [titleOf(v.card, v.folder), v.card.vin, v.card.stock_number, v.card.exterior_color_factory, v.folder]
         .filter(Boolean).join(' ').toLowerCase();
@@ -198,9 +202,14 @@ export class LibraryView {
     const bar = el('div', 'row wrap', null);
     bar.style.gap = 'var(--s-2)';
     bar.style.marginBottom = 'var(--s-4)';
-    const counts = { all: this.index.vehicles.length };
-    for (const v of this.index.vehicles) counts[v.bucket] = (counts[v.bucket] || 0) + 1;
-    for (const b of ['all', ...this.index.buckets]) {
+    const counts = { all: 0, delisted: 0 };
+    for (const v of this.index.vehicles) {
+      if (v.delisted) { counts.delisted++; continue; }
+      counts.all++;
+      counts[v.bucket] = (counts[v.bucket] || 0) + 1;
+    }
+    const chips = ['all', ...this.index.buckets, ...(counts.delisted ? ['delisted'] : [])];
+    for (const b of chips) {
       const chip = el('button', 'chip');
       chip.type = 'button';
       chip.setAttribute('aria-pressed', this.bucket === b ? 'true' : 'false');
@@ -245,7 +254,7 @@ export class LibraryView {
       } else {
         tile.appendChild(el('div', 'lib-nohero', 'no hero'));
       }
-      tile.appendChild(el('span', 'tile-tag', v.bucket));
+      tile.appendChild(el('span', 'tile-tag', v.delisted ? 'delisted' : v.bucket));
       card.appendChild(tile);
       const body = el('div', 'lib-card-body');
       body.appendChild(el('strong', 'lib-title', titleOf(v.card, v.folder)));
@@ -351,6 +360,45 @@ export class LibraryView {
         };
         actions.append(rs, rsNote);
       }
+
+      /* Removal, in two strengths. Delisting is a stamp the sync also
+       * makes and costs nothing. Deleting is for good, so the button
+       * asks for a second click and says whose folder it is about to
+       * remove; the server additionally demands the folder name back. */
+      const manage = el('div', 'row wrap', null);
+      manage.style.gap = 'var(--s-3)';
+      manage.style.margin = 'var(--s-4) 0';
+      if (!v.delisted) {
+        const dl = el('button', 'btn btn-sm btn-ghost', 'Mark delisted');
+        dl.onclick = async () => {
+          dl.disabled = true;
+          try { await this.ops.delist(v); await this.reload(); } catch (e) { dl.textContent = String(e.message || e); }
+        };
+        manage.appendChild(dl);
+      } else {
+        manage.appendChild(el('span', 'small muted', `Delisted ${new Date(v.delisted).toLocaleString()}`));
+      }
+      const del = el('button', 'btn btn-sm btn-ghost lib-danger', 'Delete for good');
+      let armed = false;
+      del.onclick = async () => {
+        if (!armed) {
+          armed = true;
+          del.textContent = `Click again to delete ${v.folder} and its bundle permanently`;
+          setTimeout(() => { if (armed) { armed = false; del.textContent = 'Delete for good'; } }, 6000);
+          return;
+        }
+        del.disabled = true;
+        try {
+          await this.ops.remove(v);
+          this.open = null;
+          await this.reload();
+          this.refreshStatus();
+        } catch (e) {
+          del.textContent = String(e.message || e);
+        }
+      };
+      manage.appendChild(del);
+      h.appendChild(manage);
     }
     h.appendChild(actions);
 
