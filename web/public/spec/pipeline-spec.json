@@ -802,6 +802,51 @@
               "server"
             ],
             "requires": "nvenc"
+          },
+          {
+            "key": "videoFlagBackground",
+            "label": "Flag backdrop",
+            "hint": "Loop the waving-flag video behind the carousel instead of the gradient",
+            "type": "toggle",
+            "default": false,
+            "cli": "--video-flag-background",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "filesystem"
+          },
+          {
+            "key": "videoBpm",
+            "label": "Tempo",
+            "hint": "Beats per minute the cuts and pulse follow when there is no music",
+            "type": "range",
+            "default": 100.0,
+            "min": 60,
+            "max": 160,
+            "step": 1,
+            "unit": "bpm",
+            "cli": "--video-bpm",
+            "surfaces": [
+              "cli",
+              "server"
+            ]
+          },
+          {
+            "key": "videoBudgetMb",
+            "label": "File size budget",
+            "hint": "Bitrate is chosen to fill this many MB; 0 keeps each format's own budget",
+            "type": "range",
+            "default": 0,
+            "min": 0,
+            "max": 100,
+            "step": 5,
+            "unit": "MB",
+            "cli": "--video-budget-mb",
+            "surfaces": [
+              "cli",
+              "server"
+            ]
           }
         ]
       }

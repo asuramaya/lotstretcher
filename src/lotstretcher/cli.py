@@ -239,6 +239,8 @@ def controls_from_args(args) -> dict:
         "nvenc": args.nvenc,
         "videoDuration": args.video_duration,
         "videoFps": args.video_fps,
+        "videoBpm": args.video_bpm,
+        "videoBudgetMb": args.video_budget_mb,
         "interiors": not args.no_interiors and not args.no_photo_sort,
         "interiorCaptions": args.interior_captions,
         "visionSeatCheck": args.vision_seat_check and not args.no_photo_sort and not args.no_interiors,
@@ -341,6 +343,12 @@ def main():
     parser.add_argument("--video-fps", type=float, default=None, metavar="FPS",
                          help="Video frame rate (default: 25 for the beat-synced CLI render, "
                               "30 in the browser, which has no audio to sync to).")
+    parser.add_argument("--video-bpm", type=float, default=None, metavar="BPM",
+                         help="Tempo the cuts and pulse follow when there is no music (default: the "
+                              "spec's defaultBpm). With --video-music the track's own bars set the clock.")
+    parser.add_argument("--video-budget-mb", type=float, default=None, metavar="MB",
+                         help="Bitrate is chosen to fill this file size. Default: each format's own budget "
+                              "from the spec.")
     parser.add_argument("--no-glow", action="store_true", help="Disable the glow behind composed car cutouts")
     parser.add_argument("--glow-color", default="white", choices=["white", "blue", "gold", "red"])
     parser.add_argument("--glow-radius", type=int, default=24,

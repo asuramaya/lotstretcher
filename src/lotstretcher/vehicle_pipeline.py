@@ -99,7 +99,8 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         gradient_colors=gradient_colors,
         out_path=video_output_path(folder, fmt),
         canvas_size=spec["canvas"],
-        budget_mb=spec["budget_mb"],
+        budget_mb=hero_opts.video_budget_mb or spec["budget_mb"],
+        **({"bpm": hero_opts.video_bpm} if hero_opts.video_bpm else {}),
         glow=hero_opts.glow,
         glow_color=hero_opts.glow_color,
         glow_radius=hero_opts.glow_radius,
@@ -133,6 +134,10 @@ class HeroOptions:
     # defaults (25 fps, one full pass of the shot library).
     video_fps: float | None = None
     video_duration_s: float | None = None
+    # --video-bpm / --video-budget-mb; None means the spec's defaultBpm
+    # and each format's own size budget.
+    video_bpm: float | None = None
+    video_budget_mb: float | None = None
     video_background: Path | None = None
     video_audio: Path | None = None
     video_bars_per_loop: int = 4

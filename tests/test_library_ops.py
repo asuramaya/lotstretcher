@@ -213,3 +213,10 @@ def test_runs_route_returns_history_newest_first(served):
     r = client.get("/library/runs?limit=1")
     assert r.status_code == 200 and [x["run_at"] for x in r.json()["runs"]] == ["b"]
     assert [x["run_at"] for x in client.get("/library/runs").json()["runs"]] == ["b", "a"]
+
+
+def test_video_configuration_surface_reaches_the_renderer():
+    got = library_ops.hero_options_from_controls({"videoBpm": 120, "videoBudgetMb": 30})
+    assert got.video_bpm == 120.0 and got.video_budget_mb == 30.0
+    assert library_ops.hero_options_from_controls({"videoBudgetMb": 0}).video_budget_mb is None, \
+        "0 means each format's own budget"

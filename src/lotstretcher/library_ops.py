@@ -140,6 +140,8 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
         vision_seat_check=bool(options.get("visionSeatCheck", False)),
         video_fps=float(options["videoFps"]) if options.get("videoFps") else None,
         video_duration_s=float(options["videoDuration"]) if options.get("videoDuration") else None,
+        video_bpm=float(options["videoBpm"]) if options.get("videoBpm") else None,
+        video_budget_mb=float(options["videoBudgetMb"]) if options.get("videoBudgetMb") else None,
     )
     if opts.enabled:
         if wants_photo:
