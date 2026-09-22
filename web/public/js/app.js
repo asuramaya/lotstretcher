@@ -859,7 +859,7 @@ function applyListing(raw) {
     b.onclick = () => { b.disabled = true; importSticker(v.window_sticker_url, 'the sticker'); };
     banner.append(' ', b);
   }
-  go('photos');
+  go('source');
 }
 
 /* ---------- wiring --------------------------------------------------- */
