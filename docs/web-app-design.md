@@ -4,7 +4,7 @@
 
 This document specifies the free, static, entirely client-side surface of lotstretcher.
 It is the companion to the self-hosted CLI/server surface described in `README.md`
-("Two Surfaces, One Product") and `CONTRIBUTING.md` ("Two Surfaces, One Pipeline").
+("One App, Two Hosts") and `CONTRIBUTING.md` ("One App, Two Hosts" / "One Specification").
 
 Every performance number below was **measured**, not estimated. Provenance and the one
 large untested gap are recorded in "Measurement provenance" at the end.

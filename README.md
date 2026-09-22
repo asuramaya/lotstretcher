@@ -40,33 +40,56 @@ in exchange you own the pipeline outright.
 
 ---
 
-## Two Surfaces, One Product
+## One App, Two Hosts
 
-lotstretcher is **one pipeline reachable two ways**. Which one you want depends on how many vehicles you
-have and where you want the work to happen — not on paying for a better version. There is no paid tier,
-no feature gate, and no crippled free build: it is all MIT, in this one repository.
+lotstretcher is **one pipeline, one app, and one set of options**, reachable two ways. Which one you want
+depends on how many vehicles you have and where the work should happen, not on paying for a better
+version. There is no paid tier, no feature gate and no crippled free build: it is all MIT, in this one
+repository.
 
-| | **The website** *(planned)* | **Self-hosted** *(this repo, today)* |
+The browser client in [`web/`](web/) is the *same files* in both places. `lotstretcher.org` serves it
+from a CDN; `lotstretcher-serve` mounts the identical directory. There is no second build and no "server
+edition" of the UI, so a fix lands in both at once and a control added to one appears in the other
+because it *is* the other.
+
+| | **The website** | **Self-hosted** |
 |---|---|---|
 | **For** | one car, right now, from a phone | a whole lot, on a schedule |
-| **Input** | upload a folder of photos, or paste image URLs | that, plus **scraping** a dealer site and full inventory sync |
-| **Where it runs** | entirely in your browser — photos never upload anywhere | your machine or your server |
+| **Input** | photos, camera, pasted image URLs, window sticker PDF | that, plus **scraping** and full inventory sync |
+| **Where it runs** | entirely in your browser; photos never upload | your machine or your server |
 | **Costs** | nothing to you, nothing to host | your own compute |
 | **Install** | none | Python 3.11+, a GPU helps |
 
+What differs between them is **capabilities, not code**. The app asks its host `/capabilities` and
+unlocks what that host can actually do, so gated features live in the same source as everything else and
+are simply switched off when a browser is on its own. It asks *"can I scrape?"*, never *"am I the paid
+version?"*.
+
+```bash
+lotstretcher-serve                 # API + the browser client at http://127.0.0.1:8000/
+lotstretcher-serve --no-app        # API only
+```
+
 **Why the website can't scrape, and why that's fine.** A browser can't read another site's HTML
 (cross-origin rules), and dealer sites sit behind Cloudflare challenges that a serverless function can't
-pass either — measured, not assumed. But that only blocks *discovering* photo URLs, never *using* them:
-dealer image CDNs serve cross-origin fine, so anything you hand the browser it can process. Upload a
-folder, paste URLs, or point it at the photo list from your DMS export. Scraping lives on the self-hosted
-surface because that's the surface that can actually do it.
+pass either: measured, not assumed. But that only blocks *discovering* photo URLs, never *using* them.
+Dealer image CDNs serve cross-origin fine, so anything you hand the browser it can process. Scraping
+lives on the self-hosted surface because that's the surface that can actually do it.
 
-Keeping the hosted side free is a deliberate constraint, not a limitation we backed into — it's what lets
-the website stay open to anyone with a phone and some photos, permanently.
+### One specification, enforced
 
-The website is designed but not built. [`docs/web-app-design.md`](docs/web-app-design.md) is the spec:
-measured model sizes and timings, the $0 hosting shape, how backgrounds work without an API key or any
-bundled assets, and the one thing still untested (real iOS hardware).
+Two implementations (Python and JavaScript) are unavoidable. Two *specifications* are not.
+[`shared/pipeline-spec.json`](shared/pipeline-spec.json) holds every constant both sides need: output
+formats and sizes, video timing, the palette bands and colour words, glow colours, the cutout quality
+gates. Both read it, through `src/lotstretcher/spec.py` and `web/public/js/spec.js`.
+
+[`tests/test_spec_parity.py`](tests/test_spec_parity.py) enforces it, including the cases the
+indirection alone can't cover: it compares the remaining Python literals against the spec, greps the
+JavaScript for any module that goes back to hardcoding, and fails outright if a format size reappears as
+a literal in `options.js`.
+
+Full-fidelity sharing of the *algorithms* would need a Rust core compiled to both wasm32 and native.
+That is a real option and not yet built; see [`docs/web-app-design.md`](docs/web-app-design.md).
 
 ### Self-hosted runs in two modes
 
@@ -268,7 +291,7 @@ and URLs freely in the same command; each is auto-detected by whether the argume
 directory.
 
 This is also exactly what the browser client does — same input, same pipeline, different surface (see
-[Two Surfaces, One Product](#two-surfaces-one-product)).
+[One App, Two Hosts](#one-app-two-hosts)).
 
 ```bash
 # my-trade-in/01.jpg, 02.jpg, ... + an optional vehicle.json

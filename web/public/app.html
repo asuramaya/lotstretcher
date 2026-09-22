@@ -184,10 +184,19 @@
         </div>
 
         <div class="section">
-          <div class="section-head"><h2>Same run, on your server</h2></div>
+          <div class="section-head">
+            <h2>Host</h2>
+            <span class="pill" id="hostBadge">checking</span>
+          </div>
+          <p class="small muted" style="margin-bottom:var(--s-4)" id="hostNote"></p>
+          <div class="opts" id="hostCaps"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2>The same run, on the command line</h2></div>
           <p class="small muted" style="margin-bottom:var(--s-3)">
-            These options map to the self-hosted CLI. Same pipeline, same
-            flags, no limits on batch size.
+            One pipeline, one set of options. These map straight onto the
+            CLI flags.
           </p>
           <div class="copybox mono" id="cliEcho"></div>
         </div>

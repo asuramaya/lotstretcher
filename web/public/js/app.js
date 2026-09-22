@@ -26,6 +26,7 @@ import {
   loadOptions, saveOptions, resetOptions, toCliFlags, initFromSpec,
 } from './options.js';
 import { loadSpec, get as specGet } from './spec.js';
+import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -376,7 +377,46 @@ function renderOptions() {
       (v) => { o.glowColor = v; commitOptions(); }));
   }
 
+  renderHost();
   $('cliEcho').textContent = toCliFlags(o);
+}
+
+/* The host panel.
+ *
+ * Gated features are LISTED whether or not they are available, with the
+ * reason when they are not. A capability that simply vanishes on the
+ * public site teaches people the app is inconsistent; one that says
+ * "needs your own machine" teaches them what the self-hosted surface is
+ * for. */
+const GATED = [
+  ['scrape', 'Scrape a listing page', 'Pull photos and specs straight from a VDP'],
+  ['inventorySync', 'Inventory sync', 'Work a whole lot on a schedule'],
+  ['batch', 'Batch processing', 'More vehicles than a tab can hold'],
+  ['upscale', 'Upscaling', 'SwinIR or Real-ESRGAN on a GPU'],
+];
+
+function renderHost() {
+  const badge = $('hostBadge');
+  const selfHosted = isSelfHosted();
+  badge.textContent = selfHosted ? 'self-hosted' : 'lotstretcher.org';
+  badge.className = selfHosted ? 'pill pill-ok' : 'pill';
+
+  $('hostNote').textContent = selfHosted
+    ? 'Running against your own lotstretcher server. Same app as the '
+      + 'website, with the things a browser alone cannot do switched on.'
+    : 'Running entirely in this browser. The features below need a '
+      + 'lotstretcher server on your own machine.';
+
+  const list = $('hostCaps');
+  list.innerHTML = '';
+  for (const [key, label, hint] of GATED) {
+    const row = el('div', 'opt');
+    const text = el('div', 'opt-text');
+    text.append(el('strong', null, label),
+      el('span', null, can(key) ? hint : whyUnavailable(key, specGet)));
+    row.append(text, el('span', can(key) ? 'pill pill-ok' : 'pill', can(key) ? 'on' : 'off'));
+    list.appendChild(row);
+  }
 }
 
 function commitOptions() {
@@ -744,6 +784,9 @@ async function init() {
     await loadSpec();
     initConfigFromSpec(specGet);
     initFromSpec();
+    // Which host this is decides what to unlock. Asked once, and a
+    // failed probe leaves everything locked rather than open.
+    await loadCapabilities();
   } catch (e) {
     document.body.insertAdjacentHTML('afterbegin',
       `<div class="banner banner-err" style="margin:var(--s-4)">`

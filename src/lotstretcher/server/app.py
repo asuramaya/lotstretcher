@@ -229,6 +229,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--no-app", action="store_true",
+                         help="Serve only the API, without the browser client. The app is "
+                              "the same web/public that lotstretcher.org serves; there is no "
+                              "separate server build of it.")
     parser.add_argument("--data-dir", default="~/.lotstretcher-server", help="Where the SQLite registry lives")
     parser.add_argument("--out-dir", default=None, help="Where processed images are saved "
                                                           "(default: <data-dir>/images)")
@@ -240,6 +244,17 @@ def main() -> None:
     data_dir = Path(args.data_dir).expanduser()
     out_dir = Path(args.out_dir).expanduser() if args.out_dir else data_dir / "images"
     configure(data_dir, out_dir, max_workers=args.workers)
+
+    # Mounted LAST so the catch-all static route cannot shadow an API
+    # path: FastAPI matches routes in registration order.
+    if not args.no_app:
+        from .webapp import install, web_root
+        if install(app, _state):
+            print(f"  browser client: http://{args.host}:{args.port}/  (from {web_root()})")
+        else:
+            print("  browser client: not found; serving the API only. "
+                  "Set LOTSTRETCHER_WEB_ROOT to point at web/public.")
+
     uvicorn.run(app, host=args.host, port=args.port)
 
 
