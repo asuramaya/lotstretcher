@@ -78,6 +78,7 @@ server when, and only when, you switch on a control that needs one:
 | `GET /capabilities` | what this host can do, so the app unlocks accordingly |
 | `GET /assets` | the background and border library, filling those selects |
 | `POST /compose` | composes one cutout with the server's assets and GPU |
+| `POST /scrape` | reads one vehicle page with the server's headless browser and returns the record `lotstretcher <url>` would build; the *From a listing* sheet offers a URL field against a host that reports `scrape` |
 
 `POST /compose` receives the **cutout, never the source photograph**. Matting already happened on
 your device, so the original image stays there; only the cut-out vehicle travels, and only when you

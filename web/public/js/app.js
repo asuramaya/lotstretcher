@@ -29,7 +29,7 @@ import { loadSpec, get as specGet } from './spec.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlDefaults, controlsToFlags } from './controls.js';
-import { loadAssets, needsServer, composeOnServer } from './lib/delegate.js';
+import { loadAssets, needsServer, composeOnServer, scrapeOnServer } from './lib/delegate.js';
 import { normalizeListing, takeListingFromHash, bookmarkletSource } from './pipeline/listing.js';
 
 const $ = (id) => document.getElementById(id);
@@ -822,8 +822,12 @@ function applyListing(raw) {
     $('warnBox').appendChild(el('div', 'banner banner-err', raw.error));
     return;
   }
-  const v = normalizeListing(raw);
+  applyVehicle(normalizeListing(raw));
+}
 
+/* Fill the app from a scrape.Vehicle-shaped record, whichever route it
+ * came in by: the bookmarklet's normaliser or the server's /scrape. */
+function applyVehicle(v) {
   const map = {
     year: 'f-year', make: 'f-make', model: 'f-model', trim: 'f-trim',
     exterior_color_factory: 'f-ext', interior_color: 'f-int',
@@ -934,7 +938,29 @@ async function init() {
       }
     };
     $('bookmarkletNote').textContent = '';
+    // Against a server that can scrape, the sheet also takes a URL. The
+    // bookmarklet stays offered: it works from any browser, including
+    // one that is not on the same machine as the server.
+    $('listingUrlWrap').hidden = !can('scrape');
     openSheet('listingSheet');
+  };
+  $('listingUrlGo').onclick = async () => {
+    const url = $('listingUrlInput').value.trim();
+    if (!url) return;
+    const note = $('listingUrlNote');
+    const btn = $('listingUrlGo');
+    btn.disabled = true;
+    note.textContent = 'Your server is reading the page. A Cloudflare challenge can take a few seconds.';
+    try {
+      const v = await scrapeOnServer(url);
+      closeSheet('listingSheet');
+      applyVehicle(v);
+      $('listingUrlInput').value = '';
+    } catch (e) {
+      note.textContent = String(e.message || e);
+    } finally {
+      btn.disabled = false;
+    }
   };
   $('aboutBtn').onclick = () => {
     $('aboutRuntime').textContent = runtime.isolated

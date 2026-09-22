@@ -76,6 +76,24 @@ export function assets() {
   return assetCache || { backgrounds: [], borders: [], videos: [], audio: [] };
 }
 
+/* Ask the server to read a vehicle page. Returns the same record shape
+ * the bookmarklet's normaliser produces (scrape.Vehicle), so the caller
+ * fills the form the same way whichever route the listing came in by. */
+export async function scrapeOnServer(url, { signal } = {}) {
+  const res = await fetch('scrape', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+    signal,
+  });
+  if (!res.ok) {
+    let detail = `${res.status}`;
+    try { detail = (await res.json()).detail || detail; } catch { /* not JSON */ }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
 /* Compose one cutout on the server.
  *
  * Returns { blob, warnings }. Warnings are things the server could not

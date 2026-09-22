@@ -167,6 +167,22 @@ def process_vehicle(playwright, session: requests.Session, url: str, out_root: P
                      strict_cutouts: bool = True,
                      video_executor=None, pending_video_futures: list | None = None) -> Path:
     log(f"==> {url}")
+    v = scrape_vehicle(playwright, url, headed=headed)
+    return process_vehicle_record(v, url, session, out_root, sticker_dpi, junk_filter, classifier,
+                                   upscale_cutouts, upscale_model, angle_classifier, hero_opts,
+                                   wheel_classifier, spare_classifier, interior_tiebreak_classifier,
+                                   strict_cutouts, video_executor, pending_video_futures)
+
+
+def scrape_vehicle(playwright, url: str, headed: bool = False):
+    """Fetch one vehicle page and return its normalised record, or raise.
+
+    Shared by the CLI (process_vehicle) and the server's POST /scrape, so
+    the app's "read this listing on your server" button and `lotstretcher
+    <url>` cannot drift apart in what they accept or refuse. The two
+    sanity checks below are the ones that turned real mistakes into
+    loud failures instead of empty folders.
+    """
     browser, page = new_page(playwright, headed)
     try:
         html = fetch_rendered_html(page, url)
@@ -209,10 +225,7 @@ def process_vehicle(playwright, session: requests.Session, url: str, out_root: P
             "or a mistyped VIN."
         )
 
-    return process_vehicle_record(v, url, session, out_root, sticker_dpi, junk_filter, classifier,
-                                   upscale_cutouts, upscale_model, angle_classifier, hero_opts,
-                                   wheel_classifier, spare_classifier, interior_tiebreak_classifier,
-                                   strict_cutouts, video_executor, pending_video_futures)
+    return v
 
 
 def process_vehicle_record(v, url: str, session: requests.Session, out_root: Path,

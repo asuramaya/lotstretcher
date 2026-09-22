@@ -211,6 +211,52 @@ async def compose_delegated(cutout: UploadFile = File(...), options: str = Form(
     return Response(content=png, media_type="image/png", headers=headers)
 
 
+class ScrapeRequest(BaseModel):
+    url: str
+
+
+@app.post("/scrape")
+def scrape_listing(body: ScrapeRequest):
+    """Read one vehicle page with this host's headless browser and return
+    the record the CLI would have built from it.
+
+    The browser client cannot read another site's page itself; on
+    lotstretcher.org it uses the bookmarklet instead. Against this server
+    the same sheet offers a URL field, and this is where it lands. The
+    record's shape is scrape.Vehicle, the same one the bookmarklet's
+    normaliser produces, so the app fills the same fields either way.
+
+    Runs in FastAPI's threadpool (a plain def), which is what Playwright's
+    sync API needs.
+    """
+    import dataclasses
+    from urllib.parse import urlparse
+
+    from ..vehicle_pipeline import scrape_vehicle
+
+    parsed = urlparse(body.url)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise HTTPException(422, "url must be an http(s) address of a vehicle page")
+
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        raise HTTPException(501, "playwright is not installed on this host; "
+                                 "pip install playwright && playwright install chromium")
+
+    try:
+        with sync_playwright() as pw:
+            v = scrape_vehicle(pw, body.url)
+    except RuntimeError as e:
+        # The two loud sanity failures: not a single vehicle's page, or
+        # a page that redirected to a different vehicle.
+        raise HTTPException(422, str(e))
+    except Exception as e:
+        raise HTTPException(502, f"could not read that page: {type(e).__name__}: {e}")
+
+    return dataclasses.asdict(v)
+
+
 # -- Image processing: async batch ----------------------------------------------
 
 def _run_submission(submission_id: str) -> None:
