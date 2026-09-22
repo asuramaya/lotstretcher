@@ -70,6 +70,9 @@ def _load():
         lib.ls_vehicle_gradient_colors.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_uint8),
                                                    ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t,
                                                    ctypes.POINTER(ctypes.c_uint8)]
+        lib.ls_detect_window.restype = ctypes.c_int
+        lib.ls_detect_window.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t, ctypes.c_size_t,
+                                         ctypes.POINTER(ctypes.c_int64)]
         lib.ls_free.argtypes = [_Buffer]
         lib.ls_version.restype = ctypes.c_uint32
         _LIB = lib
@@ -114,7 +117,7 @@ def _arena(images) -> tuple[bytes, list[dict]]:
 def compose_hero(cars, width: int, height: int, background: dict, *, layout: str = "single",
                  spotlight: bool = True, glow: bool = False, glow_color: str | None = None,
                  glow_radius: int | None = None, glow_intensity: float | None = None,
-                 margin_frac: float | None = None, background_image=None):
+                 margin_frac: float | None = None, background_image=None, border=None):
     """Compose one hero the way the browser does, in the same code.
 
     `cars` are RGBA PIL images, hero first. `background` is one of
@@ -129,20 +132,26 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
         raise RuntimeError(f"lotstretcher core is not available: {_LIB_ERROR}")
 
     images = list(cars)
-    if background.get("kind") == "image":
+    bg = dict(background)
+    bg_index = border_index = None
+    if bg.get("kind") == "image":
         if background_image is None:
             raise ValueError("background kind 'image' needs background_image")
+        bg_index = len(images)
         images.append(background_image)
+    if border is not None:
+        border_index = len(images)
+        images.append(border.convert("RGBA"))
     arena, slices = _arena(images)
     car_slices = slices[:len(cars)]
-    bg = dict(background)
-    if bg.get("kind") == "image":
-        bg["image"] = slices[-1]
+    if bg_index is not None:
+        bg["image"] = slices[bg_index]
 
     req = {
         "width": width, "height": height, "background": bg, "cars": car_slices, "layout": layout,
         "spotlight": spotlight, "glow": glow, "glow_color": glow_color, "glow_radius": glow_radius,
         "glow_intensity": glow_intensity, "margin_frac": margin_frac,
+        "border": slices[border_index] if border_index is not None else None,
     }
     buf = (ctypes.c_uint8 * len(arena)).from_buffer_copy(arena) if arena else None
     result = lib.ls_compose_hero(json.dumps(req).encode("utf-8"), buf, len(arena))
@@ -154,6 +163,19 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
         return Image.frombytes("RGB", (result.width, result.height), data)
     finally:
         lib.ls_free(result)
+
+
+def detect_window(border) -> tuple[int, int, int, int]:
+    """A border's transparent window as (left, top, right, bottom)."""
+    lib = _load()
+    if lib is None:
+        raise RuntimeError(f"lotstretcher core is not available: {_LIB_ERROR}")
+    raw = border.convert("RGBA").tobytes()
+    buf = (ctypes.c_uint8 * len(raw)).from_buffer_copy(raw)
+    out = (ctypes.c_int64 * 4)()
+    if not lib.ls_detect_window(buf, border.width, border.height, out):
+        raise ValueError("Could not find a transparent window in this border image")
+    return tuple(int(v) for v in out)
 
 
 def vehicle_gradient_colors(exterior: str | None, interior: str | None, sample=None):

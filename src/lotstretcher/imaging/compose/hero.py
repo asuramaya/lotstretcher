@@ -20,30 +20,20 @@ from pathlib import Path
 
 from PIL import Image
 
-from .window import detect_window, alpha_mask, resolve_collision
-from .background import fit_background, compute_dim_strength, apply_spotlight
-from .layout import LAYOUTS, conveyor_for_window, compute_placement
-from .effects import paste_with_glow, DEFAULT_GLOW_COLOR
+from .layout import LAYOUTS
+from .effects import DEFAULT_GLOW_COLOR
 
 
 DEFAULT_CANVAS_SIZE = (1254, 1254)
 
 
 @lru_cache(maxsize=4)
-def _load_border(border_path: str):
-    """(border_rgba, window, border_mask), decoded once per path.
-
-    compose_vehicle() calls compose_hero() once per hero format plus once
-    per exterior cutout (framed/) plus once per wheel money shot -- 8-12x
-    per vehicle, all against the SAME border file. Each call used to
-    re-decode the ~6MB RGBA PNG, re-scan it for its transparent window
-    (detect_window()) and rebuild its opaque-pixel mask from scratch, all
-    of which are a pure function of border_path alone. Asset files aren't
-    expected to change mid-run, so caching by path is safe; maxsize=4
-    covers every border this process would plausibly use in one run
-    without growing unbounded across a long sync."""
-    border = Image.open(border_path).convert("RGBA")
-    return border, detect_window(border), alpha_mask(border)
+def _load_border(border_path: str) -> Image.Image:
+    """The border RGBA, decoded once per path: compose_hero() runs 8-12x
+    per vehicle against the same ~6MB PNG. Window detection and the
+    collision mask now happen inside the core per call, which is cheap
+    next to the decode."""
+    return Image.open(border_path).convert("RGBA")
 
 
 def compose_hero(background_path, border_path: Path | None, car_paths: list[Path],
@@ -81,81 +71,24 @@ def compose_hero(background_path, border_path: Path | None, car_paths: list[Path
     if layout not in LAYOUTS:
         raise ValueError(f"Unknown layout {layout!r}, pick one of {list(LAYOUTS)}")
 
-    # The frameless composition runs in the Rust core (core/), the same
-    # code the browser runs: gradient, placement, spotlight, glow, all
-    # of it. background_path may then also be a background SPEC dict
-    # ({"kind": "vehicle", "seed", "exterior", "interior"} or
-    # {"kind": "generic", "seed"}), in which case the core builds the
-    # gradient itself and no Python gradient is ever drawn. The framed
-    # path (window detection, collision against the border art) is the
-    # part not yet in the core and still runs below.
-    if border_path is None:
-        from ... import core
-        cars = [Image.open(p).convert("RGBA") if not isinstance(p, Image.Image) else p.convert("RGBA")
-                for p in car_paths]
-        if isinstance(background_path, dict):
-            background, bg_image = background_path, None
-        else:
-            bg = background_path if isinstance(background_path, Image.Image) else Image.open(background_path)
-            background, bg_image = {"kind": "image"}, bg.convert("RGB")
-        return core.compose_hero(cars, canvas_size[0], canvas_size[1], background, background_image=bg_image,
-                                 layout=layout, spotlight=spotlight, glow=glow, glow_color=str(glow_color),
-                                 glow_radius=glow_radius, glow_intensity=glow_intensity, margin_frac=margin_frac)
+    # The whole composition runs in the Rust core (core/), the same code
+    # the browser runs: gradient, window detection, placement, collision
+    # against the border art, spotlight, glow, the border on top.
+    # background_path may also be a background SPEC dict ({"kind":
+    # "vehicle", "seed", "exterior", "interior"} or {"kind": "generic",
+    # "seed"}), in which case the core builds the gradient itself and no
+    # Python gradient is drawn. This file is a host, not an implementation.
+    from ... import core
 
-    if border_path is not None:
-        border, window, border_mask = _load_border(str(border_path))
-        canvas_size = border.size
+    cars = [p.convert("RGBA") if isinstance(p, Image.Image) else Image.open(p).convert("RGBA")
+            for p in car_paths]
+    if isinstance(background_path, dict):
+        background, bg_image = background_path, None
     else:
-        border, border_mask = None, None
-        window = (0, 0, canvas_size[0], canvas_size[1])
-
-    bg = background_path if isinstance(background_path, Image.Image) else Image.open(background_path)
-    canvas = fit_background(bg.convert("RGB"), canvas_size)
-
-    cars = [Image.open(p).convert("RGBA") for p in car_paths]
-    # Same rule as the video: "conveyor" names an arrangement, not one
-    # function, so a non-square canvas gets its slots stacked rather than
-    # side by side (layout.py::conveyor_for_window).
-    layout_fn = conveyor_for_window(window) if layout == "conveyor" else LAYOUTS[layout]
-    boxes = layout_fn(window, len(cars) - 1)
-    placements = [compute_placement(car, box, anchor=anchor, margin_frac=margin_frac)
-                  for car, (box, anchor) in zip(cars, boxes)]
-
-    # Layout boxes are geometric approximations of one rectangle
-    # (detect_window()); real border art often isn't a clean rectangle (a
-    # badge/logo hanging lower in the middle than at the edges, say), so
-    # check placements against the border's actual alpha channel and nudge
-    # down anything that collides. Dynamic on purpose -- works for any
-    # border shape or car silhouette without per-vehicle/per-border tuning.
-    # Frameless: nothing to collide with, so the nudge is skipped entirely
-    # rather than run against an all-transparent mask (which would be a
-    # no-op, but only by accident -- resolve_collision() is documented as
-    # clearing border ART, and there is none).
-    if border is not None:
-        placements = [
-            (x, resolve_collision(border_mask, resized, x, y), resized)
-            for x, y, resized in placements
-        ]
-
-    if spotlight and placements:
-        # Hero (index 0) drives the contrast measurement and spotlight center.
-        x, y, resized = placements[0]
-        car_box = (x, y, x + resized.width, y + resized.height)
-        bg_region = canvas.crop(car_box)
-        dim_strength = compute_dim_strength(bg_region, resized)
-        center = ((car_box[0] + car_box[2]) / 2, (car_box[1] + car_box[3]) / 2)
-        canvas = apply_spotlight(canvas, center, dim_strength)
-
-    canvas = canvas.convert("RGBA")
-    # Accents first, hero last (on top) -- the hero should never be visually
-    # obstructed by a supporting angle shot if their boxes overlap.
-    for x, y, resized in reversed(placements):
-        if glow:
-            paste_with_glow(canvas, resized, x, y, color=glow_color,
-                             radius=glow_radius, intensity=glow_intensity)
-        else:
-            canvas.paste(resized, (x, y), resized)
-
-    if border is not None:
-        canvas.alpha_composite(border)
-    return canvas.convert("RGB")
+        bg = background_path if isinstance(background_path, Image.Image) else Image.open(background_path)
+        background, bg_image = {"kind": "image"}, bg.convert("RGB")
+    border = _load_border(str(border_path)) if border_path is not None else None
+    return core.compose_hero(cars, canvas_size[0], canvas_size[1], background, background_image=bg_image,
+                             border=border, layout=layout, spotlight=spotlight, glow=glow,
+                             glow_color=str(glow_color), glow_radius=glow_radius,
+                             glow_intensity=glow_intensity, margin_frac=margin_frac)

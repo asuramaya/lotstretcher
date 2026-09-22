@@ -154,13 +154,14 @@ Sharing the *algorithms* themselves, not just their constants, is done with a Ru
 `web/build-core.sh` into `web/public/core/`, which is committed so the static site needs no toolchain).
 The spec is embedded in the crate at build time, so a constant changed there changes in the core.
 
-**What is in it now:** the still compositing. Gradient backdrops from the vehicle's colours (the palette
-logic included), the adaptive spotlight, placement and all five layouts, glow, and alpha compositing. On
-both surfaces `compose_hero` for a frameless canvas is a call into the core with a JSON request and one
-byte arena, and the same seed produces the same bytes natively and in the browser. What remains outside it
-for now: the bordered path (window detection and collision against the border art), the video, spin,
-interiors and wheel shots, each of which moves in turn, deleting its Python and JavaScript copy in the
-same commit its parity test passes. Models stay in ONNX Runtime on both sides.
+**What is in it now:** the whole still compositing. Gradient backdrops from the vehicle's colours (the
+palette logic included), the adaptive spotlight, placement and all five layouts, glow, alpha compositing,
+and the bordered path: window detection in the frame's alpha, collision of every placement against the
+border art, and the frame as the top layer. On both surfaces `compose_hero` is a call into the core with a
+JSON request and one byte arena, and the same seed produces the same bytes natively and in the browser.
+What remains outside it for now: the video, spin, interiors and wheel shots, each of which moves in turn,
+deleting its Python and JavaScript copy in the same commit its parity test passes. Models stay in ONNX
+Runtime on both sides.
 
 [`tests/test_core_parity.py`](tests/test_core_parity.py) holds the core to the Python it replaced, and is
 skipped with a message when the core has not been built (`cargo build --release` in `core/`).

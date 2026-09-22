@@ -19,5 +19,13 @@ pub fn vehicle_gradient_colors(exterior: Option<String>, interior: Option<String
     out
 }
 
+/// [left, top, right, bottom] of an RGBA border's transparent window.
 #[wasm_bindgen]
-pub fn version() -> u32 { 1 }
+pub fn detect_window(border: &[u8], width: usize, height: usize) -> Result<Vec<i32>, JsError> {
+    let img = crate::Image::from_vec(width, height, 4, border.to_vec()).map_err(|e| JsError::new(&e))?;
+    let (l, t, r, b) = crate::window::detect_window(&img).map_err(|e| JsError::new(&e))?;
+    Ok(vec![l as i32, t as i32, r as i32, b as i32])
+}
+
+#[wasm_bindgen]
+pub fn version() -> u32 { 2 }

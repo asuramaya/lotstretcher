@@ -22,6 +22,7 @@ pub mod gradient;
 pub mod spotlight;
 pub mod layout;
 pub mod glow;
+pub mod window;
 pub mod compose;
 
 #[cfg(not(target_arch = "wasm32"))]

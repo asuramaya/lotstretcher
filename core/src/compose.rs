@@ -13,6 +13,7 @@ use crate::layout::{compute_placement, layout, Anchor};
 use crate::resize::{cover_fit, crop, resize_lanczos};
 use crate::spec;
 use crate::spotlight::{apply_spotlight, compute_dim_strength};
+use crate::window::{detect_window, resolve_collision};
 use crate::Image;
 
 #[derive(Deserialize)]
@@ -50,6 +51,11 @@ pub struct ComposeRequest {
     pub glow_intensity: Option<f64>,
     #[serde(default)]
     pub margin_frac: Option<f64>,
+    /// A border frame (RGBA). When given it decides the canvas size,
+    /// defines the window the cars are laid out in, has its art
+    /// collision-checked against every placement, and is the top layer.
+    #[serde(default)]
+    pub border: Option<Slice>,
 }
 
 fn default_layout() -> String { "single".into() }
@@ -65,7 +71,18 @@ fn slice_image(arena: &[u8], s: &Slice) -> Result<Image, String> {
 
 /// Returns the composed RGB canvas (width * height * 3 bytes).
 pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String> {
-    let (w, h) = (req.width, req.height);
+    let border = match &req.border {
+        Some(s) => {
+            let b = slice_image(arena, s)?;
+            if b.channels != 4 { return Err("border must be RGBA".into()); }
+            Some(b)
+        }
+        None => None,
+    };
+    let (w, h) = match &border {
+        Some(b) => (b.width, b.height),
+        None => (req.width, req.height),
+    };
     if w == 0 || h == 0 || w > 8192 || h > 8192 {
         return Err("canvas must be within 8192x8192".into());
     }
@@ -86,13 +103,24 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     };
 
     let margin = req.margin_frac.unwrap_or_else(|| spec::f64_at(&["compose", "marginFrac"]));
-    let window = (0i64, 0i64, w as i64, h as i64);
+    let window = match &border {
+        Some(b) => detect_window(b)?,
+        None => (0i64, 0i64, w as i64, h as i64),
+    };
     let boxes = layout(&req.layout, window, cars.len().saturating_sub(1))?;
-    let placements: Vec<(i64, i64, Image)> = cars.iter().zip(boxes.iter()).map(|(car, (bx, anchor))| {
+    let mut placements: Vec<(i64, i64, Image)> = cars.iter().zip(boxes.iter()).map(|(car, (bx, anchor))| {
         let p = compute_placement(car.width, car.height, *bx, margin, *anchor);
         let resized = if p.w == car.width && p.h == car.height { car.clone() } else { resize_lanczos(car, p.w, p.h) };
         (p.x, p.y, resized)
     }).collect();
+    // Layout boxes approximate one rectangle; real border art is not
+    // one. Check every placement against the border's own alpha and
+    // nudge down whatever collides.
+    if let Some(b) = &border {
+        for (x, y, resized) in placements.iter_mut() {
+            *y = resolve_collision(b, resized, *x, *y);
+        }
+    }
 
     if req.spotlight {
         if let Some((x, y, resized)) = placements.first() {
@@ -121,6 +149,9 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
         } else {
             paste_alpha(&mut canvas, resized, *x, *y);
         }
+    }
+    if let Some(b) = &border {
+        paste_alpha(&mut canvas, b, 0, 0);
     }
     Ok(canvas)
 }

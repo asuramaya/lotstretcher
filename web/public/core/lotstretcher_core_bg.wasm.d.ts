@@ -2,6 +2,7 @@
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
 export const compose_hero: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+export const detect_window: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const vehicle_gradient_colors: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number];
 export const version: () => number;
 export const __wbindgen_externrefs: WebAssembly.Table;

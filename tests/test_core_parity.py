@@ -143,3 +143,35 @@ def test_layouts_match_python(layout):
         # slot must be car-coloured.
         r, g, b = arr[cy, cx]
         assert r > g + 40 and r > b + 40, f"{layout}: no car at slot centre ({cx},{cy}) got {(r, g, b)}"
+
+
+BORDER = REPO / "assets" / "borders" / "tomball-ford-frame.png"
+
+
+@pytest.mark.skipif(not BORDER.is_file(), reason="no border asset checked out")
+def test_window_detection_matches_python():
+    from lotstretcher.imaging.compose.window import detect_window
+    border = Image.open(BORDER).convert("RGBA")
+    assert core.detect_window(border) == detect_window(border)
+
+
+@pytest.mark.skipif(not BORDER.is_file(), reason="no border asset checked out")
+def test_bordered_compose_keeps_the_frame_on_top_and_the_car_in_the_window():
+    from lotstretcher.imaging.compose.window import alpha_mask, detect_window, resolve_collision
+    from lotstretcher.imaging.compose.layout import compute_placement
+    border = Image.open(BORDER).convert("RGBA")
+    cut = synthetic_cutout(600, 300)
+    img = core.compose_hero([cut], 10, 10, {"kind": "generic", "seed": "b"}, border=border, spotlight=False)
+    assert img.size == border.size, "the border decides the canvas size"
+    arr = np.asarray(img)
+    barr = np.asarray(border)
+    # Every fully opaque border pixel shows the border's own colour.
+    opaque = barr[..., 3] == 255
+    assert np.array_equal(arr[opaque], barr[..., :3][opaque])
+    # The car sits where Python's window + placement + collision nudge would put it.
+    window = detect_window(border)
+    x, y, resized = compute_placement(cut, window, margin_frac=0.06, anchor="center")
+    y = resolve_collision(alpha_mask(border), resized, x, y)
+    cx, cy = x + resized.width // 2, y + resized.height // 2
+    r, g, b = arr[cy, cx]
+    assert r > g + 40 and r > b + 40, f"no car at ({cx},{cy}): {(r, g, b)}"

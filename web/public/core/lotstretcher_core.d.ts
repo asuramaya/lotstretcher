@@ -7,6 +7,11 @@
 export function compose_hero(request: string, arena: Uint8Array): Uint8Array;
 
 /**
+ * [left, top, right, bottom] of an RGBA border's transparent window.
+ */
+export function detect_window(border: Uint8Array, width: number, height: number): Int32Array;
+
+/**
  * [r,g,b, r,g,b] for the exterior and interior stops.
  */
 export function vehicle_gradient_colors(exterior: string | null | undefined, interior: string | null | undefined, sample: Uint8Array, width: number, height: number): Uint8Array;
@@ -18,6 +23,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
     readonly compose_hero: (a: number, b: number, c: number, d: number) => [number, number, number, number];
+    readonly detect_window: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly vehicle_gradient_colors: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number];
     readonly version: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;

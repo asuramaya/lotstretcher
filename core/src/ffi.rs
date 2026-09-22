@@ -76,5 +76,23 @@ pub unsafe extern "C" fn ls_free(buf: LsBuffer) {
     }
 }
 
+/// # Safety
+/// `border` points at width*height*4 readable bytes; `out` at 4 writable i64s.
 #[no_mangle]
-pub extern "C" fn ls_version() -> u32 { 1 }
+pub unsafe extern "C" fn ls_detect_window(border: *const u8, width: usize, height: usize, out: *mut i64) -> c_int {
+    let img = match crate::Image::from_vec(width, height, 4, std::slice::from_raw_parts(border, width * height * 4).to_vec()) {
+        Ok(i) => i,
+        Err(_) => return 0,
+    };
+    match crate::window::detect_window(&img) {
+        Ok((l, t, r, b)) => {
+            let o = std::slice::from_raw_parts_mut(out, 4);
+            o.copy_from_slice(&[l, t, r, b]);
+            1
+        }
+        Err(_) => 0,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn ls_version() -> u32 { 2 }

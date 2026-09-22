@@ -54,21 +54,27 @@ function arena(images) {
  * an ImageData of the RGB canvas expanded to RGBA for putImageData. */
 export function composeHero(cars, width, height, background, {
   layout = 'single', spotlight = true, glow = false, glowColor = null,
-  glowRadius = null, glowIntensity = null, marginFrac = null, backgroundImage = null,
+  glowRadius = null, glowIntensity = null, marginFrac = null, backgroundImage = null, border = null,
 } = {}) {
   if (!mod) throw new Error('core not loaded; await loadCore() first');
   const images = [...cars];
   const bg = { ...background };
+  let bgIndex = null;
+  let borderIndex = null;
   if (bg.kind === 'image') {
     if (!backgroundImage) throw new Error("background kind 'image' needs backgroundImage");
+    bgIndex = images.length;
     images.push(backgroundImage);
   }
+  if (border) { borderIndex = images.length; images.push(border); }
   const { buf, slices } = arena(images);
-  if (bg.kind === 'image') bg.image = slices[slices.length - 1];
+  if (bgIndex !== null) bg.image = slices[bgIndex];
   const req = {
     width, height, background: bg, cars: slices.slice(0, cars.length), layout, spotlight, glow,
     glow_color: glowColor, glow_radius: glowRadius, glow_intensity: glowIntensity, margin_frac: marginFrac,
+    border: borderIndex !== null ? slices[borderIndex] : null,
   };
+  if (border) { width = border.width; height = border.height; }
   const rgb = mod.compose_hero(JSON.stringify(req), buf);
   const out = new ImageData(width, height);
   for (let i = 0, j = 0; i < rgb.length; i += 3, j += 4) {
