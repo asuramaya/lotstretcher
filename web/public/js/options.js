@@ -123,8 +123,10 @@ export function summarise(o) {
 export function toCliFlags(o) {
   const flags = [];
   for (const f of o.heroFormats) flags.push(`--hero-format ${f}`);
-  for (const f of o.videoFormats) flags.push(`--video-format ${f}`);
-  if (!o.videoFormats.length) flags.push('--no-video');
+  /* Video always echoes --no-video for now: the browser cannot render it
+   * yet, so echoing a --video-format the web app will not honour would
+   * misdescribe the run this page is about to do. */
+  flags.push('--no-video');
   if (o.cutType === 'none') flags.push('--no-hero');
   if (!o.photoSort) flags.push('--no-photo-sort');
   if (!o.interiors) flags.push('--no-interiors');

@@ -317,10 +317,18 @@ function renderOptions() {
   };
 
   chipRow($('heroFormats'), HERO_FORMATS, o.heroFormats, (k) => toggleIn(o.heroFormats, k));
-  chipRow($('videoFormats'), VIDEO_FORMATS, o.videoFormats, (k) => toggleIn(o.videoFormats, k));
-  $('videoNote').textContent = o.videoFormats.length
-    ? 'Video is the slowest stage. Rendered on request, after the stills.'
-    : 'No video. Stills only, which is much faster on a phone.';
+  /* Video is not implemented yet, so the chips are shown DISABLED rather
+   * than selectable. A control that silently does nothing is worse than
+   * a control that says it is not ready: the first teaches people the
+   * app is unreliable, the second just tells them the truth. */
+  chipRow($('videoFormats'), VIDEO_FORMATS, o.videoFormats, () => {});
+  for (const chip of $('videoFormats').querySelectorAll('.chip')) {
+    chip.disabled = true;
+    chip.setAttribute('aria-disabled', 'true');
+  }
+  $('videoNote').textContent =
+    'Not built yet. WebCodecs measures 3-4x realtime in this browser, so '
+    + 'it is coming; today the CLI is the way to render video.';
 
   const pipeline = $('pipelineOpts');
   pipeline.innerHTML = '';
