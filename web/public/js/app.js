@@ -20,6 +20,10 @@ import { composeHero } from './pipeline/compose.js';
 import { buildAllPosts, vehicleTitle, PLATFORMS } from './pipeline/copy.js';
 import { decode, makeCanvas, ctxOf, canvasToBlob } from './lib/imageio.js';
 import { makeZip, deliver } from './lib/zip.js';
+import {
+  HERO_FORMATS, VIDEO_FORMATS, GLOW_COLORS,
+  loadOptions, saveOptions, resetOptions, toCliFlags,
+} from './options.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -38,6 +42,7 @@ const state = {
   done: false,
   posts: null,
   sticker: null,
+  options: null,
   errors: [],
 };
 
@@ -64,7 +69,7 @@ function saveDealer() {
 /* ---------- navigation --------------------------------------------- */
 function go(pane) {
   state.pane = pane;
-  for (const p of ['source', 'details', 'results']) {
+  for (const p of ['source', 'details', 'options', 'results']) {
     $(`pane-${p}`).hidden = p !== pane;
   }
   for (const btn of document.querySelectorAll('.nav-btn')) {
@@ -254,6 +259,105 @@ function renderResults() {
   }
 }
 
+/* ---------- options --------------------------------------------------
+ * Built from the definitions in options.js rather than written into the
+ * markup, so adding an option is a one-line change in one file and the
+ * CLI echo below can never disagree with the controls above it. */
+function chipRow(host, defs, selected, onToggle) {
+  host.innerHTML = '';
+  for (const [key, def] of Object.entries(defs)) {
+    const b = el('button', 'chip');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', selected.includes(key) ? 'true' : 'false');
+    b.append(el('strong', null, def.label), el('span', null, `${def.size[0]}x${def.size[1]} ${def.note}`));
+    b.onclick = () => onToggle(key);
+    host.appendChild(b);
+  }
+}
+
+function toggleRow(label, hint, checked, onChange) {
+  const row = el('div', 'opt');
+  const text = el('div', 'opt-text');
+  text.append(el('strong', null, label), el('span', null, hint));
+  const sw = el('label', 'switch');
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = checked;
+  input.setAttribute('aria-label', label);
+  input.onchange = () => onChange(input.checked);
+  sw.append(input, el('i'));
+  row.append(text, sw);
+  return row;
+}
+
+function selectRow(label, hint, value, choices, onChange) {
+  const row = el('div', 'opt');
+  const text = el('div', 'opt-text');
+  text.append(el('strong', null, label), el('span', null, hint));
+  const sel = document.createElement('select');
+  sel.className = 'field';
+  for (const c of choices) {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    if (c === value) o.selected = true;
+    sel.appendChild(o);
+  }
+  sel.onchange = () => onChange(sel.value);
+  row.append(text, sel);
+  return row;
+}
+
+function renderOptions() {
+  const o = state.options;
+
+  const toggleIn = (list, key) => {
+    const i = list.indexOf(key);
+    if (i >= 0) list.splice(i, 1); else list.push(key);
+    commitOptions();
+  };
+
+  chipRow($('heroFormats'), HERO_FORMATS, o.heroFormats, (k) => toggleIn(o.heroFormats, k));
+  chipRow($('videoFormats'), VIDEO_FORMATS, o.videoFormats, (k) => toggleIn(o.videoFormats, k));
+  $('videoNote').textContent = o.videoFormats.length
+    ? 'Video is the slowest stage. Rendered on request, after the stills.'
+    : 'No video. Stills only, which is much faster on a phone.';
+
+  const pipeline = $('pipelineOpts');
+  pipeline.innerHTML = '';
+  pipeline.append(
+    toggleRow('Sort photos', 'Separate exteriors, interiors and detail shots',
+      o.photoSort, (v) => { o.photoSort = v; commitOptions(); }),
+    toggleRow('Include interiors', 'Keep interior shots in the bundle',
+      o.interiors, (v) => { o.interiors = v; commitOptions(); }),
+    toggleRow('Cut out and compose', 'Off means classify only, no images composed',
+      o.cutType === 'complete', (v) => { o.cutType = v ? 'complete' : 'none'; commitOptions(); }),
+    toggleRow('Strict cutouts', 'Skip a cutout whose edges came out uncertain',
+      o.strictCutouts, (v) => { o.strictCutouts = v; commitOptions(); }),
+  );
+
+  const look = $('lookOpts');
+  look.innerHTML = '';
+  look.append(
+    selectRow('Backdrop', 'Where the generated gradient gets its colours',
+      o.backdrop, ['vehicle', 'generic'], (v) => { o.backdrop = v; commitOptions(); }),
+    toggleRow('Spotlight', 'Dim the backdrop around the vehicle',
+      o.spotlight, (v) => { o.spotlight = v; commitOptions(); }),
+    toggleRow('Glow', 'Halo behind the cutout',
+      o.glow, (v) => { o.glow = v; commitOptions(); renderOptions(); }),
+  );
+  if (o.glow) {
+    look.append(selectRow('Glow colour', '', o.glowColor, GLOW_COLORS,
+      (v) => { o.glowColor = v; commitOptions(); }));
+  }
+
+  $('cliEcho').textContent = toCliFlags(o);
+}
+
+function commitOptions() {
+  saveOptions(state.options);
+  renderOptions();
+}
+
 /* ---------- the run ------------------------------------------------ */
 async function run() {
   if (state.running || !state.photos.length) return;
@@ -312,7 +416,11 @@ async function run() {
       renderPhotos();
     }
     stages[1].state = 'done';
-    const exteriors = state.photos.filter((p) => p.scene === 'exterior');
+    // cut_type "none" is the server's classify-only mode: sort the
+    // photos, compose nothing.
+    const exteriors = state.options.cutType === 'none'
+      ? []
+      : state.photos.filter((p) => p.scene === 'exterior');
     stages[1].detail = `${exteriors.length} exterior, ${total - exteriors.length} other`;
     stages[2].state = 'active';
     renderStages(stages);
@@ -333,7 +441,7 @@ async function run() {
         // like a failure, it looks like a post.
         const gate = gateCutout({
           ambiguous: m.ambiguous, coverage: cut.coverage, hasCanvas: !!cut.canvas,
-        });
+        }, state.options.strictCutouts);
         if (!gate.ok) {
           p.rejected = gate.reason;
         } else {
@@ -369,24 +477,29 @@ async function run() {
     // --- pass 3: compose.
     readVehicle();
     const cut = exteriors.filter((p) => p.cutout);
+    const formats = state.options.heroFormats.length ? state.options.heroFormats : ['square'];
+    const vid = state.vehicle.vin || state.vehicle.stock_number || 'v';
+
     for (let i = 0; i < cut.length; i++) {
       const p = cut[i];
-      p.hero = composeHero(p.cutout, {
-        seed: `${state.vehicle.vin || state.vehicle.stock_number || 'v'}:${p.name}`,
-        exterior: state.vehicle.exterior_color,
-        interior: state.vehicle.interior_color,
-        width: CANVAS, height: CANVAS,
-      });
-      // The portrait crop is a second composition, not a crop of the
-      // square -- cropping a square to 4:5 cuts the vehicle's nose off.
-      if (i === 0) {
-        p.heroPortrait = composeHero(p.cutout, {
-          seed: `${state.vehicle.vin || 'v'}:${p.name}:portrait`,
+      p.heroes = {};
+      for (const fmt of formats) {
+        const [w, h] = HERO_FORMATS[fmt].size;
+        /* Each format is composed from the cutout, never cropped from
+         * another format. Cropping a square down to 4:5 cuts the
+         * vehicle's nose off; recomposing re-fits it to the new box. */
+        p.heroes[fmt] = composeHero(p.cutout, {
+          seed: `${vid}:${p.name}:${fmt}`,
           exterior: state.vehicle.exterior_color,
           interior: state.vehicle.interior_color,
-          width: PORTRAIT[0], height: PORTRAIT[1],
+          width: w, height: h,
+          spotlight: state.options.spotlight,
+          marginFrac: state.options.margin,
+          generic: state.options.backdrop === 'generic',
         });
       }
+      // The first format is the one shown in the grid.
+      p.hero = p.heroes[formats[0]];
       setProgress(0.8 + 0.2 * ((i + 1) / Math.max(1, cut.length)));
       renderResults();
     }
@@ -468,10 +581,17 @@ async function downloadBundle() {
     for (let i = 0; i < heroes.length; i++) {
       const p = heroes[i];
       const tag = p.angle ? `${String(i + 1).padStart(2, '0')}-${p.angle}` : String(i + 1).padStart(2, '0');
-      files.push({ name: `framed/${tag}.png`, data: await canvasToBlob(p.hero, 'image/png') });
-      if (i === 0) files.push({ name: 'hero.png', data: await canvasToBlob(p.hero, 'image/png') });
-      if (p.heroPortrait) {
-        files.push({ name: 'hero-portrait.png', data: await canvasToBlob(p.heroPortrait, 'image/png') });
+      for (const [fmt, canvas] of Object.entries(p.heroes || { square: p.hero })) {
+        const blob = await canvasToBlob(canvas, 'image/png');
+        files.push({ name: `${fmt}/${tag}.png`, data: blob });
+        // The lead shot of each format also lands at the top level, the
+        // same shape the CLI's bundle uses.
+        if (i === 0) {
+          files.push({
+            name: fmt === 'square' ? 'hero.png' : `hero-${fmt}.png`,
+            data: await canvasToBlob(canvas, 'image/png'),
+          });
+        }
       }
       if (p.cutout) {
         files.push({ name: `cutout/${tag}.png`, data: await canvasToBlob(p.cutout, 'image/png') });
@@ -554,6 +674,7 @@ async function importSticker(source, label) {
 
 /* ---------- wiring --------------------------------------------------- */
 function init() {
+  state.options = loadOptions();
   loadDealer();
   $('f-dealer').value = state.dealer.name || '';
   $('f-phone').value = state.dealer.phone || '';
@@ -606,6 +727,8 @@ function init() {
     if (url) importSticker(url, 'the sticker');
   };
 
+  $('resetOptions').onclick = () => { state.options = resetOptions(); renderOptions(); };
+
   $('clearBtn').onclick = clearPhotos;
   $('runBtn').onclick = run;
   $('downloadBtn').onclick = downloadBundle;
@@ -641,8 +764,33 @@ function init() {
     if (state.running) { e.preventDefault(); e.returnValue = ''; }
   });
 
+  renderOptions();
   renderPhotos();
   renderResults();
+
+  /* A debug handle.
+   *
+   * Deliberately exposed rather than kept private: everything here is
+   * already the user's own data sitting in their own tab, there is no
+   * secret to leak, and without it neither automation nor a person in
+   * the console can check what the pipeline actually decided. Several
+   * real bugs this session were only visible from the inside. */
+  window.lotstretcher = {
+    state,
+    options: () => state.options,
+    summary: () => ({
+      photos: state.photos.map((p) => ({
+        name: p.name, scene: p.scene, sceneConf: p.sceneConf,
+        angle: p.angle, angleConf: p.angleConf,
+        ambiguous: p.ambiguous, coverage: p.coverage,
+        rejected: p.rejected || null,
+        formats: p.heroes ? Object.fromEntries(
+          Object.entries(p.heroes).map(([k, c]) => [k, `${c.width}x${c.height}`])) : null,
+      })),
+      posts: state.posts ? Object.keys(state.posts) : null,
+      sticker: state.sticker ? Object.keys(state.sticker) : null,
+    }),
+  };
 }
 
 init();

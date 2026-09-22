@@ -232,6 +232,7 @@ export function composeHero(cutout, {
   background = null,          // a canvas/bitmap to use instead of a gradient
   spotlight = true,
   marginFrac = 0.06,
+  generic = false,
 } = {}) {
   const canvas = makeCanvas(width, height);
   const ctx = ctxOf(canvas, { willReadFrequently: true });
@@ -241,9 +242,10 @@ export function composeHero(cutout, {
   const cutCtx = ctxOf(cutout, { willReadFrequently: true });
   const cutData = cutCtx.getImageData(0, 0, cutout.width, cutout.height);
 
-  const bg = background
-    ? coverFit(background, width, height)
-    : vehicleGradient(width, height, seed, exterior, interior, cutData);
+  let bg;
+  if (background) bg = coverFit(background, width, height);
+  else if (generic) bg = genericGradient(width, height, seed);
+  else bg = vehicleGradient(width, height, seed, exterior, interior, cutData);
   ctx.drawImage(bg, 0, 0);
 
   const place = computePlacement(cutout, [0, 0, width, height], marginFrac, 'center');

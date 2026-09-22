@@ -167,10 +167,15 @@ export function applyMatte(bitmap, { alpha, size }) {
  * here and then ignored.
  *
  * Returns { ok, reason } where reason is phrased for a person. */
-export function gateCutout({ ambiguous, coverage, hasCanvas }) {
+export function gateCutout({ ambiguous, coverage, hasCanvas }, strict = true) {
   if (!hasCanvas) {
+    // No subject at all is a hard failure, not a strictness question:
+    // there is literally nothing to compose.
     return { ok: false, reason: 'no vehicle found in this photo' };
   }
+  // --no-strict-cutouts: compose whatever the matte produced. Off by
+  // default, and the CLI defaults the same way.
+  if (!strict) return { ok: true, reason: null };
   if (ambiguous > MAX_AMBIGUOUS_FRACTION) {
     return { ok: false, reason: `edges too uncertain (${(ambiguous * 100).toFixed(1)}% ambiguous)` };
   }

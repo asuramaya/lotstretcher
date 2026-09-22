@@ -39,6 +39,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
       <span>Details</span>
     </button>
+    <button class="nav-btn" data-go="options">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+      <span>Options</span>
+    </button>
     <button class="nav-btn" data-go="results" disabled>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       <span>Results</span>
@@ -144,6 +148,48 @@
             <div><label class="label" for="f-dealer">Name</label><input class="field" id="f-dealer" autocomplete="off"></div>
             <div><label class="label" for="f-phone">Phone</label><input class="field" id="f-phone" inputmode="tel" autocomplete="off"></div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- options ---------- -->
+    <section class="pane" id="pane-options" hidden aria-label="Options">
+      <div class="pane-inner">
+        <div class="section">
+          <div class="section-head">
+            <h2>Output</h2>
+            <button class="btn btn-ghost btn-sm" id="resetOptions">Reset</button>
+          </div>
+          <p class="small muted" style="margin-bottom:var(--s-4)">
+            Same options the command line takes, minus the ones a browser
+            cannot do. Kept on this device.
+          </p>
+
+          <label class="label">Still formats</label>
+          <div class="chips" id="heroFormats"></div>
+
+          <label class="label" style="margin-top:var(--s-5)">Video formats</label>
+          <div class="chips" id="videoFormats"></div>
+          <p class="xs dim" id="videoNote" style="margin-top:var(--s-2)"></p>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2>Pipeline</h2></div>
+          <div class="opts" id="pipelineOpts"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2>Look</h2></div>
+          <div class="opts" id="lookOpts"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2>Same run, on your server</h2></div>
+          <p class="small muted" style="margin-bottom:var(--s-3)">
+            These options map to the self-hosted CLI. Same pipeline, same
+            flags, no limits on batch size.
+          </p>
+          <div class="copybox mono" id="cliEcho"></div>
         </div>
       </div>
     </section>
