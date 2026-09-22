@@ -42,7 +42,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from . import store
@@ -162,6 +163,52 @@ def single_segment(body: SingleSegmentRequest):
         "output_path": str(result.output_path) if result.output_path else None,
         "warning": result.warning,
     }
+
+
+# -- Delegated composition (from the browser client) ----------------------------
+
+
+@app.get("/assets")
+def list_assets():
+    """The asset library, so the app's background and border selects have
+    something to offer. These render "none available" on lotstretcher.org
+    because a browser has no asset library."""
+    from .delegate import list_assets as _list
+    return _list()
+
+
+@app.post("/compose")
+async def compose_delegated(cutout: UploadFile = File(...), options: str = Form("{}")):
+    """Compose one cutout using this host's assets and hardware.
+
+    The browser sends a CUTOUT, not the source photo: matting already
+    happened on the device, so the original photograph never leaves it.
+    Only the cut-out vehicle does, and only when the user asks for
+    something this server can do and a browser cannot.
+    """
+    from .delegate import compose, parse_options
+
+    try:
+        opts = parse_options(options)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+
+    content = await cutout.read()
+    if not content:
+        raise HTTPException(422, "cutout is empty")
+
+    try:
+        png, warnings = compose(content, opts, _state["out_dir"])
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"composition failed: {e}")
+
+    # Anything asked for that could not be honoured rides back on a
+    # header, since the body is the image. Silently dropping a requested
+    # border is how a control becomes untrustworthy.
+    headers = {"X-Lotstretcher-Warning": "; ".join(warnings)} if warnings else {}
+    return Response(content=png, media_type="image/png", headers=headers)
 
 
 # -- Image processing: async batch ----------------------------------------------

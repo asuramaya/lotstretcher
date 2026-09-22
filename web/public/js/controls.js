@@ -15,6 +15,7 @@
 
 import { get } from './spec.js';
 import { can, isSelfHosted } from './host.js';
+import { assets } from './lib/delegate.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -50,12 +51,12 @@ function availability(control) {
         : 'Needs lotstretcher running on your own machine.',
     };
   }
+  /* Previously this returned "the app cannot hand off to it yet", which
+   * was true until the /compose endpoint existed. It now can, so a
+   * server-capable control is simply available, and the pane says where
+   * the work will happen. */
   if (!inBrowser && viaServer) {
-    /* The host CAN do it, but the app cannot yet ask it to: there is no
-     * endpoint for delegating a composition to the server. Saying so is
-     * better than either hiding the control or offering one that does
-     * nothing. */
-    return { ok: false, why: 'Runs on your server. The app cannot hand off to it yet.' };
+    return { ok: true, why: null, onServer: true };
   }
   return { ok: true, why: null };
 }
@@ -65,9 +66,12 @@ function choicesFor(control) {
   if (control.dynamic === 'glowColors') {
     return Object.keys(get('glow', 'colors')).map((v) => ({ value: v, label: v }));
   }
-  // 'borders' and other asset-library lists arrive from the host; until
-  // that endpoint exists the control renders with nothing to choose,
-  // which is honest: there is no asset library in a browser.
+  // Asset lists come from the host. A browser has none, so these are
+  // empty on lotstretcher.org and real against a server.
+  const library = assets();
+  if (control.dynamic === 'borders') return library.borders || [];
+  if (control.dynamic === 'backgrounds') return library.backgrounds || [];
+  if (control.dynamic === 'audio') return library.audio || [];
   return [];
 }
 
@@ -149,12 +153,14 @@ export function renderControls(host, values, onChange) {
     section.appendChild(el('h3', 'ctrl-group-head', group.label));
 
     for (const control of visible) {
-      const { ok, why } = availability(control);
+      const { ok, why, onServer } = availability(control);
       const row = el('div', `opt${ok ? '' : ' is-locked'}`);
 
       const text = el('div', 'opt-text');
-      text.append(el('strong', null, control.label),
-        el('span', null, ok ? (control.hint || '') : why));
+      const hint = ok
+        ? [control.hint, onServer ? 'Runs on your server' : ''].filter(Boolean).join(' \u00b7 ')
+        : why;
+      text.append(el('strong', null, control.label), el('span', null, hint));
       row.appendChild(text);
 
       const value = values[control.key] ?? control.default;
@@ -200,7 +206,10 @@ export function controlsToFlags(values) {
         if (control.cliInvert && !value) flags.push(control.cli);
         else if (!control.cliInvert && value) flags.push(control.cli);
       } else if (!isDefault) {
-        flags.push(`${control.cli} ${value}`);
+        // Quote anything with a space, or the echo is not pasteable:
+        // --border Generic Dealer Frame reads as three arguments.
+        const text = String(value);
+        flags.push(`${control.cli} ${/\s/.test(text) ? `"${text}"` : text}`);
       }
     }
   }

@@ -70,6 +70,21 @@ lotstretcher-serve                 # API + the browser client at http://127.0.0.
 lotstretcher-serve --no-app        # API only
 ```
 
+Running it this way unlocks what a browser cannot do alone. The app hands a composition to the
+server when, and only when, you switch on a control that needs one:
+
+| endpoint | what it does |
+|---|---|
+| `GET /capabilities` | what this host can do, so the app unlocks accordingly |
+| `GET /assets` | the background and border library, filling those selects |
+| `POST /compose` | composes one cutout with the server's assets and GPU |
+
+`POST /compose` receives the **cutout, never the source photograph**. Matting already happened on
+your device, so the original image stays there; only the cut-out vehicle travels, and only when you
+ask for something the server can do and a browser cannot. Anything it could not honour, such as a
+border missing from its library, comes back on an `X-Lotstretcher-Warning` header rather than being
+silently dropped.
+
 **Why the website can't scrape, and why that's fine.** A browser can't read another site's HTML
 (cross-origin rules), and dealer sites sit behind Cloudflare challenges that a serverless function can't
 pass either: measured, not assumed. But that only blocks *discovering* photo URLs, never *using* them.

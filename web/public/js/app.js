@@ -28,6 +28,7 @@ import {
 import { loadSpec, get as specGet } from './spec.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlDefaults, controlsToFlags } from './controls.js';
+import { loadAssets, needsServer, composeOnServer } from './lib/delegate.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -533,11 +534,53 @@ async function run() {
     const formats = state.options.heroFormats.length ? state.options.heroFormats : ['square'];
     const vid = state.vehicle.vin || state.vehicle.stock_number || 'v';
 
+    // Only when the user actually switched a server-only control on. A
+    // self-hosted user who changed nothing still composes locally, which
+    // is faster and keeps the round trip off the common path.
+    const delegating = needsServer(state.options, specGet);
+    if (delegating) {
+      stages[3].label = 'Composing on your server';
+      renderStages(stages);
+    }
+
     for (let i = 0; i < cut.length; i++) {
       const p = cut[i];
       p.heroes = {};
       for (const fmt of formats) {
         const [w, h] = OPTS.HERO_FORMATS[fmt].size;
+
+        /* When the run asks for something only a server can do (a stock
+         * backdrop, a branded frame, GPU upscaling), hand THIS cutout to
+         * it. Only the cutout travels: the source photograph stays on
+         * the device, because matting already happened here. */
+        if (delegating) {
+          try {
+            const { blob, warnings } = await composeOnServer(p.cutout, {
+              width: w, height: h,
+              seed: `${vid}:${p.name}:${fmt}`,
+              exteriorColor: state.vehicle.exterior_color,
+              interiorColor: state.vehicle.interior_color,
+              ...state.options,
+            });
+            // Normalise to a canvas: everything downstream (the result
+            // grid, the bundle) expects one, not a bitmap.
+            const bmp = await createImageBitmap(blob);
+            const c = makeCanvas(bmp.width, bmp.height);
+            ctxOf(c).drawImage(bmp, 0, 0);
+            bmp.close?.();
+            p.heroes[fmt] = c;
+            for (const warning of warnings) {
+              if (!state.errors.includes(warning)) state.errors.push(warning);
+            }
+            continue;
+          } catch (e) {
+            // Fall through to composing locally rather than producing
+            // nothing; the user still gets an image, and the reason the
+            // server could not help is reported.
+            state.errors.push(`${p.name}: ${e.message || e}`);
+          }
+        }
+
         /* Each format is composed from the cutout, never cropped from
          * another format. Cropping a square down to 4:5 cuts the
          * vehicle's nose off; recomposing re-fits it to the new box. */
@@ -774,6 +817,8 @@ async function init() {
     // Which host this is decides what to unlock. Asked once, and a
     // failed probe leaves everything locked rather than open.
     await loadCapabilities();
+    // The asset library, if this host has one. Empty on a static host.
+    await loadAssets();
   } catch (e) {
     document.body.insertAdjacentHTML('afterbegin',
       `<div class="banner banner-err" style="margin:var(--s-4)">`
