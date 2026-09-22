@@ -33,12 +33,52 @@ async function loadPdfjs() {
 const VIN_RE = /\b([A-HJ-NPR-Z0-9]{17})\b/;      // no I, O or Q in a VIN
 const MONEY_RE = /\$[\d,]+(?:\.\d{2})?/;
 
+/* Trim levels, drivetrains and the like are ACRONYMS, not words. Plain
+ * title case turns "XLT FWD" into "Xlt Fwd", which then goes straight
+ * into a post and reads as a typo to anyone who knows the car. */
+const ACRONYMS = new Set([
+  'XL', 'XLT', 'SE', 'SEL', 'LT', 'LS', 'LTZ', 'RST', 'ST', 'GT', 'SS', 'SR', 'SR5',
+  'EX', 'LX', 'DX', 'SV', 'SL', 'S', 'RS', 'GLS', 'GLE', 'TRD', 'ZR2', 'Z71', 'SLE',
+  'SLT', 'XSE', 'XLE', 'FWD', 'AWD', 'RWD', '4WD', '2WD', '4X4', '4X2',
+  'V6', 'V8', 'V10', 'TDI', 'GTI', 'ABS', 'LED', 'USB', 'AM/FM', 'MSRP', 'VIN',
+  'MPG', 'EPA', 'SYNC', 'AC', 'A/C', 'PHEV', 'EV', 'SUV',
+]);
+
+/* Abbreviations the sticker prints that read badly in a post. Kept
+ * narrow and only applied to display strings, never to the parsed value
+ * the CLI would also produce, so the two stay comparable. */
+const EXPANSIONS = [
+  [/\bSiriusxm\b/i, 'SiriusXM'],
+  [/\bEcoboost\b/i, 'EcoBoost'],
+  [/\bAlum\b/i, 'Aluminum'],
+  [/\bIncl\b/i, 'Included'],
+  [/\bConn\b/i, 'Connected'],
+  [/\bTri\s*-?\s*Coat\b/i, 'Tri-Coat'],
+  [/\bTc\b/i, 'Tri-Coat'],
+  [/\bMet\b/i, 'Metallic'],
+  [/\bMetalic\b/i, 'Metallic'],
+  [/\bPkg\b/i, 'Package'],
+  [/\bW\//i, 'With '],
+];
+
 function titleCase(s) {
   return s.toLowerCase()
     .replace(/\b[a-z]/g, (c) => c.toUpperCase())
     // A letter straight after a digit is a unit, not a new word: engine
     // displacements must read "2.0L EcoBoost", never "2.0l".
-    .replace(/(\d)([a-z])\b/g, (_, d, c) => d + c.toUpperCase());
+    .replace(/(\d)([a-z])\b/g, (_, d, c) => d + c.toUpperCase())
+    // Restore anything that is an acronym rather than a word.
+    .replace(/\b[A-Za-z][A-Za-z0-9/]*\b/g, (w) => (
+      ACRONYMS.has(w.toUpperCase()) ? w.toUpperCase() : w
+    ));
+}
+
+/* Title case, then expand the sticker's own abbreviations. For values
+ * shown to a person or dropped into post copy. */
+function displayCase(s) {
+  let out = titleCase(s);
+  for (const [re, to] of EXPANSIONS) out = out.replace(re, to);
+  return out;
 }
 
 /* Page 1's text as positioned words, top-down. */
@@ -51,16 +91,48 @@ async function words(source) {
   const viewport = page.getViewport({ scale: 1 });
   const content = await page.getTextContent();
 
+  /* pdf.js hands back whole text RUNS, not words: "BASE PRICE" arrives as
+   * a single item. The CLI's pdftotext -bbox gives one word per box, and
+   * every label rule here matches word by word, so a run-shaped token
+   * never equals "BASE". Split runs into words and estimate each word's
+   * x by its share of the run, which puts the browser and the CLI on the
+   * same data shape. Proportional-by-character is approximate for a
+   * proportional font, but only needs to be good enough to order words
+   * and to tell columns apart. */
   const out = [];
+  const runs = [];
   for (const item of content.items) {
-    const text = (item.str || '').trim();
-    if (!text) continue;
-    const x = item.transform[4];
+    const raw = (item.str || '');
+    if (!raw.trim()) continue;
+    runs.push({
+      text: raw.trim(),
+      x: item.transform[4],
+      y: viewport.height - item.transform[5],
+      w: item.width || 0,
+      h: item.height || 0,
+    });
     const y = viewport.height - item.transform[5];   // flip to top-down
-    out.push({ text, x, y, w: item.width || 0, h: item.height || 0 });
+    const x0 = item.transform[4];
+    const total = item.width || 0;
+    const perChar = raw.length ? total / raw.length : 0;
+
+    let at = 0;
+    for (const token of raw.split(/(\s+)/)) {
+      if (token.trim()) {
+        out.push({
+          text: token,
+          x: x0 + at * perChar,
+          y,
+          w: token.length * perChar,
+          h: item.height || 0,
+        });
+      }
+      at += token.length;
+    }
   }
   out.sort((a, b) => a.y - b.y || a.x - b.x);
-  return { words: out, width: viewport.width, height: viewport.height, pages: doc.numPages };
+  runs.sort((a, b) => a.y - b.y || a.x - b.x);
+  return { words: out, runs, width: viewport.width, height: viewport.height, pages: doc.numPages };
 }
 
 /* Group words into visual rows by y proximity. */
@@ -85,15 +157,177 @@ function findRow(rs, pred) {
 /* The value printed directly beneath a label, within the label's own
  * column. Used for EXTERIOR / INTERIOR, which sit as a label above their
  * value rather than beside it. */
-function valueBelow(all, label, { maxDrop = 26, xSlack = 90 } = {}) {
-  const hit = all.find((w) => w.text.toUpperCase() === label);
+function valueBelow(runs, label, { maxDrop = 26, xSlack = 40 } = {}) {
+  /* Operates on RUNS, not words.
+   *
+   * A colour name is laid out as ONE text run, so the run directly under
+   * the label already IS the whole value. Reassembling it from split
+   * words needs a gap threshold, and no single threshold works: tight
+   * truncates "Azure Gray Metallic Tc" to "Azure Gray Metallic", loose
+   * swallows the next column's "121\" Wheelbase". Estimated per-word
+   * widths are not accurate enough to separate those two cases, and the
+   * run boundary answers it exactly. */
+  const hit = runs.find((r) => r.text.toUpperCase() === label);
   if (!hit) return null;
-  const below = all
-    .filter((w) => w.y > hit.y + 1 && w.y < hit.y + maxDrop && Math.abs(w.x - hit.x) < xSlack)
-    .sort((a, b) => a.y - b.y || a.x - b.x);
-  if (!below.length) return null;
-  const firstY = below[0].y;
-  return below.filter((w) => Math.abs(w.y - firstY) <= 3).map((w) => w.text).join(' ').trim();
+  const below = runs
+    .filter((r) => r.y > hit.y + 1 && r.y < hit.y + maxDrop && Math.abs(r.x - hit.x) < xSlack)
+    .sort((a, b) => a.y - b.y);
+  return below.length ? below[0].text.trim() : null;
+}
+
+/* ---------- pricing ----------
+ * INCLUDED ON THIS VEHICLE (left) and PRICE INFORMATION (right) are
+ * side-by-side columns that frequently land on the SAME visual row, so a
+ * label anchored at the row's start misses any price whose row also
+ * carries left-column text. Match the label as a subsequence ANYWHERE in
+ * the row, then take the first money token AFTER the match rather than
+ * the last one in the row, which could belong to a different label
+ * further right. Same reasoning as imaging/sticker.py::_parse_pricing. */
+const MONEY_EXACT = /^\$?[\d,]+\.\d{2}$/;
+
+function findLabel(row, labelWords) {
+  const upper = row.map((w) => w.text.toUpperCase());
+  for (let i = 0; i <= upper.length - labelWords.length; i++) {
+    let hit = true;
+    for (let j = 0; j < labelWords.length; j++) {
+      if (upper[i + j] !== labelWords[j]) { hit = false; break; }
+    }
+    if (hit) return i + labelWords.length;
+  }
+  return null;
+}
+
+function moneyAfter(rs, labelWords) {
+  for (const row of rs) {
+    const start = findLabel(row, labelWords);
+    if (start === null) continue;
+    for (const w of row.slice(start)) {
+      if (MONEY_EXACT.test(w.text)) return w.text.startsWith('$') ? w.text : `$${w.text}`;
+    }
+  }
+  return null;
+}
+
+function parsePricing(rs) {
+  const out = {};
+  const base = moneyAfter(rs, ['BASE', 'PRICE']);
+  if (base) out.base_price = base;
+  const dest = moneyAfter(rs, ['DESTINATION', '&', 'DELIVERY']);
+  if (dest) out.destination_and_delivery = dest;
+  const totalOpts = moneyAfter(rs, ['TOTAL', 'VEHICLE', '&', 'OPTIONS/OTHER']);
+  if (totalOpts) out.total_vehicle_and_options = totalOpts;
+  const msrp = moneyAfter(rs, ['TOTAL', 'MSRP']);
+  if (msrp) out.total_msrp = msrp;
+  return out;
+}
+
+/* ---------- standard equipment grid ----------
+ * Four labelled columns. Each item is assigned to whichever column
+ * header it sits closest to horizontally, which survives a layout whose
+ * column x positions differ from the one the CLI was tuned against. */
+const EQUIP_COLUMNS = [
+  ['EXTERIOR', 'exterior'],
+  ['INTERIOR', 'interior'],
+  ['FUNCTIONAL', 'functional_tech'],
+  ['SAFETY/SECURITY', 'safety_security'],
+];
+
+function parseEquipmentGrid(runs, rs) {
+  const gridHeader = rs.find((r) => {
+    const t = rowText(r).toUpperCase();
+    return t.includes('STANDARD') && t.includes('EQUIPMENT');
+  });
+  if (!gridHeader) return {};
+
+  const top = gridHeader[0].y;
+  const anchors = [];
+  for (const [label, key] of EQUIP_COLUMNS) {
+    const head = label.split('/')[0];
+    const hit = runs.find((r) => r.y > top && r.y < top + 40
+      && r.text.toUpperCase().startsWith(head));
+    if (hit) anchors.push({ key, x: hit.x, y: hit.y });
+  }
+  if (anchors.length < 2) return {};
+
+  const bodyTop = Math.max(...anchors.map((a) => a.y)) + 4;
+  /* Bound on the next section header, found in the RUNS: a word-row
+   * search misses it whenever that row also carries sidebar text, and
+   * the fallback height then swept in everything below the grid. */
+  const endRun = runs.find((r) => r.y > bodyTop
+    && /^(OPTIONAL\s+EQUIPMENT|INCLUDED\s+ON\s+THIS)/i.test(r.text));
+  const bottom = endRun ? endRun.y - 2 : bodyTop + 220;
+
+  const out = {};
+  for (const a of anchors) out[a.key] = [];
+
+  /* Each cell is its OWN run, so column assignment is just "which header
+   * is this run under". No gap splitting: estimated word widths are not
+   * accurate enough, and splitting on them either cut items in half or
+   * merged three columns into one line. */
+  for (const r of runs) {
+    if (r.y <= bodyTop || r.y >= bottom) continue;
+    const text = r.text.replace(/^[\s.\u2022\u00b7-]+/, '').trim();
+    if (text.length < 3) continue;
+    let best = anchors[0];
+    for (const a of anchors) if (Math.abs(a.x - r.x) < Math.abs(best.x - r.x)) best = a;
+    out[best.key].push(displayCase(text));
+  }
+  for (const k of Object.keys(out)) if (!out[k].length) delete out[k];
+  return out;
+}
+
+/* ---------- optional equipment ----------
+ * Bounded on the right by the PRICE INFORMATION column, because a line
+ * can carry a "NO CHARGE" suffix well past where its label ends, and
+ * bounded below by SOLD TO, the next real header in the same band.
+ * Filtering WORDS by that band before grouping matters: a row that
+ * merely starts in-band still pulls in same-y sidebar text otherwise. */
+function parseOptionalEquipment(all, rs) {
+  const header = rs.find((r) => {
+    const u = r.map((w) => w.text.toUpperCase());
+    return u.includes('OPTIONAL') && u.some((t) => t.includes('EQUIPMENT'));
+  });
+  if (!header) return [];
+  const top = header[0].y;
+
+  const soldTo = rs.find((r) => r[0].text.toUpperCase() === 'SOLD'
+    && r[1] && r[1].text.toUpperCase() === 'TO');
+  const bottom = soldTo ? soldTo[0].y : top + 150;
+
+  /* The PRICE INFORMATION column is the right bound. Find it by the word
+   * pair ANYWHERE in its row: after run-splitting, that row usually
+   * starts with left-column text, so anchoring at r[0] finds nothing and
+   * the bound silently becomes Infinity, which is what let the price
+   * column bleed into these lines. */
+  let xEnd = Infinity;
+  for (let i = 0; i < all.length - 1; i++) {
+    if (all[i].text.toUpperCase() === 'PRICE'
+        && all[i + 1].text.toUpperCase() === 'INFORMATION') {
+      xEnd = all[i].x - 5;
+      break;
+    }
+  }
+
+  const items = [];
+  for (const r of rows(all.filter((w) => w.y > top && w.y < bottom && w.x < xEnd))) {
+    const text = rowText(r).replace(/^[.\s_]+/, '').replace(/[\s_]+$/, '').trim();
+    if (!text || text.length < 4) continue;
+    // Boilerplate the sticker prints in this band that is not equipment.
+    if (/NO CHARGE|NOT RATED|CALCULATE|PERSONALIZED|COMPARE VEHICLES|MODEL YEAR/i.test(text)) continue;
+    items.push(displayCase(text));
+  }
+  return items;
+}
+
+/* ---------- warranties ---------- */
+function parseWarranties(rs) {
+  const out = [];
+  for (const r of rs) {
+    const t = rowText(r);
+    // "3-Year / 36,000-Mile Bumper-to-Bumper" and friends.
+    if (/\d+[-\s]?Year\s*\/\s*[\d,]+[-\s]?Mile/i.test(t)) out.push(displayCase(t));
+  }
+  return out;
 }
 
 /* Parse a Ford-template window sticker.
@@ -102,7 +336,7 @@ function valueBelow(all, label, { maxDrop = 26, xSlack = 90 } = {}) {
  * a sticker that parses only half way is still worth more than typing
  * it all by hand, so nothing here throws on a missing field. */
 export async function parseSticker(source) {
-  const { words: ws, height } = await words(source);
+  const { words: ws, runs: rn, height } = await words(source);
   const rs = rows(ws);
   const all = ws;
   const fullText = ws.map((w) => w.text).join(' ');
@@ -133,7 +367,7 @@ export async function parseSticker(source) {
     const bottom = gridHeader ? gridHeader[0].y : top + 0.25 * height;
 
     // The colour labels mark where the left-hand description block ends.
-    const extLabel = all.find((w) => w.text.toUpperCase() === 'EXTERIOR' && w.y > top && w.y < bottom);
+    const extLabel = rn.find((w) => w.text.toUpperCase() === 'EXTERIOR' && w.y > top && w.y < bottom);
     const leftEdge = extLabel ? extLabel.x - 12 : Infinity;
 
     const block = rows(all.filter((w) => w.y > top + 1 && w.y < bottom && w.x < leftEdge));
@@ -144,22 +378,23 @@ export async function parseSticker(source) {
       const upper = text.toUpperCase();
       if (/^\d{4}\b/.test(text)) out.trim_drivetrain = titleCase(text);
       else if (upper.includes('PASSENGER')) out.seating = titleCase(text);
-      else if (upper.includes('ENGINE') || /\bECOBOOST\b/.test(upper)) out.engine = titleCase(text);
-      else if (upper.includes('TRANSMISSION') || /\bAUTO\b|\bMANUAL\b/.test(upper)) out.transmission = titleCase(text);
+      else if (upper.includes('ENGINE') || /\bECOBOOST\b/.test(upper)) out.engine = displayCase(text);
+      else if (upper.includes('TRANSMISSION') || /\bAUTO\b|\bMANUAL\b/.test(upper)) out.transmission = displayCase(text);
     }
   }
 
-  const ext = valueBelow(all, 'EXTERIOR');
+  const ext = valueBelow(rn, 'EXTERIOR');
   if (ext) out.exterior_color = titleCase(ext);
-  const int = valueBelow(all, 'INTERIOR');
+  const int = valueBelow(rn, 'INTERIOR');
   if (int) out.interior_color = titleCase(int);
 
-  // Total MSRP: the money value on the row that names it.
-  const msrpRow = findRow(rs, (r) => /TOTAL\s+MSRP|TOTAL\s+VEHICLE/i.test(rowText(r)));
-  if (msrpRow) {
-    const m = MONEY_RE.exec(rowText(msrpRow));
-    if (m) out.price = m[0];
-  }
+  out.pricing = parsePricing(rs);
+  // The number a shopper means by "the price" is the total MSRP.
+  out.price = out.pricing.total_msrp || out.pricing.base_price || null;
+
+  out.equipment = parseEquipmentGrid(rn, rs);
+  out.optional_equipment = parseOptionalEquipment(all, rs);
+  out.warranties = parseWarranties(rs);
 
   // Year / trim / drivetrain fall out of "2026 Xlt Fwd".
   if (out.trim_drivetrain) {
@@ -193,7 +428,13 @@ export function stickerToVehicle(sticker) {
     ['exterior_color', 'exterior_color'], ['interior_color', 'interior_color'],
     ['vin', 'vin'], ['price', 'price'],
   ]) {
-    if (sticker[from]) v[to] = String(sticker[from]).replace(/^\$/, '').replace(/,/g, '');
+    if (!sticker[from]) continue;
+    let value = String(sticker[from]);
+    // Colours reach the form AND the post copy, so expand the sticker's
+    // abbreviations once here rather than letting the two disagree.
+    if (from.endsWith('_color')) value = displayCase(value);
+    else value = value.replace(/^\$/, '').replace(/,/g, '');
+    v[to] = value;
   }
   if (v.price) v.price = v.price.replace(/\.00$/, '');
   return v;

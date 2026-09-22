@@ -37,6 +37,7 @@ const state = {
   running: false,
   done: false,
   posts: null,
+  sticker: null,
   errors: [],
 };
 
@@ -390,7 +391,9 @@ async function run() {
       renderResults();
     }
 
-    state.posts = buildAllPosts(state.vehicle, { dealer: state.dealer });
+    state.posts = buildAllPosts(state.vehicle, {
+      dealer: state.dealer, sticker: state.sticker,
+    });
     stages[3].state = 'done';
     stages[3].detail = `${cut.length} image${cut.length === 1 ? '' : 's'}`;
     renderStages(stages);
@@ -419,7 +422,14 @@ async function run() {
 
 /* ---------- output -------------------------------------------------- */
 function readVehicle() {
+  // Spec fields come from the sticker and have no form input; carry them
+  // across the rebuild rather than losing them on every run.
+  const carried = {};
+  for (const k of ['engine', 'transmission', 'drivetrain', 'seating']) {
+    if (state.vehicle?.[k]) carried[k] = state.vehicle[k];
+  }
   state.vehicle = {
+    ...carried,
     year: $('f-year').value.trim(),
     make: $('f-make').value.trim(),
     model: $('f-model').value.trim(),
@@ -513,9 +523,25 @@ async function importSticker(source, label) {
       // Never overwrite something the user typed themselves.
       if (fields[key] && !$(id).value.trim()) { $(id).value = fields[key]; filled++; }
     }
-    note.textContent = filled
-      ? `Filled ${filled} field${filled === 1 ? '' : 's'} from ${label}.`
-      : `Read ${label}, but every field was already filled.`;
+    /* Keep the whole parse, not just the form fields: equipment,
+     * optional equipment and the spec lines feed the post copy, and
+     * there is nowhere on the form to put them. */
+    state.sticker = parsed;
+    for (const k of ['engine', 'transmission', 'drivetrain', 'seating']) {
+      if (parsed[k]) state.vehicle[k] = parsed[k];
+    }
+
+    const extras = [];
+    const optional = parsed.optional_equipment?.length || 0;
+    const standard = Object.values(parsed.equipment || {}).reduce((n, a) => n + a.length, 0);
+    if (optional) extras.push(`${optional} option${optional === 1 ? '' : 's'}`);
+    if (standard) extras.push(`${standard} standard features`);
+
+    note.textContent = [
+      filled ? `Filled ${filled} field${filled === 1 ? '' : 's'}` : 'Fields were already filled',
+      extras.length ? `, read ${extras.join(' and ')} for the post copy` : '',
+      '.',
+    ].join('');
   } catch (e) {
     // A CORS refusal is the common case and deserves a plain explanation
     // rather than the browser's own wording.

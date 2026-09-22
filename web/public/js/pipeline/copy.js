@@ -31,7 +31,7 @@ const CLOSERS = [
   'Stop by for a test drive.',
   'Message us to set up a drive.',
   'Ask us anything.',
-  'Available now — reach out.',
+  'Available now, reach out.',
 ];
 
 export function vehicleTitle(v) {
@@ -45,6 +45,38 @@ function formatPrice(price) {
   return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
+/* Equipment worth naming in a post, drawn from the window sticker.
+ *
+ * Optional equipment first: it is what makes THIS car different from the
+ * next one on the lot, which is the only reason a shopper reads the
+ * list. Trailing prices are stripped, since the sticker prints them and
+ * a post should not.
+ *
+ * Capped, because a sticker lists 30+ standard items and a post that
+ * recites all of them gets scrolled past. */
+export function highlightsFrom(sticker, limit = 6) {
+  if (!sticker) return [];
+  const out = [];
+  const seen = new Set();
+  const push = (raw) => {
+    const text = String(raw).replace(/\s+[\d,]+\.\d{2}\s*$/, '').trim();
+    const key = text.toLowerCase();
+    if (!text || text.length < 3 || seen.has(key)) return;
+    seen.add(key);
+    out.push(text);
+  };
+
+  for (const item of sticker.optional_equipment || []) push(item);
+  // Then the marquee standard kit, in the order a shopper cares about.
+  for (const col of ['functional_tech', 'safety_security', 'interior', 'exterior']) {
+    for (const item of (sticker.equipment || {})[col] || []) {
+      if (out.length >= limit * 2) break;
+      push(item);
+    }
+  }
+  return out.slice(0, limit);
+}
+
 function detailLines(v) {
   const out = [];
   if (v.mileage) {
@@ -54,6 +86,7 @@ function detailLines(v) {
   if (v.exterior_color) out.push(`${v.exterior_color} exterior`);
   if (v.interior_color) out.push(`${v.interior_color} interior`);
   if (v.drivetrain) out.push(v.drivetrain);
+  if (v.seating) out.push(v.seating);
   if (v.transmission) out.push(v.transmission);
   if (v.engine) out.push(v.engine);
   return out;
@@ -71,7 +104,7 @@ function hashtags(v) {
  * Facebook post can carry a spec list and a long body, Instagram leans
  * on hashtags, and Threads has a 500-character ceiling that a long spec
  * list will blow straight through. */
-export function buildPost(vehicle, platform, { dealer = null } = {}) {
+export function buildPost(vehicle, platform, { dealer = null, sticker = null } = {}) {
   const v = vehicle || {};
   const title = vehicleTitle(v) || 'This vehicle';
   const seed = v.vin || v.stock_number || title;
@@ -79,11 +112,15 @@ export function buildPost(vehicle, platform, { dealer = null } = {}) {
   const closer = pick(CLOSERS, seed, 2);
   const price = formatPrice(v.price);
   const details = detailLines(v);
+  const highlights = highlightsFrom(sticker);
 
   if (platform === 'facebook') {
     const lines = [`${opener} ${title}.`];
     if (price) lines.push('', price);
     if (details.length) lines.push('', ...details.map((d) => `• ${d}`));
+    if (highlights.length) {
+      lines.push('', 'Equipped with:', ...highlights.map((h) => `• ${h}`));
+    }
     if (v.vin) lines.push('', `VIN: ${v.vin}`);
     if (v.stock_number) lines.push(`Stock #: ${v.stock_number}`);
     if (dealer?.name) lines.push('', dealer.name);
@@ -93,8 +130,9 @@ export function buildPost(vehicle, platform, { dealer = null } = {}) {
   }
 
   if (platform === 'instagram') {
-    const lines = [`${opener} ${title}${price ? ` — ${price}` : ''}.`];
+    const lines = [`${opener} ${title}${price ? `, ${price}` : ''}.`];
     if (details.length) lines.push('', details.slice(0, 4).join(' · '));
+    if (highlights.length) lines.push('', highlights.slice(0, 4).join(' · '));
     lines.push('', closer);
     if (dealer?.name) lines.push('', dealer.name);
     lines.push('', hashtags(v).join(' '));
@@ -104,7 +142,7 @@ export function buildPost(vehicle, platform, { dealer = null } = {}) {
   // Threads: hard 500-character limit. Build shortest-first and stop
   // adding once the next piece would not fit, rather than truncating
   // mid-word at the end.
-  const head = `${opener} ${title}${price ? ` — ${price}` : ''}.`;
+  const head = `${opener} ${title}${price ? `, ${price}` : ''}.`;
   let body = head;
   for (const d of details.slice(0, 3)) {
     const next = `${body}\n${d}`;
