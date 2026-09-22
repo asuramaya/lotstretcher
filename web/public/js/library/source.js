@@ -82,7 +82,64 @@ export class DirectorySource {
     return DirectorySource.fromInput();
   }
 
+  /* ---- remembering the folder across reloads ----
+   *
+   * A directory handle can be stored in IndexedDB and survives a reload;
+   * the browser re-asks permission once per session, and only in
+   * response to a click. So the app can offer "Reopen <name>" at once,
+   * and open it silently when permission is still granted. Chrome and
+   * Edge only: the webkitdirectory fallback yields Files, not a handle,
+   * and there is nothing to remember. */
+  static async remember(handle) {
+    try {
+      const db = await openDb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('handles', 'readwrite');
+        tx.objectStore('handles').put(handle, 'library');
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    } catch { /* private window, blocked storage: the picker still works */ }
+  }
+
+  static async remembered() {
+    try {
+      const db = await openDb();
+      const handle = await new Promise((resolve, reject) => {
+        const req = db.transaction('handles').objectStore('handles').get('library');
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+      if (!handle) return null;
+      const state = await handle.queryPermission({ mode: 'read' });
+      return { handle, name: handle.name, granted: state === 'granted' };
+    } catch {
+      return null;
+    }
+  }
+
+  static async forget() {
+    try {
+      const db = await openDb();
+      await new Promise((resolve) => {
+        const tx = db.transaction('handles', 'readwrite');
+        tx.objectStore('handles').delete('library');
+        tx.oncomplete = resolve;
+        tx.onerror = resolve;
+      });
+    } catch { /* nothing to forget */ }
+  }
+
+  /* Reopen a remembered handle. Must run from a click when permission
+   * is not already granted, or the browser refuses the prompt. */
+  static async reopen(handle) {
+    const state = await handle.requestPermission({ mode: 'read' });
+    if (state !== 'granted') throw new Error('permission to read the folder was not granted');
+    return DirectorySource.fromHandle(handle);
+  }
+
   static async fromHandle(root) {
+    DirectorySource.remember(root);
     const layout = get('library');
     const tree = new Map();
     for (const bucket of layout.buckets) {
@@ -191,6 +248,15 @@ export class DirectorySource {
     for (const u of this.objectUrls.values()) URL.revokeObjectURL(u);
     this.objectUrls.clear();
   }
+}
+
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('lotstretcher-library', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('handles');
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
 }
 
 async function walkHandle(dir, prefix, out) {

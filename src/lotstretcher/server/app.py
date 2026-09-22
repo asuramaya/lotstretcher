@@ -253,6 +253,17 @@ def library_status():
     return out
 
 
+@app.get("/library/runs")
+def library_runs(limit: int = 500):
+    """The run history for the History page: every row runs.jsonl holds,
+    newest first, up to `limit`."""
+    from . import library
+    root = _state.get("library")
+    if not root:
+        raise HTTPException(404, "no library configured on this host")
+    return {"runs": library.runs(Path(root), max(1, min(limit, 5000)))}
+
+
 def _sync_configured() -> bool:
     from ..dealer_config import get as dealer
     try:

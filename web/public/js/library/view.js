@@ -11,6 +11,7 @@
  * offering a source and capabilities, not by a different pane. */
 
 import { get } from '../spec.js';
+import { DirectorySource } from './source.js';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -47,6 +48,18 @@ export class LibraryView {
     this.getOptions = getOptions;
     this.can = can;
     this.status = null;
+    this.view = 'grid';          // or 'history'
+    this.remembered = null;      // a folder handle from a previous visit
+    /* Ask once whether a folder was remembered. Reopening needs a click
+     * unless permission is still granted, in which case it just opens. */
+    DirectorySource.remembered().then((r) => {
+      this.remembered = r;
+      if (r && r.granted && !this.source) {
+        DirectorySource.reopen(r.handle).then((s) => this.setSource(s)).catch(() => this.render());
+      } else if (!this.source) {
+        this.render();
+      }
+    });
     this.source = null;
     this.index = null;
     this.bucket = 'all';
@@ -137,7 +150,83 @@ export class LibraryView {
       this.refreshStatus();
     };
     box.appendChild(sync);
+
+    const hist = el('button', 'btn btn-sm btn-ghost', 'History');
+    hist.onclick = () => { this.view = 'history'; this.render(); };
+    box.appendChild(hist);
     return box;
+  }
+
+  /* Every run the library root has recorded: what cli.py and the sync
+   * append to runs.jsonl. Newest first, filterable by outcome, and a
+   * row's folder opens that vehicle when it is still in the library. */
+  async renderHistory() {
+    const h = this.host;
+    const head = el('div', 'section-head');
+    const back = el('button', 'btn btn-ghost btn-sm', '← Library');
+    back.onclick = () => { this.view = 'grid'; this.render(); };
+    head.append(back, el('h2', null, 'Run history'));
+    h.appendChild(head);
+
+    const note = el('p', 'small muted', 'Reading runs.jsonl...');
+    h.appendChild(note);
+    let rows;
+    try { rows = await this.ops.runs(); } catch (e) { note.textContent = `Could not read the history: ${e.message || e}`; return; }
+    if (!rows.length) { note.textContent = 'No runs recorded yet. The CLI and the sync append one row per vehicle to runs.jsonl.'; return; }
+    note.remove();
+
+    const counts = {};
+    for (const r of rows) counts[r.status] = (counts[r.status] || 0) + 1;
+    this.historyFilter = this.historyFilter || 'all';
+    const bar = el('div', 'row wrap', null);
+    bar.style.gap = 'var(--s-2)';
+    bar.style.marginBottom = 'var(--s-4)';
+    const table = el('div', 'lib-history');
+    const draw = () => {
+      table.innerHTML = '';
+      const byFolder = new Map((this.index?.vehicles || []).map((v) => [v.folder, v]));
+      for (const r of rows) {
+        if (this.historyFilter !== 'all' && r.status !== this.historyFilter) continue;
+        const row = el('div', `lib-run is-${r.status || 'unknown'}`);
+        const when = r.run_at ? new Date(r.run_at) : null;
+        row.append(
+          el('span', 'lib-run-when xs dim', when && !Number.isNaN(when) ? when.toLocaleString() : String(r.run_at || '')),
+          el('span', `pill${r.status === 'success' ? ' pill-ok' : ''}`, r.status || '?'),
+        );
+        const what = el('span', 'lib-run-what small');
+        const title = r.title || r.folder || r.url || '';
+        const v = r.folder && byFolder.get(String(r.folder).split('/').pop());
+        if (v) {
+          const a = el('a', null, title);
+          a.href = '#';
+          a.onclick = (e) => { e.preventDefault(); this.view = 'grid'; this.open = v; this.render(); };
+          what.appendChild(a);
+        } else {
+          what.textContent = title;
+        }
+        if (r.error) what.append(' ', el('span', 'xs dim', String(r.error).slice(0, 160)));
+        row.appendChild(what);
+        table.appendChild(row);
+      }
+      if (!table.children.length) table.appendChild(el('p', 'small muted', 'Nothing with that outcome.'));
+    };
+    for (const s of ['all', 'success', 'failed', 'skipped']) {
+      if (s !== 'all' && !counts[s]) continue;
+      const chip = el('button', 'chip');
+      chip.type = 'button';
+      chip.setAttribute('aria-pressed', this.historyFilter === s ? 'true' : 'false');
+      chip.append(el('strong', null, s === 'all' ? 'All' : s[0].toUpperCase() + s.slice(1)),
+        el('span', null, String(s === 'all' ? rows.length : counts[s])));
+      chip.onclick = () => {
+        this.historyFilter = s;
+        for (const c of bar.querySelectorAll('.chip')) c.setAttribute('aria-pressed', 'false');
+        chip.setAttribute('aria-pressed', 'true');
+        draw();
+      };
+      bar.appendChild(chip);
+    }
+    h.append(bar, table);
+    draw();
   }
 
   get vehicles() {
@@ -160,6 +249,7 @@ export class LibraryView {
     const h = this.host;
     h.innerHTML = '';
     if (this.open) { this.renderDetail(); return; }
+    if (this.view === 'history' && this.source) { this.renderHistory(); return; }
 
     const head = el('div', 'section-head');
     head.append(el('h2', null, 'Library'));
@@ -184,6 +274,21 @@ export class LibraryView {
       return;
     }
     if (!this.source) {
+      if (this.remembered && DirectorySource.supportsPicker()) {
+        const row = el('div', 'row wrap', null);
+        row.style.gap = 'var(--s-3)';
+        row.style.marginBottom = 'var(--s-4)';
+        const reopen = el('button', 'btn btn-primary btn-sm', `Reopen ${this.remembered.name}`);
+        reopen.onclick = async () => {
+          reopen.disabled = true;
+          try { await this.setSource(await DirectorySource.reopen(this.remembered.handle)); }
+          catch (e) { this.error = String(e.message || e); this.render(); }
+        };
+        const forget = el('button', 'btn btn-ghost btn-sm', 'Forget it');
+        forget.onclick = async () => { await DirectorySource.forget(); this.remembered = null; this.render(); };
+        row.append(reopen, forget, el('span', 'xs dim', 'The browser asks once per visit before reading it.'));
+        h.appendChild(row);
+      }
       h.appendChild(el('p', 'small muted',
         'A listings folder is what the pipeline writes: new/ and used/, one folder per '
         + 'vehicle, each with its finished bundle. Open one to browse it here. On your own '

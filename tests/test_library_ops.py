@@ -206,3 +206,10 @@ def test_delete_route_demands_the_folder_name(served):
     assert r.status_code == 200, r.text
     assert not (root / "new" / name).exists()
     assert client.post(f"/library/new/{name}/delete", json={"confirm": name}).status_code == 404
+
+
+def test_runs_route_returns_history_newest_first(served):
+    client, _ = served
+    r = client.get("/library/runs?limit=1")
+    assert r.status_code == 200 and [x["run_at"] for x in r.json()["runs"]] == ["b"]
+    assert [x["run_at"] for x in client.get("/library/runs").json()["runs"]] == ["b", "a"]

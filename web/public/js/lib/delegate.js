@@ -134,6 +134,11 @@ export const libraryOps = {
   remove(v) {
     return postJson(`library/${encodeURIComponent(v.bucket)}/${encodeURIComponent(v.folder)}/delete`, { confirm: v.folder });
   },
+  async runs(limit = 500) {
+    const res = await fetch(`library/runs?limit=${limit}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(String(res.status));
+    return (await res.json()).runs;
+  },
   sync() { return postJson('library/sync'); },
   async job(id) {
     const res = await fetch(`jobs/${encodeURIComponent(id)}`, { cache: 'no-store' });

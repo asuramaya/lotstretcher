@@ -104,6 +104,31 @@ def index(root: Path) -> dict:
     return {"root": str(root), "buckets": layout["buckets"], "vehicles": vehicles, "summary": summary}
 
 
+def runs(root: Path, limit: int = 500) -> list[dict]:
+    """The run history, newest first, from runs.jsonl. Bad lines are
+    skipped rather than failing the whole read: the log is append-only
+    and a crashed run can leave a partial last line."""
+    layout = _layout()
+    log = root / layout["rootFiles"]["runs"]
+    if not log.is_file():
+        return []
+    try:
+        lines = log.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return []
+    out: list[dict] = []
+    for line in lines:
+        try:
+            out.append(json.loads(line))
+        except ValueError:
+            continue
+    # Limit AFTER skipping bad lines, or a torn last line would eat the
+    # newest real row at limit=1.
+    out = out[-limit:]
+    out.reverse()
+    return out
+
+
 def status(root: Path, recent_runs: int = 20) -> dict:
     """What the sync and batch runs have recorded at the library root.
 
@@ -124,19 +149,7 @@ def status(root: Path, recent_runs: int = 20) -> dict:
         except (OSError, ValueError):
             return None
 
-    runs: list[dict] = []
-    log = root / files["runs"]
-    if log.is_file():
-        try:
-            lines = log.read_text(encoding="utf-8").splitlines()
-        except OSError:
-            lines = []
-        for line in lines[-recent_runs:]:
-            try:
-                runs.append(json.loads(line))
-            except ValueError:
-                continue
-        runs.reverse()
+    recent = runs(root, recent_runs)
 
     manifest = read_json(files["manifest"]) or {}
     fetched = sum(1 for k in manifest if str(k).startswith("vin:"))
@@ -154,7 +167,7 @@ def status(root: Path, recent_runs: int = 20) -> dict:
     return {
         "root": str(root),
         "lastRun": read_json(files["runSummary"]),
-        "runs": runs,
+        "runs": recent,
         "fetched": fetched,
         "delisted": delisted,
     }
