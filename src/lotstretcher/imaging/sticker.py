@@ -237,7 +237,21 @@ def _parse_equipment_grid(rows: list[list[Word]]) -> tuple[dict, list[str]]:
         col_rows = [r for r in rows if header_y < r[0].y0 < y_end
                     and any(x0 <= w.x0 < x1 for w in r)]
 
-        warranty_row = _find_row(col_rows, lambda r: any(w.text.upper() == "WARRANTY" for w in r))
+        # Match WARRANTY only among THIS column's own words.
+        #
+        # Rows are grouped globally by y, so the row carrying the safety
+        # column's WARRANTY header also carries whatever the other three
+        # columns print at that y. Searching the whole row therefore
+        # truncated EVERY column at the safety column's header: measured
+        # on a real Maverick sticker, 14 exterior items reported as 7,
+        # and the same loss in interior and functional. Found by the
+        # browser port, which bounds each column separately and
+        # disagreed with the CLI.
+        warranty_row = _find_row(
+            col_rows,
+            lambda r, x0=x0, x1=x1: any(
+                w.text.upper() == "WARRANTY" and x0 <= w.x0 < x1 for w in r),
+        )
         if warranty_row is not None:
             wy = warranty_row[0].y0
             raw = [_row_text([w for w in r if x0 <= w.x0 < x1]) for r in col_rows if r[0].y0 > wy]

@@ -260,17 +260,69 @@ function parseEquipmentGrid(runs, rs) {
   const out = {};
   for (const a of anchors) out[a.key] = [];
 
+  /* The grid's RIGHT EDGE, which nearest-anchor alone cannot supply.
+   *
+   * A fuel-economy sidebar sits to the right of the four columns at the
+   * same y ("combined city/hwy", "26", "$1,000 more in fuel costs"...).
+   * Nearest-anchor assigns every line of it to SAFETY/SECURITY, because
+   * that is the closest of the four, and the column came back with 33
+   * items where the CLI finds 6. The columns are evenly pitched, so one
+   * pitch past the last of them is where the grid stops. */
+  const xs = anchors.map((a) => a.x).sort((p, q) => p - q);
+  const pitch = xs.length > 1
+    ? (xs[xs.length - 1] - xs[0]) / (xs.length - 1)
+    : Infinity;
+  const rightEdge = xs[xs.length - 1] + pitch;
+
+  /* Row pitch, measured rather than assumed: it differs between sticker
+   * templates and drives the gap test that ends each column. */
+  const firstCol = runs
+    .filter((r) => r.y > bodyTop && r.y < bottom && r.x >= xs[0] - 8 && r.x < xs[0] + pitch - 8)
+    .map((r) => r.y)
+    .sort((a2, b2) => a2 - b2);
+  const deltas = [];
+  for (let i = 1; i < firstCol.length; i++) {
+    const d = firstCol[i] - firstCol[i - 1];
+    if (d > 0) deltas.push(d);
+  }
+  deltas.sort((a2, b2) => a2 - b2);
+  const rowPitch = deltas.length ? deltas[Math.floor(deltas.length / 2)] : 10;
+
   /* Each cell is its OWN run, so column assignment is just "which header
    * is this run under". No gap splitting: estimated word widths are not
    * accurate enough, and splitting on them either cut items in half or
    * merged three columns into one line. */
-  for (const r of runs) {
-    if (r.y <= bodyTop || r.y >= bottom) continue;
-    const text = r.text.replace(/^[\s.\u2022\u00b7-]+/, '').trim();
-    if (text.length < 3) continue;
-    let best = anchors[0];
-    for (const a of anchors) if (Math.abs(a.x - r.x) < Math.abs(best.x - r.x)) best = a;
-    out[best.key].push(displayCase(text));
+  /* EACH COLUMN ENDS ON ITS OWN, not on a shared y.
+   *
+   * On a real Ford sticker the SAFETY/SECURITY column runs out after six
+   * items and starts a WARRANTY block beneath it, while the other three
+   * columns keep listing equipment for another seven rows. Bounding the
+   * whole grid at the first such header is what the CLI does, and it
+   * silently drops those rows: measured on this sticker, 14 real
+   * exterior items reported as 7.
+   *
+   * So each column is walked down its own x band and terminated by
+   * whichever comes first: a section header, or a vertical gap clearly
+   * larger than the row pitch. */
+  const SECTION_WORDS = /^(WARRANTY|INCLUDED ON THIS|PRICE INFORMATION|OPTIONAL|SOLD TO|FUEL ECONOMY)/i;
+
+  for (const a of anchors) {
+    const band = runs
+      .filter((r) => r.y > bodyTop && r.y < bottom
+        && r.x >= a.x - 8 && r.x < a.x + pitch - 8
+        && r.text.replace(/^[\s.\u2022\u00b7-]+/, '').trim().length >= 3)
+      .sort((m, n) => m.y - n.y || m.x - n.x);
+
+    let previousY = null;
+    for (const r of band) {
+      const text = r.text.replace(/^[\s.\u2022\u00b7-]+/, '').trim();
+      if (SECTION_WORDS.test(text)) break;
+      // A gap of more than twice the row pitch means this column's list
+      // has ended and something else has started under it.
+      if (previousY !== null && r.y - previousY > rowPitch * 2) break;
+      previousY = r.y;
+      out[a.key].push(displayCase(text));
+    }
   }
   for (const k of Object.keys(out)) if (!out[k].length) delete out[k];
   return out;
