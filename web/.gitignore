@@ -1,0 +1,9 @@
+# Model weights and the ORT runtime are large binaries, not source.
+# See web/README.md for how to populate them.
+public/models/*.onnx
+public/ort/*.wasm
+public/ort/*.mjs
+
+# Sample photos used while developing. These are real dealer inventory
+# images and have no business in the repository.
+public/testdata/

@@ -1,0 +1,136 @@
+/* Design tokens.
+ *
+ * Dark-first and deliberately so: this is a tool for looking at vehicle
+ * photos, and a light chrome around a photo grid washes the photos out.
+ * Light mode exists and is honoured, but dark is the designed state.
+ *
+ * Every color is a token. Nothing downstream hardcodes a hex value, so
+ * retheming is a change in one file. */
+
+:root {
+  /* ---- surface ramp: page -> raised -> sunken ---- */
+  --bg:            #0b0c0e;
+  --surface:       #131519;
+  --surface-2:     #1a1d22;
+  --surface-3:     #22262d;
+  --sunken:        #08090a;
+
+  /* ---- ink ---- */
+  --ink:           #f2f4f7;
+  --ink-2:         #a8b0bb;
+  --ink-3:         #6b7480;
+  --ink-inverse:   #0b0c0e;
+
+  /* ---- line ---- */
+  --line:          #262b33;
+  --line-2:        #333a44;
+
+  /* ---- accent: a single hue, used sparingly.
+   * Amber rather than blue -- blue is what every dealer CMS already uses,
+   * and this needs to not look like one. */
+  --accent:        #f0a13a;
+  --accent-hi:     #ffb851;
+  --accent-lo:     #c47d21;
+  --accent-ink:    #1a1206;
+  --accent-wash:   rgba(240, 161, 58, 0.12);
+  --accent-line:   rgba(240, 161, 58, 0.32);
+
+  /* ---- status ---- */
+  --ok:            #4ba871;
+  --warn:          #d9a441;
+  --err:           #dc6a5e;
+  --err-wash:      rgba(220, 106, 94, 0.12);
+
+  /* ---- type ---- */
+  --font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --t-xs:   0.75rem;
+  --t-sm:   0.8125rem;
+  --t-base: 0.9375rem;
+  --t-md:   1.0625rem;
+  --t-lg:   1.375rem;
+  --t-xl:   1.875rem;
+  --t-2xl:  2.5rem;
+  --t-3xl:  3.5rem;
+
+  /* ---- space ---- */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+
+  /* ---- radius ---- */
+  --r-sm: 8px;  --r-md: 12px; --r-lg: 18px; --r-xl: 26px; --r-full: 999px;
+
+  /* ---- elevation ---- */
+  --sh-1: 0 1px 2px rgba(0,0,0,.4);
+  --sh-2: 0 4px 16px rgba(0,0,0,.45);
+  --sh-3: 0 12px 40px rgba(0,0,0,.55);
+
+  /* ---- motion. Short and slightly eased-out: native UI never
+   * lingers, and a 300ms transition on a tap feels broken on a phone. */
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  --ease: cubic-bezier(.32, .72, 0, 1);
+
+  /* ---- layout ---- */
+  --tap: 44px;              /* minimum touch target, non-negotiable */
+  --rail: 264px;            /* desktop sidebar */
+  --gutter: 16px;           /* phone side gutter */
+  --measure: 68ch;
+
+  /* ---- safe areas (iOS notch / home indicator) ---- */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:          #f6f7f9;
+    --surface:     #ffffff;
+    --surface-2:   #f0f2f5;
+    --surface-3:   #e4e7ec;
+    --sunken:      #e8eaee;
+    --ink:         #14171c;
+    --ink-2:       #4c5560;
+    --ink-3:       #7d8794;
+    --ink-inverse: #ffffff;
+    --line:        #dfe3e8;
+    --line-2:      #c8cdd5;
+    --accent:      #b06f10;
+    --accent-hi:   #965e0b;
+    --accent-lo:   #d08a2a;
+    --accent-ink:  #ffffff;
+    --accent-wash: rgba(176, 111, 16, 0.10);
+    --accent-line: rgba(176, 111, 16, 0.28);
+    --sh-1: 0 1px 2px rgba(16,20,28,.08);
+    --sh-2: 0 4px 16px rgba(16,20,28,.10);
+    --sh-3: 0 12px 40px rgba(16,20,28,.14);
+  }
+}
+
+:root[data-theme="light"] {
+  --bg:          #f6f7f9;
+  --surface:     #ffffff;
+  --surface-2:   #f0f2f5;
+  --surface-3:   #e4e7ec;
+  --sunken:      #e8eaee;
+  --ink:         #14171c;
+  --ink-2:       #4c5560;
+  --ink-3:       #7d8794;
+  --ink-inverse: #ffffff;
+  --line:        #dfe3e8;
+  --line-2:      #c8cdd5;
+  --accent:      #b06f10;
+  --accent-hi:   #965e0b;
+  --accent-lo:   #d08a2a;
+  --accent-ink:  #ffffff;
+  --accent-wash: rgba(176, 111, 16, 0.10);
+  --accent-line: rgba(176, 111, 16, 0.28);
+  --sh-1: 0 1px 2px rgba(16,20,28,.08);
+  --sh-2: 0 4px 16px rgba(16,20,28,.10);
+  --sh-3: 0 12px 40px rgba(16,20,28,.14);
+}

@@ -1,0 +1,29 @@
+# Cross-origin isolation. This is not optional.
+#
+# onnxruntime-web's threaded WASM build needs SharedArrayBuffer, which
+# needs crossOriginIsolated, which needs BOTH of these headers. Without
+# them ORT does not fail -- it silently drops to a single thread, and a
+# vehicle takes ~27s instead of ~12s. A "why is this so slow" bug report
+# with no error attached is almost always this.
+/*
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: require-corp
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  # No login, no accounts, no analytics, no third-party scripts. The CSP
+  # says so in a form a browser will actually enforce.
+  #
+  # connect-src is deliberately broad: the app fetches vehicle photos
+  # from whatever CDN the dealer uses, and (Tier 2, opt-in) talks to an
+  # AI provider with the USER's own key. Neither destination is knowable
+  # ahead of time. Nothing is sent to lotstretcher.org, because there is
+  # no server here to send it to.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; connect-src 'self' blob: data: https:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+
+# Models are content-addressed by deploy and large. Cache them hard --
+# the 44MB matting model should download exactly once per device.
+/models/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/ort/*
+  Cache-Control: public, max-age=31536000, immutable

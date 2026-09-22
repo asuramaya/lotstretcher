@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="lotstretcher">
+  <!-- A lot line being stretched: two bracket marks pulled apart around
+       a vehicle silhouette. Reads at 22px, which is the only size that
+       actually has to work. -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffb851"/>
+      <stop offset="1" stop-color="#c47d21"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="114" fill="#131519"/>
+  <g stroke="url(#g)" stroke-width="30" stroke-linecap="round" fill="none">
+    <path d="M96 168v176"/>
+    <path d="M416 168v176"/>
+  </g>
+  <path fill="url(#g)"
+        d="M168 300c0-8 3-16 8-22l26-34c6-8 15-12 25-12h58c10 0 19 4 25 12l26 34c5 6 8 14 8 22v28c0 7-6 13-13 13h-10c-7 0-13-6-13-13v-7H204v7c0 7-6 13-13 13h-10c-7 0-13-6-13-13z"/>
+  <g fill="#131519">
+    <circle cx="208" cy="312" r="13"/>
+    <circle cx="304" cy="312" r="13"/>
+  </g>
+</svg>

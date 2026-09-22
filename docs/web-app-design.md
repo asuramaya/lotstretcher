@@ -58,13 +58,48 @@ Models chosen by benchmark, not by reputation:
 
 | Stage | Model | Size | Speed | Quality |
 |---|---|---|---|---|
-| Matting | u2net int8 @ **fixed** 256×256 | 44.2 MB | 554 ms/photo @4 threads | 0/150 catastrophic failures on production photos; composites indistinguishable from BiRefNet |
-| Angle classify | distilled MobileNetV3-small int8 | ~1.7 MB | 9–14 ms/photo | 98.73% vs CLIP teacher |
-| Scene classify | distilled MobileNetV3-small int8 | ~1.7 MB | 9–14 ms/photo | 95.94% vs CLIP teacher |
+| Matting | u2net int8 @ **fixed** 256×256 | 44.2 MB | 960 ms/photo @4 threads | 0/150 catastrophic failures on production photos; composites indistinguishable from BiRefNet |
+| Angle classify | distilled MobileNetV3-small **fp32** | 6.1 MB | 26 ms/photo | 100% vs CLIP teacher |
+| Scene classify | distilled MobileNetV3-small **fp32** | 6.1 MB | 38 ms/photo | 99.25% vs CLIP teacher |
+| Compose | gradient + spotlight + placement | — | 55 ms/photo | — |
 | Video | WebCodecs `VideoEncoder` | — | 3–4× realtime | software encode only 16% slower than hardware |
 
-The classifiers replace the CLIP visual tower at **1/58th the size**. Both were distilled from
+Timings are medians measured **in the app**, desktop Chromium @4 threads, i9-12900H.
+
+The classifiers replace the CLIP visual tower at **1/29th the size**. Both were distilled from
 labels already on disk from production runs — the training data was free.
+
+### The classifiers ship fp32, because int8 is broken
+
+This corrects an earlier claim in this document. The previously quoted figures
+(int8, ~1.7 MB, 9–14 ms, 98.73%/95.94%) were measured on the PyTorch **checkpoints**, never on
+the int8 ONNX artifacts that would actually ship. Measured against the CLIP teacher labels,
+n=400 each:
+
+| | fp32 | int8 |
+|---|---|---|
+| angle (5 classes) | 100% | **9.75%** |
+| scene (4 classes) | 99.25% | **11.50%** |
+
+Both int8 numbers are *below chance*. `quantize_dynamic` rewrites MobileNetV3's 52 Conv nodes to
+`ConvInteger` with per-tensor dynamic activation scales; the depthwise convolutions and HardSwish
+activations collapse under one shared scale, the logits settle into a near-constant vector, and
+`argmax` stops depending on the input at all. Per-channel weight scales changed nothing —
+identical to two decimal places — because the damage is on the activation side, which
+`per_channel` does not touch.
+
+**The tell:** three different quantization schemes scoring identically to two decimals is not
+three coincidences. It is evidence that the variable under test is not the variable that matters.
+
+Cost of the fix: the model payload goes from ~48 MB to ~56 MB. Both classifiers stay well under
+the 25 MiB per-file asset cap, so the hosting shape is unchanged, and everything is
+browser-cached after first load. u2net quantises cleanly — it is a plain conv encoder/decoder
+with no depthwise or HardSwish blocks.
+
+A second correction from the same build: **u2net's output is min-max normalised, not passed
+through a sigmoid.** BiRefNet is the model that needs the sigmoid. Applying one to u2net yields a
+uniform ~0.5 field — a matte where every pixel is "maybe" — which surfaces as `ambiguous=1.0`
+and `coverage=1.0` rather than as an error.
 
 **Per vehicle, end to end:**
 
@@ -268,7 +303,7 @@ Deliberately front-loads everything with no security surface.
 
 | Version | Scope | Why here |
 |---|---|---|
-| **v1** | Upload + URL paste → classify, matte, compose → bundle download. Tier 0 gradients only. No keys, no asset UI, no accounts. | Genuinely complete on its own, and there is nothing to explain to the user. |
+| **v1** — *built, see [`web/`](../web/)* | Upload + URL paste → classify, matte, compose → bundle download. Tier 0 gradients only. No keys, no asset UI, no accounts. | Genuinely complete on its own, and there is nothing to explain to the user. |
 | **v2** | BYO asset library (OPFS). Bookmarklet for VDP metadata. | The logo is what dealers will ask for first. |
 | **v3** | BYO keys — **copy generation first**, backgrounds second. | Cheaper, more useful, and lower-stakes than image generation. |
 
