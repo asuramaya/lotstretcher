@@ -139,18 +139,30 @@
             <div><label class="label" for="f-miles">Mileage</label><input class="field" id="f-miles" inputmode="numeric" autocomplete="off"></div>
             <div><label class="label" for="f-vin">VIN</label><input class="field mono" id="f-vin" autocomplete="off" spellcheck="false"></div>
             <div><label class="label" for="f-stock">Stock #</label><input class="field mono" id="f-stock" autocomplete="off" spellcheck="false"></div>
+            <div><label class="label" for="f-cond">Condition</label>
+              <select class="field" id="f-cond">
+                <option value="">Not stated</option>
+                <option value="New">New</option>
+                <option value="Used">Used</option>
+                <option value="Certified Pre-Owned">Certified Pre-Owned</option>
+              </select></div>
           </div>
         </div>
 
         <div class="section">
           <div class="section-head"><h2>Dealer</h2></div>
           <p class="small muted" style="margin-bottom:var(--s-5)">
-            Appended to the post copy. Kept on this device only, so you
-            do not have to retype it next time.
+            The same boilerplate the command line takes from its dealer
+            config. The greeting and address open the Marketplace post,
+            because the feed preview shows only the first three lines. No
+            phone number: Facebook hides numbers typed into post text.
+            Kept on this device only.
           </p>
           <div class="form-grid">
             <div><label class="label" for="f-dealer">Name</label><input class="field" id="f-dealer" autocomplete="off"></div>
-            <div><label class="label" for="f-phone">Phone</label><input class="field" id="f-phone" inputmode="tel" autocomplete="off"></div>
+            <div><label class="label" for="f-greeting">Greeting</label><input class="field" id="f-greeting" placeholder="e.g. Ask for Sam!" autocomplete="off"></div>
+            <div class="span-2"><label class="label" for="f-address">Address</label><input class="field" id="f-address" placeholder="e.g. 100 Main St, Austin, TX 78701" autocomplete="off"></div>
+            <div class="span-2"><label class="label" for="f-citytags">City hashtags</label><input class="field" id="f-citytags" placeholder="e.g. Austin, AustinTX, ATXCars" autocomplete="off"></div>
           </div>
         </div>
       </div>

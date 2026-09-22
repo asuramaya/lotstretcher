@@ -640,9 +640,7 @@ async function run() {
       renderStages(stages);
     }
 
-    state.posts = buildAllPosts(state.vehicle, {
-      dealer: state.dealer, sticker: state.sticker,
-    });
+    state.posts = buildAllPosts(state.vehicle, { dealer: state.dealer });
     stages[3].state = 'done';
     stages[3].detail = `${cut.length} image${cut.length === 1 ? '' : 's'}`;
     renderStages(stages);
@@ -677,20 +675,38 @@ function readVehicle() {
   for (const k of ['engine', 'transmission', 'drivetrain', 'seating']) {
     if (state.vehicle?.[k]) carried[k] = state.vehicle[k];
   }
+  /* The record is scrape.Vehicle-shaped, because the copy builders are
+   * ports of the CLI's and read the same field names. A listing that was
+   * imported supplies everything the form has no box for (description,
+   * features, MPG); the form wins for anything it does have. */
+  const milesText = $('f-miles').value.replace(/[^0-9]/g, '');
+  const ext = $('f-ext').value.trim();
+  const int = $('f-int').value.trim();
   state.vehicle = {
+    ...(state.listing || {}),
     ...carried,
-    year: $('f-year').value.trim(),
-    make: $('f-make').value.trim(),
-    model: $('f-model').value.trim(),
-    trim: $('f-trim').value.trim(),
-    exterior_color: $('f-ext').value.trim(),
-    interior_color: $('f-int').value.trim(),
-    price: $('f-price').value.trim(),
-    mileage: $('f-miles').value.trim(),
-    vin: $('f-vin').value.trim(),
-    stock_number: $('f-stock').value.trim(),
+    year: $('f-year').value.trim() || null,
+    make: $('f-make').value.trim() || null,
+    model: $('f-model').value.trim() || null,
+    trim: $('f-trim').value.trim() || null,
+    condition: $('f-cond').value || state.listing?.condition || null,
+    exterior_color_factory: ext || null,
+    interior_color: int || null,
+    // The compositor's names for the same two colours.
+    exterior_color: ext,
+    display_price: $('f-price').value.trim() || null,
+    mileage: milesText ? Number(milesText) : null,
+    vin: $('f-vin').value.trim() || null,
+    stock_number: $('f-stock').value.trim() || null,
+    sticker: state.sticker || null,
   };
-  state.dealer = { name: $('f-dealer').value.trim(), phone: $('f-phone').value.trim() };
+  state.vehicle.title = vehicleTitle(state.vehicle) || null;
+  state.dealer = {
+    name: $('f-dealer').value.trim(),
+    greeting: $('f-greeting').value.trim(),
+    address: $('f-address').value.trim(),
+    city_tags: $('f-citytags').value.split(',').map((s) => s.trim()).filter(Boolean),
+  };
   saveDealer();
 }
 
@@ -837,8 +853,9 @@ function applyVehicle(v) {
   for (const [key, id] of Object.entries(map)) {
     if (v[key] != null && v[key] !== '' && !$(id).value.trim()) { $(id).value = String(v[key]); filled++; }
   }
+  if (v.condition && !$('f-cond').value) $('f-cond').value = v.condition;
   if (v.dealer_name && !$('f-dealer').value.trim()) $('f-dealer').value = v.dealer_name;
-  if (v.dealer_phone && !$('f-phone').value.trim()) $('f-phone').value = v.dealer_phone;
+  if (v.dealer_address && !$('f-address').value.trim()) $('f-address').value = v.dealer_address;
   readVehicle();
   for (const k of ['engine', 'transmission', 'drivetrain']) {
     if (v[k]) state.vehicle[k] = v[k];
@@ -899,7 +916,9 @@ async function init() {
   state.options = { ...controlDefaults(), ...loadOptions() };
   loadDealer();
   $('f-dealer').value = state.dealer.name || '';
-  $('f-phone').value = state.dealer.phone || '';
+  $('f-greeting').value = state.dealer.greeting || '';
+  $('f-address').value = state.dealer.address || '';
+  $('f-citytags').value = (state.dealer.city_tags || []).join(', ');
 
   for (const btn of document.querySelectorAll('.nav-btn')) {
     btn.onclick = () => go(btn.dataset.go);
@@ -942,6 +961,7 @@ async function init() {
     // bookmarklet stays offered: it works from any browser, including
     // one that is not on the same machine as the server.
     $('listingUrlWrap').hidden = !can('scrape');
+    $('listingUrlNote').textContent = '';
     openSheet('listingSheet');
   };
   $('listingUrlGo').onclick = async () => {

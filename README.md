@@ -108,6 +108,12 @@ Two implementations (Python and JavaScript) are unavoidable. Two *specifications
 formats and sizes, video timing, the palette bands and colour words, glow colours, the cutout quality
 gates. Both read it, through `src/lotstretcher/spec.py` and `web/public/js/spec.js`.
 
+The text side is held to the same rule. `web/public/js/pipeline/copy.js` is a port of
+`facebook_post.py` and `social_post.py`, and [`tests/test_copy_parity.py`](tests/test_copy_parity.py)
+runs both on the same vehicles under node and compares the finished posts byte for byte. The
+app's Dealer section holds the same boilerplate `dealer_config` does: greeting, address, city
+hashtags.
+
 [`tests/test_spec_parity.py`](tests/test_spec_parity.py) enforces it, including the cases the
 indirection alone can't cover: it compares the remaining Python literals against the spec, greps the
 JavaScript for any module that goes back to hardcoding, and fails outright if a format size reappears as
