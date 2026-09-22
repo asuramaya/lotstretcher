@@ -473,7 +473,8 @@
     "scraping": "Cross-origin HTML is unreadable, and dealer sites sit behind Cloudflare challenges",
     "inventorySync": "Long-running batch work with no browser equivalent",
     "audio": "The CLI's beat-synced video needs an audio loop and ffmpeg muxing",
-    "assets": "Borders and stock backgrounds need an asset library (Tier 1)"
+    "assets": "Borders and stock backgrounds need an asset library (Tier 1)",
+    "scrape": "A browser cannot read another site's page. Use 'From a listing' instead: a bookmarklet run on the vehicle page hands its record and photo links to this app."
   },
   "controls": {
     "$comment": [
@@ -805,5 +806,51 @@
         ]
       }
     ]
+  },
+  "listing": {
+    "_": [
+      "The subset of a DealerInspire vdp_gtm_payload that scrape.normalize_vehicle reads.",
+      "The bookmarklet ships ONLY these keys to the app, so a listing hand-off carries what",
+      "the CLI would have used and nothing else. tests/test_listing_parity.py asserts the",
+      "list covers every key normalize_vehicle actually touches."
+    ],
+    "cms": "dealerinspire",
+    "analyticsGlobal": "jzlAnalyticsObject",
+    "payloadKeys": [
+      "boxLength",
+      "cabStyle",
+      "certifications",
+      "conditions_array",
+      "dealerComments",
+      "dealerDescription",
+      "displayPrice",
+      "evBatteryRange",
+      "evMpgCombined",
+      "expando",
+      "features",
+      "flattened_pricing",
+      "location",
+      "make",
+      "mileage",
+      "model",
+      "options",
+      "price",
+      "specifications",
+      "stockNumber",
+      "tags",
+      "trim",
+      "used",
+      "vehicleStatus",
+      "vin",
+      "visual",
+      "year"
+    ],
+    "photoUrl": {
+      "resizePattern": "/resize/\\d+x\\d+/",
+      "target": "/resize/2048x2048/"
+    },
+    "descriptionMaxChars": 4000,
+    "hashParam": "listing",
+    "version": 1
   }
 }

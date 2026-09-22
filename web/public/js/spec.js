@@ -29,6 +29,13 @@ export async function loadSpec() {
   return loading;
 }
 
+/* Supply the spec directly, for code running outside a page: the parity
+ * tests run the JS normalisers under node against the same file. */
+export function loadSpecFrom(json) {
+  spec = json;
+  return spec;
+}
+
 /* Synchronous read, for code that runs after loadSpec() has resolved.
  * Throws rather than returning a default, because a silent fallback is
  * exactly the drift this file exists to prevent: the browser would carry

@@ -88,6 +88,7 @@
             <button class="btn" id="folderBtn">Choose folder</button>
             <button class="btn hidden" id="cameraBtn">Take photo</button>
             <button class="btn" id="urlBtn">Paste image URLs</button>
+            <button class="btn" id="listingBtn">From a listing</button>
           </div>
           <p class="xs dim">or drop files here</p>
         </div>
@@ -253,6 +254,42 @@
     <div class="sheet-foot">
       <button class="btn" data-close="urlSheet">Cancel</button>
       <button class="btn btn-primary" id="urlAdd">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="listingSheet" hidden>
+  <div class="sheet-body" role="dialog" aria-modal="true" aria-label="Import from a listing">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head"><h3 style="flex:1">Import from a listing</h3></div>
+    <div class="sheet-content">
+      <p class="small muted">
+        Your server can scrape a vehicle page for you. A browser cannot
+        read another site's page, so here the hand-off runs the other way:
+        a bookmarklet on the listing itself collects the vehicle record and
+        photo links and opens this app with them filled in.
+      </p>
+      <p class="small muted" style="margin-top:var(--s-3)">
+        Drag this to your bookmarks bar, then click it while viewing a
+        vehicle page. Nothing is sent anywhere: the page's own data is
+        handed to this app inside the link, which stays on this device.
+      </p>
+      <p style="margin:var(--s-4) 0">
+        <a class="btn btn-primary" id="bookmarkletLink" href="#" draggable="true">
+          Send to lotstretcher</a>
+        <span class="xs dim" style="margin-left:var(--s-3)">On a phone: copy it and paste as a bookmark's address.</span>
+      </p>
+      <button class="btn btn-sm btn-ghost" id="bookmarkletCopy">Copy the bookmarklet</button>
+      <span class="small dim" id="bookmarkletNote"></span>
+      <p class="xs dim" style="margin-top:var(--s-4)">
+        Works on DealerInspire pages, the same platform the command line
+        scraper reads. Other platforms fall back to the page's schema.org
+        data, which is thinner. Photo links are fetched to this device by
+        the app; a CDN that refuses cross-origin reads will say so.
+      </p>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" data-close="listingSheet">Done</button>
     </div>
   </div>
 </div>

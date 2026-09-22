@@ -30,6 +30,7 @@ import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlDefaults, controlsToFlags } from './controls.js';
 import { loadAssets, needsServer, composeOnServer } from './lib/delegate.js';
+import { normalizeListing, takeListingFromHash, bookmarkletSource } from './pipeline/listing.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -811,6 +812,56 @@ async function importSticker(source, label) {
   }
 }
 
+/* ---------- listing import --------------------------------------------
+ * The bookmarklet opened this page with a vehicle record in the URL
+ * fragment. Fill in what the CLI's scraper would have: the form fields,
+ * the dealer, the photo links, and the spec lines the copy uses. */
+function applyListing(raw) {
+  if (raw.error) {
+    $('warnBox').innerHTML = '';
+    $('warnBox').appendChild(el('div', 'banner banner-err', raw.error));
+    return;
+  }
+  const v = normalizeListing(raw);
+
+  const map = {
+    year: 'f-year', make: 'f-make', model: 'f-model', trim: 'f-trim',
+    exterior_color_factory: 'f-ext', interior_color: 'f-int',
+    display_price: 'f-price', mileage: 'f-miles', vin: 'f-vin', stock_number: 'f-stock',
+  };
+  let filled = 0;
+  for (const [key, id] of Object.entries(map)) {
+    if (v[key] != null && v[key] !== '' && !$(id).value.trim()) { $(id).value = String(v[key]); filled++; }
+  }
+  if (v.dealer_name && !$('f-dealer').value.trim()) $('f-dealer').value = v.dealer_name;
+  if (v.dealer_phone && !$('f-phone').value.trim()) $('f-phone').value = v.dealer_phone;
+  readVehicle();
+  for (const k of ['engine', 'transmission', 'drivetrain']) {
+    if (v[k]) state.vehicle[k] = v[k];
+  }
+  state.listing = v;
+
+  addUrls(v.photo_urls.join('\n'));
+
+  const bits = [`Imported ${v.title || 'a vehicle'} from the listing`];
+  if (filled) bits.push(`${filled} field${filled === 1 ? '' : 's'}`);
+  if (v.photo_urls.length) bits.push(`${v.photo_urls.length} photo link${v.photo_urls.length === 1 ? '' : 's'}`);
+  const box = $('warnBox');
+  box.innerHTML = '';
+  const banner = el('div', 'banner', bits.join(' · ') + '.');
+  box.appendChild(banner);
+  for (const w of v.warnings) box.appendChild(el('div', 'banner banner-warn', w));
+
+  /* A sticker link is the one thing worth acting on straight away: it
+   * carries the option list and MSRP the analytics blob does not. */
+  if (v.window_sticker_url) {
+    const b = el('button', 'btn btn-sm', 'Read its window sticker too');
+    b.onclick = () => { b.disabled = true; importSticker(v.window_sticker_url, 'the sticker'); };
+    banner.append(' ', b);
+  }
+  go('photos');
+}
+
 /* ---------- wiring --------------------------------------------------- */
 async function init() {
   // Chrome first: it must not depend on the spec loading, or a spec
@@ -864,6 +915,27 @@ async function init() {
   $('folderBtn').onclick = () => $('folderInput').click();
   $('cameraBtn').onclick = () => $('cameraInput').click();
   $('urlBtn').onclick = () => openSheet('urlSheet');
+  $('listingBtn').onclick = () => {
+    // Bound to THIS origin: a self-hosted install's bookmarklet opens
+    // that install, not lotstretcher.org.
+    const src = bookmarkletSource(location.origin);
+    $('bookmarkletLink').href = src;
+    $('bookmarkletLink').onclick = (e) => {
+      // Clicking it here would run it on this page, which has no listing.
+      e.preventDefault();
+      $('bookmarkletNote').textContent = 'Drag it to the bookmarks bar rather than clicking it here.';
+    };
+    $('bookmarkletCopy').onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(src);
+        $('bookmarkletNote').textContent = 'Copied. Add a bookmark and paste this as its address.';
+      } catch {
+        $('bookmarkletNote').textContent = 'The browser refused the clipboard; drag the button instead.';
+      }
+    };
+    $('bookmarkletNote').textContent = '';
+    openSheet('listingSheet');
+  };
   $('aboutBtn').onclick = () => {
     $('aboutRuntime').textContent = runtime.isolated
       ? `threads: ${runtime.threads} · SIMD: on · cross-origin isolated`
@@ -934,6 +1006,11 @@ async function init() {
   renderOptions();
   renderPhotos();
   renderResults();
+
+  // Opened by the bookmarklet? The record rides in the fragment, which
+  // the browser never sends anywhere; take it, then clear it.
+  const listing = takeListingFromHash();
+  if (listing) applyListing(listing);
 
   /* A debug handle.
    *

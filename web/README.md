@@ -146,11 +146,14 @@ Measured on desktop Chromium, 4 threads (i9-12900H):
 v1 is Tier 0 only — generated gradient backdrops, no assets, no API keys.
 Deliberately: it front-loads everything with no security surface.
 
-- **v2**: bring-your-own asset library (OPFS), bookmarklet for VDP metadata
+- **v2**: bring-your-own asset library (OPFS). The bookmarklet for VDP
+  metadata is built: `js/pipeline/listing.js`, a port of
+  `scrape.normalize_vehicle` with a field-by-field parity test.
 - **v3**: bring-your-own API keys — post copy first, generated backgrounds second
 
-Also not ported: multi-car layouts (quad/conveyor/corners), borders, glow,
-video. Those need an asset library or a lot more compute budget.
+Also not ported: multi-car layouts (quad/conveyor/corners). Borders and
+stock backdrops are reachable against a self-hosted server through
+`POST /compose`; glow and video run in the browser.
 
 ## The untested risk
 

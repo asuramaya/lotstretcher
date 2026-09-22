@@ -267,6 +267,8 @@
   font-size: var(--t-sm);
 }
 .banner-err { background: var(--err-wash); border-color: var(--err); }
+.banner-warn { background: var(--sunken); border-color: var(--line-2); color: var(--ink-2); }
+#warnBox .banner + .banner { margin-top: var(--s-2); }
 
 .empty { text-align: center; padding: var(--s-8) var(--s-5); color: var(--ink-3); }
 
