@@ -1,0 +1,207 @@
+/* Base layer.
+ *
+ * Most of this file exists to remove browser behaviours that give away
+ * that an app is a web page: the tap flash, the callout menu on long
+ * press, rubber-band scroll on the document, text selection on chrome,
+ * and the 300ms-feeling double-tap zoom. An app that does all of these
+ * things feels like a website no matter how it is styled. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;   /* iOS: don't reflow type on rotate */
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--t-base);
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none;      /* no rubber-band on the document */
+  text-rendering: optimizeLegibility;
+}
+
+/* Chrome is not selectable; content is. Selecting a nav label by accident
+ * while scrolling is a tell that you are in a browser. */
+body.is-app {
+  user-select: none;
+  -webkit-user-select: none;
+  position: fixed;                  /* the app shell never scrolls; panes do */
+  inset: 0;
+  overflow: hidden;
+}
+.selectable, input, textarea, [contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Every scrolling pane gets momentum and keeps its overscroll to itself. */
+.scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+.scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+.scroll::-webkit-scrollbar-thumb {
+  background: var(--line-2); border-radius: var(--r-full);
+  border: 3px solid transparent; background-clip: content-box;
+}
+.scroll::-webkit-scrollbar-track { background: transparent; }
+
+img, svg, video, canvas { display: block; max-width: 100%; }
+img { -webkit-user-drag: none; user-select: none; }
+
+h1, h2, h3, h4 { margin: 0; font-weight: 640; line-height: 1.2; letter-spacing: -0.02em; }
+h1 { font-size: var(--t-xl); }
+h2 { font-size: var(--t-lg); }
+h3 { font-size: var(--t-md); }
+p  { margin: 0; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---------- focus -------------------------------------------------
+ * Visible for keyboards, invisible for pointers. :focus-visible does
+ * exactly this and is safe to rely on now. */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* ---------- controls ---------------------------------------------- */
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.btn {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: var(--tap);
+  padding: 0 var(--s-5);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: var(--t-base);
+  font-weight: 560;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--dur-1) var(--ease),
+              border-color var(--dur-1) var(--ease),
+              transform var(--dur-1) var(--ease),
+              opacity var(--dur-1) var(--ease);
+}
+.btn:hover:not(:disabled) { background: var(--surface-3); }
+/* Press feedback is a scale, not a color change -- it reads as physical
+ * and it works on touch, where :hover never fires. */
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 620;
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent-hi); border-color: var(--accent-hi); }
+
+.btn-ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+.btn-ghost:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+
+.btn-lg { min-height: 54px; padding: 0 var(--s-6); font-size: var(--t-md); }
+.btn-sm { min-height: 34px; padding: 0 var(--s-3); font-size: var(--t-sm); }
+.btn-icon { width: var(--tap); min-height: var(--tap); padding: 0; border-radius: var(--r-full); }
+
+.field {
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s-3) var(--s-4);
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--ink);
+  font-size: var(--t-base);
+  /* 16px minimum on iOS or focusing the field zooms the viewport. The
+   * app's base size is 15px, so inputs are bumped explicitly. */
+  font-size: max(16px, var(--t-base));
+  transition: border-color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+}
+.field::placeholder { color: var(--ink-3); }
+.field:focus { border-color: var(--accent); background: var(--surface); }
+textarea.field { min-height: 90px; resize: vertical; line-height: 1.5; }
+
+.label {
+  display: block;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: var(--s-2);
+}
+
+/* ---------- helpers ---------------------------------------------- */
+.row { display: flex; align-items: center; gap: var(--s-3); }
+.col { display: flex; flex-direction: column; gap: var(--s-3); }
+.grow { flex: 1 1 auto; min-width: 0; }
+.wrap { flex-wrap: wrap; }
+.center { align-items: center; justify-content: center; }
+.muted { color: var(--ink-2); }
+.dim { color: var(--ink-3); }
+.small { font-size: var(--t-sm); }
+.xs { font-size: var(--t-xs); }
+.mono { font-family: var(--mono); font-size: .92em; }
+.hidden { display: none !important; }
+.nowrap { white-space: nowrap; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.pill {
+  display: inline-flex; align-items: center; gap: var(--s-1);
+  padding: 3px var(--s-3);
+  border-radius: var(--r-full);
+  background: var(--surface-3);
+  font-size: var(--t-xs); font-weight: 600;
+  color: var(--ink-2);
+}
+.pill-accent { background: var(--accent-wash); color: var(--accent); border: 1px solid var(--accent-line); }
+.pill-ok  { background: rgba(75,168,113,.14); color: var(--ok); }
+.pill-err { background: var(--err-wash); color: var(--err); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s-5);
+}
+
+hr.rule { border: 0; border-top: 1px solid var(--line); margin: var(--s-5) 0; }
+
+/* Respect the OS setting. Someone who turns motion off gets no motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

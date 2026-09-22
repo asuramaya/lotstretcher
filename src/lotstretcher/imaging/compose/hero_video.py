@@ -106,6 +106,7 @@ from PIL import Image
 
 from .background import apply_spotlight, compute_dim_strength, fit_background, make_linear_gradient
 from .effects import DEFAULT_GLOW_COLOR, make_glow_layer
+from ... import spec as _spec
 from .layout import LAYOUTS, conveyor_for_window, compute_placement
 from .window import alpha_mask, detect_window, resolve_collision
 from ..classify import detect_hood_side
@@ -133,8 +134,8 @@ TRANSITION_FRAC = 0.35  # fraction of a bar spent on the 4-way conveyor morph
 # growth, symmetric around the hero's own center, stays under that gap
 # with margin to spare rather than reaching back into the accents, which
 # is the exact bug the hero box bounds fix (layout.py) exists to prevent.
-PULSE_STRENGTH = 0.035
-PULSE_DECAY = 0.3
+PULSE_STRENGTH = _spec.get("video", "pulseStrength")
+PULSE_DECAY = _spec.get("video", "pulseDecay")
 
 # A hero cutout whose native aspect ratio is much wider than the hero
 # box's -- a side profile, mainly -- would otherwise be letterboxed (fit
@@ -164,20 +165,19 @@ DEFAULT_CANVAS_SIZE = (1254, 1254)
 # 50MB figure is a MARKETPLACE limit and applies only to the square;
 # Reels, Shorts and TikTok all allow far more, so inheriting it there
 # would have meant paying for a constraint that doesn't exist.
+# From shared/pipeline-spec.json, so the browser client renders the same
+# shapes at the same budgets -- see src/lotstretcher/spec.py.
 VIDEO_FORMATS = {
-    "square": {"canvas": (1254, 1254), "budget_mb": 50.0,
-                "note": "Marketplace, Facebook feed"},
-    "vertical": {"canvas": (1080, 1920), "budget_mb": 66.0,
-                  "note": "Reels, Stories, TikTok, Shorts"},
-    "horizontal": {"canvas": (1920, 1080), "budget_mb": 66.0,
-                    "note": "YouTube, landscape feed"},
+    name: {"canvas": tuple(f["size"]), "budget_mb": f["budget_mb" if "budget_mb" in f else "budgetMb"],
+            "note": f["note"]}
+    for name, f in _spec.get("videoFormats", "formats", default={}).items()
 }
-DEFAULT_VIDEO_FORMAT = "square"
+DEFAULT_VIDEO_FORMAT = _spec.get("videoFormats", "default", default="square")
 # Full rotations the generated gradient sweeps through over the whole
 # video. The backdrop has to keep moving now that there's no waving flag
 # doing it -- a static gradient behind a static accent row reads as a
 # still image with a car twitching on it.
-GRADIENT_TURNS = 1.0
+GRADIENT_TURNS = _spec.get("video", "gradientTurns")
 
 # The pan runs from "nose centered in the frame" to "tail centered": the
 # vehicle drives through, entering and leaving past the frame's edges.
@@ -198,8 +198,8 @@ PAN_BARS = 2
 # at, so it can afford air, but a frame that's on screen for two seconds
 # wants to read big, and the inset was being paid twice (once around the
 # accent boxes, once around the hero) which measurably emptied the frame.
-HERO_MARGIN_FRAC = 0.02
-ACCENT_MARGIN_FRAC = 0.03
+HERO_MARGIN_FRAC = _spec.get("video", "heroMarginFrac")
+ACCENT_MARGIN_FRAC = _spec.get("video", "accentMarginFrac")
 
 
 def _ease_out(t: float) -> float:

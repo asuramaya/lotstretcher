@@ -1,0 +1,22 @@
+{
+  // Static assets only. There is no Worker script: every request is a
+  // file, and all computation happens in the visitor's browser. That is
+  // the product decision, not a limitation -- it is what keeps hosting
+  // free and leaves no server-side data to leak.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lotstretcher",
+  "compatibility_date": "2026-09-22",
+
+  "assets": {
+    "directory": "./public",
+    // Unknown paths fall back to the landing page rather than a bare
+    // 404. The app is two real pages, so this mostly catches typos.
+    "not_found_handling": "404-page"
+  }
+
+  // The 44.2MB matting model does NOT live here. Cloudflare caps static
+  // assets at 25 MiB per file on free AND paid plans, so it is served
+  // from R2 (zero egress) via MODEL_ORIGIN in js/config.js.
+  //
+  // "r2_buckets": [{ "binding": "MODELS", "bucket_name": "lotstretcher-models" }]
+}

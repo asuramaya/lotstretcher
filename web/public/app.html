@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- viewport-fit=cover is what lets the layout reach under the notch and
+     the home indicator; without it env(safe-area-inset-*) is always 0. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b0c0e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="lotstretcher">
+<meta name="robots" content="noindex">
+<title>lotstretcher</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body class="is-app">
+
+<div class="app">
+
+  <!-- Nav is declared before main so the tab order is nav -> content.
+       On desktop CSS grid places it as a left rail; on a phone it is the
+       bottom bar. Same markup either way. -->
+  <nav class="nav" aria-label="Sections">
+    <div class="nav-rail-head">
+      <span class="brand"><span class="brand-mark"></span> lotstretcher</span>
+      <p class="xs dim" style="margin-top:6px">Runs entirely on this device</p>
+    </div>
+    <button class="nav-btn" data-go="source" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      <span>Photos</span>
+    </button>
+    <button class="nav-btn" data-go="details">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      <span>Details</span>
+    </button>
+    <button class="nav-btn" data-go="options">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+      <span>Options</span>
+    </button>
+    <button class="nav-btn" data-go="results" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span>Results</span>
+      <span class="dot hidden" id="resultsDot"></span>
+    </button>
+  </nav>
+
+  <header class="topbar">
+    <span class="brand" style="flex:1"><span class="brand-mark"></span> lotstretcher</span>
+    <button class="btn btn-ghost btn-sm" id="aboutBtn" aria-label="About this app">About</button>
+    <button class="btn btn-primary btn-sm" id="runBtn" disabled>Process</button>
+  </header>
+
+  <main class="main">
+
+    <!-- ---------- photos ---------- -->
+    <section class="pane" id="pane-source" aria-label="Photos">
+      <div class="pane-inner">
+        <div id="isolationWarn" class="banner banner-err hidden" style="margin-bottom:var(--s-5)">
+          <div>
+            <strong>Running single-threaded.</strong>
+            This page was served without cross-origin isolation, so the
+            browser will not give us worker threads. Everything still
+            works, roughly twice as slowly.
+          </div>
+        </div>
+
+        <div class="dropzone" id="dropzone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M3 15v3a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-3"/>
+          </svg>
+          <div>
+            <h2 style="font-size:var(--t-md)">Add vehicle photos</h2>
+            <p class="small muted" style="margin-top:4px">
+              They never leave this device.
+            </p>
+          </div>
+          <div class="source-actions">
+            <button class="btn btn-primary" id="pickBtn">Choose photos</button>
+            <button class="btn" id="folderBtn">Choose folder</button>
+            <button class="btn hidden" id="cameraBtn">Take photo</button>
+            <button class="btn" id="urlBtn">Paste image URLs</button>
+          </div>
+          <p class="xs dim">or drop files here</p>
+        </div>
+
+        <input type="file" id="fileInput" multiple accept="image/*" class="sr-only">
+        <input type="file" id="folderInput" webkitdirectory multiple class="sr-only">
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" class="sr-only">
+
+        <div class="section" id="photosSection" hidden>
+          <div class="section-head">
+            <h2>Photos</h2>
+            <span class="pill" id="photoCount">0</span>
+            <button class="btn btn-ghost btn-sm" id="clearBtn">Clear</button>
+          </div>
+          <div id="warnBox"></div>
+          <div class="grid" id="photoGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- details ---------- -->
+    <section class="pane" id="pane-details" hidden aria-label="Vehicle details">
+      <div class="pane-inner">
+        <div class="section">
+          <div class="section-head"><h2>Vehicle</h2></div>
+
+          <div class="importer">
+            <div class="row wrap" style="gap:var(--s-3)">
+              <button class="btn btn-sm" id="stickerFileBtn">Import window sticker</button>
+              <button class="btn btn-sm btn-ghost" id="stickerUrlBtn">Paste sticker URL</button>
+              <span class="small dim" id="stickerNote">Fills these fields from the PDF.</span>
+            </div>
+            <input type="file" id="stickerInput" accept="application/pdf,.pdf" class="sr-only">
+          </div>
+
+          <p class="small muted" style="margin-bottom:var(--s-5)">
+            All optional. The colors matter most: they decide the backdrop,
+            which is generated from the vehicle's own paint.
+          </p>
+          <div class="form-grid">
+            <div><label class="label" for="f-year">Year</label><input class="field" id="f-year" inputmode="numeric" autocomplete="off"></div>
+            <div><label class="label" for="f-make">Make</label><input class="field" id="f-make" autocomplete="off"></div>
+            <div><label class="label" for="f-model">Model</label><input class="field" id="f-model" autocomplete="off"></div>
+            <div><label class="label" for="f-trim">Trim</label><input class="field" id="f-trim" autocomplete="off"></div>
+            <div><label class="label" for="f-ext">Exterior color</label><input class="field" id="f-ext" placeholder="e.g. Agate Black" autocomplete="off"></div>
+            <div><label class="label" for="f-int">Interior color</label><input class="field" id="f-int" placeholder="e.g. Ebony" autocomplete="off"></div>
+            <div><label class="label" for="f-price">Price</label><input class="field" id="f-price" inputmode="numeric" autocomplete="off"></div>
+            <div><label class="label" for="f-miles">Mileage</label><input class="field" id="f-miles" inputmode="numeric" autocomplete="off"></div>
+            <div><label class="label" for="f-vin">VIN</label><input class="field mono" id="f-vin" autocomplete="off" spellcheck="false"></div>
+            <div><label class="label" for="f-stock">Stock #</label><input class="field mono" id="f-stock" autocomplete="off" spellcheck="false"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2>Dealer</h2></div>
+          <p class="small muted" style="margin-bottom:var(--s-5)">
+            Appended to the post copy. Kept on this device only, so you
+            do not have to retype it next time.
+          </p>
+          <div class="form-grid">
+            <div><label class="label" for="f-dealer">Name</label><input class="field" id="f-dealer" autocomplete="off"></div>
+            <div><label class="label" for="f-phone">Phone</label><input class="field" id="f-phone" inputmode="tel" autocomplete="off"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- options ---------- -->
+    <section class="pane" id="pane-options" hidden aria-label="Options">
+      <div class="pane-inner">
+        <div class="section">
+          <div class="section-head">
+            <h2>Output</h2>
+            <button class="btn btn-ghost btn-sm" id="resetOptions">Reset</button>
+          </div>
+          <p class="small muted" style="margin-bottom:var(--s-4)">
+            Same options the command line takes, minus the ones a browser
+            cannot do. Kept on this device.
+          </p>
+
+          <label class="label">Still formats</label>
+          <div class="chips" id="heroFormats"></div>
+
+          <label class="label" style="margin-top:var(--s-5)">Video formats</label>
+          <div class="chips" id="videoFormats"></div>
+          <p class="xs dim" id="videoNote" style="margin-top:var(--s-2)"></p>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2>Pipeline</h2></div>
+          <div class="opts" id="pipelineOpts"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2>Look</h2></div>
+          <div class="opts" id="lookOpts"></div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2>Same run, on your server</h2></div>
+          <p class="small muted" style="margin-bottom:var(--s-3)">
+            These options map to the self-hosted CLI. Same pipeline, same
+            flags, no limits on batch size.
+          </p>
+          <div class="copybox mono" id="cliEcho"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- results ---------- -->
+    <section class="pane" id="pane-results" hidden aria-label="Results">
+      <div class="pane-inner">
+        <div class="section" id="progressSection" hidden>
+          <div class="section-head"><h2>Working</h2><span class="pill" id="progPct">0%</span></div>
+          <div class="bar" style="margin-bottom:var(--s-5)"><i id="progBar"></i></div>
+          <div class="stage-list" id="stageList"></div>
+        </div>
+
+        <div class="section" id="heroSection" hidden>
+          <div class="section-head">
+            <h2>Images</h2>
+            <button class="btn btn-primary btn-sm" id="downloadBtn">Download bundle</button>
+          </div>
+          <div class="grid" id="resultGrid"></div>
+        </div>
+
+        <div class="section" id="videoSection" hidden>
+          <div class="section-head"><h2>Video</h2></div>
+          <div class="clipgrid" id="videoGrid"></div>
+        </div>
+
+        <div class="section" id="copySection" hidden>
+          <div class="section-head"><h2>Post copy</h2></div>
+          <div class="col" id="copyList"></div>
+        </div>
+
+        <div class="empty" id="resultsEmpty">
+          <p>Nothing yet. Add photos and press Process.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ---------- sheets ---------- -->
+<div class="sheet" id="urlSheet" hidden>
+  <div class="sheet-body" role="dialog" aria-modal="true" aria-label="Paste image URLs">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head"><h3 style="flex:1">Paste image URLs</h3></div>
+    <div class="sheet-content">
+      <p class="small muted" style="margin-bottom:var(--s-4)">
+        One per line. The photos are fetched straight from the dealer's
+        CDN to this device. Nothing passes through lotstretcher.org. A CDN
+        that refuses cross-origin reads will fail, and the app says which.
+      </p>
+      <textarea class="field mono" id="urlInput" rows="7" spellcheck="false"
+        placeholder="https://pictures.dealer.com/…/0001.jpg"></textarea>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn" data-close="urlSheet">Cancel</button>
+      <button class="btn btn-primary" id="urlAdd">Add</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="stickerSheet" hidden>
+  <div class="sheet-body" role="dialog" aria-modal="true" aria-label="Window sticker URL">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head"><h3 style="flex:1">Window sticker URL</h3></div>
+    <div class="sheet-content">
+      <p class="small muted" style="margin-bottom:var(--s-4)">
+        A direct link to the sticker PDF. It is fetched straight to this
+        device and parsed here. Ford's sticker host allows this; some
+        others refuse cross-origin reads, and the app will say so.
+      </p>
+      <textarea class="field mono" id="stickerUrlInput" rows="4" spellcheck="false"
+        placeholder="https://www.windowsticker.forddirect.com/windowsticker.pdf?token=..."></textarea>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn" data-close="stickerSheet">Cancel</button>
+      <button class="btn btn-primary" id="stickerUrlGo">Read it</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="aboutSheet" hidden>
+  <div class="sheet-body" role="dialog" aria-modal="true" aria-label="About">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head"><h3 style="flex:1">About</h3></div>
+    <div class="sheet-content selectable">
+      <p class="small">
+        lotstretcher turns vehicle photos into post-ready images and copy.
+        Background removal, classification and compositing all run in this
+        browser tab, on this device.
+      </p>
+      <hr class="rule">
+      <h3 style="font-size:var(--t-base);margin-bottom:var(--s-2)">What leaves this device</h3>
+      <p class="small muted">
+        Your photos: nothing. There is no account, no upload, and no
+        server-side storage, because the site is static files. The only
+        network requests are the one-time model download and any image
+        URLs you paste.
+      </p>
+      <hr class="rule">
+      <h3 style="font-size:var(--t-base);margin-bottom:var(--s-2)">Runtime</h3>
+      <div class="small muted mono" id="aboutRuntime">checking</div>
+      <hr class="rule">
+      <p class="small muted">
+        Open source, MIT.
+        <a href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener">github.com/asuramaya/lotstretcher</a>
+      </p>
+    </div>
+    <div class="sheet-foot"><button class="btn btn-primary" data-close="aboutSheet">Done</button></div>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

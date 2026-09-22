@@ -64,6 +64,10 @@ surface because that's the surface that can actually do it.
 Keeping the hosted side free is a deliberate constraint, not a limitation we backed into — it's what lets
 the website stay open to anyone with a phone and some photos, permanently.
 
+The website is designed but not built. [`docs/web-app-design.md`](docs/web-app-design.md) is the spec:
+measured model sizes and timings, the $0 hosting shape, how backgrounds work without an API key or any
+bundled assets, and the one thing still untested (real iOS hardware).
+
 ### Self-hosted runs in two modes
 
 The CLI (the default — one-shot scripts and cron) and an opt-in **server mode** exposing a

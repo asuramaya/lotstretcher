@@ -1,0 +1,141 @@
+<!doctype html>
+<!-- Pipeline self-test.
+     Runs the real modules against real photos and reports timings and
+     visual output. Not part of the app; it is how we check that a change
+     to the pipeline did not quietly break the thing it composes. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lotstretcher self-test</title>
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<style>
+  body { padding: var(--s-5); }
+  .out { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--s-4); margin-top: var(--s-5); }
+  .out figure { margin: 0; }
+  .out img, .out canvas { width: 100%; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--sunken); }
+  pre { background: var(--sunken); padding: var(--s-4); border-radius: var(--r-md); overflow: auto; font-size: var(--t-sm); border: 1px solid var(--line); }
+  figcaption { font-size: var(--t-xs); color: var(--ink-2); margin-top: var(--s-2); }
+</style>
+</head>
+<body>
+<h1>Pipeline self-test</h1>
+<p class="muted small">Add <code>?photos=url1,url2</code> or drop files below.</p>
+<div class="row" style="margin-top:var(--s-4)">
+  <input type="file" id="files" multiple accept="image/*" class="field">
+  <button class="btn btn-primary" id="run">Run</button>
+</div>
+<pre id="log">ready</pre>
+<div class="out" id="out"></div>
+
+<script type="module">
+import { initRuntime, runtime, loadModel } from './js/pipeline/runtime.js';
+import { classifyScene, classifyAngle, loadLabels } from './js/pipeline/classify.js';
+import { matte, applyMatte } from './js/pipeline/matte.js';
+import { composeHero } from './js/pipeline/compose.js';
+import { decode } from './js/lib/imageio.js';
+
+const logEl = document.getElementById('log');
+const outEl = document.getElementById('out');
+const say = (m) => { logEl.textContent += '\n' + m; console.log('[selftest]', m); };
+window.SELFTEST = { status: 'idle' };
+
+function show(canvas, caption) {
+  const fig = document.createElement('figure');
+  fig.appendChild(canvas);
+  const cap = document.createElement('figcaption');
+  cap.textContent = caption;
+  fig.appendChild(cap);
+  outEl.appendChild(fig);
+}
+
+async function run(sources) {
+  outEl.innerHTML = '';
+  logEl.textContent = 'starting…';
+  window.SELFTEST = { status: 'running', photos: [] };
+  try {
+    const t0 = performance.now();
+    await initRuntime();
+    say(`crossOriginIsolated=${runtime.isolated} threads=${runtime.threads} simd=${runtime.simd}`);
+    if (!runtime.isolated) say('WARNING: not isolated -- single thread, expect ~2x slower');
+
+    await loadLabels();
+    const tl = performance.now();
+    await Promise.all([loadModel('scene'), loadModel('angle'), loadModel('matte')]);
+    say(`models loaded in ${((performance.now() - tl) / 1000).toFixed(1)}s`);
+
+    const timings = { scene: [], angle: [], matte: [], compose: [] };
+
+    for (let i = 0; i < sources.length; i++) {
+      const bitmap = await decode(sources[i]);
+      const name = sources[i].name || `photo ${i + 1}`;
+
+      let t = performance.now();
+      const scene = await classifyScene(bitmap);
+      timings.scene.push(performance.now() - t);
+
+      const rec = { name, scene: scene.label, sceneConf: +scene.confidence.toFixed(3) };
+
+      if (scene.label === 'exterior') {
+        t = performance.now();
+        const m = await matte(bitmap);
+        timings.matte.push(performance.now() - t);
+        const cut = applyMatte(bitmap, m);
+        rec.ambiguous = +m.ambiguous.toFixed(4);
+        rec.coverage = +cut.coverage.toFixed(3);
+
+        if (cut.canvas) {
+          const cutBitmap = await createImageBitmap(await (cut.canvas.convertToBlob
+            ? cut.canvas.convertToBlob() : new Promise(r => cut.canvas.toBlob(r))));
+          t = performance.now();
+          const angle = await classifyAngle(cutBitmap);
+          timings.angle.push(performance.now() - t);
+          rec.angle = angle.label;
+          rec.angleConf = +angle.confidence.toFixed(3);
+
+          t = performance.now();
+          const hero = composeHero(cut.canvas, {
+            seed: name, exterior: params.get('ext'), interior: params.get('int'),
+          });
+          timings.compose.push(performance.now() - t);
+
+          const disp = document.createElement('canvas');
+          disp.width = 400; disp.height = 400;
+          disp.getContext('2d').drawImage(hero, 0, 0, 400, 400);
+          show(disp, `${name} — ${rec.angle} (${rec.angleConf}) amb=${rec.ambiguous}`);
+        }
+      } else {
+        say(`${name}: ${scene.label} (${rec.sceneConf}) — not composed`);
+      }
+      window.SELFTEST.photos.push(rec);
+      say(JSON.stringify(rec));
+    }
+
+    const med = (a) => a.length ? +(a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)]).toFixed(0) : null;
+    const summary = {
+      isolated: runtime.isolated, threads: runtime.threads,
+      n: sources.length,
+      medianMs: { scene: med(timings.scene), angle: med(timings.angle),
+                  matte: med(timings.matte), compose: med(timings.compose) },
+      totalS: +((performance.now() - t0) / 1000).toFixed(1),
+    };
+    window.SELFTEST = { status: 'ok', ...summary, photos: window.SELFTEST.photos };
+    say('\n' + JSON.stringify(summary, null, 2));
+    say('DONE');
+  } catch (e) {
+    window.SELFTEST = { status: 'error', error: String(e && e.stack || e) };
+    say('ERROR ' + (e && e.stack || e));
+  }
+}
+
+const params = new URLSearchParams(location.search);
+document.getElementById('run').onclick = () => {
+  const f = document.getElementById('files').files;
+  if (f.length) run([...f]);
+};
+const urls = params.get('photos');
+if (urls) run(urls.split(',').filter(Boolean));
+</script>
+</body>
+</html>

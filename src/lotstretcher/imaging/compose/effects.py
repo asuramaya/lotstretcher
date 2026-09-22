@@ -3,13 +3,11 @@ from __future__ import annotations
 
 from PIL import Image
 
-GLOW_COLORS = {
-    "white": (255, 255, 255),
-    "blue": (70, 140, 255),
-    "gold": (255, 200, 80),
-    "red": (255, 70, 70),
-}
-DEFAULT_GLOW_COLOR = "white"
+from ... import spec as _spec
+
+# From shared/pipeline-spec.json -- see src/lotstretcher/spec.py.
+GLOW_COLORS = _spec.rgb_map("glow", "colors")
+DEFAULT_GLOW_COLOR = _spec.get("glow", "default", default="white")
 
 
 def resolve_glow_color(name_or_rgb) -> tuple[int, int, int]:

@@ -1,0 +1,15 @@
+{
+  "scene": [
+    "interior",
+    "exterior",
+    "detail",
+    "marketing"
+  ],
+  "angle": [
+    "front",
+    "front_3q",
+    "side",
+    "rear_3q",
+    "rear"
+  ]
+}
