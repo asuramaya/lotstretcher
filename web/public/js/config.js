@@ -49,7 +49,33 @@ export const NORM_MEAN = [0.485, 0.456, 0.406];
 export const NORM_STD = [0.229, 0.224, 0.225];
 
 export const ALPHA_THRESHOLD = 16;   // imaging/cutout.py
+
+/* Quality gates. A matte that fails one of these is not composed, because
+ * a confidently-wrong cutout is worse than no cutout: it goes out as a
+ * post. Values follow imaging/cutout.py. */
+
+/* Fraction of pixels stranded between "background" and "foreground". A
+ * clean vehicle photo measures ~0.017; anything above this means the
+ * model could not decide, which in practice means the frame is not one
+ * clean vehicle. */
 export const MAX_AMBIGUOUS_FRACTION = 0.05;
+
+/* How much of the frame the cutout occupies. Below the floor there is no
+ * real subject (a sky shot, a badge close-up); above the ceiling the
+ * "cutout" is most of the frame, which is what happens when matting
+ * fails open and keeps the background. */
+export const MIN_COVERAGE = 0.02;
+export const MAX_COVERAGE = 0.92;
+
+/* Below this, the angle is reported as unknown rather than asserted.
+ * A wheel close-up that slips past the scene classifier scores ~0.33
+ * here, and labelling it "front_3q" anyway is exactly the kind of
+ * confident error that makes the output untrustworthy. */
+export const MIN_ANGLE_CONFIDENCE = 0.45;
+
+/* Below this the scene label is too weak to route on, so the photo is
+ * kept but not composed. */
+export const MIN_SCENE_CONFIDENCE = 0.40;
 
 export const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'bmp', 'tiff', 'avif'];
 

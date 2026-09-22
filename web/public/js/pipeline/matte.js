@@ -14,7 +14,9 @@
 
 import { loadModel, getOrt } from './runtime.js';
 import { resizeTo, imageDataOf, makeCanvas, ctxOf } from '../lib/imageio.js';
-import { ALPHA_THRESHOLD } from '../config.js';
+import {
+  ALPHA_THRESHOLD, MAX_AMBIGUOUS_FRACTION, MIN_COVERAGE, MAX_COVERAGE,
+} from '../config.js';
 
 /* u2net's own normalisation, which is NOT ImageNet's.
  * From rembg's u2net session: the image is divided by its own max, then
@@ -155,4 +157,28 @@ export function applyMatte(bitmap, { alpha, size }) {
     bbox: { x: minX, y: minY, w: cw, h: ch },
     coverage: opaque / (W * H),
   };
+}
+
+/* Is this cutout good enough to compose?
+ *
+ * A confidently-wrong cutout is worse than none at all, because it does
+ * not look like a failure: it looks like a post. These are the same
+ * gates imaging/cutout.py applies, and they were previously computed
+ * here and then ignored.
+ *
+ * Returns { ok, reason } where reason is phrased for a person. */
+export function gateCutout({ ambiguous, coverage, hasCanvas }) {
+  if (!hasCanvas) {
+    return { ok: false, reason: 'no vehicle found in this photo' };
+  }
+  if (ambiguous > MAX_AMBIGUOUS_FRACTION) {
+    return { ok: false, reason: `edges too uncertain (${(ambiguous * 100).toFixed(1)}% ambiguous)` };
+  }
+  if (coverage < MIN_COVERAGE) {
+    return { ok: false, reason: 'subject too small to be the vehicle' };
+  }
+  if (coverage > MAX_COVERAGE) {
+    return { ok: false, reason: 'background not separated' };
+  }
+  return { ok: true, reason: null };
 }

@@ -106,10 +106,19 @@
       <div class="pane-inner">
         <div class="section">
           <div class="section-head"><h2>Vehicle</h2></div>
+
+          <div class="importer">
+            <div class="row wrap" style="gap:var(--s-3)">
+              <button class="btn btn-sm" id="stickerFileBtn">Import window sticker</button>
+              <button class="btn btn-sm btn-ghost" id="stickerUrlBtn">Paste sticker URL</button>
+              <span class="small dim" id="stickerNote">Fills these fields from the PDF.</span>
+            </div>
+            <input type="file" id="stickerInput" accept="application/pdf,.pdf" class="sr-only">
+          </div>
+
           <p class="small muted" style="margin-bottom:var(--s-5)">
-            All optional. The colors are the ones worth filling in — they
-            decide the backdrop, which is generated from the vehicle's own
-            paint rather than from a stock image.
+            All optional. The colors matter most: they decide the backdrop,
+            which is generated from the vehicle's own paint.
           </p>
           <div class="form-grid">
             <div><label class="label" for="f-year">Year</label><input class="field" id="f-year" inputmode="numeric" autocomplete="off"></div>
@@ -178,9 +187,8 @@
     <div class="sheet-content">
       <p class="small muted" style="margin-bottom:var(--s-4)">
         One per line. The photos are fetched straight from the dealer's
-        CDN to this device — nothing passes through lotstretcher.org.
-        A CDN that refuses cross-origin reads will fail, and the app will
-        say which ones.
+        CDN to this device. Nothing passes through lotstretcher.org. A CDN
+        that refuses cross-origin reads will fail, and the app says which.
       </p>
       <textarea class="field mono" id="urlInput" rows="7" spellcheck="false"
         placeholder="https://pictures.dealer.com/…/0001.jpg"></textarea>
@@ -192,6 +200,26 @@
   </div>
 </div>
 
+<div class="sheet" id="stickerSheet" hidden>
+  <div class="sheet-body" role="dialog" aria-modal="true" aria-label="Window sticker URL">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head"><h3 style="flex:1">Window sticker URL</h3></div>
+    <div class="sheet-content">
+      <p class="small muted" style="margin-bottom:var(--s-4)">
+        A direct link to the sticker PDF. It is fetched straight to this
+        device and parsed here. Ford's sticker host allows this; some
+        others refuse cross-origin reads, and the app will say so.
+      </p>
+      <textarea class="field mono" id="stickerUrlInput" rows="4" spellcheck="false"
+        placeholder="https://www.windowsticker.forddirect.com/windowsticker.pdf?token=..."></textarea>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn" data-close="stickerSheet">Cancel</button>
+      <button class="btn btn-primary" id="stickerUrlGo">Read it</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="aboutSheet" hidden>
   <div class="sheet-body" role="dialog" aria-modal="true" aria-label="About">
     <div class="sheet-grip"></div>
@@ -199,20 +227,20 @@
     <div class="sheet-content selectable">
       <p class="small">
         lotstretcher turns vehicle photos into post-ready images and copy.
-        Everything — background removal, classification, compositing —
-        runs in this browser tab on this device.
+        Background removal, classification and compositing all run in this
+        browser tab, on this device.
       </p>
       <hr class="rule">
       <h3 style="font-size:var(--t-base);margin-bottom:var(--s-2)">What leaves this device</h3>
       <p class="small muted">
         Your photos: nothing. There is no account, no upload, and no
-        server-side storage — the site is static files. The only network
-        requests are the one-time model download, and fetching any image
+        server-side storage, because the site is static files. The only
+        network requests are the one-time model download and any image
         URLs you paste.
       </p>
       <hr class="rule">
       <h3 style="font-size:var(--t-base);margin-bottom:var(--s-2)">Runtime</h3>
-      <div class="small muted mono" id="aboutRuntime">—</div>
+      <div class="small muted mono" id="aboutRuntime">checking</div>
       <hr class="rule">
       <p class="small muted">
         Open source, MIT.

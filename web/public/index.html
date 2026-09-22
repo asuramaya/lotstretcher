@@ -5,241 +5,286 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0c0e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
-<title>lotstretcher — vehicle photos into posts, on your own device</title>
-<meta name="description" content="Turn vehicle photos into post-ready images and copy. Runs entirely in your browser: no account, no upload, no storage. Free and open source.">
+<title>lotstretcher | Lot photos into listing photos</title>
+<meta name="description" content="Drop in photos of a car, get back post-ready images and copy. Runs entirely in your browser. No account, no upload, free.">
 <meta property="og:title" content="lotstretcher">
-<meta property="og:description" content="Vehicle photos into post-ready images and copy, entirely on your own device.">
+<meta property="og:description" content="Lot photos into listing photos, entirely on your own device.">
+<meta property="og:image" content="demo/after.jpg">
 <meta property="og:type" content="website">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="preload" as="image" href="demo/after.jpg">
+<link rel="preload" as="image" href="demo/before.jpg">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
-<style>
-  body { overflow-x: hidden; }
-
-  .shell { max-width: 1060px; margin: 0 auto; padding: 0 max(var(--gutter), var(--safe-l)); }
-
-  .nav-top {
-    display: flex; align-items: center; gap: var(--s-4);
-    height: 64px; padding-top: var(--safe-t);
-    position: sticky; top: 0; z-index: 30;
-    background: color-mix(in srgb, var(--bg) 84%, transparent);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border-bottom: 1px solid transparent;
-    transition: border-color var(--dur-2) var(--ease);
-  }
-  .nav-top.stuck { border-bottom-color: var(--line); }
-  .brand { display: flex; align-items: center; gap: var(--s-2); font-weight: 700; letter-spacing: -.02em; font-size: var(--t-md); }
-  .brand img { width: 26px; height: 26px; border-radius: 7px; }
-
-  /* ---------- hero ---------- */
-  .hero { padding: clamp(var(--s-7), 9vw, var(--s-9)) 0 var(--s-7); }
-  .hero h1 {
-    font-size: clamp(2.1rem, 7.5vw, var(--t-3xl));
-    letter-spacing: -.035em;
-    line-height: 1.04;
-    max-width: 15ch;
-  }
-  .hero .sub {
-    margin-top: var(--s-4);
-    font-size: clamp(var(--t-md), 2.6vw, var(--t-lg));
-    color: var(--ink-2);
-    max-width: 46ch;
-    line-height: 1.45;
-  }
-  .cta { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
-
-  .claims { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-6); }
-
-  /* ---------- steps ---------- */
-  .steps { display: grid; gap: var(--s-4); grid-template-columns: 1fr; margin-top: var(--s-5); }
-  @media (min-width: 720px) { .steps { grid-template-columns: repeat(3, 1fr); } }
-  .step { padding: var(--s-5); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
-  .step .n {
-    width: 28px; height: 28px; border-radius: var(--r-full);
-    display: grid; place-items: center;
-    background: var(--accent-wash); color: var(--accent);
-    font-size: var(--t-sm); font-weight: 700; margin-bottom: var(--s-3);
-  }
-  .step h3 { margin-bottom: var(--s-2); }
-
-  section.block { padding: var(--s-8) 0; border-top: 1px solid var(--line); }
-  section.block > h2 { font-size: clamp(var(--t-lg), 4vw, var(--t-xl)); letter-spacing: -.03em; }
-  section.block > .lede { margin-top: var(--s-3); color: var(--ink-2); max-width: var(--measure); }
-
-  /* ---------- surfaces table ---------- */
-  .surfaces { display: grid; gap: var(--s-4); grid-template-columns: 1fr; margin-top: var(--s-5); }
-  @media (min-width: 760px) { .surfaces { grid-template-columns: 1fr 1fr; } }
-  .surface { padding: var(--s-5); border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--surface); }
-  .surface.is-this { border-color: var(--accent-line); background: var(--accent-wash); }
-  .surface dl { margin: var(--s-4) 0 0; display: grid; grid-template-columns: auto 1fr; gap: var(--s-2) var(--s-4); font-size: var(--t-sm); }
-  .surface dt { color: var(--ink-3); font-weight: 600; }
-  .surface dd { margin: 0; }
-
-  .facts { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: var(--s-5); }
-  .fact { padding: var(--s-4) var(--s-5); border-left: 2px solid var(--accent); background: var(--surface); border-radius: 0 var(--r-md) var(--r-md) 0; }
-  .fact strong { display: block; font-size: var(--t-lg); letter-spacing: -.02em; }
-
-  footer { padding: var(--s-7) 0 calc(var(--s-8) + var(--safe-b)); border-top: 1px solid var(--line); color: var(--ink-3); font-size: var(--t-sm); }
-</style>
+<link rel="stylesheet" href="css/landing.css">
 </head>
 <body>
 
-<div class="shell">
-  <nav class="nav-top" id="navTop">
-    <span class="brand"><img src="icons/icon.svg" alt=""> lotstretcher</span>
+<nav class="topnav" id="topnav">
+  <div class="shell row">
+    <a class="brand" href="#top"><img src="icons/icon.svg" alt=""> lotstretcher</a>
     <span class="grow"></span>
-    <a class="btn btn-sm" href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener">GitHub</a>
+    <a class="btn btn-ghost btn-sm hide-sm" href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener">Source</a>
     <a class="btn btn-primary btn-sm" href="app.html">Open app</a>
-  </nav>
+  </div>
+</nav>
 
-  <header class="hero">
-    <h1>Vehicle photos into posts, without uploading anything.</h1>
-    <p class="sub">
-      Drop in photos of a car. Get back clean cutouts on generated
-      backdrops, sized for every platform, with the copy written.
-      All of it runs in this browser tab — on your phone or your laptop.
-    </p>
-    <div class="cta">
-      <a class="btn btn-primary btn-lg" href="app.html">Open the app</a>
-      <a class="btn btn-lg" href="#how">How it works</a>
+<!-- ================= hero ================= -->
+<header class="hero" id="top">
+  <div class="shell hero-grid">
+    <div class="hero-copy">
+      <h1>Lot photos into listing photos.</h1>
+      <p class="lede">
+        Drop in a folder of shots. Get back cut-out vehicles on clean
+        backdrops, sized for every platform, with the copy written.
+      </p>
+      <div class="row wrap" style="gap:var(--s-3);margin-top:var(--s-6)">
+        <a class="btn btn-primary btn-lg" href="app.html">Open the app</a>
+        <a class="btn btn-lg" href="#how">See how</a>
+      </div>
+      <p class="xs dim" style="margin-top:var(--s-4)">
+        Runs on your phone or laptop. Nothing uploads.
+      </p>
     </div>
-    <div class="claims">
+
+    <!-- The product, doing the thing. Drag to compare. -->
+    <figure class="compare" id="compare">
+      <img class="cmp-after" src="demo/after.jpg" alt="The same vehicle composed on a generated backdrop" width="900" height="900">
+      <div class="cmp-clip" id="cmpClip">
+        <img class="cmp-before" src="demo/before.jpg" alt="A vehicle photographed on the lot" width="900" height="900">
+      </div>
+      <span class="cmp-tag cmp-tag-l">Lot photo</span>
+      <span class="cmp-tag cmp-tag-r">lotstretcher</span>
+      <input type="range" id="cmpRange" min="0" max="100" value="50"
+             aria-label="Compare before and after">
+      <span class="cmp-handle" id="cmpHandle" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 6 4 12l5 6M15 6l5 6-5 6"/>
+        </svg>
+      </span>
+    </figure>
+  </div>
+</header>
+
+<!-- ================= numbers ================= -->
+<section class="strip">
+  <div class="shell strip-grid">
+    <div><strong>12s</strong><span>a vehicle, on a laptop</span></div>
+    <div><strong>0</strong><span>photos uploaded</span></div>
+    <div><strong>$0</strong><span>forever, no tier</span></div>
+    <div><strong>MIT</strong><span>check it yourself</span></div>
+  </div>
+</section>
+
+<!-- ================= how ================= -->
+<section class="block" id="how">
+  <div class="shell">
+    <h2 class="center-h">Three steps.</h2>
+
+    <div class="flow">
+      <figure class="flow-visual">
+        <div class="lotstrip">
+          <img src="demo/lot-1.jpg" alt="" width="280" height="280" loading="lazy">
+          <img src="demo/lot-2.jpg" alt="" width="280" height="280" loading="lazy">
+          <img src="demo/lot-3.jpg" alt="" width="280" height="280" loading="lazy">
+          <img src="demo/lot-4.jpg" alt="" width="280" height="280" loading="lazy">
+          <img src="demo/lot-5.jpg" alt="" width="280" height="280" loading="lazy">
+        </div>
+      </figure>
+      <div class="flow-copy">
+        <span class="step-n">1</span>
+        <h3>Add photos</h3>
+        <p class="muted">A folder, your camera, or pasted image URLs.</p>
+      </div>
+    </div>
+
+    <div class="flow flip">
+      <figure class="flow-visual">
+        <div class="sortgrid">
+          <div class="sorted"><img src="demo/lot-1.jpg" alt="" loading="lazy"><span>exterior <b>0.97</b></span></div>
+          <div class="sorted"><img src="demo/lot-4.jpg" alt="" loading="lazy"><span>interior <b>0.92</b></span></div>
+          <div class="sorted"><img src="demo/lot-3.jpg" alt="" loading="lazy"><span>detail <b>0.98</b></span></div>
+          <div class="sorted"><img src="demo/lot-5.jpg" alt="" loading="lazy"><span>interior <b>0.91</b></span></div>
+        </div>
+      </figure>
+      <div class="flow-copy">
+        <span class="step-n">2</span>
+        <h3>It sorts and cuts</h3>
+        <p class="muted">
+          Exteriors split from interiors and detail shots. Only exteriors
+          get cut out, so a wheel close-up never becomes a hero image.
+        </p>
+      </div>
+    </div>
+
+    <div class="flow">
+      <figure class="flow-visual">
+        <div class="outgrid">
+          <img class="sq" src="demo/after.jpg" alt="Square composed image" loading="lazy">
+          <img class="pt" src="demo/portrait.jpg" alt="Portrait composed image" loading="lazy">
+        </div>
+      </figure>
+      <div class="flow-copy">
+        <span class="step-n">3</span>
+        <h3>Take the bundle</h3>
+        <p class="muted">
+          Every size, plus copy for Facebook, Instagram and Threads.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= live demo ================= -->
+<section class="block alt" id="live">
+  <div class="shell">
+    <h2 class="center-h">Watch it work.</h2>
+    <p class="muted center-h" style="margin-top:var(--s-3)">
+      Not a recording. This runs the real pipeline in your browser, on
+      this page, right now.
+    </p>
+
+    <div class="livebox">
+      <div class="live-head">
+        <button class="btn btn-primary" id="liveRun">Run it on this car</button>
+        <span class="small dim" id="liveNote">Downloads 54 MB of models the first time.</span>
+      </div>
+
+      <div class="bar live-bar" id="liveBarWrap" hidden><i id="liveBar"></i></div>
+
+      <div class="live-grid" id="liveGrid"></div>
+
+      <div class="live-out" id="liveOut" hidden>
+        <figure><img id="liveHero" alt="Composed result"><figcaption class="xs dim">Composed on this device</figcaption></figure>
+        <div>
+          <h3 style="font-size:var(--t-md);margin-bottom:var(--s-2)">Timings on your hardware</h3>
+          <dl class="timings" id="liveTimings"></dl>
+          <a class="btn btn-primary" href="app.html" style="margin-top:var(--s-4)">Do this with your photos</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= backdrop ================= -->
+<section class="block alt">
+  <div class="shell split">
+    <div>
+      <span class="eyebrow">No stock backgrounds</span>
+      <h2>The backdrop comes from the car.</h2>
+      <p class="muted" style="margin-top:var(--s-4)">
+        Each backdrop is generated from that vehicle's own paint and
+        interior colours. No two listings share one, so a feed never
+        looks stamped out.
+      </p>
+      <div class="swatches" id="swatches" aria-hidden="true"></div>
+      <p class="xs dim" style="margin-top:var(--s-4)">
+        No API key. No asset library. No network call.
+      </p>
+    </div>
+    <figure class="shot">
+      <img src="demo/after.jpg" alt="Vehicle on a backdrop generated from its own colours" loading="lazy" width="900" height="900">
+    </figure>
+  </div>
+</section>
+
+<!-- ================= sticker ================= -->
+<section class="block">
+  <div class="shell split flip">
+    <div>
+      <span class="eyebrow">Window sticker</span>
+      <h2>Specs, without typing them.</h2>
+      <p class="muted" style="margin-top:var(--s-4)">
+        Point it at a window sticker PDF and it reads the trim, engine,
+        colours and options straight off the page.
+      </p>
+      <ul class="ticks">
+        <li>VIN, trim and drivetrain</li>
+        <li>Factory colour names, which set the backdrop</li>
+        <li>Optional equipment, into the post copy</li>
+      </ul>
+    </div>
+    <figure class="shot paper">
+      <img src="demo/sticker.jpg" alt="A parsed window sticker" loading="lazy" width="800" height="939">
+    </figure>
+  </div>
+</section>
+
+<!-- ================= privacy ================= -->
+<section class="block alt">
+  <div class="shell narrow center-h">
+    <h2>Nothing leaves the device.</h2>
+    <p class="muted" style="margin-top:var(--s-4);max-width:56ch;margin-inline:auto">
+      Not encrypted in transit. Not deleted after 30 days. There is no
+      server to send photos to. This site is static files, and the work
+      happens in your tab.
+    </p>
+    <div class="claimrow">
       <span class="pill">No account</span>
       <span class="pill">No upload</span>
-      <span class="pill">Nothing stored</span>
-      <span class="pill">Free</span>
-      <span class="pill">Open source</span>
+      <span class="pill">No storage</span>
+      <span class="pill">No tracking</span>
+      <span class="pill">No paid tier</span>
     </div>
-  </header>
+  </div>
+</section>
 
-  <section class="block" id="how">
-    <h2>How it works</h2>
-    <p class="lede">
-      Three steps, and nothing in between them touches a server.
-    </p>
-    <div class="steps">
-      <div class="step">
-        <div class="n">1</div>
-        <h3>Add photos</h3>
-        <p class="small muted">
-          Pick a folder, take a photo, or paste image URLs from a listing
-          you already have open.
-        </p>
-      </div>
-      <div class="step">
-        <div class="n">2</div>
-        <h3>It sorts and cuts</h3>
-        <p class="small muted">
-          Exterior shots are separated from interiors, the background is
-          removed, and each angle is identified — front, side, rear.
-        </p>
-      </div>
-      <div class="step">
-        <div class="n">3</div>
-        <h3>Take the bundle</h3>
-        <p class="small muted">
-          Composed images plus post copy for Facebook, Instagram and
-          Threads, as a single download or straight to your share sheet.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <section class="block">
-    <h2>The backdrop comes from the car</h2>
-    <p class="lede">
-      There is no stock background library, and that is deliberate. The
-      backdrop behind each vehicle is generated from that vehicle's own
-      paint and interior colors, so no two listings share one. A single
-      repeated backdrop is what gets a feed flagged as spam.
-    </p>
-    <p class="lede" style="margin-top:var(--s-4)">
-      It needs no API key, no downloaded assets and no network call. It
-      is the default because it is the best available answer, not because
-      it is the free tier of something.
-    </p>
-  </section>
-
-  <section class="block">
-    <h2>What actually leaves your device</h2>
-    <p class="lede">
-      Your photos: nothing. Not "encrypted in transit", not "deleted after
-      30 days" — there is no server to send them to. lotstretcher.org is
-      static files. The only requests this page makes are for its own
-      code, a one-time model download, and any image URLs you paste
-      yourself.
-    </p>
-    <div class="facts">
-      <div class="fact"><strong>0 accounts</strong><span class="small muted">Nothing to sign up for</span></div>
-      <div class="fact"><strong>0 bytes</strong><span class="small muted">Photos uploaded</span></div>
-      <div class="fact"><strong>0 rows</strong><span class="small muted">Stored about you</span></div>
-      <div class="fact"><strong>MIT</strong><span class="small muted">Check the claim yourself</span></div>
-    </div>
-  </section>
-
-  <section class="block">
-    <h2>One product, two surfaces</h2>
-    <p class="lede">
-      Same pipeline, same imaging code. Which one you want depends on how
-      many vehicles you have — not on paying for a better version. There
-      is no paid tier.
-    </p>
+<!-- ================= surfaces ================= -->
+<section class="block">
+  <div class="shell">
+    <h2 class="center-h">One product, two surfaces.</h2>
     <div class="surfaces">
       <div class="surface is-this">
         <span class="pill pill-accent">You are here</span>
-        <h3 style="margin-top:var(--s-3)">The website</h3>
-        <dl>
-          <dt>For</dt><dd>One car, right now, from a phone</dd>
-          <dt>Input</dt><dd>Photo upload, camera, pasted image URLs</dd>
-          <dt>Runs</dt><dd>Entirely in your browser</dd>
-          <dt>Costs</dt><dd>Nothing</dd>
-          <dt>Install</dt><dd>None</dd>
-        </dl>
+        <h3>The website</h3>
+        <p class="small muted">One car, right now, from a phone.</p>
+        <ul class="ticks small">
+          <li>Upload, camera or pasted URLs</li>
+          <li>Runs in your browser</li>
+          <li>Nothing to install</li>
+        </ul>
+        <a class="btn btn-primary" href="app.html" style="margin-top:var(--s-4);width:100%">Open the app</a>
       </div>
       <div class="surface">
         <span class="pill">Self-hosted</span>
-        <h3 style="margin-top:var(--s-3)">The CLI and server</h3>
-        <dl>
-          <dt>For</dt><dd>A whole lot, on a schedule</dd>
-          <dt>Input</dt><dd>That, plus scraping and inventory sync</dd>
-          <dt>Runs</dt><dd>Your machine or your server</dd>
-          <dt>Costs</dt><dd>Your own compute</dd>
-          <dt>Install</dt><dd>Python 3.11+, a GPU helps</dd>
-        </dl>
+        <h3>Your server</h3>
+        <p class="small muted">A whole lot, on a schedule.</p>
+        <ul class="ticks small">
+          <li>Scraping and inventory sync</li>
+          <li>Runs on your machine</li>
+          <li>Python, a GPU helps</li>
+        </ul>
+        <a class="btn" href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener" style="margin-top:var(--s-4);width:100%">Get the source</a>
       </div>
     </div>
-    <p class="small muted" style="margin-top:var(--s-5);max-width:var(--measure)">
-      The website cannot scrape a dealer site — a browser cannot read
-      another site's HTML, and the serverless workaround gets blocked too.
-      But that only stops it <em>finding</em> photo URLs, never using
-      them. Hand it photos and it runs the same pipeline.
-    </p>
-  </section>
+  </div>
+</section>
 
-  <footer>
-    <div class="row wrap" style="gap:var(--s-5)">
-      <span class="brand" style="font-size:var(--t-base)"><img src="icons/icon.svg" alt=""> lotstretcher</span>
-      <span class="grow"></span>
-      <a href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener">Source</a>
-      <a href="app.html">Open app</a>
-    </div>
-    <p style="margin-top:var(--s-4)">
-      MIT licensed. Not affiliated with any manufacturer or dealer group.
-    </p>
-  </footer>
-</div>
+<!-- ================= close ================= -->
+<section class="closer">
+  <div class="shell center-h">
+    <h2>Try it on one car.</h2>
+    <p class="muted" style="margin-top:var(--s-3)">Takes about a minute.</p>
+    <a class="btn btn-primary btn-lg" href="app.html" style="margin-top:var(--s-5)">Open the app</a>
+  </div>
+</section>
 
-<script>
-  // Border on the sticky nav only once it is actually stuck.
-  const nav = document.getElementById('navTop');
-  const io = new IntersectionObserver(
-    ([e]) => nav.classList.toggle('stuck', e.intersectionRatio < 1),
-    { threshold: [1] },
-  );
-  io.observe(nav);
-</script>
+<footer>
+  <div class="shell row wrap" style="gap:var(--s-5)">
+    <a class="brand" href="#top" style="font-size:var(--t-base)"><img src="icons/icon.svg" alt=""> lotstretcher</a>
+    <span class="grow"></span>
+    <a href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener">Source</a>
+    <a href="app.html">Open app</a>
+  </div>
+  <div class="shell">
+    <p class="xs dim" style="margin-top:var(--s-4)">
+      MIT licensed.
+    </p>
+  </div>
+</footer>
+
+<script type="module" src="js/landing.js"></script>
 </body>
 </html>

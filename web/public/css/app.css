@@ -300,3 +300,13 @@
 .section + .section { margin-top: var(--s-6); }
 .section-head { display: flex; align-items: baseline; gap: var(--s-3); margin-bottom: var(--s-4); }
 .section-head h2 { flex: 1; }
+
+/* Window sticker importer. Sits above the vehicle form because filling
+   the form from a PDF is strictly better than typing it. */
+.importer {
+  padding: var(--s-4);
+  margin-bottom: var(--s-5);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}

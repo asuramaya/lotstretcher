@@ -9,10 +9,13 @@
  * The one rule: mutate `state`, then call the matching render function.
  * Never write to the DOM from anywhere else. */
 
-import { LIMITS, IMAGE_EXTS, CANVAS, PORTRAIT } from './config.js';
+import {
+  LIMITS, IMAGE_EXTS, CANVAS, PORTRAIT,
+  MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE,
+} from './config.js';
 import { initRuntime, runtime, loadModel, totalBytes } from './pipeline/runtime.js';
 import { classifyScene, classifyAngle, loadLabels } from './pipeline/classify.js';
-import { matte, applyMatte } from './pipeline/matte.js';
+import { matte, applyMatte, gateCutout } from './pipeline/matte.js';
 import { composeHero } from './pipeline/compose.js';
 import { buildAllPosts, vehicleTitle, PLATFORMS } from './pipeline/copy.js';
 import { decode, makeCanvas, ctxOf, canvasToBlob } from './lib/imageio.js';
@@ -169,7 +172,8 @@ function renderPhotos() {
     img.onerror = () => { tile.classList.add('is-pending'); tile.append(tagOf('unreachable')); };
     tile.appendChild(img);
 
-    if (p.scene) tile.appendChild(tagOf(p.angle ? `${p.scene} · ${p.angle}` : p.scene));
+    if (p.rejected) tile.appendChild(tagOf('skipped'));
+    else if (p.scene) tile.appendChild(tagOf(p.angle ? `${p.scene} · ${p.angle}` : p.scene));
 
     if (!state.running) {
       const x = el('button', 'tile-x', '×');
@@ -294,8 +298,9 @@ async function run() {
         const bitmap = await decode(p.blob || p.url);
         p.bitmap = bitmap;
         const scene = await classifyScene(bitmap);
-        p.scene = scene.label;
         p.sceneConf = scene.confidence;
+        // Too weak to route on. Keep the photo, do not act on the guess.
+        p.scene = scene.confidence >= MIN_SCENE_CONFIDENCE ? scene.label : 'unsure';
       } catch (e) {
         p.status = 'failed';
         p.error = String(e.message || e);
@@ -320,14 +325,32 @@ async function run() {
       try {
         const m = await matte(p.bitmap);
         const cut = applyMatte(p.bitmap, m);
-        if (cut.canvas) {
+        p.ambiguous = m.ambiguous;
+        p.coverage = cut.coverage;
+
+        // Gate BEFORE composing. A confidently-wrong cutout does not look
+        // like a failure, it looks like a post.
+        const gate = gateCutout({
+          ambiguous: m.ambiguous, coverage: cut.coverage, hasCanvas: !!cut.canvas,
+        });
+        if (!gate.ok) {
+          p.rejected = gate.reason;
+        } else {
           p.cutout = cut.canvas;
-          p.ambiguous = m.ambiguous;
-          p.coverage = cut.coverage;
           const cutBitmap = await createImageBitmap(await canvasToBlob(cut.canvas));
           const angle = await classifyAngle(cutBitmap);
-          p.angle = angle.label;
-          p.angleConf = angle.confidence;
+          /* Only assert an angle we actually believe. A wheel close-up
+           * that slips past the scene classifier scores ~0.33 here, and
+           * calling it "front_3q" anyway is precisely the kind of
+           * confident error that makes the whole output untrustworthy. */
+          if (angle.confidence >= MIN_ANGLE_CONFIDENCE) {
+            p.angle = angle.label;
+            p.angleConf = angle.confidence;
+          } else {
+            p.angle = null;
+            p.angleConf = angle.confidence;
+            p.angleUncertain = true;
+          }
         }
       } catch (e) {
         p.error = String(e.message || e);
@@ -463,6 +486,46 @@ async function downloadBundle() {
   }
 }
 
+/* ---------- window sticker import ------------------------------------
+ * The CLI shells out to poppler for this; in the browser pdf.js supplies
+ * the same positioned text. Loaded lazily, so the 1.7MB costs nothing
+ * unless someone actually uses it. */
+async function importSticker(source, label) {
+  const note = $('stickerNote');
+  note.textContent = 'Reading the PDF...';
+  try {
+    const { parseSticker, stickerToVehicle } = await import('./pipeline/sticker.js');
+    const parsed = await parseSticker(source);
+
+    if (parsed.placeholder) {
+      note.textContent = 'That sticker is not published yet (the PDF just says to check back).';
+      return;
+    }
+
+    const fields = stickerToVehicle(parsed);
+    const map = {
+      year: 'f-year', make: 'f-make', model: 'f-model', trim: 'f-trim',
+      exterior_color: 'f-ext', interior_color: 'f-int',
+      price: 'f-price', vin: 'f-vin',
+    };
+    let filled = 0;
+    for (const [key, id] of Object.entries(map)) {
+      // Never overwrite something the user typed themselves.
+      if (fields[key] && !$(id).value.trim()) { $(id).value = fields[key]; filled++; }
+    }
+    note.textContent = filled
+      ? `Filled ${filled} field${filled === 1 ? '' : 's'} from ${label}.`
+      : `Read ${label}, but every field was already filled.`;
+  } catch (e) {
+    // A CORS refusal is the common case and deserves a plain explanation
+    // rather than the browser's own wording.
+    const msg = /fetch|CORS|NetworkError/i.test(String(e))
+      ? 'That host will not allow the browser to read the PDF. Download it and pick the file instead.'
+      : String(e.message || e);
+    note.textContent = msg;
+  }
+}
+
 /* ---------- wiring --------------------------------------------------- */
 function init() {
   loadDealer();
@@ -502,6 +565,19 @@ function init() {
     addUrls($('urlInput').value);
     $('urlInput').value = '';
     closeSheet('urlSheet');
+  };
+
+  $('stickerFileBtn').onclick = () => $('stickerInput').click();
+  $('stickerUrlBtn').onclick = () => openSheet('stickerSheet');
+  $('stickerInput').onchange = async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (f) importSticker(await f.arrayBuffer(), f.name);
+  };
+  $('stickerUrlGo').onclick = () => {
+    const url = $('stickerUrlInput').value.trim();
+    closeSheet('stickerSheet');
+    if (url) importSticker(url, 'the sticker');
   };
 
   $('clearBtn').onclick = clearPhotos;
