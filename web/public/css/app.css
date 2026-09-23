@@ -159,6 +159,15 @@
   gap: var(--s-3);
 }
 @media (min-width: 640px) { .grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--s-4); } }
+/* Once photos are in, the grid folds to one scrolling strip so the
+   vehicle fields sit a glance below; "Grid" opens it back out. */
+.grid.is-strip {
+  display: flex; gap: var(--s-2); overflow-x: auto; padding-bottom: var(--s-2);
+  scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+}
+.grid.is-strip .tile { flex: 0 0 96px; width: 96px; scroll-snap-align: start; }
+.grid.is-strip .tile-tag { font-size: 9px; padding: 1px 6px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grid.is-strip .tile-x { width: 22px; height: 22px; font-size: 12px; }
 
 .tile {
   position: relative;

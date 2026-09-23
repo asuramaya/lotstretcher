@@ -202,6 +202,10 @@ function renderPhotos() {
   const n = state.photos.length;
   $('photosSection').hidden = n === 0;
   $('photoCount').textContent = n;
+  // A strip by default, so the vehicle fields stay a glance below.
+  $('photoGrid').classList.toggle('is-strip', !state.gridOpen);
+  $('gridToggle').setAttribute('aria-pressed', String(!!state.gridOpen));
+  $('gridToggle').textContent = state.gridOpen ? 'Strip' : 'Grid';
   setRunEnabled(n > 0 && !state.running);
   renderSteps();
 
@@ -1170,7 +1174,9 @@ async function importListingText(text, note = () => {}) {
 /* Pasted or dropped text on the Photos step, routed by what it is:
  * image links become photos, an address or a VIN is a listing. */
 const IMAGE_LINK = /\.(jpe?g|png|webp|gif|avif|heic)(\?|$)|\/resize\/\d+x\d+\//i;
+const looksLikeHtml = (text) => /^\s*<(!doctype|html|head|body|script|div|meta)/i.test(text) || /<script[\s>]/i.test(text) && text.length > 2000;
 function readPastedText(text) {
+  if (looksLikeHtml(text)) { readListingHtmlRef?.(text, 'the pasted source'); return true; }
   const tokens = String(text || '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
   if (!tokens.length) return false;
   const links = tokens.filter((t) => /^https?:\/\//i.test(t) && IMAGE_LINK.test(t));
@@ -1183,6 +1189,7 @@ function readPastedText(text) {
   return false;
 }
 
+let readListingHtmlRef = null;
 function showSourceNote(text) {
   const box = $('warnBox');
   box.innerHTML = '';
@@ -1305,38 +1312,38 @@ async function init() {
   $('listingBtn').onclick = () => {
     // One field on every host. A server that can scrape reads the whole
     // page; the site decodes the address and the VIN on this device.
-    $('listingLede').textContent = can('scrape')
-      ? 'Paste the vehicle page address and your server reads the page, exactly as the command line does: '
-        + 'every field and every photo. A bare VIN is decoded here instead.'
-      : 'Paste the vehicle page address, or type the VIN. The year, make and model are read from the '
-        + 'address and the VIN on this device; nothing is fetched and nothing leaves it. A dealer page cannot '
-        + 'be read from here (it sits behind a bot challenge), so the price and the photos are yours to add.';
-    $('listingUrlGo').textContent = can('scrape') ? 'Read it on your server' : 'Read it';
+    // One box. What it holds decides what happens: an address, a VIN,
+    // or the page's own source pasted in (Ctrl+U, select all, copy).
+    $('listingUrlInput').placeholder = can('scrape')
+      ? 'The vehicle page address (your server reads the page: every field, every photo), a VIN, or the page source'
+      : 'The vehicle page address or the VIN (year, make and model, decoded here), or the page source for its photos and price';
+    $('listingHint').textContent = can('scrape')
+      ? 'Or drop the saved page here.'
+      : 'Page source: on the listing press Ctrl+U, select all, copy, paste here. Or drop the saved page. Nothing is fetched from the dealer.';
+    $('listingUrlGo').textContent = 'Read';
     $('listingUrlNote').textContent = '';
     openSheet('listingSheet');
   };
   /* A saved copy of the listing page, or its pasted source: read here,
    * with the same reader the scraper uses on the live page. */
   const readListingHtml = (html, label) => {
-    const note = $('listingFileNote');
+    const note = $('listingUrlNote');
     let raw;
-    try { raw = recordFromHtml(html); } catch (e) { note.textContent = String(e.message || e); return; }
+    try { raw = recordFromHtml(html); } catch (e) { note.textContent = String(e.message || e); return false; }
     if (!raw.payload && !raw.ldCar) {
       note.textContent = `No vehicle data found in ${label}. Save the page as "Webpage, HTML only" while the listing is fully loaded.`;
-      return;
+      return false;
     }
     closeSheet('listingSheet');
     applyVehicle(normalizeListing(raw));
+    return true;
   };
+  readListingHtmlRef = readListingHtml;
   $('listingFileBtn').onclick = () => $('listingFileInput').click();
   $('listingFileInput').onchange = async (e) => {
     const f = e.target.files?.[0];
     e.target.value = '';
     if (f) readListingHtml(await f.text(), f.name);
-  };
-  $('listingHtmlGo').onclick = () => {
-    const html = $('listingHtmlInput').value;
-    if (html.trim()) { readListingHtml(html, 'the pasted text'); $('listingHtmlInput').value = ''; }
   };
   const sheet = $('listingSheet');
   sheet.addEventListener('dragover', (e) => { e.preventDefault(); });
@@ -1352,6 +1359,10 @@ async function init() {
     const btn = $('listingUrlGo');
     btn.disabled = true;
     try {
+      if (looksLikeHtml(text)) {
+        if (readListingHtml(text, 'the pasted source')) $('listingUrlInput').value = '';
+        return;
+      }
       if (await importListingText(text, (m) => { $('listingUrlNote').textContent = m; })) {
         closeSheet('listingSheet');
         $('listingUrlInput').value = '';
@@ -1412,6 +1423,7 @@ async function init() {
   preview.load().then(() => renderOptions());
 
   $('clearBtn').onclick = clearPhotos;
+  $('gridToggle').onclick = () => { state.gridOpen = !state.gridOpen; renderPhotos(); };
   $('runBtn').onclick = run;
   $('downloadBtn').onclick = downloadBundle;
 

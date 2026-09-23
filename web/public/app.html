@@ -119,6 +119,7 @@
           <div class="section-head">
             <h2>Photos</h2>
             <span class="pill" id="photoCount">0</span>
+            <button class="btn btn-ghost btn-sm" id="gridToggle" aria-pressed="false">Grid</button>
             <button class="btn btn-ghost btn-sm" id="clearBtn">Clear</button>
           </div>
           <div id="warnBox"></div>
@@ -351,29 +352,15 @@
     <div class="sheet-grip"></div>
     <div class="sheet-head"><h3 style="flex:1">From a listing</h3></div>
     <div class="sheet-content">
-      <p class="small muted" style="margin-bottom:var(--s-3)" id="listingLede"></p>
-      <textarea class="field mono" id="listingUrlInput" rows="2" spellcheck="false" autocapitalize="characters"
-        placeholder="https://www.dealer.example/vehicle/1FTTW8HA…/2026-Ford-Maverick-…/  or a VIN"></textarea>
+      <textarea class="field mono" id="listingUrlInput" rows="4" spellcheck="false" autocapitalize="characters"
+        placeholder=""></textarea>
       <div class="row wrap" style="gap:var(--s-3);margin-top:var(--s-3);align-items:center">
-        <button class="btn btn-primary btn-sm" id="listingUrlGo">Read it</button>
+        <button class="btn btn-primary btn-sm" id="listingUrlGo">Read</button>
+        <button class="btn btn-ghost btn-sm" id="listingFileBtn">Saved page file</button>
         <span class="small dim" id="listingUrlNote"></span>
       </div>
-      <details class="importer" style="margin-top:var(--s-5)">
-        <summary class="small muted">Or drop the saved page, for its photos and price too</summary>
-        <p class="small muted" style="margin:var(--s-3) 0">
-          On the listing page press <span class="mono">Ctrl+S</span> (<span class="mono">Cmd+S</span> on a Mac),
-          save it as "Webpage, HTML only", then drop that file here. The page's own vehicle data and
-          photo links are read on this device; nothing is fetched from the dealer.
-        </p>
-        <div class="row wrap" style="gap:var(--s-3);align-items:center">
-          <button class="btn btn-sm" id="listingFileBtn">Choose the saved page</button>
-          <span class="small dim" id="listingFileNote">or drop the .html file anywhere on this sheet</span>
-        </div>
-        <input type="file" id="listingFileInput" accept=".html,.htm,text/html" class="sr-only">
-        <p class="xs dim" style="margin-top:var(--s-3)">Or view the page source (<span class="mono">Ctrl+U</span>), select all, copy, and paste it here:</p>
-        <textarea class="field mono" id="listingHtmlInput" rows="3" spellcheck="false" placeholder="&lt;!doctype html&gt; ..."></textarea>
-        <div class="row" style="margin-top:var(--s-2)"><button class="btn btn-sm" id="listingHtmlGo">Read the pasted page</button></div>
-      </details>
+      <input type="file" id="listingFileInput" accept=".html,.htm,text/html" class="sr-only">
+      <p class="xs dim" id="listingHint" style="margin-top:var(--s-4)"></p>
     </div>
     <div class="sheet-foot">
       <button class="btn btn-primary" data-close="listingSheet">Done</button>
