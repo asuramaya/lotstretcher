@@ -71,6 +71,8 @@ export const DEFAULTS = {
   glowIntensity: 0.75,
   shadow: false,
   shadowStrength: 0.5,
+  reflection: false,
+  reflectionStrength: 0.35,
 
   /* Backdrop source. 'vehicle' measures the car's own paint (the CLI and
    * server default); 'generic' is the seeded hue-band gradient used when

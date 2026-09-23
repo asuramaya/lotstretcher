@@ -26,7 +26,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ..imaging.text import frame_style, shadow_style, text_options, text_request
+from ..imaging.text import frame_style, reflection_style, shadow_style, text_options, text_request
 
 MAX_CUTOUT_BYTES = 24 * 1024 * 1024
 MAX_CANVAS = 4096
@@ -181,6 +181,7 @@ def compose(cutout_png: bytes, options: dict[str, Any],
         text=text_request(options.get("vehicle") or {}, text_options(options)),
         border_style=frame_style(options),
         shadow=shadow_style(options),
+        reflection=reflection_style(options),
     )
 
     buf = io.BytesIO()

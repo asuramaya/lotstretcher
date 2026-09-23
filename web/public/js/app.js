@@ -35,7 +35,7 @@ import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './hos
 import { renderControls, controlDefaults, controlsToFlags, affectsPreview } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
-import { textOptions, textRequest, frameStyle, shadowStyle } from './lib/text.js';
+import { textOptions, textRequest, frameStyle, shadowStyle, reflectionStyle } from './lib/text.js';
 import { normalizeListing, takeListingFromHash, bookmarkletSource, recordFromHtml } from './pipeline/listing.js';
 import { LibraryView } from './library/view.js';
 import { HttpSource, DirectorySource } from './library/source.js';
@@ -790,7 +790,7 @@ async function run() {
           border: state.options.border === 'custom' ? state.options.customFrame || null : stockBorder,
           borderFit: state.options.frameFit,
           borderStyle: frameStyle(state.options),
-          shadow: shadowStyle(state.options),
+          shadow: shadowStyle(state.options), reflection: reflectionStyle(state.options),
           text: await textRequest(state.vehicle, textOptions(state.options)),
           glow: state.options.glow, glowColor: state.options.glowColor,
           glowRadius: state.options.glowRadius, glowIntensity: state.options.glowIntensity,
@@ -847,7 +847,7 @@ async function run() {
             text: await textRequest(state.vehicle, textOptions(state.options)),
             background: videoBackground,
             frameStyle: frameStyle(state.options),
-            shadow: shadowStyle(state.options),
+            shadow: shadowStyle(state.options), reflection: reflectionStyle(state.options),
             vehicle: state.vehicle,
             onProgress: (f) => setProgress(0.85 + 0.15 * f),
           };

@@ -24,9 +24,10 @@ from lotstretcher.imaging.compose import render_hero_video
 from lotstretcher.imaging.compose.hero_video import (BARS_PER_LOOP, DEFAULT_BPM, DEFAULT_VIDEO_FORMAT,
                                           VIDEO_FORMATS)
 from lotstretcher.imaging.select import order_for_conveyor_start, pick_all_for_carousel
-from lotstretcher.imaging.text import (add_frame_style_args, add_shadow_args, add_text_args,
-                                       controls_from_frame_style_args, controls_from_shadow_args,
-                                       controls_from_text_args, frame_style, shadow_style, text_options)
+from lotstretcher.imaging.text import (add_frame_style_args, add_reflection_args, add_shadow_args, add_text_args,
+                                       controls_from_frame_style_args, controls_from_reflection_args,
+                                       controls_from_shadow_args, controls_from_text_args, frame_style,
+                                       reflection_style, shadow_style, text_options)
 from lotstretcher.library_ops import vehicle_record
 
 
@@ -94,6 +95,7 @@ def main():
     add_text_args(parser)
     add_frame_style_args(parser)
     add_shadow_args(parser)
+    add_reflection_args(parser)
     parser.add_argument("--music", action="store_true",
                          help="Score the video. Silent is the default; timing comes from --bpm either way, so "
                               "the cut/pump cadence is identical.")
@@ -176,6 +178,7 @@ def render_one(fmt, args, vehicle_folder, border_path, background_video, gradien
         background_image=background_image,
         border_style=frame_style(controls_from_frame_style_args(args)),
         shadow=shadow_style(controls_from_shadow_args(args)),
+        reflection=reflection_style(controls_from_reflection_args(args)),
         encoder="h264_nvenc" if args.nvenc else "libx264",
     )
 

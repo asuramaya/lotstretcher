@@ -187,6 +187,63 @@ pub fn paste_shadow(canvas: &mut Image, car: &Image, x: i64, y: i64, s: &Shadow,
     paste_alpha(canvas, &layer, x + dx, y + dy);
 }
 
+/// A floor reflection: the car mirrored below its contact line and
+/// faded out over `height` of its own height, as a glossy studio floor
+/// gives. Painted under the shadow and the car.
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct Reflection {
+    /// Opacity at the contact line, 0..1.
+    #[serde(default = "reflection_strength")]
+    pub strength: f64,
+    /// How far down the reflection reaches, as a fraction of the car's height.
+    #[serde(default = "reflection_height")]
+    pub height: f64,
+}
+fn reflection_strength() -> f64 { 0.35 }
+fn reflection_height() -> f64 { 0.4 }
+
+impl Default for Reflection {
+    fn default() -> Self { Reflection { strength: reflection_strength(), height: reflection_height() } }
+}
+
+/// Returns (reflection_rgba, dy): the layer's offset below the car's
+/// own top-left; it starts one row under the contact line.
+pub fn make_reflection_layer(car: &Image, r: &Reflection) -> (Image, i64) {
+    let (w, h) = (car.width, car.height);
+    let mut contact = 0usize;
+    for y in 0..h {
+        for x in 0..w {
+            if car.data[(y * w + x) * 4 + 3] > 16 { contact = y; }
+        }
+    }
+    let rows = ((h as f64 * r.height).round() as usize).clamp(1, contact + 1);
+    let strength = r.strength.clamp(0.0, 1.0);
+    let mut out = Image::new(w, rows, 4);
+    for k in 0..rows {
+        // Row k of the reflection is the car's row `contact - k`, faded
+        // by a curve that leaves the bottom of the car clearest.
+        let src = contact - k;
+        let fade = (1.0 - k as f64 / rows as f64).powf(1.6) * strength;
+        for x in 0..w {
+            let si = (src * w + x) * 4;
+            let di = (k * w + x) * 4;
+            out.data[di..di + 3].copy_from_slice(&car.data[si..si + 3]);
+            out.data[di + 3] = (car.data[si + 3] as f64 * fade).round() as u8;
+        }
+    }
+    (out, contact as i64 + 1)
+}
+
+pub fn paste_reflection(canvas: &mut Image, car: &Image, x: i64, y: i64, r: &Reflection, alpha: f64) {
+    let (mut layer, dy) = make_reflection_layer(car, r);
+    if alpha < 1.0 {
+        for i in (3..layer.data.len()).step_by(4) {
+            layer.data[i] = (layer.data[i] as f64 * alpha.clamp(0.0, 1.0)).round() as u8;
+        }
+    }
+    paste_alpha(canvas, &layer, x, y + dy);
+}
+
 pub fn paste_with_glow(canvas: &mut Image, car: &Image, x: i64, y: i64, color: [u8; 3], radius: usize, intensity: f64) {
     let (glow, pad) = make_glow_layer(car, color, radius, intensity);
     paste_alpha(canvas, &glow, x - pad as i64, y - pad as i64);

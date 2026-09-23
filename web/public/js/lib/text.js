@@ -65,6 +65,13 @@ export function shadowStyle(o) {
   return { strength: o.shadowStrength != null ? Number(o.shadowStrength) : 0.5 };
 }
 
+/* The app's reflection controls as the core's `reflection` field, or
+ * null: the same mapping as imaging/text.py::reflection_style. */
+export function reflectionStyle(o) {
+  if (!o.reflection) return null;
+  return { strength: o.reflectionStrength != null ? Number(o.reflectionStrength) : 0.35 };
+}
+
 export function wantsText(text) {
   return text.title !== 'none' || !!text.price_badge || !!text.line;
 }

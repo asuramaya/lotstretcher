@@ -32,6 +32,7 @@ export function composeHero(cutout, {
   text = null,                // the Text controls + vehicle (lib/text.js::textRequest); planned in the window
   borderStyle = null,         // a frame the core draws to fit (lib/text.js::frameStyle), when no border image
   shadow = null,              // a ground shadow under the car (lib/text.js::shadowStyle)
+  reflection = null,          // a floor reflection under it (lib/text.js::reflectionStyle)
 } = {}) {
   const cutData = ctxOf(cutout, { willReadFrequently: true }).getImageData(0, 0, cutout.width, cutout.height);
   let borderData = null;
@@ -52,7 +53,7 @@ export function composeHero(cutout, {
   }
   const out = core.composeHero([cutData], width, height, bg, {
     layout: 'single', spotlight, glow, glowColor, glowRadius, glowIntensity, marginFrac, backgroundImage,
-    border: borderData, borderFit, overlays, text, borderStyle, shadow,
+    border: borderData, borderFit, overlays, text, borderStyle, shadow, reflection,
   });
   const canvas = makeCanvas(width, height);
   ctxOf(canvas).putImageData(out, 0, 0);

@@ -111,6 +111,7 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         vehicle=vehicle_record(folder),
         border_style=hero_opts.border_style,
         shadow=hero_opts.shadow,
+        reflection=hero_opts.reflection,
         # --photo-background / --background NAME: the same photo the
         # stills sit on, unless a flag video was asked for instead.
         background_image=hero_opts.background_path if not hero_opts.gradient else None,
@@ -191,6 +192,8 @@ class HeroOptions:
     border_style: dict | None = None
     # A ground shadow under the cars (imaging/text.py::shadow_style); None means none.
     shadow: dict | None = None
+    # A floor reflection under the cars (imaging/text.py::reflection_style); None means none.
+    reflection: dict | None = None
 
 
 def process_vehicle(playwright, session: requests.Session, url: str, out_root: Path,
@@ -335,6 +338,7 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 vehicle=dataclasses.asdict(v),
                 border_style=hero_opts.border_style,
                 shadow=hero_opts.shadow,
+                reflection=hero_opts.reflection,
             )
             if compose_result["hero"]:
                 n_framed = len(compose_result["framed"])
@@ -366,6 +370,7 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 vehicle=dataclasses.asdict(v),
                 border_style=hero_opts.border_style,
                 shadow=hero_opts.shadow,
+                reflection=hero_opts.reflection,
             )
             if wheel_shots:
                 log(f"    wheel money shot{'s' if len(wheel_shots) != 1 else ''}: "

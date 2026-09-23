@@ -113,6 +113,31 @@ def shadow_style(options: dict) -> dict | None:
     return {"strength": float(strength if strength is not None else SHADOW_STRENGTH)}
 
 
+REFLECTION_STRENGTH = 0.35
+
+
+def add_reflection_args(parser) -> None:
+    """The floor reflection's flags, shared by the CLIs."""
+    parser.add_argument("--reflection", action="store_true",
+                        help="A floor reflection under the vehicle, mirrored below it and faded out, as a "
+                             "glossy studio floor gives (default: off).")
+    parser.add_argument("--reflection-strength", type=float, default=REFLECTION_STRENGTH, metavar="FRACTION",
+                        help=f"The reflection's opacity at the floor line, 0-1 (default: {REFLECTION_STRENGTH}).")
+
+
+def controls_from_reflection_args(args) -> dict:
+    return {"reflection": bool(args.reflection), "reflectionStrength": args.reflection_strength}
+
+
+def reflection_style(options: dict) -> dict | None:
+    """The app's reflection controls as the core's `reflection` field, or
+    None when none is asked for."""
+    if not options.get("reflection"):
+        return None
+    strength = options.get("reflectionStrength")
+    return {"strength": float(strength if strength is not None else REFLECTION_STRENGTH)}
+
+
 def controls_from_text_args(args) -> dict:
     """argparse values -> the app's Text control keys."""
     return {

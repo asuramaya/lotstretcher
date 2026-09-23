@@ -357,6 +357,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        background_image: Path | None = None,
                        border_style: dict | None = None,
                        shadow: dict | None = None,
+                       reflection: dict | None = None,
                        encoder: str = "libx264",
                        hood_sides: dict[str, str] | None = None,
                        target_duration_s: float | None = None) -> dict:
@@ -555,7 +556,8 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                         cars, canvas_size[0], canvas_size[1], background, background_image=bg_frame,
                         border=border_held, spotlight=(hero["center"][0], hero["center"][1], hero["dim"]),
                         glow=glow, glow_color=str(glow_color), glow_radius=glow_radius,
-                        glow_intensity=glow_intensity, overlays=overlays, shadow=shadow)
+                        glow_intensity=glow_intensity, overlays=overlays, shadow=shadow,
+                        reflection=reflection)
                     try:
                         proc.stdin.write(canvas.tobytes())
                     except BrokenPipeError:

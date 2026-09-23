@@ -407,6 +407,12 @@ mid-dissolve, and sits beneath the glow. In the app it is the Light
 group's "Ground shadow" toggle with its darkness slider; `recompose`
 and `hero-video` take the same two flags.
 
+`--reflection` adds a floor reflection: the vehicle mirrored below its
+own contact line and faded out over the top of it, as a glossy studio
+floor gives; `--reflection-strength` is its opacity at the floor line
+(default 0.35). It sits under the shadow, so the two together read as
+one floor. The app's Light group has the same toggle and slider.
+
 ### Text on the still
 
 The core draws text (core/src/text.rs, the studio's Lato Bold, OFL) so

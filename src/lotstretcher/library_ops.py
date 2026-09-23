@@ -18,7 +18,7 @@ from pathlib import Path
 
 from lotstretcher.imaging import assets
 from lotstretcher.imaging.compose import compose_interiors, compose_vehicle, compose_wheel_shots
-from lotstretcher.imaging.text import frame_style, shadow_style, text_options
+from lotstretcher.imaging.text import frame_style, reflection_style, shadow_style, text_options
 
 
 def find_vehicle_folders(root: Path) -> list[Path]:
@@ -97,6 +97,7 @@ def resolve_recompose_options(options: dict) -> dict:
             "text": text_options(options),
             "border_style": frame_style(options),
             "shadow": shadow_style(options),
+            "reflection": reflection_style(options),
         },
         "interiors": bool(options.get("interiors", False)),
         "interior_captions": bool(options.get("interiorCaptions", False)),
@@ -148,6 +149,7 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
         text=text_options(options),
         border_style=frame_style(options),
         shadow=shadow_style(options),
+        reflection=reflection_style(options),
         gradient=not wants_photo,
         video=video_on,
         video_encoder="h264_nvenc" if options.get("nvenc") else "libx264",

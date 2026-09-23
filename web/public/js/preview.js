@@ -16,7 +16,7 @@ import { prepareClip, drawClipFrame } from './pipeline/video.js';
 import { get as specGet } from './spec.js';
 import * as OPTS from './options.js';
 import { imageNow } from './lib/library.js';
-import { textOptions, textRequestNow, frameStyle, shadowStyle } from './lib/text.js';
+import { textOptions, textRequestNow, frameStyle, shadowStyle, reflectionStyle } from './lib/text.js';
 
 /* A stock asset as a canvas: the site's own file, or the server's
  * picture of one only it holds. A fetch in flight redraws the preview
@@ -252,7 +252,7 @@ export class Preview {
         exterior: subject.exterior, interior: subject.interior,
         generic: o.backdrop === 'generic',
         background: o.backdrop === 'custom' ? o.customBackground || null : stockBackground,
-        border, borderFit: o.frameFit, borderStyle: frameStyle(o), shadow: shadowStyle(o),
+        border, borderFit: o.frameFit, borderStyle: frameStyle(o), shadow: shadowStyle(o), reflection: reflectionStyle(o),
         spotlight: o.spotlight,
         marginFrac: o.margin,
         glow: o.glow, glowColor: o.glowColor, glowRadius: o.glowRadius, glowIntensity: o.glowIntensity,
@@ -312,7 +312,7 @@ export class Preview {
     this.canvas.width = width; this.canvas.height = height;
     drawClipFrame(this.canvas.getContext('2d'), this.clip, this.scrub * this.clip.duration, {
       spotlight: o.spotlight, glow: o.glow, glowColor: o.glowColor, glowRadius: o.glowRadius, glowIntensity: o.glowIntensity,
-      shadow: shadowStyle(o),
+      shadow: shadowStyle(o), reflection: reflectionStyle(o),
     });
     this.lastMs = performance.now() - t0;
     this.lastPixels = width * height;

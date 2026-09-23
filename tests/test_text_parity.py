@@ -250,3 +250,35 @@ def test_plan_matches_between_native_and_wasm():
         js.write_text(script)
         out = json.loads(subprocess.run([node, str(js)], capture_output=True, text=True, check=True).stdout)
     assert out == native
+
+
+def test_the_floor_reflection_mirrors_the_car_below_it_and_fades_out():
+    """Just under the contact line the backdrop takes the car's own red,
+    faded; further down it is gone; the shadow lies over it; a frame
+    fades it with the car."""
+    from lotstretcher.imaging.text import reflection_style
+    assert reflection_style({}) is None
+    assert reflection_style({"reflection": True}) == {"strength": 0.35}
+    assert reflection_style({"reflection": True, "reflectionStrength": 0.6}) == {"strength": 0.6}
+    bg = {"kind": "linear", "angle": 0.0, "start": [200, 200, 200], "end": [200, 200, 200]}
+    plain = np.asarray(core.compose_hero([cutout()], 800, 800, bg, spotlight=False)).astype(int)
+    mirrored = np.asarray(core.compose_hero([cutout()], 800, 800, bg, spotlight=False,
+                                            reflection={"strength": 1.0})).astype(int)
+    car = (plain[:, :, 0] > 150) & (plain[:, :, 1] < 80)
+    ys, xs = np.where(car)
+    bottom, cx = ys.max(), int(xs.mean())
+    just_below, far_below = mirrored[bottom + 3, cx], mirrored[bottom + 200, cx]
+    assert just_below[0] > just_below[1] + 60, "red mirrored just under the car"
+    assert (far_below == plain[bottom + 200, cx]).all(), "faded out well below"
+    # A weaker reflection is less red; the shadow darkens it further.
+    weak = np.asarray(core.compose_hero([cutout()], 800, 800, bg, spotlight=False, reflection={"strength": 0.3})).astype(int)
+    assert weak[bottom + 3, cx, 1] > just_below[1]
+    both = np.asarray(core.compose_hero([cutout()], 800, 800, bg, spotlight=False,
+                                        reflection={"strength": 1.0}, shadow={"strength": 1.0})).astype(int)
+    assert both[bottom + 3, cx].sum() < just_below.sum()
+    def frame(alpha):
+        return np.asarray(core.render_frame([(cutout(), 150, 200, 500, 260, alpha)], 800, 800, bg,
+                                            reflection={"strength": 1.0})).astype(int)
+    full, half = frame(1.0), frame(0.5)
+    y, x = 200 + 260 + 2, 150 + 250
+    assert full[y, x, 0] - full[y, x, 1] > half[y, x, 0] - half[y, x, 1] > 0

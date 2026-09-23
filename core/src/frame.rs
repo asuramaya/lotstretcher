@@ -17,7 +17,7 @@ use std::borrow::Cow;
 use std::rc::Rc;
 
 use crate::compose::{slice_image, Background, Slice};
-use crate::glow::{glow_color, make_glow_layer, paste_alpha, paste_shadow};
+use crate::glow::{glow_color, make_glow_layer, paste_alpha, paste_reflection, paste_shadow};
 use crate::gradient::{generic_gradient, linear_gradient, vehicle_gradient};
 use crate::resize::{cover_fit, crop, resize_bilinear, resize_lanczos};
 use crate::spec;
@@ -80,6 +80,9 @@ pub struct FrameRequest {
     /// A ground shadow under each car, faded with it (glow::Shadow).
     #[serde(default)]
     pub shadow: Option<crate::glow::Shadow>,
+    /// A floor reflection under each car, faded with it (glow::Reflection).
+    #[serde(default)]
+    pub reflection: Option<crate::glow::Reflection>,
 }
 
 /// The car with its alpha scaled; borrowed as is at full opacity, so
@@ -138,6 +141,9 @@ pub fn render_frame(req: &FrameRequest, arena: &[u8]) -> Result<Image, String> {
             if bilinear { Rc::new(resize_bilinear(&src, cw, ch)) } else { Rc::new(resize_lanczos(&src, cw, ch)) }
         };
         let (x, y) = (car.x.round() as i64, car.y.round() as i64);
+        if let Some(r) = &req.reflection {
+            paste_reflection(&mut canvas, &scaled, x, y, r, car.alpha);
+        }
         if let Some(s) = &req.shadow {
             paste_shadow(&mut canvas, &scaled, x, y, s, car.alpha);
         }

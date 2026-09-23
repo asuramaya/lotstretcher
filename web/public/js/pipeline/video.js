@@ -304,10 +304,10 @@ function backdropFor(prepared, angle, pal) {
 /* One frame at time `t` of a prepared clip. `scaled` is a ScaledCache
  * when the caller draws many frames; a one-off frame passes none and
  * pays for its resampling once. */
-export function drawClipFrame(ctx, prepared, t, { spotlight = true, glow = false, glowColor = null, glowRadius = null, glowIntensity = null, shadow = null, scaled = null } = {}) {
+export function drawClipFrame(ctx, prepared, t, { spotlight = true, glow = false, glowColor = null, glowRadius = null, glowIntensity = null, shadow = null, reflection = null, scaled = null } = {}) {
   const { shots, palette, plan, duration, width, height, overlays = [], window = null } = prepared;
   // The halo and the ground shadow: per-car light, spread into renderFrame.
-  const halo = { glow, glowColor, glowRadius, glowIntensity, shadow };
+  const halo = { glow, glowColor, glowRadius, glowIntensity, shadow, reflection };
   const own = !scaled;
   const cache = scaled || new ScaledCache();
   const held = own ? shots.map((sh) => { const had = sh.id; if (had === undefined) sh.id = core.retain(sh.data); return had === undefined; }) : null;
@@ -379,6 +379,7 @@ export async function renderHeroVideoHere(cutouts, {
   glowRadius = null,
   glowIntensity = null,
   shadow = null,              // lib/text.js::shadowStyle: a ground shadow under each car
+  reflection = null,          // lib/text.js::reflectionStyle: a floor reflection under each car
   text = null,                // lib/text.js::textRequest: the still's title, badge and line on the clip
   background = null,          // a canvas behind the clip (a stock or the user's photo); the gradient otherwise
   frameStyle = null,          // a frame the core draws at the clip's size, when there is no frame art
@@ -454,7 +455,7 @@ export async function renderHeroVideoHere(cutouts, {
   for (let f = 0; f < total; f++) {
     if (signal?.aborted) { encoder.close(); throw new Error('cancelled'); }
 
-    drawClipFrame(ctx, prepared, f / fps, { spotlight, glow, glowColor, glowRadius, glowIntensity, shadow, scaled });
+    drawClipFrame(ctx, prepared, f / fps, { spotlight, glow, glowColor, glowRadius, glowIntensity, shadow, reflection, scaled });
 
     const frame = new VideoFrame(canvas, {
       timestamp: Math.round(f * usPerFrame),

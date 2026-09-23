@@ -122,7 +122,7 @@ export function releaseAll() { return call({ op: 'release_all' }); }
 export function composeHero(cars, width, height, background, {
   layout = 'single', spotlight = true, glow = false, glowColor = null,
   glowRadius = null, glowIntensity = null, marginFrac = null, backgroundImage = null, border = null,
-  borderFit = null, overlays = [], text = null, borderStyle = null, shadow = null,
+  borderFit = null, overlays = [], text = null, borderStyle = null, shadow = null, reflection = null,
 } = {}) {
   if (!mod) throw new Error('core not loaded; await loadCore() first');
   const images = [...cars];
@@ -141,7 +141,7 @@ export function composeHero(cars, width, height, background, {
     width, height, background: bg, cars: slices.slice(0, cars.length), layout, spotlight, glow,
     glow_color: glowColor, glow_radius: glowRadius, glow_intensity: glowIntensity, margin_frac: marginFrac,
     border: borderIndex !== null ? slices[borderIndex] : null,
-    border_fit: borderFit, overlays, text, border_style: borderStyle, shadow,
+    border_fit: borderFit, overlays, text, border_style: borderStyle, shadow, reflection,
   };
   const rgb = mod.compose_hero(JSON.stringify(req), buf);
   const out = new ImageData(width, height);
@@ -188,7 +188,7 @@ export function toImageData(res) {
  * another same-sized image before it is pasted. */
 export function renderFrame(cars, width, height, background, {
   border = null, spotlight = null, glow = false, glowColor = null, glowRadius = null,
-  glowIntensity = null, resample = 'lanczos', backgroundImage = null, overlays = [], shadow = null,
+  glowIntensity = null, resample = 'lanczos', backgroundImage = null, overlays = [], shadow = null, reflection = null,
 } = {}) {
   const images = cars.map((c) => c.image);
   const bg = { ...background };
@@ -196,7 +196,7 @@ export function renderFrame(cars, width, height, background, {
     op: 'render_frame', width, height, background: bg,
     cars: cars.map((c, i) => ({ image: { $image: i }, x: c.x, y: c.y, w: c.w, h: c.h, alpha: c.alpha ?? 1 })),
     glow, glow_color: glowColor, glow_radius: glowRadius, glow_intensity: glowIntensity, resample,
-    rgba: true, overlays, shadow,
+    rgba: true, overlays, shadow, reflection,
   };
   cars.forEach((c, i) => {
     if (c.mix) { op.cars[i].mix = { image: { $image: images.length }, t: c.mix.t }; images.push(c.mix.image); }
