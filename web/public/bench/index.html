@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><title>core bench</title><pre id="out">running…</pre>
+<script type="module">
+const w = new Worker('./worker.js', { type: 'module' });
+window.LOG = []; w.onmessage = (e) => { if (e.data.log) { window.LOG.push(e.data.log); document.getElementById('out').textContent = window.LOG.join('\n'); return; } document.getElementById('out').textContent = JSON.stringify(e.data, null, 2); window.BENCH = e.data; };
+w.postMessage('go');
+</script>

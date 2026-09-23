@@ -116,6 +116,27 @@ bash web/build-core.sh     # needs rustup's wasm32-unknown-unknown target,
 The About pane reports `core: wasm vN`; the parity tests in `tests/`
 hold the wasm build to the native one.
 
+### Threads, measured
+
+A threaded build (rayon over web workers, `LOTSTRETCHER_THREADS=1
+bash web/build-core.sh`, nightly with rust-src) links and runs, but
+only inside a worker: rayon's join blocks the calling thread, which a
+page's main thread may not do, and every core call today is made from
+the main thread. `public/bench/` runs both builds inside one worker on
+a real cutout (Chromium, 20 hardware threads, pool of 8):
+
+| | plain | threaded x8 |
+|---|---|---|
+| compose 1254², no glow | 74 ms | 20 ms |
+| compose 1254², glow | 122 ms | 37 ms |
+| video frame 720² | 33 ms | 9.5 ms |
+
+So the speed is there, about 3.5x, and a 720² clip would render in
+under two seconds instead of five to seven. Taking it means moving the
+core's calls into a worker of their own, which makes the core's API
+asynchronous across the preview, the run and the video renderer. That
+is a design decision, not a build step, and it has not been taken.
+
 ## Cross-origin isolation
 
 `onnxruntime-web`'s threaded build needs `SharedArrayBuffer`, which needs
