@@ -241,7 +241,7 @@ function renderPhotos() {
 
     if (p.rejected) tile.appendChild(tagOf('skipped'));
     else if (p.scene) tile.appendChild(tagOf(p.angle ? `${p.scene} · ${p.angle}` : p.scene));
-    tile.onclick = () => openLightbox(state.photos.indexOf(p));
+    tile.onclick = () => openLightbox(boothItems(), state.photos.indexOf(p));
 
     if (!state.running) {
       const x = el('button', 'tile-x', '×');
@@ -297,9 +297,10 @@ function renderResults() {
     canvasToBlob(c, 'image/jpeg', 0.85).then((b) => { img.src = URL.createObjectURL(b); });
     img.alt = `Interior photo ${p.name}, corrected`;
     tile.append(img, tagOf('interior'));
-    tile.onclick = () => saveInterior(p);
     interiorHost.appendChild(tile);
   }
+  const interiorItems = interiors.map((p) => canvasItem(p.interior, p.name, 'interior', () => saveInterior(p)));
+  [...interiorHost.children].forEach((tile, i) => { tile.onclick = () => openLightbox(interiorItems, i); });
 
   // One tile per still: every format of every photo, each in its own
   // shape, since the run composed each one separately and a square
@@ -307,6 +308,7 @@ function renderResults() {
   const grid = $('resultGrid');
   grid.innerHTML = '';
   $('progHead').textContent = state.running ? 'Working' : 'Done';
+  const stillItems = [];
   for (const p of heroes) {
     for (const [fmt, canvas] of Object.entries(p.heroes || { square: p.hero })) {
       const tile = el('div', 'tile');
@@ -319,7 +321,9 @@ function renderResults() {
       const label = OPTS.HERO_FORMATS[fmt]?.label || fmt;
       img.alt = `${label} still from ${p.name}`;
       tile.append(img, tagOf(`${p.angle || 'hero'} \u00b7 ${label}`));
-      tile.onclick = () => saveOne(p, fmt);
+      stillItems.push(canvasItem(canvas, `${p.name} \u00b7 ${label}`, p.angle || 'hero', () => saveOne(p, fmt)));
+      const at = stillItems.length - 1;
+      tile.onclick = () => openLightbox(stillItems, at);
       grid.appendChild(tile);
     }
   }
@@ -1244,28 +1248,58 @@ function setStatus(id, text, tone = '') {
   s.className = `head-status${tone ? ` is-${tone}` : ''}`;
 }
 
-/* ---------- lightbox: a photo at full size, and the next ---------- */
+/* ---------- lightbox: one image at full size, and the next ----------
+ * Items are {src, name, tag, cors, save}: `src` a URL or a function
+ * making one (a result's canvas is encoded only when looked at), `save`
+ * an action for the Save button. The booth's photos and the run's
+ * stills and interiors all open here. */
+let lightboxItems = [];
 let lightboxAt = -1;
-function openLightbox(i) {
-  if (!state.photos.length) return;
-  lightboxAt = Math.max(0, Math.min(i, state.photos.length - 1));
+const made = new Set();   // object URLs this box made, revoked on close
+function boothItems() {
+  return state.photos.map((p) => ({
+    src: p.thumb, name: p.name, cors: !!p.url,
+    tag: p.rejected ? 'skipped' : p.scene ? (p.angle ? `${p.scene} · ${p.angle}` : p.scene) : '',
+  }));
+}
+function canvasItem(canvas, name, tag, save, quality = 0.92) {
+  let url = null;
+  return {
+    name, tag, save,
+    src: async () => { if (!url) { url = URL.createObjectURL(await canvasToBlob(canvas, 'image/jpeg', quality)); made.add(url); } return url; },
+  };
+}
+function openLightbox(items, i) {
+  if (!items.length) return;
+  lightboxItems = items;
+  lightboxAt = Math.max(0, Math.min(i, items.length - 1));
   $('lightbox').hidden = false;
   showLightbox();
 }
-function showLightbox() {
-  const p = state.photos[lightboxAt];
-  if (!p) { closeLightbox(); return; }
+async function showLightbox() {
+  const at = lightboxAt;
+  const item = lightboxItems[at];
+  if (!item) { closeLightbox(); return; }
   const img = $('lightboxImg');
-  if (p.url) img.crossOrigin = 'anonymous'; else img.removeAttribute('crossorigin');
-  img.src = p.thumb;
-  img.alt = p.name;
-  const tag = p.rejected ? 'skipped' : p.scene ? (p.angle ? `${p.scene} · ${p.angle}` : p.scene) : '';
-  $('lightboxCap').textContent = `${lightboxAt + 1} of ${state.photos.length} · ${p.name}${tag ? ` · ${tag}` : ''}`;
-  $('lightboxPrev').disabled = lightboxAt === 0;
-  $('lightboxNext').disabled = lightboxAt === state.photos.length - 1;
+  if (item.cors) img.crossOrigin = 'anonymous'; else img.removeAttribute('crossorigin');
+  const src = typeof item.src === 'function' ? await item.src() : item.src;
+  if (at !== lightboxAt) return;   // stepped on while encoding
+  img.src = src;
+  img.alt = item.name;
+  $('lightboxCap').textContent = `${at + 1} of ${lightboxItems.length} · ${item.name}${item.tag ? ` · ${item.tag}` : ''}`;
+  $('lightboxSave').hidden = !item.save;
+  $('lightboxSave').onclick = (e) => { e.stopPropagation(); item.save?.(); };
+  $('lightboxPrev').disabled = at === 0;
+  $('lightboxNext').disabled = at === lightboxItems.length - 1;
 }
-function stepLightbox(d) { if ($('lightbox').hidden) return; lightboxAt = Math.max(0, Math.min(lightboxAt + d, state.photos.length - 1)); showLightbox(); }
-function closeLightbox() { $('lightbox').hidden = true; $('lightboxImg').removeAttribute('src'); }
+function stepLightbox(d) { if ($('lightbox').hidden) return; lightboxAt = Math.max(0, Math.min(lightboxAt + d, lightboxItems.length - 1)); showLightbox(); }
+function closeLightbox() {
+  $('lightbox').hidden = true;
+  $('lightboxImg').removeAttribute('src');
+  for (const u of made) URL.revokeObjectURL(u);
+  made.clear();
+  lightboxItems = [];
+}
 
 /* ---------- wiring --------------------------------------------------- */
 async function init() {

@@ -348,7 +348,7 @@
 .lightbox-nav { top: 50%; transform: translateY(-50%); width: 44px; height: 64px; font-size: 34px; line-height: 1; }
 .lightbox-nav.prev { left: var(--s-3); } .lightbox-nav.next { right: var(--s-3); }
 .lightbox-nav:disabled { opacity: .25; cursor: default; }
-.lightbox-cap { position: absolute; bottom: var(--s-4); left: 0; right: 0; text-align: center; color: rgba(255,255,255,.7); font-size: var(--t-sm); }
+.lightbox-cap { position: absolute; bottom: var(--s-4); left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: var(--s-3); flex-wrap: wrap; padding: 0 var(--s-4); color: rgba(255,255,255,.7); font-size: var(--t-sm); }
 
 /* ---------- VIN scan ---------- */
 .scan-video { width: 100%; aspect-ratio: 4 / 3; background: #000; border-radius: var(--r-md); object-fit: cover; }
