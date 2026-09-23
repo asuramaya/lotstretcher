@@ -52,23 +52,54 @@ pub fn apply_spotlight(canvas: &mut Image, cx: f64, cy: f64, dim: f64) {
     if dim >= 1.0 {
         return;
     }
+    let (w, h, c) = (canvas.width, canvas.height, canvas.channels);
+    let factor = spotlight_factor(w, h, cx, cy, dim);
+    for i in 0..w * h {
+        let f = factor[i];
+        let p = i * c;
+        for ch in 0..3 {
+            canvas.data[p + ch] = (canvas.data[p + ch] as f32 * f) as u8;
+        }
+    }
+}
+
+thread_local! {
+    static FACTOR_CACHE: std::cell::RefCell<Vec<((usize, usize, i64, i64, i64), std::rc::Rc<Vec<f32>>)>> =
+        std::cell::RefCell::new(Vec::new());
+}
+const FACTOR_CACHE_MAX: usize = 16;
+
+/// The radial falloff, memoized on (size, centre, dim). A video holds
+/// one centre and dim for a whole shot, so the map is built once per
+/// shot rather than once per frame. Keyed on rounded values so
+/// floating-point jitter cannot defeat the cache.
+fn spotlight_factor(w: usize, h: usize, cx: f64, cy: f64, dim: f64) -> std::rc::Rc<Vec<f32>> {
+    let key = (w, h, cx.round() as i64, cy.round() as i64, (dim * 1000.0).round() as i64);
+    if let Some(hit) = FACTOR_CACHE.with(|c| c.borrow().iter().find(|(k, _)| *k == key).map(|(_, v)| v.clone())) {
+        return hit;
+    }
     let inner = spec::f64_at(&["compose", "spotlight", "innerRadiusFrac"]);
     let outer = spec::f64_at(&["compose", "spotlight", "outerRadiusFrac"]);
-    let (w, h, c) = (canvas.width, canvas.height, canvas.channels);
     let max_dist = [(0.0, 0.0), (w as f64, 0.0), (0.0, h as f64), (w as f64, h as f64)]
         .iter()
         .map(|(px, py)| ((cx - px).powi(2) + (cy - py).powi(2)).sqrt())
         .fold(0.0, f64::max);
+    let inv = 1.0 / (max_dist * (outer - inner));
+    let mut factor = vec![0f32; w * h];
     for y in 0..h {
+        let dy2 = (y as f64 - cy).powi(2);
         for x in 0..w {
-            let dist = ((x as f64 - cx).powi(2) + (y as f64 - cy).powi(2)).sqrt() / max_dist;
-            let t = ((dist - inner) / (outer - inner)).clamp(0.0, 1.0);
+            let dist = (((x as f64 - cx).powi(2) + dy2).sqrt() - inner * max_dist) * inv;
+            let t = dist.clamp(0.0, 1.0);
             let smooth = t * t * (3.0 - 2.0 * t);
-            let f = (1.0 - smooth * (1.0 - dim)) as f32;
-            let i = (y * w + x) * c;
-            for ch in 0..3 {
-                canvas.data[i + ch] = (canvas.data[i + ch] as f32 * f) as u8;
-            }
+            factor[y * w + x] = (1.0 - smooth * (1.0 - dim)) as f32;
         }
     }
+    let rc = std::rc::Rc::new(factor);
+    FACTOR_CACHE.with(|c| {
+        let mut c = c.borrow_mut();
+        if c.len() >= FACTOR_CACHE_MAX { c.remove(0); }
+        c.push((key, rc.clone()));
+    });
+    rc
 }

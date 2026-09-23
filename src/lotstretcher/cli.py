@@ -332,7 +332,7 @@ def main():
                          help="Encode the hero video on the GPU (h264_nvenc).")
     parser.add_argument("--no-spotlight", action="store_true",
                          help="Disable the adaptive spotlight dim behind the vehicle. See "
-                              "compose/background.py::compute_dim_strength -- the dim is measured "
+                              "the core (core/src/spotlight.rs) -- the dim is measured "
                               "from the actual contrast, so turning it off flattens light cars "
                               "against light backdrops.")
     parser.add_argument("--margin-frac", type=float, default=0.06, metavar="FRAC",

@@ -40,7 +40,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from .background import apply_spotlight, make_linear_gradient
+from ... import core
 
 # front-to-rear geometric order, NOT hero_video.py's CAROUSEL_ANGLE_ORDER
 # (which front-loads front_3q for a dramatic reveal) -- a spin needs to
@@ -98,9 +98,10 @@ def _fit_and_anchor(cutout: Image.Image, canvas_size: tuple[int, int],
 
 def _backdrop(canvas_size: tuple[int, int], base_angle: float, start: tuple[int, int, int],
               end: tuple[int, int, int]) -> Image.Image:
-    grad = make_linear_gradient(canvas_size, base_angle, start, end).convert("RGBA")
+    grad = core.linear_gradient(canvas_size[0], canvas_size[1], base_angle, start, end)
     center = (canvas_size[0] / 2, canvas_size[1] * 0.80)
-    return apply_spotlight(grad, center, dim_strength=0.55).convert("RGBA")
+    return core.render_frame([], canvas_size[0], canvas_size[1], {"kind": "image"}, background_image=grad,
+                             spotlight=(center[0], center[1], 0.55)).convert("RGBA")
 
 
 def render_spin_video(cutout_dir: Path, out_path: Path, gradient_colors: tuple,

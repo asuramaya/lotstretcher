@@ -2,6 +2,12 @@
 /* eslint-disable */
 
 /**
+ * The general entry point (see frame.rs::Op). Returns a JS object
+ * {kind: "image", width, height, channels, data} or {kind: "json", text}.
+ */
+export function call(op: string, arena: Uint8Array): any;
+
+/**
  * Composed RGB bytes for the request, or a thrown Error.
  */
 export function compose_hero(request: string, arena: Uint8Array): Uint8Array;
@@ -22,10 +28,13 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
+    readonly call: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly compose_hero: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly detect_window: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly vehicle_gradient_colors: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number];
     readonly version: () => number;
+    readonly __wbindgen_exn_store: (a: number) => void;
+    readonly __externref_table_alloc: () => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

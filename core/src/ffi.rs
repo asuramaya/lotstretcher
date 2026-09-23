@@ -47,6 +47,31 @@ pub unsafe extern "C" fn ls_compose_hero(request: *const c_char, arena: *const u
     into_buffer(crate::compose::compose_json(req, arena))
 }
 
+/// The general entry point: `op` is a JSON object with an "op" field
+/// (see frame.rs::Op). Image results have channels > 0; JSON results
+/// come back as text with channels == 0.
+///
+/// # Safety
+/// `op` is a NUL-terminated UTF-8 string; `arena` points at `arena_len` readable bytes.
+#[no_mangle]
+pub unsafe extern "C" fn ls_call(op: *const c_char, arena: *const u8, arena_len: usize) -> LsBuffer {
+    let op = match CStr::from_ptr(op).to_str() {
+        Ok(s) => s,
+        Err(_) => return into_buffer(Err("op is not UTF-8".into())),
+    };
+    let arena = if arena.is_null() { &[][..] } else { std::slice::from_raw_parts(arena, arena_len) };
+    match crate::frame::call(op, arena) {
+        Ok(crate::frame::OpResult::Image(img)) => into_buffer(Ok(img)),
+        Ok(crate::frame::OpResult::Json(text)) => {
+            let mut v = text.into_bytes().into_boxed_slice();
+            let b = LsBuffer { ptr: v.as_mut_ptr(), len: v.len(), width: 0, height: 0, channels: 0, ok: 1 };
+            std::mem::forget(v);
+            b
+        }
+        Err(e) => into_buffer(Err(e)),
+    }
+}
+
 /// # Safety
 /// `arena` points at `arena_len` readable bytes of an RGBA cutout.
 #[no_mangle]
@@ -95,4 +120,4 @@ pub unsafe extern "C" fn ls_detect_window(border: *const u8, width: usize, heigh
 }
 
 #[no_mangle]
-pub extern "C" fn ls_version() -> u32 { 2 }
+pub extern "C" fn ls_version() -> u32 { 3 }

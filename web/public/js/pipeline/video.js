@@ -23,7 +23,7 @@
  * loop, with software encode only 16% slower than hardware. */
 
 import { makeCanvas, ctxOf } from '../lib/imageio.js';
-import { vehicleGradient, genericGradient, computeDimStrength, applySpotlight } from './compose.js';
+import * as core from '../core.js';
 
 const MUXER_URL = '../../vendor/mp4/mp4-muxer.mjs';
 
@@ -93,54 +93,53 @@ const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2);
  *
  * Shots crossfade, and the backdrop rotates independently of them, so
  * the motion never stops even at a shot boundary. */
-function drawFrame(ctx, { width, height, shots, t, duration, backdrops, spotlight }) {
+/* One frame, every pixel from the core. The choreography (which shot,
+ * how far through its dwell, the push and the crossfade) is decided
+ * here; the backdrop, spotlight, scaling and compositing are the core's,
+ * the same code the CLI's frames come from. */
+function hashAngle(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return (h % 36000) / 100;
+}
+
+function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight }) {
   const perShot = duration / shots.length;
   const index = Math.min(shots.length - 1, Math.floor(t / perShot));
   const local = (t - index * perShot) / perShot;
 
-  // The rotating backdrop is pre-rendered once per shot, because
-  // regenerating the gradient per frame was the single biggest per-frame
-  // cost in the CLI too.
-  const angleTurn = (t / duration) * GRADIENT_TURNS;
-  ctx.save();
-  ctx.clearRect(0, 0, width, height);
+  // Rotating rather than looping: a generated backdrop has no seam to
+  // hide, so it can just keep turning, as the CLI's does.
+  const pal = palette[index % palette.length];
+  const angle = pal.angle + GRADIENT_TURNS * 360 * (t / duration);
 
-  const bg = backdrops[index % backdrops.length];
-  // Rotate the backdrop about its centre, drawn oversized so no corner
-  // ever swings into frame.
-  const diag = Math.hypot(width, height);
-  ctx.translate(width / 2, height / 2);
-  ctx.rotate(angleTurn * 2 * Math.PI);
-  ctx.drawImage(bg, -diag / 2, -diag / 2, diag, diag);
-  ctx.restore();
-
-  const paint = (shot, alpha, progress) => {
+  const cars = [];
+  const place = (shot, alpha, progress) => {
     if (alpha <= 0) return;
-    const box = [0, 0, width, height];
-    const avail = [
-      (box[2] - box[0]) * (1 - 2 * HERO_MARGIN_FRAC),
-      (box[3] - box[1]) * (1 - 2 * HERO_MARGIN_FRAC),
-    ];
-    const base = Math.min(avail[0] / shot.width, avail[1] / shot.height);
+    const availW = width * (1 - 2 * HERO_MARGIN_FRAC);
+    const availH = height * (1 - 2 * HERO_MARGIN_FRAC);
+    const base = Math.min(availW / shot.width, availH / shot.height);
     // A slow push across the dwell so no frame is ever static.
     const scale = base * (1 + PUSH_STRENGTH * easeInOut(progress));
     const w = shot.width * scale;
     const h = shot.height * scale;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(shot, (width - w) / 2, (height - h) / 2, w, h);
-    ctx.restore();
+    cars.push({ image: shot.data, x: (width - w) / 2, y: (height - h) / 2, w, h, alpha });
   };
 
   const fadeFrac = Math.min(0.45, CROSSFADE_S / perShot);
   if (local < fadeFrac && index > 0) {
     const k = local / fadeFrac;
-    paint(shots[index - 1], 1 - k, 1);
-    paint(shots[index], k, local);
+    place(shots[index - 1], 1 - k, 1);
+    place(shots[index], k, local);
   } else {
-    paint(shots[index], 1, local);
+    place(shots[index], 1, local);
   }
+
+  const frame = core.renderFrame(cars, width, height, { kind: 'linear', angle, start: pal.start, end: pal.end }, {
+    spotlight: spotlight ? { cx: width / 2, cy: height / 2, dim: shots[index].dim } : null,
+    resample: 'bilinear',
+  });
+  ctx.putImageData(frame, 0, 0);
 }
 
 /* Render and encode a hero video.
@@ -207,16 +206,36 @@ export async function renderHeroVideo(cutouts, {
       : new Promise((resolve) => { drained = resolve; })
   );
 
-  // Pre-render one backdrop per shot. Regenerating a gradient per frame
-  // was the biggest per-frame cost in the CLI, and it is worse here.
-  const diag = Math.ceil(Math.hypot(width, height));
-  const backdrops = cutouts.map((cut, i) => {
-    const cutCtx = ctxOf(cut, { willReadFrequently: true });
-    const data = cutCtx.getImageData(0, 0, cut.width, cut.height);
-    return generic
-      ? genericGradient(diag, diag, `${seed}:v${i}`)
-      : vehicleGradient(diag, diag, `${seed}:v${i}`, exterior, interior, data);
+  // One palette per shot (the CLI seeds per image too), and each shot's
+  // pixels and spotlight dim measured once. The gradient itself is
+  // rebuilt by the core per frame because it rotates.
+  const shots = cutouts.map((cut, i) => {
+    const data = ctxOf(cut, { willReadFrequently: true }).getImageData(0, 0, cut.width, cut.height);
+    return { width: cut.width, height: cut.height, data, dim: 1.0 };
   });
+  const palette = cutouts.map((cut, i) => {
+    const s = `${seed}:v${i}`;
+    let start; let end;
+    // Generic means no colour names: the palette is measured off the
+    // cutout's own paint, which is what the core does with no names.
+    [start, end] = core.vehicleGradientColors(generic ? null : exterior, generic ? null : interior, shots[i].data);
+    // The angle is the seed's, as the still's would be.
+    const angle = (hashAngle(s));
+    return { start, end, angle };
+  });
+  if (spotlight) {
+    for (const shot of shots) {
+      const availW = width * (1 - 2 * HERO_MARGIN_FRAC);
+      const availH = height * (1 - 2 * HERO_MARGIN_FRAC);
+      const scale = Math.min(availW / shot.width, availH / shot.height);
+      const w = Math.max(1, Math.round(shot.width * scale));
+      const h = Math.max(1, Math.round(shot.height * scale));
+      const scaled = core.call({ op: 'resize', image: { $image: 0 }, width: w, height: h }, [shot.data]);
+      const bg = core.call({ op: 'linear_gradient', width: w, height: h, angle: palette[0].angle, start: palette[0].start, end: palette[0].end });
+      shot.dim = core.call({ op: 'dim_strength', background: { $image: 0 }, car: { $image: 1 } },
+        [{ width: w, height: h, channels: 3, data: bg.data }, { width: w, height: h, channels: 4, data: scaled.data }]);
+    }
+  }
 
   const canvas = makeCanvas(width, height);
   const ctx = ctxOf(canvas);
@@ -228,7 +247,7 @@ export async function renderHeroVideo(cutouts, {
     if (signal?.aborted) { encoder.close(); throw new Error('cancelled'); }
 
     drawFrame(ctx, {
-      width, height, shots: cutouts, t: f / fps, duration, backdrops, spotlight,
+      width, height, shots, t: f / fps, duration, palette, spotlight,
     });
 
     const frame = new VideoFrame(canvas, {

@@ -70,6 +70,8 @@ def _load():
         lib.ls_vehicle_gradient_colors.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_uint8),
                                                    ctypes.c_size_t, ctypes.c_size_t, ctypes.c_size_t,
                                                    ctypes.POINTER(ctypes.c_uint8)]
+        lib.ls_call.restype = _Buffer
+        lib.ls_call.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t]
         lib.ls_detect_window.restype = ctypes.c_int
         lib.ls_detect_window.argtypes = [ctypes.POINTER(ctypes.c_uint8), ctypes.c_size_t, ctypes.c_size_t,
                                          ctypes.POINTER(ctypes.c_int64)]
@@ -163,6 +165,83 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
         return Image.frombytes("RGB", (result.width, result.height), data)
     finally:
         lib.ls_free(result)
+
+
+def call(op: dict, images: list | None = None):
+    """The general entry point. `op` is a dict with an "op" field (see
+    core/src/frame.rs::Op); any PIL images it refers to are passed in
+    `images` and referred to by index in `op` as {"$image": i}. Returns
+    a PIL Image for image results, or the decoded JSON value otherwise."""
+    from PIL import Image
+
+    lib = _load()
+    if lib is None:
+        raise RuntimeError(f"lotstretcher core is not available: {_LIB_ERROR}")
+    arena, slices = _arena(images or [])
+
+    def bind(node):
+        if isinstance(node, dict):
+            if "$image" in node:
+                return slices[node["$image"]]
+            return {k: bind(v) for k, v in node.items()}
+        if isinstance(node, list):
+            return [bind(v) for v in node]
+        return node
+
+    buf = (ctypes.c_uint8 * len(arena)).from_buffer_copy(arena) if arena else None
+    result = lib.ls_call(json.dumps(bind(op)).encode("utf-8"), buf, len(arena))
+    try:
+        if not result.ok:
+            msg = ctypes.string_at(result.ptr, result.len).rstrip(b"\0").decode("utf-8", "replace")
+            raise RuntimeError(f"core {op.get('op')} failed: {msg}")
+        data = ctypes.string_at(result.ptr, result.len)
+        if result.channels == 0:
+            return json.loads(data.decode("utf-8"))["value"]
+        mode = {1: "L", 3: "RGB", 4: "RGBA"}[result.channels]
+        return Image.frombytes(mode, (result.width, result.height), data)
+    finally:
+        lib.ls_free(result)
+
+
+def render_frame(cars, width: int, height: int, background: dict, *, border=None, spotlight=None,
+                 glow=False, glow_color=None, glow_radius=None, glow_intensity=None, resample="lanczos",
+                 background_image=None):
+    """One video frame. `cars` are (rgba_image, x, y, w, h, alpha) tuples;
+    `spotlight` is (cx, cy, dim) or None. A car already at (w, h) is
+    pasted without resampling, which is how a host caches scaled cars."""
+    images = [c[0] for c in cars]
+    op = {"op": "render_frame", "width": width, "height": height, "background": dict(background),
+          "cars": [{"image": {"$image": i}, "x": c[1], "y": c[2], "w": c[3], "h": c[4], "alpha": c[5]}
+                   for i, c in enumerate(cars)],
+          "glow": glow, "glow_color": glow_color, "glow_radius": glow_radius, "glow_intensity": glow_intensity,
+          "resample": resample}
+    if background.get("kind") == "image":
+        op["background"]["image"] = {"$image": len(images)}
+        images.append(background_image)
+    if border is not None:
+        op["border"] = {"$image": len(images)}
+        images.append(border)
+    if spotlight is not None:
+        op["spotlight"] = {"cx": spotlight[0], "cy": spotlight[1], "dim": spotlight[2]}
+    return call(op, images)
+
+
+def resize(image, width: int, height: int, bilinear: bool = False):
+    return call({"op": "resize", "image": {"$image": 0}, "width": width, "height": height, "bilinear": bilinear}, [image])
+
+
+def linear_gradient(width: int, height: int, angle: float, start, end):
+    return call({"op": "linear_gradient", "width": width, "height": height, "angle": angle,
+                 "start": list(start), "end": list(end)})
+
+
+def dim_strength(background_region, car) -> float:
+    return float(call({"op": "dim_strength", "background": {"$image": 0}, "car": {"$image": 1}}, [background_region, car]))
+
+
+def resolve_collision(border, car, x: int, y: int) -> int:
+    return int(call({"op": "resolve_collision", "border": {"$image": 0}, "car": {"$image": 1}, "x": x, "y": y},
+                    [border, car]))
 
 
 def detect_window(border) -> tuple[int, int, int, int]:

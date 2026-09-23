@@ -148,16 +148,78 @@ def test_layouts_match_python(layout):
 BORDER = REPO / "assets" / "borders" / "tomball-ford-frame.png"
 
 
+def reference_detect_window(border: Image.Image, min_width_frac: float = 0.5):
+    """The documented behaviour, kept here as the test's own reference
+    now that window.py is gone: the widest near-transparent run across
+    rows through the middle, then down columns."""
+    alpha = np.array(border.split()[-1])
+    h, w = alpha.shape
+    transparent = alpha < 10
+
+    def widest_run(mask_1d):
+        idx = np.where(mask_1d)[0]
+        if len(idx) == 0:
+            return None
+        breaks = np.where(np.diff(idx) != 1)[0]
+        starts = np.r_[0, breaks + 1]
+        ends = np.r_[breaks, len(idx) - 1]
+        return max(((idx[s], idx[e]) for s, e in zip(starts, ends)), key=lambda r: r[1] - r[0])
+
+    left = right = top = bottom = None
+    for y in range(h // 4, 3 * h // 4, max(1, h // 40)):
+        run = widest_run(transparent[y])
+        if run and (right is None or run[1] - run[0] > right - left) and run[1] - run[0] >= int(w * min_width_frac):
+            left, right = run
+    for x in range(w // 4, 3 * w // 4, max(1, w // 40)):
+        run = widest_run(transparent[:, x])
+        if run and (bottom is None or run[1] - run[0] > bottom - top) and run[1] - run[0] >= int(h * min_width_frac):
+            top, bottom = run
+    return (int(left), int(top), int(right), int(bottom))
+
+
+def reference_resolve_collision(border: Image.Image, car: Image.Image, x: int, y: int,
+                                max_shift=300, step=3, margin_frac=0.04) -> int:
+    border_mask = np.array(border.split()[-1]) >= 10
+    car_mask = np.array(car.split()[-1]) >= 10
+    ch, cw = car_mask.shape
+    bh, bw = border_mask.shape
+
+    def overlap_at(yy):
+        if yy < 0 or yy + ch > bh or x < 0 or x + cw > bw:
+            return None
+        return int(np.count_nonzero(border_mask[yy:yy + ch, x:x + cw] & car_mask))
+
+    best_y, best_overlap = y, None
+    for shift in range(0, max_shift + 1, step):
+        yy = y + shift
+        overlap = overlap_at(yy)
+        if overlap is None:
+            break
+        if overlap == 0:
+            padded = yy + max(1, round(ch * margin_frac))
+            return padded if overlap_at(padded) == 0 else yy
+        if best_overlap is None or overlap < best_overlap:
+            best_y, best_overlap = yy, overlap
+    return best_y
+
+
 @pytest.mark.skipif(not BORDER.is_file(), reason="no border asset checked out")
-def test_window_detection_matches_python():
-    from lotstretcher.imaging.compose.window import detect_window
+def test_window_detection_matches_the_reference():
     border = Image.open(BORDER).convert("RGBA")
-    assert core.detect_window(border) == detect_window(border)
+    assert core.detect_window(border) == reference_detect_window(border)
+
+
+@pytest.mark.skipif(not BORDER.is_file(), reason="no border asset checked out")
+def test_collision_matches_the_reference():
+    border = Image.open(BORDER).convert("RGBA")
+    cut = synthetic_cutout(600, 300)
+    l, t, r, b = core.detect_window(border)
+    x, y = l + 20, t - 40   # start overlapping the header art
+    assert core.resolve_collision(border, cut, x, y) == reference_resolve_collision(border, cut, x, y)
 
 
 @pytest.mark.skipif(not BORDER.is_file(), reason="no border asset checked out")
 def test_bordered_compose_keeps_the_frame_on_top_and_the_car_in_the_window():
-    from lotstretcher.imaging.compose.window import alpha_mask, detect_window, resolve_collision
     from lotstretcher.imaging.compose.layout import compute_placement
     border = Image.open(BORDER).convert("RGBA")
     cut = synthetic_cutout(600, 300)
@@ -169,9 +231,36 @@ def test_bordered_compose_keeps_the_frame_on_top_and_the_car_in_the_window():
     opaque = barr[..., 3] == 255
     assert np.array_equal(arr[opaque], barr[..., :3][opaque])
     # The car sits where Python's window + placement + collision nudge would put it.
-    window = detect_window(border)
+    window = reference_detect_window(border)
     x, y, resized = compute_placement(cut, window, margin_frac=0.06, anchor="center")
-    y = resolve_collision(alpha_mask(border), resized, x, y)
+    y = reference_resolve_collision(border, resized, x, y)
     cx, cy = x + resized.width // 2, y + resized.height // 2
     r, g, b = arr[cy, cx]
     assert r > g + 40 and r > b + 40, f"no car at ({cx},{cy}): {(r, g, b)}"
+
+
+def test_render_frame_with_placed_car_equals_compose_hero():
+    """A frame is a composition with the placement made explicit: the
+    same car at the rectangle compose_hero would choose, alpha 1, must be
+    the same bytes. This is what lets the video hosts hand every frame
+    to the core without a second compositing path."""
+    from lotstretcher.imaging.compose.layout import compute_placement
+    cut = synthetic_cutout()
+    still = core.compose_hero([cut], 500, 400, {"kind": "generic", "seed": "f"}, spotlight=False)
+    x, y, resized = compute_placement(cut, (0, 0, 500, 400), margin_frac=0.06, anchor="center")
+    scaled = core.resize(cut, resized.width, resized.height)
+    frame = core.render_frame([(scaled, x, y, scaled.width, scaled.height, 1.0)], 500, 400,
+                              {"kind": "generic", "seed": "f"})
+    assert frame.tobytes() == still.tobytes()
+
+
+def test_render_frame_alpha_and_helpers():
+    cut = synthetic_cutout()
+    full = core.render_frame([(cut, 10, 10, cut.width, cut.height, 1.0)], 500, 400, {"kind": "generic", "seed": "a"})
+    half = core.render_frame([(cut, 10, 10, cut.width, cut.height, 0.5)], 500, 400, {"kind": "generic", "seed": "a"})
+    none = core.render_frame([], 500, 400, {"kind": "generic", "seed": "a"})
+    f, h, n = (np.asarray(i, dtype=np.int16) for i in (full, half, none))
+    assert np.abs(h - (f + n) / 2).mean() < 1.5, "alpha 0.5 sits halfway between drawn and undrawn"
+    g = core.linear_gradient(200, 100, 30.0, (10, 20, 30), (200, 210, 220))
+    assert g.size == (200, 100) and g.getpixel((0, 99)) != g.getpixel((199, 0))
+    assert 0.35 <= core.dim_strength(none.crop((10, 10, 110, 110)), cut.resize((100, 100))) <= 1.0

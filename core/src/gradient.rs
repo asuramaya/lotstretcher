@@ -36,13 +36,16 @@ pub fn gradient_spec(seed: &str) -> GradientSpec {
 /// increasing counter-clockwise), start -> end, full range corner to
 /// corner at any angle. Built at gradientBuildMax and upscaled.
 pub fn linear_gradient(w: usize, h: usize, angle: f64, start: [u8; 3], end: [u8; 3]) -> Image {
+    // A linear ramp is exactly reconstructible at any size, so it is
+    // computed per pixel directly: one multiply-add per pixel per
+    // channel. (The Python built it small and upscaled because numpy
+    // made the full-size version slow; here the direct form is faster
+    // than the upscale it replaced.) gradientBuildMax stays in the spec
+    // as the resolution the ramp's endpoints are defined at, so the
+    // corner-to-corner normalisation is unchanged.
     let build_max = spec::f64_at(&["compose", "gradientBuildMax"]);
-    let scale = w.max(h) as f64 / build_max;
-    let (bw, bh) = if scale > 1.0 {
-        (((w as f64 / scale).round() as usize).max(2), ((h as f64 / scale).round() as usize).max(2))
-    } else {
-        (w, h)
-    };
+    let scale = (w.max(h) as f64 / build_max).max(1.0);
+    let (bw, bh) = (((w as f64 / scale).round() as usize).max(2), ((h as f64 / scale).round() as usize).max(2));
     let theta = angle.to_radians();
     let (dx, dy) = (theta.cos(), -theta.sin());
     let mut min = f64::INFINITY;
@@ -53,18 +56,28 @@ pub fn linear_gradient(w: usize, h: usize, angle: f64, start: [u8; 3], end: [u8;
         max = max.max(p);
     }
     let span = if max - min != 0.0 { max - min } else { 1.0 };
-    let mut small = Image::new(bw, bh, 3);
-    for y in 0..bh {
-        for x in 0..bw {
-            let t = ((x as f64 * dx + y as f64 * dy) - min) / span;
-            let i = (y * bw + x) * 3;
-            for c in 0..3 {
-                let v = start[c] as f64 + (end[c] as f64 - start[c] as f64) * t;
-                small.data[i + c] = v.clamp(0.0, 255.0) as u8;
-            }
+    // Map an output pixel to the small grid's coordinate space, as the
+    // bilinear upscale would have sampled it.
+    let (sx, sy) = (bw as f64 / w as f64, bh as f64 / h as f64);
+    let ax = (dx * sx / span) as f32;
+    let ay = (dy * sy / span) as f32;
+    let c0 = ((-min) / span + (dx * (sx * 0.5 - 0.5) + dy * (sy * 0.5 - 0.5)) / span) as f32;
+    let s = [start[0] as f32, start[1] as f32, start[2] as f32];
+    let d = [end[0] as f32 - s[0], end[1] as f32 - s[1], end[2] as f32 - s[2]];
+    let mut out = Image::new(w, h, 3);
+    for y in 0..h {
+        let ty = ay * y as f32 + c0;
+        let row = &mut out.data[y * w * 3..(y + 1) * w * 3];
+        for x in 0..w {
+            let t = (ax * x as f32 + ty).clamp(0.0, 1.0);
+            let i = x * 3;
+            row[i] = (s[0] + d[0] * t) as u8;
+            row[i + 1] = (s[1] + d[1] * t) as u8;
+            row[i + 2] = (s[2] + d[2] * t) as u8;
         }
     }
-    if bw == w && bh == h { small } else { resize_bilinear(&small, w, h) }
+    let _ = resize_bilinear;
+    out
 }
 
 pub fn generic_gradient(w: usize, h: usize, seed: &str) -> Image {

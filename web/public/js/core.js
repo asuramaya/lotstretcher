@@ -83,6 +83,56 @@ export function composeHero(cars, width, height, background, {
   return out;
 }
 
+/* The general entry point. `op` is an object with an `op` field (see
+ * core/src/frame.rs::Op); ImageData values it refers to are passed in
+ * `images` and referenced as {$image: i}. Image results come back as
+ * {width, height, channels, data}; scalar results as their value. */
+export function call(op, images = []) {
+  if (!mod) throw new Error('core not loaded; await loadCore() first');
+  const { buf, slices } = arena(images);
+  const bind = (node) => {
+    if (Array.isArray(node)) return node.map(bind);
+    if (node && typeof node === 'object') {
+      if ('$image' in node) return slices[node.$image];
+      const out = {};
+      for (const [k, v] of Object.entries(node)) out[k] = bind(v);
+      return out;
+    }
+    return node;
+  };
+  const res = mod.call(JSON.stringify(bind(op)), buf);
+  if (res.kind === 'json') return JSON.parse(res.text).value;
+  return res;
+}
+
+/* An RGB core image as ImageData, for putImageData. */
+export function toImageData(res) {
+  const out = new ImageData(res.width, res.height);
+  if (res.channels === 4) { out.data.set(res.data); return out; }
+  for (let i = 0, j = 0; i < res.data.length; i += 3, j += 4) {
+    out.data[j] = res.data[i]; out.data[j + 1] = res.data[i + 1]; out.data[j + 2] = res.data[i + 2]; out.data[j + 3] = 255;
+  }
+  return out;
+}
+
+/* One video frame. `cars` are {image: ImageData, x, y, w, h, alpha}. */
+export function renderFrame(cars, width, height, background, {
+  border = null, spotlight = null, glow = false, glowColor = null, glowRadius = null,
+  glowIntensity = null, resample = 'lanczos', backgroundImage = null,
+} = {}) {
+  const images = cars.map((c) => c.image);
+  const bg = { ...background };
+  const op = {
+    op: 'render_frame', width, height, background: bg,
+    cars: cars.map((c, i) => ({ image: { $image: i }, x: c.x, y: c.y, w: c.w, h: c.h, alpha: c.alpha ?? 1 })),
+    glow, glow_color: glowColor, glow_radius: glowRadius, glow_intensity: glowIntensity, resample,
+  };
+  if (bg.kind === 'image') { bg.image = { $image: images.length }; images.push(backgroundImage); }
+  if (border) { op.border = { $image: images.length }; images.push(border); }
+  if (spotlight) op.spotlight = spotlight;
+  return toImageData(call(op, images));
+}
+
 export function vehicleGradientColors(exterior, interior, sample) {
   if (!mod) throw new Error('core not loaded; await loadCore() first');
   const v = mod.vehicle_gradient_colors(exterior ?? undefined, interior ?? undefined,

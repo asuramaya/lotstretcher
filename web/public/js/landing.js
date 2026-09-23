@@ -1,6 +1,6 @@
 /* Landing page behaviour. Two small things, no dependencies. */
 
-import { vehicleGradientColors } from './pipeline/palette.js';
+import { loadCore, vehicleGradientColors } from './core.js';
 import { loadSpec, get as specGet } from './spec.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { initConfigFromSpec } from './config.js';
@@ -68,14 +68,17 @@ if (swatches) {
     ['Carbonized Gray', 'Ebony'],
     ['Atlas Blue', 'Navy Pier'],
   ];
-  for (const [ext, int] of VEHICLES) {
-    const [a, b] = vehicleGradientColors(ext, int);
-    const s = document.createElement('span');
-    s.className = 'swatch';
-    s.style.background = `linear-gradient(135deg, rgb(${a.join(',')}), rgb(${b.join(',')}))`;
-    s.title = ext;
-    swatches.appendChild(s);
-  }
+  // The palette is the core's, so the swatches wait for it to load.
+  loadCore().then(() => {
+    for (const [ext, int] of VEHICLES) {
+      const [a, b] = vehicleGradientColors(ext, int);
+      const s = document.createElement('span');
+      s.className = 'swatch';
+      s.style.background = `linear-gradient(135deg, rgb(${a.join(',')}), rgb(${b.join(',')}))`;
+      s.title = ext;
+      swatches.appendChild(s);
+    }
+  }).catch(() => { /* the section simply stays empty without the core */ });
 }
 
 /* ---------- live demo ----------

@@ -98,10 +98,8 @@ def process_image(content: bytes, out_dir: Path, out_name: str,
         except ValueError:
             pass  # unknown scene_id -- fall through to the measured gradient, don't fail the request over it
     if background_path is None:
-        from ..imaging.compose.background import make_linear_gradient
-        import random
-        start, end = vehicle_gradient_colors(None, None, sample_path=cutout_path)
-        background_path = make_linear_gradient(canvas_size, random.uniform(0, 360), start, end).convert("RGBA")
+        # A spec for the core: measured off the cutout, seeded by name.
+        background_path = {"kind": "vehicle", "seed": out_name, "exterior": None, "interior": None}
 
     composed = compose_hero(background_path, None, [cutout_path], layout="single", canvas_size=canvas_size)
     output_path = out_dir / f"{out_name}.composed.png"

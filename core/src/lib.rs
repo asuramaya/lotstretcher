@@ -24,6 +24,7 @@ pub mod layout;
 pub mod glow;
 pub mod window;
 pub mod compose;
+pub mod frame;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod ffi;

@@ -1,10 +1,13 @@
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
+export const call: (a: number, b: number, c: number, d: number) => [number, number, number];
 export const compose_hero: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const detect_window: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const vehicle_gradient_colors: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => [number, number];
 export const version: () => number;
+export const __wbindgen_exn_store: (a: number) => void;
+export const __externref_table_alloc: () => number;
 export const __wbindgen_externrefs: WebAssembly.Table;
 export const __wbindgen_malloc: (a: number, b: number) => number;
 export const __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;

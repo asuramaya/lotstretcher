@@ -91,10 +91,12 @@ def test_palette_constants_match_spec(spec):
     assert palette.COLOR_WORDS == {k: tuple(v) for k, v in p["colorWords"].items()}
 
 
-def test_gradient_hue_bands_match_spec(spec):
-    from lotstretcher.imaging.compose.background import GRADIENT_BUILD_MAX, GRADIENT_HUE_BANDS
-    assert GRADIENT_HUE_BANDS == [tuple(b) for b in spec["compose"]["gradientHueBands"]]
-    assert GRADIENT_BUILD_MAX == spec["compose"]["gradientBuildMax"]
+def test_gradient_constants_are_read_from_the_spec_by_the_core(spec):
+    """The gradient moved into the Rust core, which embeds the spec at
+    build time and reads these keys by name rather than restating them."""
+    src = (REPO / "core" / "src" / "gradient.rs").read_text()
+    assert '"gradientHueBands"' in src and '"gradientBuildMax"' in src
+    assert 'include_str!("../../shared/pipeline-spec.json")' in (REPO / "core" / "src" / "spec.rs").read_text()
 
 
 def test_cut_types_match_spec(spec):
