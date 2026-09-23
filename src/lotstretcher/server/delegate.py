@@ -157,8 +157,10 @@ def compose(cutout_png: bytes, options: dict[str, Any],
         background = {"kind": "vehicle", "seed": str(options.get("seed", "")),
                       "exterior": options.get("exteriorColor"), "interior": options.get("interiorColor")}
 
-    border = _resolve_asset("borders", options.get("border"), warnings) if options.get("frame") else None
-    if options.get("frame") and border is None and not options.get("border"):
+    from ..library_ops import stock_border
+    wants_border = bool(options.get("frame")) or stock_border(options) is not None
+    border = _resolve_asset("borders", stock_border(options), warnings) if wants_border else None
+    if wants_border and border is None and not stock_border(options):
         warnings.append("frame requested but no border chosen; composed without one")
 
     composed = compose_hero(

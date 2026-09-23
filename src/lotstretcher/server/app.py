@@ -177,6 +177,41 @@ def list_assets():
     return _list()
 
 
+_THUMBS: dict = {}
+
+
+@app.get("/assets/thumb/{category}/{name}")
+def asset_thumb(category: str, name: str, size: int = 320):
+    """A small picture of one stock background or frame, for the app's
+    swatches (320) and its live preview (up to 1024). PNG for frames
+    (their window is transparency), JPEG for backgrounds. Built once per
+    process and size."""
+    if category not in ("backgrounds", "borders"):
+        raise HTTPException(404, "no such asset category")
+    size = max(32, min(1024, int(size)))
+    key = (category, name, size)
+    if key not in _THUMBS:
+        from PIL import Image
+        from ..imaging import assets
+        try:
+            path = assets.find_one(category, name)
+        except ValueError as e:
+            raise HTTPException(404, str(e))
+        img = Image.open(path)
+        img.thumbnail((size, size), Image.LANCZOS)
+        import io
+        buf = io.BytesIO()
+        if category == "borders":
+            img.convert("RGBA").save(buf, format="PNG", optimize=True)
+            media = "image/png"
+        else:
+            img.convert("RGB").save(buf, format="JPEG", quality=82)
+            media = "image/jpeg"
+        _THUMBS[key] = (buf.getvalue(), media)
+    data, media = _THUMBS[key]
+    return Response(content=data, media_type=media, headers={"Cache-Control": "public, max-age=3600"})
+
+
 @app.post("/compose")
 async def compose_delegated(cutout: UploadFile = File(...), options: str = Form("{}")):
     """Compose one cutout using this host's assets and hardware.

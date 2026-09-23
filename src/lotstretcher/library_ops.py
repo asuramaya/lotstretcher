@@ -47,6 +47,16 @@ def vehicle_colors(folder: Path) -> dict:
             "interior_color": v.get("interior_color")}
 
 
+def stock_border(options: dict) -> str | None:
+    """The named stock border the app's Frame picker chose, or None: its
+    "none" and "custom" values are the app's own (no frame; the user's
+    own PNG, which never reaches a server), not library names."""
+    name = options.get("border")
+    if name in (None, "", "none", "custom"):
+        return None
+    return str(name)
+
+
 def resolve_recompose_options(options: dict) -> dict:
     """App control values -> keyword arguments for the composers.
 
@@ -62,8 +72,8 @@ def resolve_recompose_options(options: dict) -> dict:
         background_path = assets.resolve_arg("backgrounds", options.get("background") or None,
                                              default_name="American Flag")
     border_path = None
-    if options.get("frame"):
-        border_path = assets.resolve_arg("borders", options.get("border") or None)
+    if options.get("frame") or stock_border(options):
+        border_path = assets.resolve_arg("borders", stock_border(options))
 
     formats = options.get("heroFormats") or [DEFAULT_HERO_STILL_FORMAT]
     if "all" in formats:
@@ -119,7 +129,7 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
     video_on = video_formats is None or len(video_formats) > 0
     wants_photo = options.get("backdrop") == "asset" or bool(options.get("photoBackground")) \
         or bool(options.get("background"))
-    frame = bool(options.get("frame")) or bool(options.get("border"))
+    frame = bool(options.get("frame")) or stock_border(options) is not None
 
     opts = HeroOptions(
         enabled=bool(options.get("hero", True)),
@@ -148,7 +158,7 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
             opts.background_path = assets.resolve_arg("backgrounds", options.get("background") or None,
                                                       default_name="American Flag")
         if frame:
-            opts.border_path = assets.resolve_arg("borders", options.get("border") or None)
+            opts.border_path = assets.resolve_arg("borders", stock_border(options))
         if options.get("videoFlagBackground"):
             opts.video_background = assets.resolve_arg("videos", None, default_name="American Flag Waving")
         if options.get("videoMusic"):

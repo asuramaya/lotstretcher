@@ -61,8 +61,30 @@ function availability(control) {
   return { ok: true, why: null };
 }
 
+/* A choice with `expand` fans out into one entry per asset of that
+ * kind (each carrying the asset's name and the choice's gates), so a
+ * swatch grid shows the library's frames as frames rather than as a
+ * select beside a "Stock" tile. With no library the tile stays as one
+ * locked entry that says so. */
+function expanded(control) {
+  const out = [];
+  for (const c of control.choices || []) {
+    if (!c.expand) { out.push(c); continue; }
+    const library = assets()[c.expand] || [];
+    if (!library.length) { out.push({ ...c, empty: true }); continue; }
+    for (const a of library) {
+      out.push({
+        ...c, label: a.label, hint: c.label, asset: a.value,
+        value: c.into === control.key ? a.value : c.value,
+        sets: c.into && c.into !== control.key ? { [c.into]: a.value } : null,
+      });
+    }
+  }
+  return out;
+}
+
 function choicesFor(control) {
-  if (!control.dynamic) return control.choices || [];
+  if (!control.dynamic) return expanded(control);
   if (control.dynamic === 'glowColors') {
     return Object.keys(get('glow', 'colors')).map((v) => ({ value: v, label: v }));
   }
@@ -209,6 +231,84 @@ function buildFile(control, value, onChange, disabled) {
   return wrap;
 }
 
+/* An image is picked for a tile that stands for the user's own file. */
+function pickImage(fileControl, onPicked) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.className = 'sr-only';
+  input.onchange = async () => {
+    const f = input.files?.[0];
+    input.remove();
+    if (!f) return;
+    const { blobToCanvas } = await import('./lib/store.js');
+    const canvas = await blobToCanvas(f);
+    if (!canvas) return;
+    canvas.name = f.name;
+    onPicked(canvas);
+  };
+  document.body.appendChild(input);
+  input.click();
+}
+
+/* Tiles instead of a <select>: each choice shows what it is (a gradient,
+ * a stock photo, a frame, a colour) through `thumbFor`, supplied by the
+ * app. A choice with `file` is the user's own image: its tile shows the
+ * image once chosen and opens the picker when tapped. */
+function buildSwatches(control, values, onChange, disabled, thumbFor, allControls) {
+  const grid = el('div', 'swatches');
+  const current = values[control.key] ?? control.default;
+  for (const choice of choicesFor(control)) {
+    const tile = el('button', 'swatch');
+    tile.type = 'button';
+    const locked = disabled || (choice.requires && !can(choice.requires)) || choice.empty;
+    const fileControl = choice.file ? allControls.find((c) => c.key === choice.file) : null;
+    const image = fileControl ? values[fileControl.key] : null;
+    const pressed = String(current) === String(choice.value)
+      && (!choice.sets || Object.entries(choice.sets).every(([k, v]) => String(values[k]) === String(v)));
+    tile.setAttribute('aria-pressed', String(pressed));
+    if (locked) tile.classList.add('is-locked');
+    const thumb = el('span', 'swatch-thumb');
+    const art = thumbFor ? thumbFor(control, choice, values, image) : null;
+    if (art instanceof HTMLElement) thumb.appendChild(art);
+    else if (art && art.color) thumb.style.background = art.color;
+    else if (typeof art === 'string') { const im = document.createElement('img'); im.src = art; im.alt = ''; im.loading = 'lazy'; thumb.appendChild(im); }
+    else thumb.classList.add(choice.file ? 'is-upload' : 'is-plain');
+    if (choice.file && image) thumb.classList.add('has-image');
+    const label = el('span', 'swatch-label', choice.label ?? String(choice.value));
+    const hint = el('span', 'swatch-hint', locked
+      ? (choice.empty ? (isSelfHosted() ? 'Library is empty' : 'Your server only') : (isSelfHosted() ? 'Host lacks it' : 'Your server only'))
+      : (choice.file && image ? (image.name || 'chosen') : (choice.hint || '')));
+    tile.append(thumb, label, hint);
+    tile.title = choice.hint || '';
+    tile.disabled = !!locked;
+    tile.onclick = () => {
+      const choose = () => {
+        if (choice.sets) for (const [k, v] of Object.entries(choice.sets)) onChange(k, v, true);
+        onChange(control.key, choice.value);
+      };
+      if (fileControl) {
+        // Tap once to pick an image (and select it); tap again, once an
+        // image is set, to reselect it. Change it from the small link.
+        if (image) choose();
+        else pickImage(fileControl, (canvas) => { onChange(fileControl.key, canvas, true); onChange(fileControl.key, canvas); choose(); });
+        return;
+      }
+      choose();
+    };
+    if (fileControl && image && !locked) {
+      const change = el('span', 'swatch-change', 'change');
+      change.onclick = (e) => {
+        e.stopPropagation();
+        pickImage(fileControl, (canvas) => { onChange(fileControl.key, canvas); if (pressed) onChange(control.key, choice.value); });
+      };
+      tile.appendChild(change);
+    }
+    grid.appendChild(tile);
+  }
+  return grid;
+}
+
 function formatValue(control, value) {
   if (control.unit === 's') return `${value}s`;
   if (control.unit === 'px') return `${value}px`;
@@ -233,16 +333,21 @@ const openState = new Map();
  * `onChange(key, value)` is called on every edit. Each group is a
  * collapsible: open when something in it is usable on this host, shut
  * with a "needs your server" badge when nothing is. */
-export function renderControls(host, values, onChange) {
+export function renderControls(host, values, onChange, { thumbFor = null } = {}) {
   host.innerHTML = '';
+  const allControls = get('controls', 'groups').flatMap((g) => g.controls);
 
   for (const group of get('controls', 'groups')) {
-    const visible = group.controls.filter((c) => shownBy(c, values));
+    // A hidden control is real (it has a flag, a value, a showWhen) but
+    // is presented inside another one's swatches.
+    const visible = group.controls.filter((c) => shownBy(c, values) && c.presentation !== 'hidden');
     if (!visible.length) continue;
 
     const usable = visible.some((c) => availability(c).ok);
     const section = el('details', 'ctrl-group');
-    section.open = openState.has(group.id) ? openState.get(group.id) : usable;
+    // Open by default: what changes the picture. The pipeline and video
+    // groups start shut; the estimates beside the preview speak for them.
+    section.open = openState.has(group.id) ? openState.get(group.id) : (usable && group.affects === 'still');
     section.ontoggle = () => openState.set(group.id, section.open);
     const summary = el('summary');
     summary.appendChild(el('span', 'ctrl-group-head', group.label));
@@ -255,6 +360,14 @@ export function renderControls(host, values, onChange) {
 
     for (const control of visible) {
       const { ok, why, onServer } = availability(control);
+      if (control.presentation === 'swatches') {
+        const block = el('div', 'opt opt-block');
+        const text = el('div', 'opt-text');
+        text.append(el('strong', null, control.label), el('span', null, ok ? control.hint : why));
+        block.append(text, buildSwatches(control, values, onChange, !ok, thumbFor, allControls));
+        body.appendChild(block);
+        continue;
+      }
       const row = el('div', `opt${ok ? '' : ' is-locked'}`);
 
       const text = el('div', 'opt-text');
@@ -313,13 +426,20 @@ export function controlsToFlags(values) {
       // echoed either: --background with no stock backdrop chosen would
       // switch the CLI to a photo the UI is not showing.
       if (!shownBy(control, values)) continue;
+      // A hidden select is voiced by the swatch that set it.
+      if (control.presentation === 'hidden' && control.type === 'select') continue;
       const isDefault = value === control.default;
 
       if (control.type === 'select' && !control.cli) {
         // The flag lives on the choice: a select whose options are not
         // all expressible on the CLI carries a flag only where one exists.
-        const choice = chosen(control, value);
+        // An expanded choice names its asset (--border NAME); a file
+        // choice's flag is echoed by its file control instead.
+        const choice = choicesFor(control).find((c) => String(c.value) === String(value)
+          && (!c.sets || Object.entries(c.sets).every(([k, v]) => String(values[k]) === String(v))));
+        if (choice?.file) continue;
         if (choice?.cli) flags.push(choice.cli);
+        if (choice?.asset && choice.cliNamed) flags.push(`${choice.cliNamed} "${choice.asset}"`);
       } else if (control.type === 'file') {
         // A chosen image has no path here; the echo names the file so
         // the command reads as what to run with it on disk.

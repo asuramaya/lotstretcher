@@ -15,6 +15,31 @@ import { composeHero } from './pipeline/compose.js';
 import { prepareClip, drawClipFrame } from './pipeline/video.js';
 import { get as specGet } from './spec.js';
 import * as OPTS from './options.js';
+import { isSelfHosted } from './host.js';
+
+/* A stock asset as a canvas, from the server's own picture of it (the
+ * same endpoint the swatches use, at preview size). Cached; a fetch in
+ * flight redraws the preview when it lands. */
+const assetImages = new Map();
+function assetImage(kind, name, onReady) {
+  const key = `${kind}/${name}`;
+  if (assetImages.has(key)) return assetImages.get(key);
+  assetImages.set(key, null);
+  (async () => {
+    try {
+      const r = await fetch(`assets/thumb/${kind}/${encodeURIComponent(name)}?size=900`);
+      if (!r.ok) throw new Error(String(r.status));
+      const bmp = await createImageBitmap(await r.blob());
+      const c = document.createElement('canvas');
+      c.width = bmp.width; c.height = bmp.height;
+      c.getContext('2d').drawImage(bmp, 0, 0);
+      bmp.close?.();
+      assetImages.set(key, c);
+      onReady?.();
+    } catch { /* the tile is locked or the server is gone; the preview shows the gradient */ }
+  })();
+  return null;
+}
 
 const SAMPLES_URL = 'demo/samples/samples.json';
 
@@ -173,8 +198,14 @@ export class Preview {
       if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || o.heroFormats?.[0] || 'still'}`;
       const t0 = performance.now();
       // A frame decides the canvas size, so a large one is scaled down
-      // to the preview's size first: the run uses it at full size.
-      let border = o.customFrame || null;
+      // to the preview's size first: the run uses it at full size. A
+      // stock frame or background is the server's, drawn from the
+      // picture it serves for the swatches.
+      const stockBorder = o.border && !['none', 'custom'].includes(o.border) ? o.border : null;
+      let border = o.border === 'custom' ? o.customFrame || null
+        : (stockBorder && isSelfHosted() ? assetImage('borders', stockBorder, () => this.update()) : null);
+      const stockBackground = o.backdrop === 'asset' && o.background && isSelfHosted()
+        ? assetImage('backgrounds', o.background, () => this.update()) : null;
       if (border && Math.max(border.width, border.height) > Math.max(width, height)) {
         const k = Math.max(width, height) / Math.max(border.width, border.height);
         const small = document.createElement('canvas');
@@ -188,7 +219,7 @@ export class Preview {
         seed: `${subject.seed}:preview`,
         exterior: subject.exterior, interior: subject.interior,
         generic: o.backdrop === 'generic',
-        background: o.backdrop === 'custom' ? o.customBackground || null : null,
+        background: o.backdrop === 'custom' ? o.customBackground || null : stockBackground,
         border,
         spotlight: o.spotlight,
         marginFrac: o.margin,

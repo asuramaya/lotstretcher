@@ -134,7 +134,13 @@
     "spotlightDim": 0.55,
     "budgetMb": 50.0,
     "containerOverheadFrac": 0.9,
-    "angleOrder": ["front", "front_3q", "side", "rear_3q", "rear"]
+    "angleOrder": [
+      "front",
+      "front_3q",
+      "side",
+      "rear_3q",
+      "rear"
+    ]
   },
   "interior": {
     "$comment": [
@@ -168,9 +174,31 @@
     ],
     "rowToleranceCli": 1.5,
     "rowToleranceBrowser": 3.0,
-    "placeholderMarkers": ["check back later", "has not yet been", "not available"],
-    "makes": ["FORD", "LINCOLN", "CHEVROLET", "GMC", "RAM", "JEEP", "TOYOTA", "HONDA", "NISSAN", "HYUNDAI", "KIA", "SUBARU", "VOLKSWAGEN"],
-    "panelSplit": {"centerFrac": 0.5, "searchFrac": 0.15, "minGap": 8.0}
+    "placeholderMarkers": [
+      "check back later",
+      "has not yet been",
+      "not available"
+    ],
+    "makes": [
+      "FORD",
+      "LINCOLN",
+      "CHEVROLET",
+      "GMC",
+      "RAM",
+      "JEEP",
+      "TOYOTA",
+      "HONDA",
+      "NISSAN",
+      "HYUNDAI",
+      "KIA",
+      "SUBARU",
+      "VOLKSWAGEN"
+    ],
+    "panelSplit": {
+      "centerFrac": 0.5,
+      "searchFrac": 0.15,
+      "minGap": 8.0
+    }
   },
   "wheel": {
     "$comment": [
@@ -571,95 +599,44 @@
     ],
     "groups": [
       {
-        "id": "pipeline",
-        "affects": "pipeline",
-        "label": "Pipeline",
-        "controls": [
-          {
-            "key": "photoSort",
-            "label": "Sort photos",
-            "hint": "Separate exteriors, interiors and detail shots",
-            "type": "toggle",
-            "default": true,
-            "cli": "--no-photo-sort",
-            "cliInvert": true
-          },
-          {
-            "key": "interiors",
-            "label": "Include interiors",
-            "hint": "Keep interior shots in the bundle",
-            "type": "toggle",
-            "default": true,
-            "cli": "--no-interiors",
-            "cliInvert": true
-          },
-          {
-            "key": "hero",
-            "label": "Cut out and compose",
-            "hint": "Off means classify only",
-            "type": "toggle",
-            "default": true,
-            "cli": "--no-hero",
-            "cliInvert": true
-          },
-          {
-            "key": "strictCutouts",
-            "label": "Strict cutouts",
-            "hint": "Skip a cutout whose edges came out uncertain",
-            "type": "toggle",
-            "default": true,
-            "cli": "--no-strict-cutouts",
-            "cliInvert": true
-          },
-          {
-            "key": "upscale",
-            "label": "Upscale cutouts",
-            "hint": "SwinIR or Real-ESRGAN on a GPU",
-            "type": "toggle",
-            "default": false,
-            "cli": "--upscale",
-            "surfaces": [
-              "cli",
-              "server"
-            ],
-            "requires": "upscale"
-          }
-        ]
-      },
-      {
         "id": "backdrop",
         "affects": "still",
         "label": "Backdrop",
         "controls": [
           {
             "key": "backdrop",
-            "label": "Source",
-            "hint": "Where the backdrop comes from",
+            "label": "Backdrop",
+            "hint": "What sits behind the vehicle",
             "type": "select",
+            "presentation": "swatches",
             "default": "vehicle",
             "choices": [
               {
                 "value": "vehicle",
-                "label": "From the vehicle",
-                "hint": "Measured from its own paint"
+                "label": "Vehicle paint",
+                "hint": "A gradient from its own colours"
               },
               {
                 "value": "generic",
-                "label": "Generated",
-                "hint": "Seeded hue bands, no vehicle input"
+                "label": "Studio",
+                "hint": "Seeded hue bands"
               },
               {
                 "value": "asset",
-                "label": "Stock background",
-                "hint": "A photo from the asset library",
+                "label": "Stock",
+                "hint": "A photo from your server's library",
                 "requires": "filesystem",
-                "cli": "--photo-background"
+                "cli": "--photo-background",
+                "cliNamed": "--background",
+                "expand": "backgrounds",
+                "into": "background"
               },
               {
                 "value": "custom",
-                "label": "Your own image",
-                "hint": "A photo of your lot or showroom, chosen below",
-                "cli": "--photo-background"
+                "label": "Your image",
+                "hint": "A photo of your lot or showroom",
+                "cli": "--photo-background",
+                "file": "customBackground"
               }
             ],
             "cliNote": "The CLI's gradient is always measured from the vehicle's own paint, so only the 'Stock background' choice has a flag; the generated hue bands are a browser-only look."
@@ -669,6 +646,7 @@
             "label": "Background",
             "hint": "Which stock photo",
             "type": "select",
+            "presentation": "hidden",
             "default": null,
             "choices": [],
             "dynamic": "backgrounds",
@@ -689,8 +667,11 @@
             "label": "Your image",
             "hint": "Any photo. It is cover-fitted behind the vehicle and stays on this device",
             "type": "file",
+            "presentation": "hidden",
             "default": null,
-            "surfaces": ["browser"],
+            "surfaces": [
+              "browser"
+            ],
             "showWhen": {
               "key": "backdrop",
               "equals": "custom"
@@ -714,40 +695,47 @@
         "label": "Frame",
         "controls": [
           {
-            "key": "frame",
-            "label": "Branded frame",
-            "hint": "Border artwork around the composition",
-            "type": "toggle",
-            "default": false,
-            "cli": "--frame",
-            "surfaces": [
-              "cli",
-              "server"
-            ],
-            "requires": "filesystem"
-          },
-          {
             "key": "border",
-            "label": "Border",
-            "hint": "Named border from the asset library",
+            "label": "Frame",
+            "hint": "Border artwork around the composition; the vehicle is placed in its window",
             "type": "select",
-            "default": null,
-            "choices": [],
-            "dynamic": "borders",
-            "cli": "--border",
-            "surfaces": [
-              "cli",
-              "server"
+            "presentation": "swatches",
+            "default": "none",
+            "choices": [
+              {
+                "value": "none",
+                "label": "No frame",
+                "hint": "The backdrop runs to the edge"
+              },
+              {
+                "value": "asset",
+                "label": "Stock",
+                "hint": "A frame from your server's library",
+                "requires": "filesystem",
+                "cli": "--frame",
+                "cliNamed": "--border",
+                "expand": "borders",
+                "into": "border"
+              },
+              {
+                "value": "custom",
+                "label": "Your frame",
+                "hint": "A PNG with a transparent window",
+                "file": "customFrame"
+              }
             ],
-            "requires": "filesystem"
+            "cliNote": "No frame has no flag. A stock frame is --frame for the library's default or --border NAME for a named one; the app names it. Your own PNG goes to --border as a path, which the file control echoes."
           },
           {
             "key": "customFrame",
             "label": "Your own frame",
             "hint": "A PNG with a transparent window. The vehicle is placed inside it and the frame goes on top, exactly as --border does",
             "type": "file",
+            "presentation": "hidden",
             "default": null,
-            "surfaces": ["browser"],
+            "surfaces": [
+              "browser"
+            ],
             "cli": "--border",
             "cliNote": "On the command line the same thing is --border with a path to the PNG; the browser takes the file itself."
           },
@@ -784,6 +772,7 @@
             "label": "Colour",
             "hint": "",
             "type": "select",
+            "presentation": "swatches",
             "default": "white",
             "choices": [],
             "dynamic": "glowColors",
@@ -957,6 +946,62 @@
               "cli",
               "server"
             ]
+          }
+        ]
+      },
+      {
+        "id": "pipeline",
+        "affects": "pipeline",
+        "label": "Pipeline",
+        "controls": [
+          {
+            "key": "photoSort",
+            "label": "Sort photos",
+            "hint": "Separate exteriors, interiors and detail shots",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-photo-sort",
+            "cliInvert": true
+          },
+          {
+            "key": "interiors",
+            "label": "Include interiors",
+            "hint": "Keep interior shots in the bundle",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-interiors",
+            "cliInvert": true
+          },
+          {
+            "key": "hero",
+            "label": "Cut out and compose",
+            "hint": "Off means classify only",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-hero",
+            "cliInvert": true
+          },
+          {
+            "key": "strictCutouts",
+            "label": "Strict cutouts",
+            "hint": "Skip a cutout whose edges came out uncertain",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-strict-cutouts",
+            "cliInvert": true
+          },
+          {
+            "key": "upscale",
+            "label": "Upscale cutouts",
+            "hint": "SwinIR or Real-ESRGAN on a GPU",
+            "type": "toggle",
+            "default": false,
+            "cli": "--upscale",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "upscale"
           }
         ]
       }

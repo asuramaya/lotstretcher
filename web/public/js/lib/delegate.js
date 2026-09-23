@@ -39,6 +39,10 @@ export function needsServer(options, specGet) {
   if (!isSelfHosted()) return false;
   const on = (value) => value !== undefined && value !== null && value !== false && value !== '';
   if (serverOnlyKeys(specGet).some((key) => on(options[key]))) return true;
+  // The Frame picker's own values are "none" and "custom"; anything else
+  // names a stock border only a server has.
+  if (options.border && !['none', 'custom'].includes(options.border)) return true;
+  if (options.backdrop === 'asset') return true;
   /* A browser-capable select can still hold one choice the browser
    * cannot honour: "Stock background" is a real option of the backdrop
    * select, and picking it is what sends the run to the server. */

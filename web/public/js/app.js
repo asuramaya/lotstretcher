@@ -27,7 +27,7 @@ import {
 } from './options.js';
 import { store, blobToCanvas } from './lib/store.js';
 import { loadSpec, get as specGet } from './spec.js';
-import { loadCore, version as coreVersion, enhanceInterior } from './core.js';
+import { loadCore, version as coreVersion, threadCount as coreThreads, enhanceInterior, renderFrame as coreRenderFrame } from './core.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { Preview } from './preview.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
@@ -409,8 +409,8 @@ function renderOptions() {
   chipRow($('heroFormats'), OPTS.HERO_FORMATS, o.heroFormats, (k) => { toggleIn(o.heroFormats, k, true); preview?.update(); });
   chipRow($('videoFormats'), OPTS.VIDEO_FORMATS, o.videoFormats, (k) => { toggleIn(o.videoFormats, k); preview?.renderEstimates(); });
   $('videoNote').textContent = o.videoFormats.length
-    ? 'Rendered after the stills. Measured around 5x realtime here, so a '
-      + 'six second clip takes a second or two on a laptop.'
+    ? 'Rendered after the stills, about twice realtime on a laptop: the '
+      + 'estimate beside the preview is measured on this device.'
     : 'No video. Stills only, which is faster on a phone.';
 
   // One host, filled from the spec. The old hand-built Pipeline and
@@ -427,7 +427,7 @@ function renderOptions() {
     }
     commitOptions();
     if (affectsPreview(key)) preview?.update(); else preview?.renderEstimates();
-  });
+  }, { thumbFor: swatchArt });
 
   renderHost();
   // Built from the same control definitions the pane renders, so the
@@ -438,6 +438,53 @@ function renderOptions() {
       : ['--no-video']);
   $('cliEcho').textContent =
     `lotstretcher ./photos ${[...formatFlags, ...controlsToFlags(o)].join(' ')}`;
+}
+
+/* What a swatch shows. Gradients are drawn by the core from the
+ * preview's own subject (its paint, or the sample's), stock assets come
+ * as thumbnails from the server, the user's images are themselves, and
+ * glow colours are the spec's. */
+const artCache = new Map();
+function swatchArt(control, choice, values, image) {
+  // Tiles live in the DOM, so these are document canvases, never the
+  // offscreen ones the pipeline uses.
+  const tileCanvas = () => { const c = document.createElement('canvas'); c.width = 96; c.height = 96; return c; };
+  if (choice.file) {
+    if (!image) return null;
+    const c = tileCanvas();
+    const k = Math.max(96 / image.width, 96 / image.height);
+    c.getContext('2d').drawImage(image, (96 - image.width * k) / 2, (96 - image.height * k) / 2, image.width * k, image.height * k);
+    return c;
+  }
+  if (control.key === 'glowColor') {
+    const rgb = specGet('glow', 'colors')[choice.value];
+    return rgb ? { color: `rgb(${rgb.join(',')})` } : null;
+  }
+  if (choice.asset && isSelfHosted()) {
+    const kind = choice.expand || 'backgrounds';
+    return `assets/thumb/${kind}/${encodeURIComponent(choice.asset)}`;
+  }
+  if (control.key === 'backdrop' && (choice.value === 'vehicle' || choice.value === 'generic')) {
+    const subject = preview?.subject?.();
+    const key = JSON.stringify([choice.value, subject?.exterior, subject?.interior, subject?.seed]);
+    if (!artCache.has(key)) {
+      try {
+        const bg = choice.value === 'generic'
+          ? { kind: 'generic', seed: `${subject?.seed || 'sample'}:preview` }
+          : { kind: 'vehicle', seed: `${subject?.seed || 'sample'}:preview`, exterior: subject?.exterior || null, interior: subject?.interior || null };
+        const out = coreRenderFrame([], 96, 96, bg);
+        const c = tileCanvas();
+        c.getContext('2d').putImageData(out, 0, 0);
+        artCache.set(key, c);
+      } catch (e) { console.warn('swatch art failed', e); artCache.set(key, null); }
+    }
+    const c = artCache.get(key);
+    if (!c) return null;
+    const copy = tileCanvas();
+    copy.getContext('2d').drawImage(c, 0, 0);
+    return copy;
+  }
+  return null;
 }
 
 /* The host panel.
@@ -680,7 +727,7 @@ async function run() {
           // The user's own images, the browser's --photo-background and
           // --border: drawn by the core exactly as the CLI's are.
           background: state.options.backdrop === 'custom' ? state.options.customBackground || null : null,
-          border: state.options.customFrame || null,
+          border: state.options.border === 'custom' ? state.options.customFrame || null : null,
           glow: state.options.glow, glowColor: state.options.glowColor,
           glowRadius: state.options.glowRadius, glowIntensity: state.options.glowIntensity,
         });
@@ -1145,7 +1192,7 @@ async function init() {
     $('aboutRuntime').textContent = (runtime.isolated
       ? `threads: ${runtime.threads} · SIMD: on · cross-origin isolated`
       : 'single-threaded (no cross-origin isolation)')
-      + ` · core: wasm v${coreVersion()}`;
+      + ` · core: wasm v${coreVersion()}${coreThreads() ? ` on ${coreThreads()} threads` : ', single-threaded'}`;
     openSheet('aboutSheet');
   };
 

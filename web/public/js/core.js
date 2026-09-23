@@ -12,13 +12,42 @@ let mod = null;
 let loading = null;
 let failure = null;
 
+let threads = 0;
+
 /* `source` is optional: the wasm bytes (or a Response/URL) for code
  * running outside a page, such as the parity tests under node, which
- * cannot fetch the module relative to this file. */
+ * cannot fetch the module relative to this file.
+ *
+ * Two builds ship. The threaded one (core-threads/, rayon over web
+ * workers) is used when the page is cross-origin isolated, which the
+ * app already needs for ORT's threads; it spreads every row loop in
+ * the core across the cores. Anything else, including node and a page
+ * served without the isolation headers, gets the plain build, which
+ * produces the same bytes on one thread. */
 export async function loadCore(source) {
   if (mod) return mod;
   if (loading) return loading;
   loading = (async () => {
+    // The threaded build is not shipped yet: its wasm memory is not
+    // created shared, so the pool's workers refuse it (DataCloneError
+    // on the Memory). Until the build is fixed the loader never tries
+    // it; the plain build is complete on its own.
+    const THREADED_BUILD = false;
+    const wantThreads = THREADED_BUILD && source === undefined && typeof window !== 'undefined'
+      && self.crossOriginIsolated && typeof SharedArrayBuffer !== 'undefined';
+    if (wantThreads) {
+      try {
+        const m = await import('../core-threads/lotstretcher_core.js');
+        await m.default();
+        const n = Math.max(1, Math.min(8, navigator.hardwareConcurrency || 2));
+        await m.initThreadPool(n);
+        threads = n;
+        mod = m;
+        return m;
+      } catch (e) {
+        console.warn('threaded core unavailable, using the plain build:', e);
+      }
+    }
     try {
       const m = await import('../core/lotstretcher_core.js');
       await m.default(source === undefined ? undefined : { module_or_path: source });
@@ -35,6 +64,8 @@ export async function loadCore(source) {
 }
 
 export function available() { return mod !== null; }
+/* How many worker threads the core runs on; 0 for the plain build. */
+export function threadCount() { return threads; }
 export function whyUnavailable() { return failure ? String(failure.message || failure) : null; }
 export function version() { return mod ? mod.version() : null; }
 
