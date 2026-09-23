@@ -116,6 +116,77 @@ pub fn paste_alpha(dst: &mut Image, src: &Image, x: i64, y: i64) {
     });
 }
 
+/// The ground shadow under a car: its silhouette squashed flat, blurred,
+/// and laid dark about the contact line (the lowest opaque row). Read
+/// off the alpha, so a car on a photo backdrop looks set down on it.
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
+pub struct Shadow {
+    /// Opacity at the darkest, 0..1.
+    #[serde(default = "shadow_strength")]
+    pub strength: f64,
+    /// The shadow's height as a fraction of the car's height.
+    #[serde(default = "shadow_height")]
+    pub height: f64,
+    /// Blur radius as a fraction of the car's width.
+    #[serde(default = "shadow_blur")]
+    pub blur: f64,
+}
+fn shadow_strength() -> f64 { 0.5 }
+fn shadow_height() -> f64 { 0.12 }
+fn shadow_blur() -> f64 { 0.035 }
+
+impl Default for Shadow {
+    fn default() -> Self { Shadow { strength: shadow_strength(), height: shadow_height(), blur: shadow_blur() } }
+}
+
+/// Returns (shadow_rgba, dx, dy): the layer's offset from the car's own
+/// top-left. The layer is centred vertically on the contact line, so
+/// half of it tucks under the car and half spills below.
+pub fn make_shadow_layer(car: &Image, s: &Shadow) -> (Image, i64, i64) {
+    let (w, h) = (car.width, car.height);
+    let mut alpha = Image::new(w, h, 1);
+    let mut contact = 0usize;
+    for y in 0..h {
+        for x in 0..w {
+            let a = car.data[(y * w + x) * 4 + 3];
+            alpha.data[y * w + x] = a;
+            if a > 16 { contact = y; }
+        }
+    }
+    let sh = ((h as f64 * s.height).round() as usize).max(2);
+    let pad = ((w as f64 * s.blur).round() as usize).max(1);
+    let (pw, ph) = (w + pad * 2, sh + pad * 2);
+    let flat = resize_bilinear(&alpha, w, sh);
+    let mut padded = Image::new(pw, ph, 1);
+    for y in 0..sh {
+        padded.data[(y + pad) * pw + pad..(y + pad) * pw + pad + w].copy_from_slice(&flat.data[y * w..(y + 1) * w]);
+    }
+    // Blurred at quarter scale like the glow: the shadow is soft by
+    // definition, so the detail a full-size blur keeps is never seen.
+    let small = resize_bilinear(&padded, (pw / 4).max(1), (ph / 4).max(1));
+    let blurred_small = gaussian_blur_l(&small, (pad as f64 / 4.0).max(1.0));
+    let blurred = resize_bilinear(&blurred_small, pw, ph);
+    let strength = s.strength.clamp(0.0, 1.0);
+    let mut out = Image::new(pw, ph, 4);
+    for i in 0..pw * ph {
+        out.data[i * 4 + 3] = (blurred.data[i] as f64 * strength).round().min(255.0) as u8;
+    }
+    let dy = contact as i64 + 1 - (sh as i64 / 2) - pad as i64;
+    (out, -(pad as i64), dy)
+}
+
+/// The shadow pasted under a car at (x, y), faded by `alpha` for a car
+/// mid-dissolve.
+pub fn paste_shadow(canvas: &mut Image, car: &Image, x: i64, y: i64, s: &Shadow, alpha: f64) {
+    let (mut layer, dx, dy) = make_shadow_layer(car, s);
+    if alpha < 1.0 {
+        for i in (3..layer.data.len()).step_by(4) {
+            layer.data[i] = (layer.data[i] as f64 * alpha.clamp(0.0, 1.0)).round() as u8;
+        }
+    }
+    paste_alpha(canvas, &layer, x + dx, y + dy);
+}
+
 pub fn paste_with_glow(canvas: &mut Image, car: &Image, x: i64, y: i64, color: [u8; 3], radius: usize, intensity: f64) {
     let (glow, pad) = make_glow_layer(car, color, radius, intensity);
     paste_alpha(canvas, &glow, x - pad as i64, y - pad as i64);

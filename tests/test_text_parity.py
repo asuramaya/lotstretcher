@@ -189,6 +189,37 @@ def test_the_drawn_frame_fits_every_shape_and_keeps_the_car_inside():
     assert a > 200 and r > g + 60 and r > b + 60
 
 
+def test_the_ground_shadow_sits_under_the_car_and_fades_with_it():
+    """The shadow darkens the backdrop about the car's contact line and
+    nowhere above the car; a stronger shadow is darker; a video frame
+    carries it faded with the car's own alpha."""
+    from lotstretcher.imaging.text import shadow_style
+    assert shadow_style({}) is None and shadow_style({"shadow": False, "shadowStrength": 0.9}) is None
+    assert shadow_style({"shadow": True}) == {"strength": 0.5}
+    assert shadow_style({"shadow": True, "shadowStrength": 0.8}) == {"strength": 0.8}
+    bg = {"kind": "linear", "angle": 0.0, "start": [200, 200, 200], "end": [200, 200, 200]}
+    plain = np.asarray(core.compose_hero([cutout()], 800, 800, bg, spotlight=False)).astype(int)
+    soft = np.asarray(core.compose_hero([cutout()], 800, 800, bg, spotlight=False, shadow={"strength": 0.5})).astype(int)
+    hard = np.asarray(core.compose_hero([cutout()], 800, 800, bg, spotlight=False, shadow={"strength": 1.0})).astype(int)
+    car = (plain[:, :, 0] > 150) & (plain[:, :, 1] < 80)
+    ys, xs = np.where(car)
+    bottom, cx = ys.max(), int(xs.mean())
+    # Darker just below the contact line, and by more at full strength.
+    assert soft[bottom + 6, cx, 0] < plain[bottom + 6, cx, 0] - 20
+    assert hard[bottom + 6, cx, 0] < soft[bottom + 6, cx, 0] - 10
+    # Untouched well above the car and in the far corner.
+    assert (soft[ys.min() - 20, cx] == plain[ys.min() - 20, cx]).all()
+    assert (soft[10, 10] == plain[10, 10]).all()
+    # A frame: the shadow follows the car's alpha, so a half-faded car
+    # casts half the shadow.
+    def frame(alpha, shadow):
+        return np.asarray(core.render_frame([(cutout(), 150, 200, 500, 260, alpha)], 800, 800, bg, shadow=shadow)).astype(int)
+    base, full, half = frame(1.0, None), frame(1.0, {"strength": 1.0}), frame(0.5, {"strength": 1.0})
+    y, x = 200 + 260 + 5, 150 + 250
+    assert full[y, x, 0] < base[y, x, 0] - 40
+    assert full[y, x, 0] < half[y, x, 0] < base[y, x, 0]
+
+
 def test_unknown_values_are_refused():
     ensure_font()
     with pytest.raises(RuntimeError):

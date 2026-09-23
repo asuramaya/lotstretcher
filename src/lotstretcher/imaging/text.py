@@ -88,6 +88,31 @@ def frame_style(options: dict) -> dict | None:
             "weight": float(options.get("frameWeight") if options.get("frameWeight") is not None else 0.008)}
 
 
+SHADOW_STRENGTH = 0.5
+
+
+def add_shadow_args(parser) -> None:
+    """The ground shadow's flags, shared by the CLIs."""
+    parser.add_argument("--shadow", action="store_true",
+                        help="A soft ground shadow under the vehicle, read off its own silhouette, so it "
+                             "looks set down on the backdrop (default: off).")
+    parser.add_argument("--shadow-strength", type=float, default=SHADOW_STRENGTH, metavar="FRACTION",
+                        help=f"The shadow's darkness, 0-1 (default: {SHADOW_STRENGTH}).")
+
+
+def controls_from_shadow_args(args) -> dict:
+    return {"shadow": bool(args.shadow), "shadowStrength": args.shadow_strength}
+
+
+def shadow_style(options: dict) -> dict | None:
+    """The app's shadow controls as the core's `shadow` field, or None
+    when no shadow is asked for."""
+    if not options.get("shadow"):
+        return None
+    strength = options.get("shadowStrength")
+    return {"strength": float(strength if strength is not None else SHADOW_STRENGTH)}
+
+
 def controls_from_text_args(args) -> dict:
     """argparse values -> the app's Text control keys."""
     return {

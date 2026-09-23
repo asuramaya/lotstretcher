@@ -140,7 +140,7 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
                  glow_radius: int | None = None, glow_intensity: float | None = None,
                  margin_frac: float | None = None, background_image=None, border=None,
                  border_fit: str | None = None, overlays: list | None = None, text: dict | None = None,
-                 border_style: dict | None = None):
+                 border_style: dict | None = None, shadow: dict | None = None):
     """Compose one hero the way the browser does, in the same code.
 
     `cars` are RGBA PIL images, hero first. `background` is one of
@@ -183,6 +183,8 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
         # A frame the core draws to the canvas (frame_style.rs) when no
         # border image is given: {"kind": "line", "weight", "color"}.
         "border_style": border_style,
+        # A ground shadow under the cars (glow.rs::Shadow): {"strength"}, or None.
+        "shadow": shadow,
     }
     buf = _buffer(arena)
     result = lib.ls_compose_hero(json.dumps(req).encode("utf-8"), buf, len(arena))
@@ -236,7 +238,7 @@ def call(op: dict, images: list | None = None):
 
 def render_frame(cars, width: int, height: int, background: dict, *, border=None, spotlight=None,
                  glow=False, glow_color=None, glow_radius=None, glow_intensity=None, resample="lanczos",
-                 background_image=None, overlays=None):
+                 background_image=None, overlays=None, shadow=None):
     """One video frame. `cars` are (rgba_image, x, y, w, h, alpha) tuples,
     optionally with a seventh element (other_rgba_image, t) to dissolve
     the car toward `other` by `t` before pasting; `spotlight` is
@@ -252,7 +254,7 @@ def render_frame(cars, width: int, height: int, background: dict, *, border=None
     op = {"op": "render_frame", "width": width, "height": height, "background": dict(background),
           "cars": car_ops,
           "glow": glow, "glow_color": glow_color, "glow_radius": glow_radius, "glow_intensity": glow_intensity,
-          "resample": resample, "overlays": list(overlays or [])}
+          "resample": resample, "overlays": list(overlays or []), "shadow": shadow}
     if background.get("kind") == "image":
         op["background"]["image"] = {"$image": len(images)}
         images.append(background_image)

@@ -58,6 +58,13 @@ export function frameStyle(o) {
   return { kind: 'line', color: o.frameColor || 'white', weight: o.frameWeight != null ? Number(o.frameWeight) : 0.008 };
 }
 
+/* The app's shadow controls as the core's `shadow` field, or null: the
+ * same mapping as imaging/text.py::shadow_style. */
+export function shadowStyle(o) {
+  if (!o.shadow) return null;
+  return { strength: o.shadowStrength != null ? Number(o.shadowStrength) : 0.5 };
+}
+
 export function wantsText(text) {
   return text.title !== 'none' || !!text.price_badge || !!text.line;
 }

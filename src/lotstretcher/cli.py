@@ -75,7 +75,8 @@ from lotstretcher.imaging.dedupe import DEFAULT_TEMPLATES_DIR, JunkFilter
 from lotstretcher.listing import expand_listing_url, is_vdp_url
 from lotstretcher.local_source import is_local_source, load_local_vehicle, local_vehicle_key
 from lotstretcher.scrape import USER_AGENT, vin_from_url
-from lotstretcher.imaging.text import (add_frame_style_args, add_text_args, controls_from_frame_style_args,
+from lotstretcher.imaging.text import (add_frame_style_args, add_shadow_args, add_text_args,
+                                       controls_from_frame_style_args, controls_from_shadow_args,
                                        controls_from_text_args)
 from lotstretcher.library_ops import hero_options_from_controls
 from lotstretcher.vehicle_pipeline import log, process_vehicle, process_vehicle_record
@@ -237,6 +238,7 @@ def controls_from_args(args) -> dict:
         "frameFit": args.frame_fit,
         **controls_from_text_args(args),
         **controls_from_frame_style_args(args),
+        **controls_from_shadow_args(args),
         "videoFormats": [] if args.no_video else list(resolve_video_formats(args.video_format)),
         "heroFormats": list(resolve_hero_formats(args.hero_format)),
         "videoMusic": args.video_music,
@@ -314,6 +316,7 @@ def main():
                               "contact info baked into the frame was getting posts shadowbanned).")
     add_text_args(parser)
     add_frame_style_args(parser)
+    add_shadow_args(parser)
     parser.add_argument("--frame-fit", default="fit", choices=["fit", "fill", "stretch"],
                          help="How a frame meets a format of another shape (a square dealer frame on a "
                               "4:5 post). fit: the whole frame, centred, the backdrop fills the rest. "

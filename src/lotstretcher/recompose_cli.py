@@ -27,8 +27,9 @@ import sys
 from pathlib import Path
 
 from lotstretcher.imaging import assets
-from lotstretcher.imaging.text import (add_frame_style_args, add_text_args, controls_from_frame_style_args,
-                                       controls_from_text_args, frame_style, text_options)
+from lotstretcher.imaging.text import (add_frame_style_args, add_shadow_args, add_text_args,
+                                       controls_from_frame_style_args, controls_from_shadow_args,
+                                       controls_from_text_args, frame_style, shadow_style, text_options)
 # The rebuild itself lives in library_ops so the server's
 # POST /library/.../recompose runs the identical path.
 from lotstretcher.library_ops import (find_vehicle_folders, recompose_folder,  # noqa: F401
@@ -62,6 +63,7 @@ def main():
                               "fill (edges cropped) or stretch. The format decides the canvas.")
     add_text_args(parser)
     add_frame_style_args(parser)
+    add_shadow_args(parser)
     parser.add_argument("--hero-format", action="append", metavar="FORMAT",
                          help="Shape(s) for the hero still; repeatable, or 'all'. square 1254x1254 "
                               "(Marketplace), portrait 1080x1350 (4:5 Instagram/Facebook feed), "
@@ -195,7 +197,8 @@ def main():
                       glow_radius=args.glow_radius, glow_intensity=args.glow_intensity,
                       gradient=gradient, border_fit=args.frame_fit,
                       text=text_options(controls_from_text_args(args)),
-                      border_style=frame_style(controls_from_frame_style_args(args))),
+                      border_style=frame_style(controls_from_frame_style_args(args)),
+                      shadow=shadow_style(controls_from_shadow_args(args))),
         "interiors": args.interiors,
         "interior_captions": args.interior_captions,
     }

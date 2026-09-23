@@ -10,7 +10,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::glow::{glow_color, paste_alpha, paste_with_glow};
+use crate::glow::{glow_color, paste_alpha, paste_shadow, paste_with_glow};
 use crate::gradient::{generic_gradient, vehicle_gradient};
 use crate::layout::{compute_placement, layout, Anchor};
 use crate::resize::{cover_fit, crop, resize_lanczos};
@@ -144,6 +144,9 @@ pub struct ComposeRequest {
     /// from the vehicle in `text`, else off car 0.
     #[serde(default)]
     pub border_style: Option<crate::frame_style::FrameStyle>,
+    /// A ground shadow under every car (glow::Shadow); none when absent.
+    #[serde(default)]
+    pub shadow: Option<crate::glow::Shadow>,
 }
 
 /// The transform that places a border of `bw`x`bh` on a `w`x`h` canvas:
@@ -293,6 +296,9 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     let intensity = req.glow_intensity.unwrap_or_else(|| spec::f64_at(&["glow", "intensity"]));
     // Accents first, hero last, so the hero is never covered.
     for (x, y, resized) in placements.iter().rev() {
+        if let Some(s) = &req.shadow {
+            paste_shadow(&mut canvas, resized, *x, *y, s, 1.0);
+        }
         if req.glow {
             paste_with_glow(&mut canvas, resized, *x, *y, color, radius, intensity);
         } else {

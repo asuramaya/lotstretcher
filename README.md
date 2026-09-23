@@ -396,6 +396,17 @@ is the line's weight as a share of the shorter side. In the app it is
 the "Studio line" tile of the Frame picker, with the colour and weight
 levers beside it. Frame art, when given, wins.
 
+### A ground shadow
+
+`--shadow` sets the vehicle down: a soft shadow read off the cutout's
+own silhouette, squashed flat about its lowest opaque row and blurred,
+so the car reads as standing on the backdrop rather than floating over
+it. `--shadow-strength` is its darkness, 0 to 1 (default 0.5). It is
+under every car on the stills and the clip, fades with a car
+mid-dissolve, and sits beneath the glow. In the app it is the Light
+group's "Ground shadow" toggle with its darkness slider; `recompose`
+and `hero-video` take the same two flags.
+
 ### Text on the still
 
 The core draws text (core/src/text.rs, the studio's Lato Bold, OFL) so
