@@ -1580,11 +1580,15 @@ async function init() {
   $('folderInput').onchange = (e) => { addFiles(e.target.files, 'folder'); e.target.value = ''; };
   $('cameraInput').onchange = (e) => { addFiles(e.target.files, 'captured'); e.target.value = ''; };
 
-  $('urlAdd').onclick = () => {
+  // Every box reads itself on paste; the button stays for a typed entry.
+  const takeUrls = () => {
+    if (!$('urlInput').value.trim()) return;
     addUrls($('urlInput').value);
     $('urlInput').value = '';
     closeSheet('urlSheet');
   };
+  $('urlAdd').onclick = takeUrls;
+  $('urlInput').addEventListener('paste', () => setTimeout(takeUrls, 0));
 
   $('stickerFileBtn').onclick = () => $('stickerInput').click();
   $('stickerUrlBtn').onclick = () => openSheet('stickerSheet');
@@ -1593,11 +1597,15 @@ async function init() {
     e.target.value = '';
     if (f) importSticker(await f.arrayBuffer(), f.name);
   };
-  $('stickerUrlGo').onclick = () => {
+  const takeSticker = () => {
     const url = $('stickerUrlInput').value.trim();
+    if (!url) return;
+    $('stickerUrlInput').value = '';
     closeSheet('stickerSheet');
-    if (url) importSticker(url, 'the sticker');
+    importSticker(url, 'the sticker');
   };
+  $('stickerUrlGo').onclick = takeSticker;
+  $('stickerUrlInput').addEventListener('paste', () => setTimeout(takeSticker, 0));
 
   $('resetOptions').onclick = () => { state.options = resetOptions(); renderOptions(); preview?.update(); };
 

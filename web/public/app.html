@@ -324,13 +324,9 @@
     <div class="sheet-grip"></div>
     <div class="sheet-head"><h3 style="flex:1">Paste image URLs</h3></div>
     <div class="sheet-content">
-      <p class="small muted" style="margin-bottom:var(--s-4)">
-        One per line. The photos are fetched straight from the dealer's
-        CDN to this device. Nothing passes through lotstretcher.org. A CDN
-        that refuses cross-origin reads will fail, and the app says which.
-      </p>
       <textarea class="field mono" id="urlInput" rows="7" spellcheck="false"
-        placeholder="https://pictures.dealer.com/…/0001.jpg"></textarea>
+        placeholder="Paste image links, one per line; they are added as you paste"></textarea>
+      <p class="xs dim" style="margin-top:var(--s-3)">Fetched straight from the dealer's CDN to this device. One that refuses cross-origin reads shows as unreachable.</p>
     </div>
     <div class="sheet-foot">
       <button class="btn" data-close="urlSheet">Cancel</button>
@@ -388,13 +384,9 @@
     <div class="sheet-grip"></div>
     <div class="sheet-head"><h3 style="flex:1">Window sticker URL</h3></div>
     <div class="sheet-content">
-      <p class="small muted" style="margin-bottom:var(--s-4)">
-        A direct link to the sticker PDF. It is fetched straight to this
-        device and parsed here. Ford's sticker host allows this; some
-        others refuse cross-origin reads, and the app will say so.
-      </p>
       <textarea class="field mono" id="stickerUrlInput" rows="4" spellcheck="false"
-        placeholder="https://www.windowsticker.forddirect.com/windowsticker.pdf?token=..."></textarea>
+        placeholder="Paste the sticker PDF link; it is read as you paste"></textarea>
+      <p class="xs dim" style="margin-top:var(--s-3)">Fetched straight to this device and parsed here. Ford's sticker host allows it; a host that refuses cross-origin reads is reported.</p>
     </div>
     <div class="sheet-foot">
       <button class="btn" data-close="stickerSheet">Cancel</button>
