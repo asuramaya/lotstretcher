@@ -232,7 +232,7 @@ def call(op: dict, images: list | None = None):
 
 def render_frame(cars, width: int, height: int, background: dict, *, border=None, spotlight=None,
                  glow=False, glow_color=None, glow_radius=None, glow_intensity=None, resample="lanczos",
-                 background_image=None):
+                 background_image=None, overlays=None):
     """One video frame. `cars` are (rgba_image, x, y, w, h, alpha) tuples,
     optionally with a seventh element (other_rgba_image, t) to dissolve
     the car toward `other` by `t` before pasting; `spotlight` is
@@ -248,7 +248,7 @@ def render_frame(cars, width: int, height: int, background: dict, *, border=None
     op = {"op": "render_frame", "width": width, "height": height, "background": dict(background),
           "cars": car_ops,
           "glow": glow, "glow_color": glow_color, "glow_radius": glow_radius, "glow_intensity": glow_intensity,
-          "resample": resample}
+          "resample": resample, "overlays": list(overlays or [])}
     if background.get("kind") == "image":
         op["background"]["image"] = {"$image": len(images)}
         images.append(background_image)

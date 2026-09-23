@@ -64,6 +64,7 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
     spec = VIDEO_FORMATS[fmt]
     from lotstretcher.imaging.compose import render_hero_video
     from lotstretcher.imaging.palette import colors_from_details, vehicle_gradient_colors
+    from lotstretcher.library_ops import vehicle_record
     from lotstretcher.imaging.select import load_angles, order_for_conveyor_start, pick_all_for_carousel
 
     cutout_dir = folder / "images" / "exterior" / "cutout"
@@ -106,6 +107,8 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         glow_radius=hero_opts.glow_radius,
         glow_intensity=hero_opts.glow_intensity,
         border_fit=hero_opts.border_fit,
+        text=hero_opts.text,
+        vehicle=vehicle_record(folder),
         encoder=hero_opts.video_encoder,
         hood_sides=hood_sides,
         target_duration_s=hero_opts.video_duration_s,

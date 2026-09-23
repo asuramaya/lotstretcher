@@ -108,6 +108,30 @@ def test_text_stays_inside_the_frames_window():
         f"text spilled outside the window {window}: rows {ys.min()}-{ys.max()}, cols {xs.min()}-{xs.max()}"
 
 
+def test_video_frames_carry_the_text_and_the_window_shrinks_for_it():
+    """A clip's frames take ready-placed overlays (render_frame) and the
+    host lays the cars out in the window left beside the text's band
+    (text_window), the same rule compose_hero applies."""
+    from lotstretcher.imaging.text import text_window
+    w, h = 720, 720
+    plan = plan_overlays(w, h, VEHICLE, text_options(CONTROLS), window=(0, 0, w, h))
+    shrunk = text_window((0, 0, w, h), h, plan)
+    band_top = int(min(o["y"] for o in plan))
+    assert shrunk[1] == 0 and shrunk[3] < band_top and shrunk[3] > h // 2
+    # Top positions take the band off the top instead.
+    top_plan = plan_overlays(w, h, VEHICLE, text_options({**CONTROLS, "textPosition": "tr"}), window=(0, 0, w, h))
+    top_shrunk = text_window((0, 0, w, h), h, top_plan)
+    assert top_shrunk[1] > 0 and top_shrunk[3] == h
+    # And a frame renders the words.
+    bg = {"kind": "linear", "angle": 30.0, "start": [20, 20, 30], "end": [40, 40, 60]}
+    plain = core.render_frame([], w, h, bg)
+    framed = core.render_frame([], w, h, bg, overlays=plan)
+    diff = np.abs(np.asarray(plain, dtype=np.int16) - np.asarray(framed, dtype=np.int16)).sum(axis=2)
+    ys = np.where(diff.any(axis=1))[0]
+    assert ys.size and ys.min() >= band_top - 1, "text drawn outside its band"
+    assert (np.asarray(framed)[band_top:].min(axis=2) > 240).any(), "no white text on the frame"
+
+
 def test_unknown_values_are_refused():
     ensure_font()
     with pytest.raises(RuntimeError):

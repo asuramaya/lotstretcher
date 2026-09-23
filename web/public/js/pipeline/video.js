@@ -132,7 +132,7 @@ class ScaledCache {
 }
 
 /* The conveyor: the CLI's edit, from the same core choreography. */
-function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan, scaled, glow }) {
+function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan, scaled, glow, overlays }) {
   const fo = core.call({ op: 'carousel_frame', plan, t });
   const hero = plan.shots[fo.hero];
   const pal = palette[0];
@@ -144,7 +144,7 @@ function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, sp
   });
   const frame = core.renderFrame(cars, width, height, { kind: 'linear', angle, start: pal.start, end: pal.end }, {
     spotlight: spotlight ? { cx: hero.center[0], cy: hero.center[1], dim: hero.dim } : null,
-    resample: 'bilinear',
+    resample: 'bilinear', overlays,
     ...glow,
   });
   ctx.putImageData(frame, 0, 0);
@@ -152,7 +152,7 @@ function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, sp
 
 /* Fewer than three shots cannot fill a conveyor (the CLI renders no clip
  * then); the browser keeps a plain push with crossfades for those. */
-function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight, glow }) {
+function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight, glow, overlays, window: win }) {
   const perShot = duration / shots.length;
   const index = Math.min(shots.length - 1, Math.floor(t / perShot));
   const local = (t - index * perShot) / perShot;
@@ -162,17 +162,21 @@ function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight,
   const pal = palette[index % palette.length];
   const angle = pal.angle + GRADIENT_TURNS * 360 * (t / duration);
 
+  // The push fills the window (the canvas, less the text's band).
+  const [wl, wt, wr, wb] = win || [0, 0, width, height];
+  const ww = wr - wl;
+  const wh = wb - wt;
   const cars = [];
   const place = (shot, alpha, progress) => {
     if (alpha <= 0) return;
-    const availW = width * (1 - 2 * HERO_MARGIN_FRAC);
-    const availH = height * (1 - 2 * HERO_MARGIN_FRAC);
+    const availW = ww * (1 - 2 * HERO_MARGIN_FRAC);
+    const availH = wh * (1 - 2 * HERO_MARGIN_FRAC);
     const base = Math.min(availW / shot.width, availH / shot.height);
     // A slow push across the dwell so no frame is ever static.
     const scale = base * (1 + PUSH_STRENGTH * easeInOut(progress));
     const w = shot.width * scale;
     const h = shot.height * scale;
-    cars.push({ image: shot.id, x: (width - w) / 2, y: (height - h) / 2, w, h, alpha });
+    cars.push({ image: shot.id, x: wl + (ww - w) / 2, y: wt + (wh - h) / 2, w, h, alpha });
   };
 
   const fadeFrac = Math.min(0.45, CROSSFADE_S / perShot);
@@ -185,8 +189,8 @@ function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight,
   }
 
   const frame = core.renderFrame(cars, width, height, { kind: 'linear', angle, start: pal.start, end: pal.end }, {
-    spotlight: spotlight ? { cx: width / 2, cy: height / 2, dim: shots[index].dim } : null,
-    resample: 'bilinear',
+    spotlight: spotlight ? { cx: wl + ww / 2, cy: wt + wh / 2, dim: shots[index].dim } : null,
+    resample: 'bilinear', overlays,
     ...glow,
   });
   ctx.putImageData(frame, 0, 0);
@@ -199,9 +203,16 @@ function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight,
 export function prepareClip(cutouts, {
   width = 1254, height = 1254, seed = 'lotstretcher', angles = null,
   exterior = null, interior = null, generic = false, spotlight = true, duration = null,
+  text = null,                // lib/text.js::textRequest; the still's text on every frame
 } = {}) {
   const explicitDuration = duration !== null;
   if (duration === null) duration = DEFAULT_DURATION_S;
+  // The text is planned once inside the canvas, and the cars are laid
+  // out in the window left beside its band, as the CLI's clip does.
+  const overlays = text ? core.overlayPlan(width, height, text.vehicle, { ...text, window: [0, 0, width, height] }) : [];
+  const window = overlays.length
+    ? core.call({ op: 'text_window', window: [0, 0, width, height], height, overlays })
+    : [0, 0, width, height];
   // One palette per shot (the CLI seeds per image too), and each shot's
   // pixels and spotlight dim measured once. The gradient itself is
   // rebuilt by the core per frame because it rotates.
@@ -244,26 +255,26 @@ export function prepareClip(cutouts, {
     plan = core.call({
       op: 'carousel_plan', width, height, backdrop: { $image: 0 },
       shots: shots.map((sh, i) => ({ image: { $image: i + 1 }, pannable: (angles?.[i] || null) === v.panAngleLabel, hood_side: null })),
-      audio_loop_s: loopS,
+      audio_loop_s: loopS, window,
     }, [{ width, height, channels: 3, data: bg.data }, ...shots.map((sh) => sh.data)]);
     if (!explicitDuration) duration = plan.period;
   }
 
-  return { shots, palette, plan, duration, width, height };
+  return { shots, palette, plan, duration, width, height, overlays, window };
 }
 
 /* One frame at time `t` of a prepared clip. `scaled` is a ScaledCache
  * when the caller draws many frames; a one-off frame passes none and
  * pays for its resampling once. */
 export function drawClipFrame(ctx, prepared, t, { spotlight = true, glow = false, glowColor = null, glowRadius = null, glowIntensity = null, scaled = null } = {}) {
-  const { shots, palette, plan, duration, width, height } = prepared;
+  const { shots, palette, plan, duration, width, height, overlays = [], window = null } = prepared;
   const halo = { glow, glowColor, glowRadius, glowIntensity };
   const own = !scaled;
   const cache = scaled || new ScaledCache();
   const held = own ? shots.map((sh) => { const had = sh.id; if (had === undefined) sh.id = core.retain(sh.data); return had === undefined; }) : null;
   try {
-    if (plan) drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan, scaled: cache, glow: halo });
-    else drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight, glow: halo });
+    if (plan) drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan, scaled: cache, glow: halo, overlays });
+    else drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight, glow: halo, overlays, window });
   } finally {
     if (own) {
       cache.clear();
@@ -295,6 +306,7 @@ export async function renderHeroVideo(cutouts, {
   glowColor = null,
   glowRadius = null,
   glowIntensity = null,
+  text = null,                // lib/text.js::textRequest: the still's title, badge and line on the clip
   onProgress = null,
   signal = null,
 } = {}) {
@@ -346,7 +358,7 @@ export async function renderHeroVideo(cutouts, {
       : new Promise((resolve) => { drained = resolve; })
   );
 
-  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, spotlight, duration: explicitDuration ? duration : null });
+  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, spotlight, duration: explicitDuration ? duration : null, text });
   const { shots, palette, plan } = prepared;
   duration = prepared.duration;
 

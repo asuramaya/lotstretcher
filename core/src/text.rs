@@ -210,6 +210,9 @@ pub struct PlanRequest {
     pub size: f64,
     #[serde(default)]
     pub font: Option<String>,
+    /// The window to inset from (a frame's car window), else the canvas.
+    #[serde(default)]
+    pub window: Option<[i64; 4]>,
 }
 /// The same controls without a canvas: what a compose request carries,
 /// sized once the request's own canvas and window are known.
@@ -241,6 +244,7 @@ impl TextRequest {
             width, height, vehicle: self.vehicle.clone(), title: self.title.clone(),
             custom_title: self.custom_title.clone(), price_badge: self.price_badge, line: self.line.clone(),
             position: self.position.clone(), color: self.color.clone(), size: self.size, font: self.font.clone(),
+            window: None,
         }
     }
 
@@ -281,7 +285,25 @@ pub fn badge_price(v: &Value) -> Option<String> {
 /// title first (largest), then the price badge, then the line. Bottom
 /// corners stack upwards so the title stays nearest the vehicle.
 pub fn plan(req: &PlanRequest) -> Result<Vec<Overlay>, String> {
-    plan_in(req, (0, 0, req.width as i64, req.height as i64))
+    let window = req.window.map(|w| (w[0], w[1], w[2], w[3])).unwrap_or((0, 0, req.width as i64, req.height as i64));
+    plan_in(req, window)
+}
+
+/// The window with the overlays' band taken off its top or bottom, plus
+/// a small gap, so a title never sits across a bumper. The band is at
+/// the bottom when its middle is below the canvas's.
+pub fn shrink_window(window: (i64, i64, i64, i64), overlays: &[Overlay], height: usize) -> (i64, i64, i64, i64) {
+    let mut w = window;
+    if let Some((top, bottom)) = band(overlays) {
+        let gap = (height as f64 * 0.02).round() as i64;
+        let (top, bottom) = (top.floor() as i64, bottom.ceil() as i64);
+        if (top + bottom) / 2 > (height as i64) / 2 {
+            w.3 = w.3.min(top - gap).max(w.1 + 1);
+        } else {
+            w.1 = w.1.max(bottom + gap).min(w.3 - 1);
+        }
+    }
+    w
 }
 
 /// The plan inside a window (a frame's car window, or the canvas): the

@@ -291,11 +291,12 @@ export class Preview {
       cutouts = this.samples.map((s) => s.cutout);
       seed = subject.seed;
     }
-    const key = JSON.stringify([width, height, seed, o.backdrop === 'generic', o.spotlight, subject.exterior, subject.interior, cutouts.length]);
+    const text = textRequestNow(subject.vehicle, textOptions(o), () => this.update());
+    const key = JSON.stringify([width, height, seed, o.backdrop === 'generic', o.spotlight, subject.exterior, subject.interior, cutouts.length, text]);
     if (key !== this.clipKey) {
       this.clip = prepareClip(cutouts, {
         width, height, seed: `${seed}:video`, exterior: subject.exterior, interior: subject.interior,
-        generic: o.backdrop === 'generic', spotlight: o.spotlight,
+        generic: o.backdrop === 'generic', spotlight: o.spotlight, text,
       });
       this.clipKey = key;
     }

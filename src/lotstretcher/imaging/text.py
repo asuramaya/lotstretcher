@@ -98,10 +98,21 @@ def text_request(vehicle: dict | None, text: dict) -> dict | None:
     return {**{k: v for k, v in text.items() if k != "font"}, "font": font, "vehicle": vehicle or {}}
 
 
-def plan_overlays(width: int, height: int, vehicle: dict | None, text: dict) -> list[dict]:
+def plan_overlays(width: int, height: int, vehicle: dict | None, text: dict,
+                  window: tuple | None = None) -> list[dict]:
     """Overlays for one canvas, or [] when no text is asked for (so a
-    run without text never loads the font)."""
+    run without text never loads the font). `window` is the frame's car
+    window to inset from; a video host passes the one it lays out in."""
     if not wants_text(text):
         return []
     font = ensure_font(text.get("font") or DEFAULT_FONT)
-    return core.overlay_plan(width, height, vehicle, font=font, **{k: v for k, v in text.items() if k != "font"})
+    return core.overlay_plan(width, height, vehicle, font=font, window=list(window) if window else None,
+                             **{k: v for k, v in text.items() if k != "font"})
+
+
+def text_window(window: tuple, height: int, overlays: list[dict]) -> tuple:
+    """The layout window with the text's band taken off it, the same rule
+    compose_hero applies, so a clip's cars keep clear of the title."""
+    if not overlays:
+        return tuple(window)
+    return tuple(core.call({"op": "text_window", "window": list(window), "height": height, "overlays": overlays}))

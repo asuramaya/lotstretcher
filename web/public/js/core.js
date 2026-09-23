@@ -179,7 +179,7 @@ export function toImageData(res) {
  * another same-sized image before it is pasted. */
 export function renderFrame(cars, width, height, background, {
   border = null, spotlight = null, glow = false, glowColor = null, glowRadius = null,
-  glowIntensity = null, resample = 'lanczos', backgroundImage = null,
+  glowIntensity = null, resample = 'lanczos', backgroundImage = null, overlays = [],
 } = {}) {
   const images = cars.map((c) => c.image);
   const bg = { ...background };
@@ -187,7 +187,7 @@ export function renderFrame(cars, width, height, background, {
     op: 'render_frame', width, height, background: bg,
     cars: cars.map((c, i) => ({ image: { $image: i }, x: c.x, y: c.y, w: c.w, h: c.h, alpha: c.alpha ?? 1 })),
     glow, glow_color: glowColor, glow_radius: glowRadius, glow_intensity: glowIntensity, resample,
-    rgba: true,
+    rgba: true, overlays,
   };
   cars.forEach((c, i) => {
     if (c.mix) { op.cars[i].mix = { image: { $image: images.length }, t: c.mix.t }; images.push(c.mix.image); }

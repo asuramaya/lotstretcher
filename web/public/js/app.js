@@ -788,6 +788,7 @@ async function run() {
             glowColor: state.options.glowColor,
             glowRadius: state.options.glowRadius,
             glowIntensity: state.options.glowIntensity,
+            text: await textRequest(state.vehicle, textOptions(state.options)),
             onProgress: (f) => setProgress(0.85 + 0.15 * f),
           });
         } catch (e) {

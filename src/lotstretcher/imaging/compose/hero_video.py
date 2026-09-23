@@ -353,6 +353,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        glow: bool = True, glow_color=DEFAULT_GLOW_COLOR,
                        glow_radius: int = 24, glow_intensity: float = 0.75,
                        border_fit: str = "fit",
+                       text: dict | None = None, vehicle: dict | None = None,
                        encoder: str = "libx264",
                        hood_sides: dict[str, str] | None = None,
                        target_duration_s: float | None = None) -> dict:
@@ -384,6 +385,11 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
         border, window = core.fit_border(border, canvas_size[0], canvas_size[1], border_fit)
     else:
         window = (0, 0, canvas_size[0], canvas_size[1])
+    # The still's text on every frame: planned once inside the window,
+    # and the cars laid out clear of its band.
+    from ..text import plan_overlays, text_window
+    overlays = plan_overlays(canvas_size[0], canvas_size[1], vehicle, text or {}, window)
+    window = text_window(window, canvas_size[1], overlays)
 
     # "conveyor" means the conveyor arrangement that suits this frame, not
     # one specific function -- a vertical canvas needs its slots stacked
@@ -444,7 +450,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
         "backdrop": {"$image": 0}, **({"border": {"$image": 1}} if border is not None else {}),
         "shots": [{"image": {"$image": first_car + i}, "pannable": pannable, "hood_side": side}
                   for i, (pannable, side) in enumerate(sides)],
-        "audio_loop_s": audio_loop_s, "bars_per_loop": bars_per_loop,
+        "audio_loop_s": audio_loop_s, "bars_per_loop": bars_per_loop, "window": list(window),
     }, images)
     shots = plan["shots"]
     schedule, carousel_period = [tuple(x) for x in plan["schedule"]], plan["period"]
@@ -535,7 +541,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                         cars, canvas_size[0], canvas_size[1], background, background_image=bg_frame,
                         border=border_held, spotlight=(hero["center"][0], hero["center"][1], hero["dim"]),
                         glow=glow, glow_color=str(glow_color), glow_radius=glow_radius,
-                        glow_intensity=glow_intensity)
+                        glow_intensity=glow_intensity, overlays=overlays)
                     try:
                         proc.stdin.write(canvas.tobytes())
                     except BrokenPipeError:

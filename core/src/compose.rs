@@ -216,15 +216,7 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     if let Some(t) = req.text.as_ref().filter(|t| !t.is_empty()) {
         overlays.extend(crate::text::plan_in(&t.for_canvas(w, h), window)?);
     }
-    if let Some((top, bottom)) = crate::text::band(&overlays) {
-        let gap = (h as f64 * 0.02).round() as i64;
-        let (top, bottom) = (top.floor() as i64, bottom.ceil() as i64);
-        if (top + bottom) / 2 > (h as i64) / 2 {
-            window.3 = window.3.min(top - gap).max(window.1 + 1);
-        } else {
-            window.1 = window.1.max(bottom + gap).min(window.3 - 1);
-        }
-    }
+    window = crate::text::shrink_window(window, &overlays, h);
     let cars: Vec<Rc<Image>> = req.cars.iter().map(|s| slice_image(arena, s)).collect::<Result<_, _>>()?;
     if cars.iter().any(|c| c.channels != 4) {
         return Err("cutouts must be RGBA".into());

@@ -73,6 +73,10 @@ pub struct FrameRequest {
     /// saved from a per-pixel expansion in JavaScript.
     #[serde(default)]
     pub rgba: bool,
+    /// Text painted over everything, ready-placed (text::plan with the
+    /// clip's window); the same on every frame of a clip.
+    #[serde(default)]
+    pub overlays: Vec<crate::text::Overlay>,
 }
 
 /// The car with its alpha scaled; borrowed as is at full opacity, so
@@ -144,6 +148,7 @@ pub fn render_frame(req: &FrameRequest, arena: &[u8]) -> Result<Image, String> {
     if let Some(b) = &border {
         paste_alpha(&mut canvas, b, 0, 0);
     }
+    crate::text::draw(&mut canvas, &req.overlays)?;
     if req.rgba {
         let mut out = Image::new(canvas.width, canvas.height, 4);
         for i in 0..canvas.width * canvas.height {
@@ -209,6 +214,9 @@ pub enum Op {
     OverlayPlan(crate::text::PlanRequest),
     /// The overlays painted onto an image (RGB or RGBA).
     DrawOverlays { image: Slice, overlays: Vec<crate::text::Overlay> },
+    /// A layout window with the overlays' band taken off it, so cars
+    /// keep clear of the text (the same rule compose_hero applies).
+    TextWindow { window: [i64; 4], height: usize, overlays: Vec<crate::text::Overlay> },
 }
 
 fn mask_threshold(t: Option<u8>) -> u8 {
@@ -247,6 +255,10 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
             OpResult::Json(serde_json::to_string(&Scalar { value: true }).unwrap())
         }
         Op::OverlayPlan(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::text::plan(&req)? }).unwrap()),
+        Op::TextWindow { window, height, overlays } => {
+            let (l, t, r, b) = crate::text::shrink_window((window[0], window[1], window[2], window[3]), &overlays, height);
+            OpResult::Json(serde_json::to_string(&Scalar { value: [l, t, r, b] }).unwrap())
+        }
         Op::DrawOverlays { image, overlays } => {
             let img = slice_image(arena, &image)?;
             let mut out = (*img).clone();

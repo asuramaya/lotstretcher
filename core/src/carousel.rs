@@ -40,6 +40,10 @@ pub struct PlanRequest {
     pub backdrop: Slice,
     pub shots: Vec<ShotIn>,
     pub audio_loop_s: f64,
+    /// The layout window to use instead of the border's (or the canvas):
+    /// a host passes one already shrunk by the text band.
+    #[serde(default)]
+    pub window: Option<[i64; 4]>,
     #[serde(default)]
     pub bars_per_loop: Option<u32>,
 }
@@ -91,7 +95,10 @@ fn place(car: &Image, bx: Box_, anchor: Anchor, border: Option<&Image>, margin: 
 pub fn plan(req: &PlanRequest, arena: &[u8]) -> Result<Plan, String> {
     let border = match &req.border { Some(s) => Some(slice_image(arena, s)?), None => None };
     let (w, h) = match &border { Some(b) => (b.width, b.height), None => (req.width, req.height) };
-    let window = match &border { Some(b) => detect_window(b)?, None => (0, 0, w as i64, h as i64) };
+    let window = match req.window {
+        Some(win) => (win[0], win[1], win[2], win[3]),
+        None => match &border { Some(b) => detect_window(b)?, None => (0, 0, w as i64, h as i64) },
+    };
     let border = border.as_deref();
     let boxes = conveyor_for_window(window, 2);
     let (hero_box, hero_anchor) = boxes[0];
