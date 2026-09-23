@@ -363,7 +363,11 @@ export function renderControls(host, values, onChange, { thumbFor = null } = {})
       if (control.presentation === 'swatches') {
         const block = el('div', 'opt opt-block');
         const text = el('div', 'opt-text');
-        text.append(el('strong', null, control.label), el('span', null, ok ? control.hint : why));
+        // A picker named the same as its group ("Backdrop" inside
+        // Backdrop) is the group: its heading is not repeated, only its
+        // one line of hint under the summary.
+        if (control.label !== group.label) text.appendChild(el('strong', null, control.label));
+        text.appendChild(el('span', null, ok ? control.hint : why));
         block.append(text, buildSwatches(control, values, onChange, !ok, thumbFor, allControls));
         body.appendChild(block);
         continue;

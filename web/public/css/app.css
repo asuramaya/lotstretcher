@@ -512,7 +512,15 @@
 .swatch-thumb.is-upload::before {
   content: '+'; font-size: 28px; font-weight: 300; color: var(--ink-3); line-height: 1;
 }
-.swatch-label { font-size: var(--t-sm); font-weight: 600; line-height: 1.2; }
+/* Two lines of name at most, and always the room for two, so a row of
+   tiles keeps one baseline whether a name is "Studio" or "Futuristic
+   Showroom". */
+.swatch-label {
+  font-size: var(--t-sm); font-weight: 600; line-height: 1.2; min-height: 2.4em;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.opt.opt-block { padding-top: var(--s-3); }
+.opt.opt-block .opt-text span:only-child { font-size: var(--t-sm); color: var(--ink-2); }
 .swatch-hint { font-size: 10px; color: var(--ink-3); line-height: 1.25; min-height: 12px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .swatch-change {
