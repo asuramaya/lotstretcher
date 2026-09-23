@@ -74,13 +74,10 @@
     <!-- ---------- the booth: photos and the vehicle, one step ---------- -->
     <section class="pane" id="pane-booth" aria-label="Booth">
       <div class="pane-inner">
-        <div class="pane-head">
-          <span class="eyebrow">Step 1 of 3</span>
-          <h1>The booth</h1>
-        </div>
         <div class="pane-next">
           <span class="small dim grow" id="sourceFootNote">Add photos to continue.</span>
           <button class="btn btn-primary" id="toOptionsBtn">Next: the look</button>
+          <div class="top-progress" id="boothProgress" hidden><div></div></div>
         </div>
         <div id="isolationWarn" class="banner banner-err hidden" style="margin-bottom:var(--s-5)">
           <div>
@@ -198,7 +195,6 @@
     <section class="pane" id="pane-options" hidden aria-label="Look">
       <div class="pane-inner wide">
         <div class="pane-head">
-          <span class="eyebrow">Step 2 of 3</span>
           <h1>Choose the look</h1>
           <p class="lede">Every lever redraws the preview as you move it, on a sample
             vehicle or on your own once one is cut out. What you cannot see, such as
@@ -208,6 +204,7 @@
           <button class="btn btn-ghost" data-back="booth">Back</button>
           <span class="small dim grow" id="optionsFootNote"></span>
           <button class="btn btn-primary" id="runBtn2" disabled>Process</button>
+          <div class="top-progress" id="lookProgress" hidden><div></div></div>
         </div>
 
         <div class="look">
@@ -279,7 +276,6 @@
     <section class="pane" id="pane-results" hidden aria-label="Results">
       <div class="pane-inner">
         <div class="pane-head">
-          <span class="eyebrow">Step 3 of 3</span>
           <h1>Results</h1>
         </div>
         <div class="section" id="progressSection" hidden>

@@ -133,12 +133,20 @@
 .pane-foot .grow { flex: 1; }
 /* The way on, at the top of the step and staying there as it scrolls. */
 .pane-next {
-  position: sticky; top: 0; z-index: 5;
+  position: sticky; top: 0; z-index: 5; position: -webkit-sticky;
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3);
   padding: var(--s-3) 0; margin: 0 0 var(--s-5);
   background: var(--bg); border-bottom: 1px solid var(--line);
 }
 .pane-next .grow { flex: 1; }
+/* The bar's own progress line, along its bottom edge: the sort and
+   cut when the booth is left, a listing being read, a run. */
+.top-progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--line); overflow: hidden; }
+.top-progress[hidden] { display: none; }
+.top-progress > div { height: 100%; width: 0; background: var(--accent); transition: width .25s var(--ease); }
+.top-progress.is-indeterminate > div { width: 30%; animation: slide 1.1s ease-in-out infinite; }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
+.pane-next { position: sticky; }
 .small.is-ok { color: var(--ok); } .small.is-err { color: var(--err); }
 .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--accent); animation: spin .8s linear infinite; display: inline-block; }
 .spin[hidden] { display: none; }

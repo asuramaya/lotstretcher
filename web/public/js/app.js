@@ -282,6 +282,19 @@ function setProgress(frac) {
   const pct = Math.round(frac * 100);
   $('progBar').style.width = `${pct}%`;
   $('progPct').textContent = `${pct}%`;
+  topProgress(frac);
+}
+
+/* The thin line along the top bar of the booth and the look: a
+ * fraction, 'busy' for an indeterminate wait, or null to hide. */
+function topProgress(value) {
+  for (const id of ['boothProgress', 'lookProgress']) {
+    const bar = $(id);
+    if (!bar) continue;
+    bar.hidden = value === null;
+    bar.classList.toggle('is-indeterminate', value === 'busy');
+    if (typeof value === 'number') bar.firstElementChild.style.width = `${Math.round(value * 100)}%`;
+  }
 }
 
 function renderResults() {
@@ -812,6 +825,7 @@ function preload() {
     } finally {
       for (const p of state.photos) { p.bitmap?.close?.(); p.bitmap = null; }
       state.preparing = false;
+      topProgress(null);
       renderPhotos();
       if (preview?.getUserCutout?.()) { preview.current = 'yours'; preview.renderSamples(); preview.update(); preview.onSubjectChange?.(); }
     }
@@ -1034,6 +1048,7 @@ async function run() {
     // hold and nothing downstream needs them once cutouts exist.
     for (const p of state.photos) { p.bitmap?.close?.(); p.bitmap = null; }
     state.running = false;
+    topProgress(null);
     setRunEnabled(state.photos.length > 0);
     renderPhotos();
     renderResults();
@@ -1213,15 +1228,14 @@ async function importSticker(source, label) {
     const standard = Object.values(parsed.equipment || {}).reduce((n, a) => n + a.length, 0);
     if (optional) extras.push(`${optional} option${optional === 1 ? '' : 's'}`);
     if (standard) extras.push(`${standard} standard features`);
-    const readWhat = extras.join(', ');
+    const readWhat = extras.join(' · ');
 
     // Said in the Vehicle head, after whatever the listing said; the
     // sticker row itself goes green.
     note.textContent = '';
     $('stickerRow').classList.add('is-ok');
     const said = $('vehicleStatus').textContent;
-    const mine = [filled ? `${filled} field${filled === 1 ? '' : 's'}` : '', readWhat].filter(Boolean).join(', ');
-    setStatus('vehicleStatus', `${said ? `${said} · sticker: ` : 'Sticker: '}${mine || 'read'}`, 'ok');
+    setStatus('vehicleStatus', [said, readWhat].filter(Boolean).join(' · ') || 'Sticker read', 'ok');
   } catch (e) {
     // A CORS refusal is the common case and deserves a plain explanation
     // rather than the browser's own wording.
@@ -1304,8 +1318,7 @@ function applyVehicle(v) {
 
   // What was read is said in the heads of the sections it filled, not
   // in a box: the photo count beside Photos, the vehicle beside Vehicle.
-  const from = v.url ? 'from the listing' : 'from the VIN';
-  setStatus('vehicleStatus', `${v.title || 'a vehicle'} ${from}${filled ? ` (${filled} field${filled === 1 ? '' : 's'})` : ''}`, 'ok');
+  setStatus('vehicleStatus', v.title || 'a vehicle', 'ok');
   $('detailsNote').innerHTML = '';
   for (const w of v.warnings) $('detailsNote').appendChild(el('p', 'status-warn', w));
 
@@ -1491,6 +1504,7 @@ async function init() {
     n.textContent = note;
     n.className = `small ${status === 'failed' ? 'is-err' : status === 'done' ? 'is-ok' : 'dim'}`;
     $('listingBusy').hidden = status !== 'reading';
+    topProgress(status === 'reading' ? 'busy' : null);
     $('listingUrlInput').disabled = status === 'reading';
   };
   let reading = false;
