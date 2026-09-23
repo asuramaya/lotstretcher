@@ -19,8 +19,10 @@ web/
 │   │   ├── core.js      loads the Rust core (wasm) and packs images for it
 │   │   ├── lib/         imageio, zip, delegate (what a self-hosted server can add)
 │   │   ├── library/     the listings library: an HTTP or a folder source, one view
-│   │   └── pipeline/    runtime, classify, matte, compose, video, copy, listing, sticker
+│   │   └── pipeline/    runtime, classify, matte, compose, video, copy, listing, sticker,
+│   │                    core-worker + video-worker (the core in a worker, for a run)
 │   ├── core/            the Rust core compiled to wasm32 — IN git, see below
+│   ├── core-threads/    the same, threaded; loaded only inside the worker
 │   ├── models/          NOT in git — see below
 │   └── ort/             NOT in git — see below
 ├── build-core.sh        core/ → public/core/ (cargo + wasm-bindgen + wasm-opt)
@@ -139,9 +141,10 @@ back to rendering on the page with the same code.
 | compose 1254², glow | 122 ms | 37 ms |
 | video frame 720² | 33 ms | 9.5 ms |
 
-Stills and the live preview still run on the page's plain build; moving
-them into the worker would make the core's API asynchronous across the
-app, and has not been done.
+A run keeps one worker for the lot: its stills and its clip both go
+through it (`js/pipeline/core-worker.js` is the page's handle). The
+live preview stays on the page's plain build, since it wants a frame
+back in the same tick.
 
 ## Cross-origin isolation
 

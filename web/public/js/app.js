@@ -17,7 +17,8 @@ import { initRuntime, runtime, loadModel, totalBytes } from './pipeline/runtime.
 import { classifyScene, classifyAngle, loadLabels } from './pipeline/classify.js';
 import { matte, applyMatte, gateCutout } from './pipeline/matte.js';
 import { composeHero } from './pipeline/compose.js';
-import { renderHeroVideo, videoThreads, isSupported as videoSupported } from './pipeline/video.js';
+import { renderHeroVideoHere, videoThreads, setVideoThreads, isSupported as videoSupported } from './pipeline/video.js';
+import { CoreWorker } from './pipeline/core-worker.js';
 import { buildAllPosts, vehicleTitle, PLATFORMS } from './pipeline/copy.js';
 import { decode, makeCanvas, ctxOf, canvasToBlob } from './lib/imageio.js';
 import { makeZip, deliver } from './lib/zip.js';
@@ -552,6 +553,7 @@ async function run() {
   if (state.running || !state.photos.length) return;
   state.running = true;
   state.done = false;
+  let cw = null;   // the run's core worker, ended in `finally`
   state.errors = [];
   setRunEnabled(false);
   go('results');
@@ -691,6 +693,11 @@ async function run() {
       stages[3].label = 'Composing on your server';
       renderStages(stages);
     }
+    // The threaded core in a worker does the stills and the clip when
+    // it can, one worker for the run; the page composes when it cannot.
+    if (!delegating && CoreWorker.supported()) {
+      try { cw = new CoreWorker(); setVideoThreads(await cw.init()); } catch (e) { console.warn('core worker unavailable:', e); cw?.terminate(); cw = null; }
+    }
     // A stock backdrop or frame the site ships is composed here, from
     // its own file; the core fits the frame to each format.
     const stockBackground = !delegating && state.options.backdrop === 'asset'
@@ -750,7 +757,7 @@ async function run() {
         /* Each format is composed from the cutout, never cropped from
          * another format. Cropping a square down to 4:5 cuts the
          * vehicle's nose off; recomposing re-fits it to the new box. */
-        p.heroes[fmt] = composeHero(p.cutout, {
+        const composeOpts = {
           seed: `${vid}:${p.name}:${fmt}`,
           exterior: state.vehicle.exterior_color,
           interior: state.vehicle.interior_color,
@@ -766,7 +773,13 @@ async function run() {
           text: await textRequest(state.vehicle, textOptions(state.options)),
           glow: state.options.glow, glowColor: state.options.glowColor,
           glowRadius: state.options.glowRadius, glowIntensity: state.options.glowIntensity,
-        });
+        };
+        if (cw) {
+          try { p.heroes[fmt] = await cw.compose(p.cutout, composeOpts); }
+          catch (e) { console.warn('core worker compose fell back to the page:', e); p.heroes[fmt] = composeHero(p.cutout, composeOpts); }
+        } else {
+          p.heroes[fmt] = composeHero(p.cutout, composeOpts);
+        }
       }
       // The first format is the one shown in the grid.
       p.hero = p.heroes[formats[0]];
@@ -798,7 +811,7 @@ async function run() {
       for (const fmt of wantVideo) {
         const [w, h] = OPTS.VIDEO_FORMATS[fmt].size;
         try {
-          state.videos[fmt] = await renderHeroVideo(cut.map((p) => p.cutout), {
+          const videoOpts = {
             angles: cut.map((p) => p.angle || null),
             width: w, height: h,
             seed: `${vid}:video:${fmt}`,
@@ -813,7 +826,14 @@ async function run() {
             text: await textRequest(state.vehicle, textOptions(state.options)),
             background: videoBackground,
             onProgress: (f) => setProgress(0.85 + 0.15 * f),
-          });
+          };
+          const shots = cut.map((p) => p.cutout);
+          if (cw) {
+            try { state.videos[fmt] = await cw.video(shots, videoOpts); }
+            catch (e) { console.warn('core worker video fell back to the page:', e); state.videos[fmt] = await renderHeroVideoHere(shots, videoOpts); }
+          } else {
+            state.videos[fmt] = await renderHeroVideoHere(shots, videoOpts);
+          }
         } catch (e) {
           state.errors.push(`video ${fmt}: ${e.message || e}`);
         }
@@ -843,6 +863,7 @@ async function run() {
     b.append(el('div', null, String(e.message || e)));
     $('stageList').appendChild(b);
   } finally {
+    cw?.terminate();
     // Free the decoded source bitmaps. They are the largest thing we
     // hold and nothing downstream needs them once cutouts exist.
     for (const p of state.photos) { p.bitmap?.close?.(); p.bitmap = null; }
