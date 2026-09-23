@@ -62,7 +62,7 @@ export const loadAssets = loadLibrary;
 export const assets = library;
 
 /* Ask the server to read a vehicle page. Returns the same record shape
- * the bookmarklet's normaliser produces (scrape.Vehicle), so the caller
+ * the saved-page reader produces (scrape.Vehicle), so the caller
  * fills the form the same way whichever route the listing came in by. */
 export async function scrapeOnServer(url, { signal } = {}) {
   const res = await fetch('scrape', {

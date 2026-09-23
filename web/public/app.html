@@ -147,6 +147,7 @@
         </div>
         <div class="section">
           <div class="section-head"><h2>Vehicle</h2></div>
+          <div id="detailsNote"></div>
 
           <div class="importer">
             <div class="row wrap" style="gap:var(--s-3)">
@@ -367,66 +368,33 @@
 </div>
 
 <div class="sheet" id="listingSheet" hidden>
-  <div class="sheet-body" role="dialog" aria-modal="true" aria-label="Import from a listing">
+  <div class="sheet-body" role="dialog" aria-modal="true" aria-label="From a listing">
     <div class="sheet-grip"></div>
-    <div class="sheet-head"><h3 style="flex:1">Import from a listing</h3></div>
+    <div class="sheet-head"><h3 style="flex:1">From a listing</h3></div>
     <div class="sheet-content">
-      <div id="listingUrlWrap" hidden style="margin-bottom:var(--s-5)">
-        <p class="small muted" style="margin-bottom:var(--s-3)">
-          This host can read the page for you. Paste a vehicle page
-          address and your server fetches it, exactly as the command line
-          does.
-        </p>
-        <textarea class="field mono" id="listingUrlInput" rows="2" spellcheck="false"
-          placeholder="https://www.dealer.example/inventory/used-2024-ford-maverick-…/"></textarea>
-        <div class="row wrap" style="gap:var(--s-3);margin-top:var(--s-3);align-items:center">
-          <button class="btn btn-primary btn-sm" id="listingUrlGo">Read it on your server</button>
-          <span class="small dim" id="listingUrlNote"></span>
-        </div>
-        <p class="xs dim" style="margin-top:var(--s-4)">Or, from any browser:</p>
+      <p class="small muted" style="margin-bottom:var(--s-3)" id="listingLede"></p>
+      <textarea class="field mono" id="listingUrlInput" rows="2" spellcheck="false" autocapitalize="characters"
+        placeholder="https://www.dealer.example/vehicle/1FTTW8HA…/2026-Ford-Maverick-…/  or a VIN"></textarea>
+      <div class="row wrap" style="gap:var(--s-3);margin-top:var(--s-3);align-items:center">
+        <button class="btn btn-primary btn-sm" id="listingUrlGo">Read it</button>
+        <span class="small dim" id="listingUrlNote"></span>
       </div>
-      <div class="importer" style="margin-bottom:var(--s-5)">
-        <p class="small muted" style="margin-bottom:var(--s-3)">
-          <strong>The simplest way, from any browser:</strong> on the listing page press
-          <span class="mono">Ctrl+S</span> (<span class="mono">Cmd+S</span> on a Mac), save it
-          as "Webpage, HTML only", then drop that file here. The page's own vehicle data and
+      <details class="importer" style="margin-top:var(--s-5)">
+        <summary class="small muted">Or drop the saved page, for its photos and price too</summary>
+        <p class="small muted" style="margin:var(--s-3) 0">
+          On the listing page press <span class="mono">Ctrl+S</span> (<span class="mono">Cmd+S</span> on a Mac),
+          save it as "Webpage, HTML only", then drop that file here. The page's own vehicle data and
           photo links are read on this device; nothing is fetched from the dealer.
         </p>
         <div class="row wrap" style="gap:var(--s-3);align-items:center">
-          <button class="btn btn-primary btn-sm" id="listingFileBtn">Choose the saved page</button>
+          <button class="btn btn-sm" id="listingFileBtn">Choose the saved page</button>
           <span class="small dim" id="listingFileNote">or drop the .html file anywhere on this sheet</span>
         </div>
         <input type="file" id="listingFileInput" accept=".html,.htm,text/html" class="sr-only">
         <p class="xs dim" style="margin-top:var(--s-3)">Or view the page source (<span class="mono">Ctrl+U</span>), select all, copy, and paste it here:</p>
         <textarea class="field mono" id="listingHtmlInput" rows="3" spellcheck="false" placeholder="&lt;!doctype html&gt; ..."></textarea>
         <div class="row" style="margin-top:var(--s-2)"><button class="btn btn-sm" id="listingHtmlGo">Read the pasted page</button></div>
-      </div>
-      <p class="small muted">
-        <strong>Or a bookmarklet.</strong> A browser cannot read another site's page, and
-        neither can lotstretcher.org: dealer sites sit behind a bot challenge that only a real
-        browser passes (a plain fetch of a listing gets "Just a moment", not the page), which
-        is why the self-hosted server drives one. So the hand-off runs the other way: a
-        bookmarklet clicked on the listing itself collects the vehicle record and photo links
-        and opens this app with them filled in.
-      </p>
-      <p class="small muted" style="margin-top:var(--s-3)">
-        Drag this to your bookmarks bar, then click it while viewing a
-        vehicle page. Nothing is sent anywhere: the page's own data is
-        handed to this app inside the link, which stays on this device.
-      </p>
-      <p style="margin:var(--s-4) 0">
-        <a class="btn btn-primary" id="bookmarkletLink" href="#" draggable="true">
-          Send to lotstretcher</a>
-        <span class="xs dim" style="margin-left:var(--s-3)">On a phone: copy it and paste as a bookmark's address.</span>
-      </p>
-      <button class="btn btn-sm btn-ghost" id="bookmarkletCopy">Copy the bookmarklet</button>
-      <span class="small dim" id="bookmarkletNote"></span>
-      <p class="xs dim" style="margin-top:var(--s-4)">
-        Works on DealerInspire pages, the same platform the command line
-        scraper reads. Other platforms fall back to the page's schema.org
-        data, which is thinner. Photo links are fetched to this device by
-        the app; a CDN that refuses cross-origin reads will say so.
-      </p>
+      </details>
     </div>
     <div class="sheet-foot">
       <button class="btn btn-primary" data-close="listingSheet">Done</button>

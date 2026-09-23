@@ -1,10 +1,10 @@
 """The listing hand-off produces what the scraper would have.
 
 web/public/js/pipeline/listing.js ports scrape.normalize_vehicle so a
-bookmarklet-collected record fills the app the way `lotstretcher <url>`
+saved page read on the device fills the app the way `lotstretcher <url>`
 fills the CLI. Two things keep that true:
 
-1. The bookmarklet ships the spec's `listing.payloadKeys`, so that list
+1. The page reader keeps the spec's `listing.payloadKeys`, so that list
    must cover every key normalize_vehicle reads. Checked against the
    Python source, not a hand-written list.
 2. Both normalisers are run on ONE synthetic payload and compared field
@@ -77,15 +77,15 @@ def normalize_vehicle_keys() -> set[str]:
 
 
 def test_payload_keys_cover_normalize_vehicle():
-    """The bookmarklet ships only these keys. A key normalize_vehicle
-    reads but the spec omits would be silently empty after a hand-off."""
+    """The page reader keeps only these keys. A key normalize_vehicle
+    reads but the spec omits would be silently empty after a read."""
     missing = normalize_vehicle_keys() - set(SPEC["listing"]["payloadKeys"])
     assert not missing, f"normalize_vehicle reads {sorted(missing)}; add them to spec.listing.payloadKeys"
 
 
 def test_analytics_global_matches_the_marker():
-    """scrape.py finds the blob by its assignment text; the bookmarklet
-    and the saved-page reader scan for the same text, from the spec."""
+    """scrape.py finds the blob by its assignment text; the saved-page
+    reader scans for the same text, from the spec."""
     assert DEALERINSPIRE_VAR_MARKER.strip().rstrip("=").strip() == SPEC["listing"]["analyticsGlobal"]
     assert SPEC["listing"]["analyticsMarker"] == DEALERINSPIRE_VAR_MARKER
 

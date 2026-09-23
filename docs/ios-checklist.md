@@ -61,10 +61,9 @@ Safari. For each step, note pass, fail, or the message shown.
 ## 5. Details and listing
 
 - Import a window sticker PDF from Files. Report whether fields fill.
-- Open **From a listing** and tap **Copy the bookmarklet**. Add a
-  bookmark in Safari, edit its address to the copied text, then open a
-  vehicle page on a dealer site and tap the bookmark. Report whether the
-  app opens filled in.
+- Open **From a listing**, paste a dealer vehicle page address (or type
+  a VIN) and tap **Read it**. Report whether the year, make and model
+  fill in on the Vehicle step, with no network activity.
 
 ## 6. Library
 

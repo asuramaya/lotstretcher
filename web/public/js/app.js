@@ -36,7 +36,8 @@ import { renderControls, controlDefaults, controlsToFlags, affectsPreview, rende
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
 import { textOptions, textRequest, frameStyle, shadowStyle, reflectionStyle } from './lib/text.js';
-import { normalizeListing, takeListingFromHash, bookmarkletSource, recordFromHtml } from './pipeline/listing.js';
+import { normalizeListing, recordFromHtml } from './pipeline/listing.js';
+import { recordFromText } from './pipeline/vin.js';
 import { LibraryView } from './library/view.js';
 import { HttpSource, DirectorySource } from './library/source.js';
 
@@ -1141,20 +1142,9 @@ async function importSticker(source, label) {
 }
 
 /* ---------- listing import --------------------------------------------
- * The bookmarklet opened this page with a vehicle record in the URL
- * fragment. Fill in what the CLI's scraper would have: the form fields,
- * the dealer, the photo links, and the spec lines the copy uses. */
-function applyListing(raw) {
-  if (raw.error) {
-    $('warnBox').innerHTML = '';
-    $('warnBox').appendChild(el('div', 'banner banner-err', raw.error));
-    return;
-  }
-  applyVehicle(normalizeListing(raw));
-}
-
-/* Fill the app from a scrape.Vehicle-shaped record, whichever route it
- * came in by: the bookmarklet's normaliser or the server's /scrape. */
+ * Fill the app from a scrape.Vehicle-shaped record, whichever route it
+ * came in by: the address or VIN decoded here, a saved page read here,
+ * or the server's /scrape. */
 function applyVehicle(v) {
   const map = {
     year: 'f-year', make: 'f-make', model: 'f-model', trim: 'f-trim',
@@ -1174,13 +1164,18 @@ function applyVehicle(v) {
   }
   state.listing = v;
 
-  addUrls(v.photo_urls.join('\n'));
+  v.photo_urls = v.photo_urls || []; v.warnings = v.warnings || [];
+  if (v.photo_urls.length) addUrls(v.photo_urls.join('\n'));
 
-  const bits = [`Imported ${v.title || 'a vehicle'} from the listing`];
+  const bits = [`Read ${v.title || 'a vehicle'} from ${v.url ? 'the listing' : 'the VIN'}`];
   if (filled) bits.push(`${filled} field${filled === 1 ? '' : 's'}`);
   if (v.photo_urls.length) bits.push(`${v.photo_urls.length} photo link${v.photo_urls.length === 1 ? '' : 's'}`);
-  const box = $('warnBox');
-  box.innerHTML = '';
+  // With photo links the Photos step is where the work continues; a
+  // bare record (an address or a VIN) shows its fields on the Vehicle
+  // step, so the note goes where the person will be looking.
+  const toPhotos = v.photo_urls.length > 0;
+  const box = $(toPhotos ? 'warnBox' : 'detailsNote');
+  $('warnBox').innerHTML = ''; $('detailsNote').innerHTML = '';
   const banner = el('div', 'banner', bits.join(' · ') + '.');
   box.appendChild(banner);
   for (const w of v.warnings) box.appendChild(el('div', 'banner banner-warn', w));
@@ -1192,7 +1187,7 @@ function applyVehicle(v) {
     b.onclick = () => { b.disabled = true; importSticker(v.window_sticker_url, 'the sticker'); };
     banner.append(' ', b);
   }
-  go('source');
+  go(toPhotos ? 'source' : 'details');
 }
 
 /* ---------- wiring --------------------------------------------------- */
@@ -1259,33 +1254,20 @@ async function init() {
   $('cameraBtn').onclick = () => $('cameraInput').click();
   $('urlBtn').onclick = () => openSheet('urlSheet');
   $('listingBtn').onclick = () => {
-    // Bound to THIS origin: a self-hosted install's bookmarklet opens
-    // that install, not lotstretcher.org.
-    const src = bookmarkletSource(location.origin);
-    $('bookmarkletLink').href = src;
-    $('bookmarkletLink').onclick = (e) => {
-      // Clicking it here would run it on this page, which has no listing.
-      e.preventDefault();
-      $('bookmarkletNote').textContent = 'Drag it to the bookmarks bar rather than clicking it here.';
-    };
-    $('bookmarkletCopy').onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(src);
-        $('bookmarkletNote').textContent = 'Copied. Add a bookmark and paste this as its address.';
-      } catch {
-        $('bookmarkletNote').textContent = 'The browser refused the clipboard; drag the button instead.';
-      }
-    };
-    $('bookmarkletNote').textContent = '';
-    // Against a server that can scrape, the sheet also takes a URL. The
-    // bookmarklet stays offered: it works from any browser, including
-    // one that is not on the same machine as the server.
-    $('listingUrlWrap').hidden = !can('scrape');
+    // One field on every host. A server that can scrape reads the whole
+    // page; the site decodes the address and the VIN on this device.
+    $('listingLede').textContent = can('scrape')
+      ? 'Paste the vehicle page address and your server reads the page, exactly as the command line does: '
+        + 'every field and every photo. A bare VIN is decoded here instead.'
+      : 'Paste the vehicle page address, or type the VIN. The year, make and model are read from the '
+        + 'address and the VIN on this device; nothing is fetched and nothing leaves it. A dealer page cannot '
+        + 'be read from here (it sits behind a bot challenge), so the price and the photos are yours to add.';
+    $('listingUrlGo').textContent = can('scrape') ? 'Read it on your server' : 'Read it';
     $('listingUrlNote').textContent = '';
     openSheet('listingSheet');
   };
   /* A saved copy of the listing page, or its pasted source: read here,
-   * the way the bookmarklet reads the live page. */
+   * with the same reader the scraper uses on the live page. */
   const readListingHtml = (html, label) => {
     const note = $('listingFileNote');
     let raw;
@@ -1316,19 +1298,33 @@ async function init() {
   });
 
   $('listingUrlGo').onclick = async () => {
-    const url = $('listingUrlInput').value.trim();
-    if (!url) return;
+    const text = $('listingUrlInput').value.trim();
+    if (!text) return;
     const note = $('listingUrlNote');
     const btn = $('listingUrlGo');
+    const isUrl = /^https?:\/\//i.test(text);
+    // Decoded here, on every host: the address's slug and the VIN.
+    const local = recordFromText(text);
+    if (!isUrl || !can('scrape')) {
+      if (!local.vin && !local.year && !local.make) { note.textContent = local.warnings.join(' ') || 'That is neither an address nor a VIN.'; return; }
+      closeSheet('listingSheet');
+      applyVehicle(local);
+      $('listingUrlInput').value = '';
+      return;
+    }
     btn.disabled = true;
     note.textContent = 'Your server is reading the page. A Cloudflare challenge can take a few seconds.';
     try {
-      const v = await scrapeOnServer(url);
+      const v = await scrapeOnServer(text);
       closeSheet('listingSheet');
       applyVehicle(v);
       $('listingUrlInput').value = '';
     } catch (e) {
-      note.textContent = String(e.message || e);
+      // The server could not read the page: what the address itself says still fills the form.
+      note.textContent = `${String(e.message || e)}. Filled what the address says instead.`;
+      local.warnings.push(`Your server could not read the page (${String(e.message || e)}); only the address was read.`);
+      closeSheet('listingSheet');
+      applyVehicle(local);
     } finally {
       btn.disabled = false;
     }
@@ -1452,11 +1448,6 @@ async function init() {
     }
   };
   if (can('library')) libraryView.setSource(new HttpSource());
-
-  // Opened by the bookmarklet? The record rides in the fragment, which
-  // the browser never sends anywhere; take it, then clear it.
-  const listing = takeListingFromHash();
-  if (listing) applyListing(listing);
 
   /* A debug handle.
    *

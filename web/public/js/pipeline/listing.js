@@ -1,22 +1,13 @@
-/* Listing hand-off: the browser's answer to `lotstretcher <VDP url>`.
+/* Reading a listing on the device: the browser's answer to
+ * `lotstretcher <VDP url>`.
  *
  * The CLI scrapes a vehicle page with a headless browser and reads the
  * analytics blob DealerInspire embeds (scrape.py::normalize_vehicle). A
- * browser on lotstretcher.org cannot read another site's page, and a
- * Worker doing it server-side would be scraping on the user's behalf,
- * which is the thing this surface promised not to do.
- *
- * So the hand-off runs the other way. A bookmarklet run ON the listing,
- * in the dealer's own browser, reads the same blob, keeps the same subset
- * of keys the CLI reads (spec.listing.payloadKeys), and opens the app
- * with that record in the URL FRAGMENT. Fragments are never sent to a
- * server, so the record travels from one tab to another without touching
- * lotstretcher.org, and without a backend to leak it.
- *
- * Why a fragment and not postMessage: the app is served with COOP
- * same-origin (needed for SharedArrayBuffer). Opening it from another
- * origin therefore severs the opener relationship, and a postMessage
- * from the listing tab never arrives. The fragment survives the swap.
+ * browser on lotstretcher.org cannot read another site's page (and the
+ * page sits behind a bot challenge that a plain fetch never passes), so
+ * the same reader runs here on a SAVED copy of the page or its pasted
+ * source: no network, nothing leaves the device. The address itself is
+ * read by pipeline/vin.js, which needs no page at all.
  *
  * normalizeListing() is a port of normalize_vehicle(), and
  * tests/test_listing_parity.py runs both on one fixture and compares
@@ -178,34 +169,6 @@ export function normalizeListing({ url, payload, ldCar, carfaxUrl }) {
 
 /* base64url of UTF-8 JSON. Fragments may hold a few hundred KB in every
  * current browser; a trimmed payload is well under 50. */
-export function encodeListing(obj) {
-  const bytes = new TextEncoder().encode(JSON.stringify(obj));
-  let bin = '';
-  for (const b of bytes) bin += String.fromCharCode(b);
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-export function decodeListing(text) {
-  const b64 = text.replace(/-/g, '+').replace(/_/g, '/');
-  const bin = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4));
-  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
-  return JSON.parse(new TextDecoder().decode(bytes));
-}
-
-/* The listing carried in this page's URL, if any, and clear it from the
- * address bar so a reload does not import it twice. */
-export function takeListingFromHash() {
-  const param = get('listing', 'hashParam');
-  const m = new RegExp(`[#&]${param}=([^&]+)`).exec(location.hash);
-  if (!m) return null;
-  history.replaceState(null, '', location.pathname + location.search);
-  try {
-    return decodeListing(m[1]);
-  } catch {
-    return { error: 'The listing link was damaged and could not be read.' };
-  }
-}
-
 /* ---------- reading a page ------------------------------------------ */
 
 /* The JSON object embedded at `marker`, by matching balanced braces: a
@@ -240,7 +203,7 @@ export function extractBalancedJson(text, marker) {
 }
 
 /* The payload trimmed to the keys the CLI reads, and the description
- * capped, exactly as the bookmarklet ships it. */
+ * capped: a page read here carries what the CLI would have used. */
 export function trimPayload(P) {
   if (!P) return null;
   const keys = get('listing', 'payloadKeys');
@@ -259,10 +222,9 @@ export function trimPayload(P) {
   return p;
 }
 
-/* A raw listing record from a page's HTML: what the bookmarklet
- * collects on the listing, collected here instead from a saved copy of
- * it (File > Save Page As, or the page source pasted in). No network,
- * no bookmark: the page's own text is read on this device. */
+/* A raw listing record from a page's HTML, read from a saved copy of
+ * the listing (File > Save Page As, or the page source pasted in). No
+ * network: the page's own text is read on this device. */
 export function recordFromHtml(html, url = null) {
   const marker = get('listing', 'analyticsMarker');
   const analytics = extractBalancedJson(html, marker);
@@ -279,7 +241,7 @@ export function recordFromHtml(html, url = null) {
     if (!url) url = doc.querySelector('link[rel="canonical"]')?.href || doc.querySelector('meta[property="og:url"]')?.content || null;
   }
   const carfax = /class="carfax-logo"[^>]*>\s*<a href="([^"]+)"/.exec(html);
-  return { v: get('listing', 'version'), url, payload, ldCar, carfaxUrl: carfax ? carfax[1] : null };
+  return { url, payload, ldCar, carfaxUrl: carfax ? carfax[1] : null };
 }
 
 /* ---------- the bookmarklet ------------------------------------------ */
@@ -293,42 +255,3 @@ export function recordFromHtml(html, url = null) {
  * what normalize_vehicle reads and nothing else: the key list is the
  * spec's, the photo entries are cut to their source URL, and the dealer
  * description is capped. */
-export function bookmarkletSource(origin) {
-  const keys = get('listing', 'payloadKeys');
-  const globalName = get('listing', 'analyticsGlobal');
-  const marker = get('listing', 'analyticsMarker');
-  const maxDesc = get('listing', 'descriptionMaxChars');
-  const param = get('listing', 'hashParam');
-  const version = get('listing', 'version');
-
-  /* The analytics object is NOT a window global on a live page: it is
-   * the default-parameter value of a function call inside an inline
-   * script, which is why the CLI scans the page text for it. Reading
-   * window[name] found nothing and the bookmarklet fell back to the thin
-   * schema.org record, with no photos. So this scans the inline scripts
-   * for the same marker the CLI uses, with the same brace matcher, and
-   * only then tries the global. */
-  const body = `
-    var K=${JSON.stringify(keys)},M=${JSON.stringify(marker)},A=null,P=null,L=null,p=null;
-    function X(t){var a=t.indexOf(M);if(a<0)return null;var s=a+M.length;while(s<t.length&&t[s]!=='{')s++;
-      var d=0,q=false,e=false;for(var i=s;i<t.length;i++){var c=t[i];
-      if(q){if(e)e=false;else if(c==='\\\\')e=true;else if(c==='"')q=false;continue;}
-      if(c==='"')q=true;else if(c==='{')d++;else if(c==='}'){d--;if(d===0){try{return JSON.parse(t.slice(s,i+1));}catch(x){return null;}}}}return null;}
-    var S=document.scripts;for(var i=0;i<S.length&&!A;i++){if(!S[i].src&&S[i].textContent.indexOf(M)>=0)A=X(S[i].textContent);}
-    if(!A)A=window[${JSON.stringify(globalName)}];P=A&&A.vdp_gtm_payload;
-    document.querySelectorAll('script[type="application/ld+json"]').forEach(function(s){
-      try{var d=JSON.parse(s.textContent),gr=Array.isArray(d)?d:(d['@graph']||[d]);
-      gr.forEach(function(n){if(n&&n['@type']==='Car')L=n;});}catch(e){}});
-    if(!P&&!L){alert('lotstretcher: no vehicle data on this page');return;}
-    if(P){p={};K.forEach(function(k){if(P[k]!==undefined)p[k]=P[k];});
-      if(p.dealerDescription)p.dealerDescription=String(p.dealerDescription).slice(0,${maxDesc});
-      if(p.visual){var V=p.visual,t=function(x){return Array.isArray(x)?x.map(function(i){return i&&i.source?{source:i.source}:i;}):x;};
-        p.visual={colors:V.colors,image:V.image,combinedPhotos:t(V.combinedPhotos),dealerPhotos:t(V.dealerPhotos),stockPhotos:t(V.stockPhotos),dealerVideos:t(V.dealerVideos)};}}
-    var c=document.querySelector('.carfax-logo a');
-    var j=JSON.stringify({v:${version},url:location.href,payload:p,ldCar:L,carfaxUrl:c?c.href:null});
-    var u=new TextEncoder().encode(j),b='';for(var i=0;i<u.length;i++)b+=String.fromCharCode(u[i]);
-    var h=btoa(b).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
-    window.open(${JSON.stringify(origin)}+'/app.html#${param}='+h,'_blank','noopener');
-  `.replace(/\n\s*/g, '');
-  return `javascript:(function(){${body}})();`;
-}

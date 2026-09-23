@@ -183,7 +183,7 @@ processes them. This covers the common "I can see the photos but I'm not at my d
 Paste a window-sticker PDF URL or drop the file. pdf.js extracts text and positions
 client-side, recovering trim, options, and MSRP without any scraping.
 
-### 5d. Bookmarklet (proposed — decision needed)
+### 5d. Bookmarklet (built, then removed 2026-09-23: replaced by the address/VIN decoder in pipeline/vin.js)
 
 The dealer's own browser is already authenticated and already has the VDP loaded. A
 bookmarklet run **on that page** can read `window.jzlAnalyticsObject.vdp_gtm_payload` — the
