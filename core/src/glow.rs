@@ -86,15 +86,24 @@ pub fn paste_alpha(dst: &mut Image, src: &Image, x: i64, y: i64) {
             let a = src.data[si + 3] as u32;
             if a == 0 { continue; }
             let di = (dy as usize * dst.width + dx as usize) * dc;
+            if a == 255 {
+                dst.data[di..di + 3].copy_from_slice(&src.data[si..si + 3]);
+                if dc == 4 { dst.data[di + 3] = 255; }
+                continue;
+            }
             for c in 0..3 {
                 let s = src.data[si + c] as u32;
                 let d = dst.data[di + c] as u32;
-                // (s*a + d*(255-a)) / 255, rounded as Pillow does.
-                dst.data[di + c] = ((s * a + d * (255 - a) + 127) / 255) as u8;
+                // (s*a + d*(255-a)) / 255, rounded as Pillow does; the
+                // divide is the exact-for-u8 shift form, which is what a
+                // per-pixel loop needs to vectorise.
+                let x = s * a + d * (255 - a) + 128;
+                dst.data[di + c] = ((x + (x >> 8)) >> 8) as u8;
             }
             if dc == 4 {
                 let d = dst.data[di + 3] as u32;
-                dst.data[di + 3] = (a + d * (255 - a) / 255).min(255) as u8;
+                let x = d * (255 - a) + 128;
+                dst.data[di + 3] = (a + ((x + (x >> 8)) >> 8)).min(255) as u8;
             }
         }
     }

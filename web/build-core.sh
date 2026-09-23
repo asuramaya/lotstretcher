@@ -7,7 +7,9 @@
 # `cargo install wasm-bindgen-cli --version <that>` once.
 set -euo pipefail
 cd "$(dirname "$0")/../core"
-cargo build --release --target wasm32-unknown-unknown --features wasm
+# SIMD is in every browser the app already needs for WebCodecs; LLVM
+# vectorises the per-pixel loops with it on.
+RUSTFLAGS="-C target-feature=+simd128" cargo build --release --target wasm32-unknown-unknown --features wasm
 wasm-bindgen --target web --out-dir ../web/public/core --out-name lotstretcher_core \
   target/wasm32-unknown-unknown/release/lotstretcher_core.wasm
 if command -v wasm-opt >/dev/null 2>&1; then

@@ -58,6 +58,10 @@ pub struct FrameRequest {
     /// "lanczos" (default) or "bilinear" for cars that still need scaling.
     #[serde(default)]
     pub resample: Option<String>,
+    /// Return RGBA rather than RGB: what a canvas's putImageData wants,
+    /// saved from a per-pixel expansion in JavaScript.
+    #[serde(default)]
+    pub rgba: bool,
 }
 
 fn slice_image(arena: &[u8], s: &Slice) -> Result<Image, String> {
@@ -120,6 +124,14 @@ pub fn render_frame(req: &FrameRequest, arena: &[u8]) -> Result<Image, String> {
     }
     if let Some(b) = &border {
         paste_alpha(&mut canvas, b, 0, 0);
+    }
+    if req.rgba {
+        let mut out = Image::new(canvas.width, canvas.height, 4);
+        for i in 0..canvas.width * canvas.height {
+            out.data[i * 4..i * 4 + 3].copy_from_slice(&canvas.data[i * 3..i * 3 + 3]);
+            out.data[i * 4 + 3] = 255;
+        }
+        return Ok(out);
     }
     Ok(canvas)
 }

@@ -126,6 +126,7 @@ export function renderFrame(cars, width, height, background, {
     op: 'render_frame', width, height, background: bg,
     cars: cars.map((c, i) => ({ image: { $image: i }, x: c.x, y: c.y, w: c.w, h: c.h, alpha: c.alpha ?? 1 })),
     glow, glow_color: glowColor, glow_radius: glowRadius, glow_intensity: glowIntensity, resample,
+    rgba: true,
   };
   if (bg.kind === 'image') { bg.image = { $image: images.length }; images.push(backgroundImage); }
   if (border) { op.border = { $image: images.length }; images.push(border); }

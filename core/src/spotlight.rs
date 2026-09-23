@@ -54,11 +54,13 @@ pub fn apply_spotlight(canvas: &mut Image, cx: f64, cy: f64, dim: f64) {
     }
     let (w, h, c) = (canvas.width, canvas.height, canvas.channels);
     let factor = spotlight_factor(w, h, cx, cy, dim);
+    // Fixed point: the factor is in [dim, 1], so a 16.16 multiply and a
+    // shift reproduce the f32 multiply-then-truncate to the pixel.
     for i in 0..w * h {
-        let f = factor[i];
+        let f = (factor[i] * 65536.0) as u32;
         let p = i * c;
         for ch in 0..3 {
-            canvas.data[p + ch] = (canvas.data[p + ch] as f32 * f) as u8;
+            canvas.data[p + ch] = ((canvas.data[p + ch] as u32 * f) >> 16) as u8;
         }
     }
 }
