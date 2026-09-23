@@ -196,6 +196,7 @@ pub enum Op {
     DuplicateScore { a: Slice, b: Slice, #[serde(default)] size: Option<usize> },
     ParseSticker(crate::sticker::StickerRequest),
     PanelSplitX { words: Vec<crate::sticker::Word>, #[serde(default)] y_tol: Option<f64> },
+    BuildPosts(crate::copy::CopyRequest),
 }
 
 fn mask_threshold(t: Option<u8>) -> u8 {
@@ -283,6 +284,7 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
                 spec::f64_at(&["sticker", "panelSplit", "minGap"]));
             OpResult::Json(serde_json::to_string(&Scalar { value: v }).unwrap())
         }
+        Op::BuildPosts(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::copy::build_posts(&req) }).unwrap()),
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
             OpResult::Image(crate::spin::blend(&a, &b, t)?)

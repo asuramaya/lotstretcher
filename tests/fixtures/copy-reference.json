@@ -1,0 +1,415 @@
+{
+ "dealer": {
+  "name": "Example Motors",
+  "greeting": "Ask for Sam!",
+  "address": "100 Main St, Austin, TX 78701",
+  "city_tags": [
+   "Austin",
+   "AustinTX",
+   "ATXCars"
+  ]
+ },
+ "vehicles": {
+  "new_ford_with_sticker": {
+   "url": "u",
+   "vin": "1FTVW1EL0PWG12345",
+   "stock_number": "T1",
+   "year": "2025",
+   "make": "Ford",
+   "model": "Maverick",
+   "trim": "Lariat",
+   "condition": "New",
+   "mileage": 7,
+   "title": "2025 Ford Maverick Lariat",
+   "exterior_color_factory": "Area 51",
+   "interior_color": "Navy Pier",
+   "engine": "2.0L EcoBoost",
+   "transmission": "8-Speed Automatic",
+   "drivetrain": "AWD",
+   "mpg_city": "22",
+   "mpg_highway": "28-30",
+   "body_type": "Truck",
+   "cab_style": "SuperCrew",
+   "box_length": "4.5 ft",
+   "display_price": "45,999",
+   "pricing_rows": [
+    {
+     "label": "MSRP",
+     "text": "$48,905"
+    }
+   ],
+   "dealer_description": "Price includes $1,000 rebate. Call today!",
+   "sticker": {
+    "pricing": {
+     "total_msrp": "48,905"
+    },
+    "equipment": {
+     "exterior": [
+      "LED Fog Lamps",
+      "Power Mirrors"
+     ],
+     "interior": [
+      "Heated Seats",
+      "Led Fog Lamps"
+     ],
+     "functional_tech": [
+      "SYNC 4"
+     ],
+     "safety_security": [
+      "Lane Keeping"
+     ]
+    },
+    "optional_equipment": [
+     "Tow Package",
+     "Heated seats"
+    ],
+    "warranties": [
+     "3yr/36,000 Bumper To Bumper",
+     "5yr/60,000 Powertrain"
+    ]
+   }
+  },
+  "used_kia_with_features": {
+   "url": "u",
+   "vin": "5XYP3DHC0NG123456",
+   "stock_number": "K2",
+   "year": "2022",
+   "make": "Kia",
+   "model": "Telluride",
+   "trim": "SX Prestige X-Line Nightfall Edition AWD",
+   "condition": "Used",
+   "mileage": 31250,
+   "title": "2022 Kia Telluride SX Prestige X-Line Nightfall Edition AWD",
+   "exterior_color_factory": "Wolf Gray",
+   "interior_color": "Black",
+   "engine": "3.8L V6",
+   "transmission": "Automatic",
+   "drivetrain": "AWD",
+   "mpg_city": "18",
+   "mpg_highway": "24",
+   "body_type": "Sport Utility/SUV/Crossover",
+   "display_price": 38995,
+   "dealer_description": "One owner, <b>clean</b> history.\n\nWell kept.",
+   "main_features": [
+    "CLEAN CARFAX",
+    "1 OWNER",
+    "Sunroof",
+    "SUNROOF"
+   ],
+   "carfax_one_owner": true,
+   "sticker": {
+    "pricing": {
+     "total_msrp": "52,110"
+    }
+   }
+  },
+  "ev_no_price": {
+   "url": "u",
+   "vin": "1FT6W1EV3PWG00001",
+   "year": "2023",
+   "make": "Ford",
+   "model": "F-150 Lightning",
+   "trim": "XLT",
+   "condition": "Certified Pre-Owned",
+   "mileage": 12000,
+   "title": "2023 Ford F-150 Lightning XLT",
+   "exterior_color_factory": "Antimatter Blue",
+   "ev_battery_range": 320,
+   "ev_mpge_combined": 70,
+   "body_type": "Crew Cab Pickup",
+   "features_structured": {
+    "Comfort": [
+     "Heated Steering Wheel"
+    ],
+    "Tech": [
+     "Pro Power Onboard"
+    ]
+   }
+  },
+  "new_delivery_mileage": {
+   "url": "u",
+   "vin": "1FMSK8DH0PGA00002",
+   "stock_number": "E9",
+   "year": "2027",
+   "make": "Ford",
+   "model": "Expedition",
+   "trim": "King Ranch",
+   "condition": "New",
+   "mileage": 2,
+   "title": "2027 Ford Expedition King Ranch",
+   "display_price": 90460
+  },
+  "used_no_dealer_lines": {
+   "url": "u",
+   "vin": "1C4RJFBG0LC000001",
+   "year": "2020",
+   "make": "Jeep",
+   "model": "Grand Cherokee",
+   "trim": "Limited",
+   "condition": "Used",
+   "mileage": 45000,
+   "title": "2020 Jeep Grand Cherokee Limited",
+   "display_price": "$29,995",
+   "body_type": "SUV"
+  },
+  "long_title_threads_cut": {
+   "url": "u",
+   "vin": "WVGKMPE22NM000002",
+   "year": "2022",
+   "make": "Volkswagen",
+   "model": "Atlas Cross Sport",
+   "trim": "3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line ",
+   "condition": "Used",
+   "mileage": 8000,
+   "title": "2022 Volkswagen Atlas Cross Sport 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line ",
+   "display_price": 41000,
+   "engine": "3.6L V6",
+   "drivetrain": "4MOTION",
+   "exterior_color_factory": "Pure White",
+   "stock_number": "V7",
+   "carfax_one_owner": true
+  },
+  "new_no_sticker_msrp_row": {
+   "url": "u",
+   "vin": "1FTFW1E50PFA00003",
+   "year": "2023",
+   "make": "Ford",
+   "model": "F-150",
+   "trim": "XLT",
+   "condition": "New",
+   "mileage": 15,
+   "title": "2023 Ford F-150 XLT",
+   "display_price": "$55,000",
+   "pricing_rows": [
+    {
+     "label": "Msrp",
+     "text": "$58,120.00"
+    },
+    {
+     "label": "Sale",
+     "text": "$55,000"
+    }
+   ],
+   "mpg_city": "0",
+   "mpg_highway": "24",
+   "cab_style": "SuperCrew"
+  }
+ },
+ "expected": {
+  "new_ford_with_sticker": {
+   "facebook": "Ask for Sam!\nNew 2025 Ford Maverick Lariat\n100 Main St, Austin, TX 78701\n\nPrice: $48,905\nMileage: 7 mi\nVIN: 1FTVW1EL0PWG12345\nStock #: T1\n\nExterior: Area 51\nInterior: Navy Pier\nEngine: 2.0L EcoBoost\nTransmission: 8-Speed Automatic\nDrivetrain: AWD\nMPG: 22 city/28-30 hwy\nCab: SuperCrew\nBed length: 4.5 ft\n\nExterior:\n- LED Fog Lamps\n- Power Mirrors\n\nInterior:\n- Heated Seats\n\nFunctional & Tech:\n- SYNC 4\n\nSafety & Security:\n- Lane Keeping\n\nOptional Equipment:\n- Tow Package\n\nFactory Warranties:\n- 3yr/36,000 Bumper To Bumper\n- 5yr/60,000 Powertrain\n\nMore details: http://v.ford.com/?v=1FTVW1EL0PWG12345&c=1&s=1\n",
+   "instagram": "New 2025 Ford Maverick Lariat \u2014 $48,905\n\nExterior: Area 51\nInterior: Navy Pier\nEngine: 2.0L EcoBoost\nTransmission: 8-Speed Automatic\nDrivetrain: AWD\nMPG: 22 city/28-30 hwy\nStock #T1\n\nAsk for Sam!\n100 Main St, Austin, TX 78701\n\n#FordMaverick #FordMaverickLariat #2025FordMaverick #Ford #Truck #NewCar #Austin #AustinTX #ATXCars #CarsForSale #ForSale #CarDealership\n",
+   "threads": "New 2025 Ford Maverick Lariat \u2014 $48,905\n\nArea 51 \u00b7 2.0L EcoBoost \u00b7 AWD \u00b7 VIN 1FTVW1EL0PWG12345 \u00b7 Stock #T1\n\nAsk for Sam! Austin, TX\n\n#FordMaverick #FordMaverickLariat #2025FordMaverick #Ford #Truck #NewCar\n",
+   "hashtags": [
+    "#FordMaverick",
+    "#FordMaverickLariat",
+    "#2025FordMaverick",
+    "#Ford",
+    "#Truck",
+    "#NewCar",
+    "#Austin",
+    "#AustinTX",
+    "#ATXCars",
+    "#CarsForSale",
+    "#ForSale",
+    "#CarDealership"
+   ],
+   "explain": {
+    "condition_bucket": "new",
+    "price_source": "sticker_total_msrp",
+    "resolved_price": "48,905",
+    "original_msrp_comparison": null,
+    "factory_warranties_shown": true,
+    "original_msrp_comparison_shown": false,
+    "incentive_description_suppressed": true,
+    "more_details_link": "http://v.ford.com/?v=1FTVW1EL0PWG12345&c=1&s=1",
+    "pricing_consistency_issues": [
+     "Pricing mismatch: display_price ($45,999) doesn't match the last pricing_rows entry 'MSRP' ($48,905)."
+    ]
+   },
+   "issues": [
+    "Pricing mismatch: display_price ($45,999) doesn't match the last pricing_rows entry 'MSRP' ($48,905)."
+   ]
+  },
+  "used_kia_with_features": {
+   "facebook": "Ask for Sam!\n2022 Kia Telluride SX Prestige X-Line Nightfall Edition AWD\n100 Main St, Austin, TX 78701\n\nPrice: $38,995\nOriginal MSRP: $52,110\nMileage: 31,250 mi\nVIN: 5XYP3DHC0NG123456\nStock #: K2\n\nExterior: Wolf Gray\nInterior: Black\nEngine: 3.8L V6\nTransmission: Automatic\nDrivetrain: AWD\nMPG: 18 city/24 hwy\n\nOne owner, <b>clean</b> history.\n\nWell kept.\n\nFeatures:\n- CLEAN CARFAX\n- 1 OWNER\n- Sunroof\n\nCARFAX 1-Owner\n",
+   "instagram": "2022 Kia Telluride SX Prestige X-Line Nightfall Edition AWD \u2014 $38,995 \u2014 31,250 mi\n\nMileage: 31,250 mi\nExterior: Wolf Gray\nInterior: Black\nEngine: 3.8L V6\nTransmission: Automatic\nDrivetrain: AWD\nMPG: 18 city/24 hwy\nCARFAX 1-Owner\nStock #K2\n\nAsk for Sam!\n100 Main St, Austin, TX 78701\n\n#KiaTelluride #2022KiaTelluride #Kia #SUV #UsedCars #Austin #AustinTX #ATXCars #CarsForSale #ForSale #CarDealership\n",
+   "threads": "2022 Kia Telluride SX Prestige X-Line Nightfall Edition AWD \u2014 $38,995 \u2014 31,250 mi\n\nCARFAX 1-Owner \u00b7 Wolf Gray \u00b7 3.8L V6 \u00b7 AWD \u00b7 VIN 5XYP3DHC0NG123456 \u00b7 Stock #K2\n\nAsk for Sam! Austin, TX\n\n#KiaTelluride #2022KiaTelluride #Kia #SUV #UsedCars #Austin\n",
+   "hashtags": [
+    "#KiaTelluride",
+    "#2022KiaTelluride",
+    "#Kia",
+    "#SUV",
+    "#UsedCars",
+    "#Austin",
+    "#AustinTX",
+    "#ATXCars",
+    "#CarsForSale",
+    "#ForSale",
+    "#CarDealership"
+   ],
+   "explain": {
+    "condition_bucket": "used_or_cpo",
+    "price_source": "site_display_price",
+    "resolved_price": "38995",
+    "original_msrp_comparison": "$52,110",
+    "factory_warranties_shown": false,
+    "original_msrp_comparison_shown": true,
+    "incentive_description_suppressed": false,
+    "more_details_link": null,
+    "pricing_consistency_issues": []
+   },
+   "issues": []
+  },
+  "ev_no_price": {
+   "facebook": "Ask for Sam!\n2023 Ford F-150 Lightning XLT\n100 Main St, Austin, TX 78701\n\nPrice: Call for Price\nMileage: 12,000 mi\nVIN: 1FT6W1EV3PWG00001\n\nExterior: Antimatter Blue\nMPGe: 70 combined\nEV Range: 320 mi\n\nFeatures:\n- Heated Steering Wheel\n- Pro Power Onboard\n",
+   "instagram": "2023 Ford F-150 Lightning XLT \u2014 12,000 mi\n\nMileage: 12,000 mi\nExterior: Antimatter Blue\nMPGe: 70 combined\nEV range: 320 mi\n\nAsk for Sam!\n100 Main St, Austin, TX 78701\n\n#FordF150Lightning #FordF150LightningXLT #2023FordF150Lightning #Ford #Truck #CertifiedPreOwned #Austin #AustinTX #ATXCars #CarsForSale #ForSale #CarDealership\n",
+   "threads": "2023 Ford F-150 Lightning XLT \u2014 12,000 mi\n\nAntimatter Blue \u00b7 VIN 1FT6W1EV3PWG00001\n\nAsk for Sam! Austin, TX\n\n#FordF150Lightning #FordF150LightningXLT #2023FordF150Lightning #Ford #Truck #CertifiedPreOwned\n",
+   "hashtags": [
+    "#FordF150Lightning",
+    "#FordF150LightningXLT",
+    "#2023FordF150Lightning",
+    "#Ford",
+    "#Truck",
+    "#CertifiedPreOwned",
+    "#Austin",
+    "#AustinTX",
+    "#ATXCars",
+    "#CarsForSale",
+    "#ForSale",
+    "#CarDealership"
+   ],
+   "explain": {
+    "condition_bucket": "used_or_cpo",
+    "price_source": "site_display_price",
+    "resolved_price": null,
+    "original_msrp_comparison": null,
+    "factory_warranties_shown": false,
+    "original_msrp_comparison_shown": false,
+    "incentive_description_suppressed": false,
+    "more_details_link": null,
+    "pricing_consistency_issues": []
+   },
+   "issues": []
+  },
+  "new_delivery_mileage": {
+   "facebook": "Ask for Sam!\nNew 2027 Ford Expedition King Ranch\n100 Main St, Austin, TX 78701\n\nPrice: $90,460\nMileage: 2 mi\nVIN: 1FMSK8DH0PGA00002\nStock #: E9\n",
+   "instagram": "New 2027 Ford Expedition King Ranch \u2014 $90,460\n\nStock #E9\n\nAsk for Sam!\n100 Main St, Austin, TX 78701\n\n#FordExpedition #FordExpeditionKingRanch #2027FordExpedition #Ford #NewCar #Austin #AustinTX #ATXCars #CarsForSale #ForSale #CarDealership\n",
+   "threads": "New 2027 Ford Expedition King Ranch \u2014 $90,460\n\nVIN 1FMSK8DH0PGA00002 \u00b7 Stock #E9\n\nAsk for Sam! Austin, TX\n\n#FordExpedition #FordExpeditionKingRanch #2027FordExpedition #Ford #NewCar #Austin\n",
+   "hashtags": [
+    "#FordExpedition",
+    "#FordExpeditionKingRanch",
+    "#2027FordExpedition",
+    "#Ford",
+    "#NewCar",
+    "#Austin",
+    "#AustinTX",
+    "#ATXCars",
+    "#CarsForSale",
+    "#ForSale",
+    "#CarDealership"
+   ],
+   "explain": {
+    "condition_bucket": "new",
+    "price_source": "site_display_price_fallback",
+    "resolved_price": "90460",
+    "original_msrp_comparison": null,
+    "factory_warranties_shown": false,
+    "original_msrp_comparison_shown": false,
+    "incentive_description_suppressed": false,
+    "more_details_link": null,
+    "pricing_consistency_issues": []
+   },
+   "issues": []
+  },
+  "used_no_dealer_lines": {
+   "facebook": "Ask for Sam!\n2020 Jeep Grand Cherokee Limited\n100 Main St, Austin, TX 78701\n\nPrice: $29,995\nMileage: 45,000 mi\nVIN: 1C4RJFBG0LC000001\n",
+   "instagram": "2020 Jeep Grand Cherokee Limited \u2014 $29,995 \u2014 45,000 mi\n\nMileage: 45,000 mi\n\nAsk for Sam!\n100 Main St, Austin, TX 78701\n\n#JeepGrandCherokee #JeepGrandCherokeeLimited #2020JeepGrandCherokee #Jeep #SUV #UsedCars #Austin #AustinTX #ATXCars #CarsForSale #ForSale #CarDealership\n",
+   "threads": "2020 Jeep Grand Cherokee Limited \u2014 $29,995 \u2014 45,000 mi\n\nVIN 1C4RJFBG0LC000001\n\nAsk for Sam! Austin, TX\n\n#JeepGrandCherokee #JeepGrandCherokeeLimited #2020JeepGrandCherokee #Jeep #SUV #UsedCars\n",
+   "hashtags": [
+    "#JeepGrandCherokee",
+    "#JeepGrandCherokeeLimited",
+    "#2020JeepGrandCherokee",
+    "#Jeep",
+    "#SUV",
+    "#UsedCars",
+    "#Austin",
+    "#AustinTX",
+    "#ATXCars",
+    "#CarsForSale",
+    "#ForSale",
+    "#CarDealership"
+   ],
+   "explain": {
+    "condition_bucket": "used_or_cpo",
+    "price_source": "site_display_price",
+    "resolved_price": "$29,995",
+    "original_msrp_comparison": null,
+    "factory_warranties_shown": false,
+    "original_msrp_comparison_shown": false,
+    "incentive_description_suppressed": false,
+    "more_details_link": null,
+    "pricing_consistency_issues": []
+   },
+   "issues": []
+  },
+  "long_title_threads_cut": {
+   "facebook": "Ask for Sam!\n2022 Volkswagen Atlas Cross Sport 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line\n100 Main St, Austin, TX 78701\n\nPrice: $41,000\nMileage: 8,000 mi\nVIN: WVGKMPE22NM000002\nStock #: V7\n\nExterior: Pure White\nEngine: 3.6L V6\nDrivetrain: 4MOTION\n\nCARFAX 1-Owner\n",
+   "instagram": "2022 Volkswagen Atlas Cross Sport 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line \u2014 $41,000\n\nMileage: 8,000 mi\nExterior: Pure White\nEngine: 3.6L V6\nDrivetrain: 4MOTION\nCARFAX 1-Owner\nStock #V7\n\nAsk for Sam!\n100 Main St, Austin, TX 78701\n\n#VolkswagenAtlasCrossSport #Volkswagen #UsedCars #Austin #AustinTX #ATXCars #CarsForSale #ForSale #CarDealership\n",
+   "threads": "2022 Volkswagen Atlas Cross Sport 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line 3.6L V6 SE w/Technology R-Line \u2014 $41,000\n\nAsk for Sam! Austin, TX\n\n#VolkswagenAtlasCrossSport #Volkswagen #UsedCars #Austin\n",
+   "hashtags": [
+    "#VolkswagenAtlasCrossSport",
+    "#Volkswagen",
+    "#UsedCars",
+    "#Austin",
+    "#AustinTX",
+    "#ATXCars",
+    "#CarsForSale",
+    "#ForSale",
+    "#CarDealership"
+   ],
+   "explain": {
+    "condition_bucket": "used_or_cpo",
+    "price_source": "site_display_price",
+    "resolved_price": "41000",
+    "original_msrp_comparison": null,
+    "factory_warranties_shown": false,
+    "original_msrp_comparison_shown": false,
+    "incentive_description_suppressed": false,
+    "more_details_link": null,
+    "pricing_consistency_issues": []
+   },
+   "issues": []
+  },
+  "new_no_sticker_msrp_row": {
+   "facebook": "Ask for Sam!\nNew 2023 Ford F-150 XLT\n100 Main St, Austin, TX 78701\n\nPrice: $58,120\nMileage: 15 mi\nVIN: 1FTFW1E50PFA00003\n\nMPG: 0 city/24 hwy\nCab: SuperCrew\n",
+   "instagram": "New 2023 Ford F-150 XLT \u2014 $58,120\n\nMPG: 0 city/24 hwy\n\nAsk for Sam!\n100 Main St, Austin, TX 78701\n\n#FordF150 #FordF150XLT #2023FordF150 #Ford #NewCar #Austin #AustinTX #ATXCars #CarsForSale #ForSale #CarDealership\n",
+   "threads": "New 2023 Ford F-150 XLT \u2014 $58,120\n\nVIN 1FTFW1E50PFA00003\n\nAsk for Sam! Austin, TX\n\n#FordF150 #FordF150XLT #2023FordF150 #Ford #NewCar #Austin\n",
+   "hashtags": [
+    "#FordF150",
+    "#FordF150XLT",
+    "#2023FordF150",
+    "#Ford",
+    "#NewCar",
+    "#Austin",
+    "#AustinTX",
+    "#ATXCars",
+    "#CarsForSale",
+    "#ForSale",
+    "#CarDealership"
+   ],
+   "explain": {
+    "condition_bucket": "new",
+    "price_source": "site_pricing_rows_msrp",
+    "resolved_price": "$58,120.00",
+    "original_msrp_comparison": null,
+    "factory_warranties_shown": false,
+    "original_msrp_comparison_shown": false,
+    "incentive_description_suppressed": false,
+    "more_details_link": null,
+    "pricing_consistency_issues": []
+   },
+   "issues": []
+  }
+ }
+}

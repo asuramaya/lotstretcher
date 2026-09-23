@@ -12,13 +12,16 @@ let mod = null;
 let loading = null;
 let failure = null;
 
-export async function loadCore() {
+/* `source` is optional: the wasm bytes (or a Response/URL) for code
+ * running outside a page, such as the parity tests under node, which
+ * cannot fetch the module relative to this file. */
+export async function loadCore(source) {
   if (mod) return mod;
   if (loading) return loading;
   loading = (async () => {
     try {
       const m = await import('../core/lotstretcher_core.js');
-      await m.default();
+      await m.default(source === undefined ? undefined : { module_or_path: source });
       mod = m;
       return m;
     } catch (e) {

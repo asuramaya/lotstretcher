@@ -135,11 +135,12 @@ Two implementations (Python and JavaScript) are unavoidable. Two *specifications
 formats and sizes, video timing, the palette bands and colour words, glow colours, the cutout quality
 gates. Both read it, through `src/lotstretcher/spec.py` and `web/public/js/spec.js`.
 
-The text side is held to the same rule. `web/public/js/pipeline/copy.js` is a port of
-`facebook_post.py` and `social_post.py`, and [`tests/test_copy_parity.py`](tests/test_copy_parity.py)
-runs both on the same vehicles under node and compares the finished posts byte for byte. The
-app's Dealer section holds the same boilerplate `dealer_config` does: greeting, address, city
-hashtags.
+The text side is held to the same rule, and more simply: the posts are built once, in the Rust core
+(`core/src/copy.rs`), and `facebook_post.py`, `social_post.py` and `web/public/js/pipeline/copy.js` are
+hosts that hand it the vehicle and the dealer boilerplate.
+[`tests/test_copy_parity.py`](tests/test_copy_parity.py) holds the core, natively and in the wasm build
+under node, to the posts the Python produced before it was deleted. The app's Dealer section holds the
+same boilerplate `dealer_config` does: greeting, address, city hashtags.
 
 [`tests/test_spec_parity.py`](tests/test_spec_parity.py) enforces it, including the cases the
 indirection alone can't cover: it compares the remaining Python literals against the spec, greps the
@@ -181,8 +182,10 @@ feature the app's capabilities list says the browser lacks. The Monroney sticker
 (`parse_sticker`, `panel_split_x`): the CLI hands it `pdftotext -bbox` words and the browser hands it
 pdf.js words, and both get the same record, checked on every real sticker in the operator's library
 (114 of them, byte-identical to the Python parser they replaced) and, in the browser, against the same
-fixtures. What remains outside the core: the copy builders, which move next, deleting their Python and
-JavaScript copies in the same commit their parity test passes. Models stay in ONNX Runtime on both sides.
+fixtures. The post copy is the core's as well (`build_posts`: the Marketplace post, the Threads post inside
+its cap, the Instagram caption, the hashtags and the audit notes), with `facebook_post.py`, `social_post.py`
+and `copy.js` reduced to hosts that hand in the vehicle and the dealer boilerplate. Everything the operator
+ruled into the core is in it; models stay in ONNX Runtime on both sides.
 
 [`tests/test_core_parity.py`](tests/test_core_parity.py) holds the core to the Python it replaced, and is
 skipped with a message when the core has not been built (`cargo build --release` in `core/`).
