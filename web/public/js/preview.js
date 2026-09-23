@@ -149,7 +149,8 @@ export class Preview {
    * 600 px bitmap stretched across 900. Capped: the run's own size is
    * the ceiling, and the estimate scales from whatever this is. */
   targetSize(fw, fh) {
-    const shown = this.canvas.clientWidth || 600;
+    // The stage is square; the longer side of the format fills it.
+    const shown = this.canvas.parentElement?.clientWidth || this.canvas.clientWidth || 600;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const px = Math.min(Math.max(fw, fh), Math.max(320, Math.round(shown * dpr)));
     const scale = px / Math.max(fw, fh);
@@ -219,7 +220,6 @@ export class Preview {
     const fmt = OPTS.VIDEO_FORMATS[o.videoFormats?.[0]] || { size: [720, 720] };
     const [fw, fh] = fmt.size;
     const [width, height] = this.targetSize(fw, fh);
-    if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || 'video'} \u00b7 ${(this.scrub * (this.clip?.duration || 0)).toFixed(1)} s`;
     let cutouts; let seed;
     if (this.current === 'yours') {
       cutouts = (this.getUserCutouts?.() || [subject.cutout]).slice(0, 5);
@@ -236,6 +236,7 @@ export class Preview {
       });
       this.clipKey = key;
     }
+    if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || 'video'} \u00b7 ${(this.scrub * this.clip.duration).toFixed(1)} s`;
     const t0 = performance.now();
     this.canvas.width = width; this.canvas.height = height;
     drawClipFrame(this.canvas.getContext('2d'), this.clip, this.scrub * this.clip.duration, {

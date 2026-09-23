@@ -442,12 +442,16 @@
   .look { grid-template-columns: minmax(360px, 52%) minmax(300px, 1fr); gap: var(--s-6); }
   .look-preview { position: sticky; top: 0; max-width: none; margin: 0; }
 }
+/* A square stage. The preview keeps the chosen format's own shape and
+   sits centred inside it, so switching to portrait letterboxes the
+   image rather than stretching the car across a square. */
 .preview-frame {
   position: relative; border-radius: var(--r-lg); overflow: hidden;
   border: 1px solid var(--line); background: var(--sunken);
   box-shadow: var(--sh-2, 0 10px 30px rgba(0,0,0,.25));
+  aspect-ratio: 1; display: grid; place-items: center;
 }
-.preview-canvas { width: 100%; height: auto; display: block; }
+.preview-canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; }
 .preview-canvas.is-busy { opacity: .8; }
 .preview-caption {
   position: absolute; left: var(--s-3); bottom: var(--s-3);
