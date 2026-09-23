@@ -15,10 +15,19 @@ Safari. For each step, note pass, fail, or the message shown.
   "cross-origin isolated". Safari 17+ should show threads; older shows
   single-threaded.
 - On the same About line, report the **core** entry. It should read
-  "core: wasm v7" (or higher). That is the Rust core, built with SIMD,
-  which Safari has had since 16.4; if it says the core failed to load,
-  copy the message exactly, since nothing composes without it.
+  "core: wasm v8 on the page; a run uses the threaded core in a worker"
+  (or higher). That is the Rust core, built with SIMD, which Safari has
+  had since 16.4; if it says the core failed to load, copy the message
+  exactly, since nothing composes without it. If it says "single-threaded
+  (not isolated)" or "no worker here", report that too: a run still
+  works, on one thread.
 - Report iOS version and device model (Settings > General > About).
+
+- After a run (section 4), the Results pane's "Rendering video" line
+  should end "on N threads" when the About line promised the threaded
+  core. Report N. If it is missing, the worker fell back to the page;
+  open Safari's console (Settings > Safari > Advanced > Web Inspector)
+  and copy any line starting "core worker" or "video worker".
 
 ## 2. Add photos
 

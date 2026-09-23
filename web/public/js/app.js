@@ -1259,7 +1259,10 @@ async function init() {
     $('aboutRuntime').textContent = (runtime.isolated
       ? `threads: ${runtime.threads} · SIMD: on · cross-origin isolated`
       : 'single-threaded (no cross-origin isolation)')
-      + ` · core: wasm v${coreVersion()}${coreThreads() ? ` on ${coreThreads()} threads` : ', single-threaded'}`;
+      + ` · core: wasm v${coreVersion()} on the page`
+      + (CoreWorker.supported()
+        ? (self.crossOriginIsolated ? '; a run uses the threaded core in a worker' : '; a run uses a worker, single-threaded (not isolated)')
+        : '; no worker here, a run composes on the page');
     openSheet('aboutSheet');
   };
 
