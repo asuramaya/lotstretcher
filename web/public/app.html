@@ -78,6 +78,10 @@
           <span class="eyebrow">Step 1 of 3</span>
           <h1>The booth</h1>
         </div>
+        <div class="pane-next">
+          <span class="small dim grow" id="sourceFootNote">Add photos to continue.</span>
+          <button class="btn btn-primary" id="toOptionsBtn">Next: the look</button>
+        </div>
         <div id="isolationWarn" class="banner banner-err hidden" style="margin-bottom:var(--s-5)">
           <div>
             <strong>Running single-threaded.</strong>
@@ -112,8 +116,7 @@
 
         <div class="section" id="photosSection" hidden>
           <div class="section-head">
-            <h2>Photos</h2>
-            <span class="pill" id="photoCount">0</span>
+            <h2 id="photoCount">Photos</h2>
             <span class="head-status" id="photosStatus"></span>
             <button class="btn btn-ghost btn-sm" id="clearBtn">Clear</button>
           </div>
@@ -174,10 +177,6 @@
           </div>
         </div>
 
-        <div class="pane-foot">
-          <span class="small dim grow" id="sourceFootNote">Add photos to continue.</span>
-          <button class="btn" id="toOptionsBtn">Next: the look</button>
-        </div>
       </div>
     </section>
 
@@ -204,6 +203,11 @@
           <p class="lede">Every lever redraws the preview as you move it, on a sample
             vehicle or on your own once one is cut out. What you cannot see, such as
             video length, shows up as a time and size estimate instead.</p>
+        </div>
+        <div class="pane-next">
+          <button class="btn btn-ghost" data-back="booth">Back</button>
+          <span class="small dim grow" id="optionsFootNote"></span>
+          <button class="btn btn-primary" id="runBtn2" disabled>Process</button>
         </div>
 
         <div class="look">
@@ -268,11 +272,6 @@
           </div>
         </div>
 
-        <div class="pane-foot">
-          <button class="btn btn-ghost" data-back="booth">Back</button>
-          <span class="small dim grow" id="optionsFootNote"></span>
-          <button class="btn btn-primary" id="runBtn2" disabled>Process</button>
-        </div>
       </div>
     </section>
 
@@ -352,9 +351,9 @@
       <textarea class="field mono" id="listingUrlInput" rows="4" spellcheck="false" autocapitalize="characters"
         placeholder=""></textarea>
       <div class="row wrap" style="gap:var(--s-3);margin-top:var(--s-3);align-items:center">
-        <button class="btn btn-primary btn-sm" id="listingUrlGo">Read</button>
-        <button class="btn btn-ghost btn-sm" id="listingFileBtn">Saved page file</button>
-        <span class="small dim" id="listingUrlNote"></span>
+        <button class="btn btn-primary btn-sm" id="listingFileBtn">Load HTML</button>
+        <span class="spin" id="listingBusy" hidden aria-label="Reading"></span>
+        <span class="small dim" id="listingUrlNote" aria-live="polite"></span>
       </div>
       <input type="file" id="listingFileInput" accept=".html,.htm,text/html" class="sr-only">
       <p class="xs dim" id="listingHint" style="margin-top:var(--s-4)"></p>

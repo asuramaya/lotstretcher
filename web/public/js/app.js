@@ -90,7 +90,9 @@ function renderSteps() {
   const note = $('sourceFootNote');
   if (note) note.textContent = n ? `${n} photo${n === 1 ? '' : 's'} added.` : 'Add photos to continue.';
   const onote = $('optionsFootNote');
-  if (onote) onote.textContent = n ? `Ready to process ${n} photo${n === 1 ? '' : 's'}.` : 'Add photos in the booth first.';
+  if (onote) onote.textContent = !n ? 'Add photos in the booth first.'
+    : state.preparing ? `Sorting and cutting out ${n} photo${n === 1 ? '' : 's'} for the preview…`
+    : `Ready to process ${n} photo${n === 1 ? '' : 's'}.`;
 }
 
 /* ---------- persistence -------------------------------------------
@@ -124,6 +126,7 @@ function go(pane) {
   if (pane === 'results') $('resultsDot').classList.add('hidden');
   if (pane === 'options') {
     state.lookVisited = true;
+    preload();
     // The preview is drawn only while it can be seen.
     preview?.renderSamples();
     preview?.update();
@@ -141,7 +144,8 @@ function isImageName(name) {
   return IMAGE_EXTS.includes(ext);
 }
 
-async function addFiles(files) {
+const SOURCE_LABEL = { listing: 'from the listing', chosen: 'chosen', folder: 'from a folder', captured: 'captured', links: 'from links', dropped: 'dropped', pasted: 'pasted' };
+async function addFiles(files, source = 'chosen') {
   const images = [...files].filter((f) => f.type.startsWith('image/') || isImageName(f.name));
   if (!images.length) return;
 
@@ -158,12 +162,13 @@ async function addFiles(files) {
       blob: file,
       thumb: URL.createObjectURL(file),
       status: 'ready',
+      source,
     });
   }
   renderPhotos();
 }
 
-function addUrls(text) {
+function addUrls(text, source = 'links') {
   const urls = text.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
   for (const url of urls) {
     if (state.photos.length >= LIMITS.maxPhotos) break;
@@ -174,6 +179,7 @@ function addUrls(text) {
       url,
       thumb: url,
       status: 'ready',
+      source,
     });
   }
   renderPhotos();
@@ -201,7 +207,13 @@ function clearPhotos() {
 function renderPhotos() {
   const n = state.photos.length;
   $('photosSection').hidden = n === 0;
-  $('photoCount').textContent = n;
+  $('photoCount').textContent = `${n} photo${n === 1 ? '' : 's'}`;
+  // Where they came from, in the head: "23 from the listing · 4 captured".
+  const by = {};
+  for (const p of state.photos) by[p.source || 'chosen'] = (by[p.source || 'chosen'] || 0) + 1;
+  setStatus('photosStatus', Object.entries(by).map(([k, c]) => `${c} ${SOURCE_LABEL[k] || k}`).join(' · '), 'ok');
+  // A changed photo set starts any preparation over.
+  if (state.prepared && state.prepared.key !== photoKey() && !state.preparing) state.prepared = null;
   // A strip, so the vehicle fields stay a glance below; a tile opens
   // the lightbox.
   $('photoGrid').classList.add('is-strip');
@@ -634,27 +646,11 @@ function commitOptions() {
 }
 
 /* ---------- the run ------------------------------------------------ */
-async function run() {
-  if (state.running || !state.photos.length) return;
-  state.running = true;
-  state.done = false;
-  let cw = null;   // the run's core worker, ended in `finally`
-  state.errors = [];
-  setRunEnabled(false);
-  go('results');
-  $('progressSection').hidden = false;
-  $('resultsEmpty').hidden = true;
-  setProgress(0);
-
-  const stages = [
-    { n: 1, label: 'Loading models', state: 'active', detail: `${(totalBytes() / 1e6).toFixed(0)} MB, first run only` },
-    { n: 2, label: 'Sorting photos', state: '' },
-    { n: 3, label: 'Removing backgrounds', state: '' },
-    { n: 4, label: 'Composing', state: '' },
-  ];
-  renderStages(stages);
-
-  try {
+/* Passes 1 and 2: load the models, sort every photo, cut out the
+ * exteriors (and lift the interiors). Shared by a run and by the
+ * preload that starts when the booth is left, so the Look step shows
+ * the real vehicle. Returns the exteriors. */
+async function sortAndCut(stages) {
     await initRuntime();
     $('isolationWarn').classList.toggle('hidden', runtime.isolated);
 
@@ -763,6 +759,86 @@ async function run() {
     stages[2].detail = `${exteriors.filter((p) => p.cutout).length} cut out`;
     stages[3].state = 'active';
     renderStages(stages);
+
+    return exteriors;
+}
+
+/* What the photos and the options that shape a cut amount to; a
+ * preparation is only reused for the same. */
+function photoKey() {
+  return JSON.stringify([state.photos.map((p) => p.id), state.options.interiors, state.options.cutType]);
+}
+
+/* The sort-and-cut for the current photos: the preload's, awaited, when
+ * it is for these photos; started here otherwise. */
+async function prepared(stages) {
+  const key = photoKey();
+  if (state.prepared?.key === key) {
+    const exteriors = await state.prepared.promise;
+    for (const st of stages.slice(0, 3)) st.state = 'done';
+    Object.assign(stages[0], state.prepared.stages[0]); Object.assign(stages[1], state.prepared.stages[1]); Object.assign(stages[2], state.prepared.stages[2]);
+    stages[3].state = 'active';
+    renderStages(stages);
+    return exteriors;
+  }
+  return sortAndCut(stages);
+}
+
+function runStages() {
+  return [
+    { n: 1, label: 'Loading models', state: 'active', detail: `${(totalBytes() / 1e6).toFixed(0)} MB, first run only` },
+    { n: 2, label: 'Sorting photos', state: '' },
+    { n: 3, label: 'Removing backgrounds', state: '' },
+    { n: 4, label: 'Composing', state: '' },
+  ];
+}
+
+/* Start sorting and cutting out as soon as the booth is left, so the
+ * Look step previews the real vehicle rather than a sample. A run that
+ * follows takes the result; a photo added later starts it over. */
+function preload() {
+  if (state.running || !state.photos.length) return;
+  const key = photoKey();
+  if (state.prepared?.key === key) return;
+  const stages = runStages();
+  $('progressSection').hidden = false;
+  renderStages(stages);
+  setProgress(0);
+  state.preparing = true;
+  state.errors = [];
+  const promise = (async () => {
+    try {
+      return await sortAndCut(stages);
+    } finally {
+      for (const p of state.photos) { p.bitmap?.close?.(); p.bitmap = null; }
+      state.preparing = false;
+      renderPhotos();
+      if (preview?.getUserCutout?.()) { preview.current = 'yours'; preview.renderSamples(); preview.update(); preview.onSubjectChange?.(); }
+    }
+  })();
+  state.prepared = { key, promise, stages };
+  promise.catch((e) => { state.prepared = null; console.warn('preload failed:', e); });
+}
+
+async function run() {
+  if (state.running || !state.photos.length) return;
+  state.running = true;
+  state.done = false;
+  let cw = null;   // the run's core worker, ended in `finally`
+  if (state.prepared?.key !== photoKey()) state.errors = [];
+  setRunEnabled(false);
+  go('results');
+  $('progressSection').hidden = false;
+  $('resultsEmpty').hidden = true;
+  setProgress(0);
+
+  const stages = runStages();
+  renderStages(stages);
+
+  try {
+    // Sorting and cutting out may already have run when the booth was
+    // left (preload); a run waits for it and takes its result.
+    const exteriors = await prepared(stages);
 
     // --- pass 3: compose.
     readVehicle();
@@ -1224,12 +1300,11 @@ function applyVehicle(v) {
   state.listing = v;
 
   v.photo_urls = v.photo_urls || []; v.warnings = v.warnings || [];
-  if (v.photo_urls.length) addUrls(v.photo_urls.join('\n'));
+  if (v.photo_urls.length) addUrls(v.photo_urls.join('\n'), 'listing');
 
   // What was read is said in the heads of the sections it filled, not
   // in a box: the photo count beside Photos, the vehicle beside Vehicle.
   const from = v.url ? 'from the listing' : 'from the VIN';
-  if (v.photo_urls.length) setStatus('photosStatus', `${v.photo_urls.length} ${from}`, 'ok');
   setStatus('vehicleStatus', `${v.title || 'a vehicle'} ${from}${filled ? ` (${filled} field${filled === 1 ? '' : 's'})` : ''}`, 'ok');
   $('detailsNote').innerHTML = '';
   for (const w of v.warnings) $('detailsNote').appendChild(el('p', 'status-warn', w));
@@ -1370,13 +1445,13 @@ async function init() {
     // One box. What it holds decides what happens: an address, a VIN,
     // or the page's own source pasted in (Ctrl+U, select all, copy).
     $('listingUrlInput').placeholder = can('scrape')
-      ? 'The vehicle page address (your server reads the page: every field, every photo), a VIN, or the page source'
-      : 'The vehicle page address or the VIN (year, make and model, decoded here), or the page source for its photos and price';
+      ? 'Paste the vehicle page address, a VIN, or the page source'
+      : 'Paste the vehicle page address, a VIN, or the page source';
     $('listingHint').textContent = can('scrape')
-      ? 'Or drop the saved page here.'
-      : 'Page source: on the listing press Ctrl+U, select all, copy, paste here. Or drop the saved page. Nothing is fetched from the dealer.';
-    $('listingUrlGo').textContent = 'Read';
-    $('listingUrlNote').textContent = '';
+      ? 'Or load the page you saved from the listing.'
+      : 'For the photos and the price too: on the listing press Ctrl+U, select all, copy, and paste that here; or save the page (Ctrl+S, "HTML only") and load it.';
+    readState('idle');
+    setTimeout(() => $('listingUrlInput').focus(), 50);
     openSheet('listingSheet');
   };
   /* A saved copy of the listing page, or its pasted source: read here,
@@ -1386,7 +1461,8 @@ async function init() {
     let raw;
     try { raw = recordFromHtml(html); } catch (e) { note.textContent = String(e.message || e); return false; }
     if (!raw.payload && !raw.ldCar) {
-      note.textContent = `No vehicle data found in ${label}. Save the page as "Webpage, HTML only" while the listing is fully loaded.`;
+      note.textContent = `No vehicle data in ${label}. Save the page as "Webpage, HTML only" once the listing has fully loaded.`;
+      note.className = 'small is-err';
       return false;
     }
     closeSheet('listingSheet');
@@ -1408,24 +1484,36 @@ async function init() {
     if (f) readListingHtml(await f.text(), f.name);
   });
 
-  $('listingUrlGo').onclick = async () => {
+  /* The box reads itself: on paste, on Enter, on leaving it. A small
+   * state machine says where it is (idle, reading, done, failed). */
+  const readState = (status, note = '') => {
+    const n = $('listingUrlNote');
+    n.textContent = note;
+    n.className = `small ${status === 'failed' ? 'is-err' : status === 'done' ? 'is-ok' : 'dim'}`;
+    $('listingBusy').hidden = status !== 'reading';
+    $('listingUrlInput').disabled = status === 'reading';
+  };
+  let reading = false;
+  const readBox = async () => {
     const text = $('listingUrlInput').value.trim();
-    if (!text) return;
-    const btn = $('listingUrlGo');
-    btn.disabled = true;
+    if (!text || reading) return;
+    reading = true;
+    readState('reading', looksLikeHtml(text) ? 'Reading the page…' : /^https?:/i.test(text) && can('scrape') ? 'Your server is reading the page…' : 'Reading…');
     try {
-      if (looksLikeHtml(text)) {
-        if (readListingHtml(text, 'the pasted source')) $('listingUrlInput').value = '';
-        return;
-      }
-      if (await importListingText(text, (m) => { $('listingUrlNote').textContent = m; })) {
-        closeSheet('listingSheet');
-        $('listingUrlInput').value = '';
-      }
+      let ok;
+      if (looksLikeHtml(text)) ok = readListingHtml(text, 'the pasted source');
+      else ok = await importListingText(text, (m) => readState('reading', m));
+      if (ok) { readState('done'); closeSheet('listingSheet'); $('listingUrlInput').value = ''; }
+      else if ($('listingUrlNote').className.includes('dim')) readState('failed', $('listingUrlNote').textContent || 'Nothing readable there.');
+    } catch (e) {
+      readState('failed', String(e.message || e));
     } finally {
-      btn.disabled = false;
+      reading = false;
     }
   };
+  $('listingUrlInput').addEventListener('paste', () => setTimeout(readBox, 0));
+  $('listingUrlInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); readBox(); } });
+  $('listingUrlInput').addEventListener('change', readBox);
   $('aboutBtn').onclick = () => {
     $('aboutRuntime').textContent = (runtime.isolated
       ? `threads: ${runtime.threads} · SIMD: on · cross-origin isolated`
@@ -1437,9 +1525,9 @@ async function init() {
     openSheet('aboutSheet');
   };
 
-  $('fileInput').onchange = (e) => { addFiles(e.target.files); e.target.value = ''; };
-  $('folderInput').onchange = (e) => { addFiles(e.target.files); e.target.value = ''; };
-  $('cameraInput').onchange = (e) => { addFiles(e.target.files); e.target.value = ''; };
+  $('fileInput').onchange = (e) => { addFiles(e.target.files, 'chosen'); e.target.value = ''; };
+  $('folderInput').onchange = (e) => { addFiles(e.target.files, 'folder'); e.target.value = ''; };
+  $('cameraInput').onchange = (e) => { addFiles(e.target.files, 'captured'); e.target.value = ''; };
 
   $('urlAdd').onclick = () => {
     addUrls($('urlInput').value);
@@ -1551,7 +1639,7 @@ async function init() {
     dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('is-over'); });
   }
   dz.addEventListener('drop', (e) => {
-    if (e.dataTransfer?.files?.length) { addFiles(e.dataTransfer.files); return; }
+    if (e.dataTransfer?.files?.length) { addFiles(e.dataTransfer.files, 'dropped'); return; }
     // A link dragged from another tab: an image, or the listing itself.
     const text = e.dataTransfer?.getData('text/uri-list') || e.dataTransfer?.getData('text/plain');
     if (text) readPastedText(text);
@@ -1563,7 +1651,7 @@ async function init() {
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     const files = [...(e.clipboardData?.files || [])];
-    if (files.length) { e.preventDefault(); addFiles(files); return; }
+    if (files.length) { e.preventDefault(); addFiles(files, 'pasted'); return; }
     const text = e.clipboardData?.getData('text/plain');
     if (text && readPastedText(text)) e.preventDefault();
   });

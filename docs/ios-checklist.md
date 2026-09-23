@@ -68,7 +68,7 @@ Safari. For each step, note pass, fail, or the message shown.
 - Tap a photo in the strip: it opens full size; swipe for the next.
 - In the booth, paste a dealer vehicle page address from the clipboard
   with nothing focused. Report whether the vehicle fields fill in. Then tap **A listing or VIN**, paste the address (or type
-  a VIN) and tap **Read it**. Report whether the year, make and model
+  a VIN): it reads on paste. Report whether the year, make and model
   fill in, with no network activity.
 
 ## 6. Library

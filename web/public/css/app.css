@@ -131,6 +131,18 @@
   border-top: 1px solid var(--line);
 }
 .pane-foot .grow { flex: 1; }
+/* The way on, at the top of the step and staying there as it scrolls. */
+.pane-next {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3);
+  padding: var(--s-3) 0; margin: 0 0 var(--s-5);
+  background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.pane-next .grow { flex: 1; }
+.small.is-ok { color: var(--ok); } .small.is-err { color: var(--err); }
+.spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--line-2); border-top-color: var(--accent); animation: spin .8s linear infinite; display: inline-block; }
+.spin[hidden] { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---------- drop zone --------------------------------------------- */
 .dropzone {
