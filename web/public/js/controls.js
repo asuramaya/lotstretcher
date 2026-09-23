@@ -306,7 +306,7 @@ function pickImage(fileControl, onPicked) {
 function buildSwatches(control, values, onChange, disabled, thumbFor, allControls, opts = {}) {
   const grid = el('div', 'swatches');
   const current = values[control.key] ?? control.default;
-  const { uploads = {}, onUpload = null, onRemoveUpload = null } = opts;
+  const { uploads = {}, onUpload = null, onRemoveUpload = null, tab = null } = opts;
   const choose = (choice) => {
     if (choice.sets) for (const [k, v] of Object.entries(choice.sets)) onChange(k, v, true);
     onChange(control.key, choice.value);
@@ -331,6 +331,7 @@ function buildSwatches(control, values, onChange, disabled, thumbFor, allControl
     return tile;
   };
   for (const choice of choicesFor(control)) {
+    if (tab && choice.tab && choice.tab !== tab) continue;
     const locked = disabled || (choice.requires && !can(choice.requires)) || choice.empty;
     const why = locked
       ? (choice.empty ? (isSelfHosted() ? 'Library is empty' : 'Your server only') : (isSelfHosted() ? 'Host lacks it' : 'Your server only'))
@@ -367,6 +368,32 @@ function buildSwatches(control, values, onChange, disabled, thumbFor, allControl
       && (!choice.sets || Object.entries(choice.sets).every(([k, v]) => String(values[k]) === String(v)));
     const tile = tileFor(choice, { pressed, locked, why });
     tile.onclick = () => choose(choice);
+    if (choice.color && !locked) {
+      /* A colour of the user's own for this choice, picked on the tile
+       * itself: a dot in the corner holding the platform's picker,
+       * shown while the tile is chosen; a small × hands the colour back
+       * (null: computed from the paint). */
+      const key = choice.color;
+      const current = values[key] || null;
+      const dot = el('span', `swatch-dot${current ? '' : ' is-auto'}`);
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.value = current && current.length === 7 ? current : '#4a6fa5';
+      input.setAttribute('aria-label', `${choice.label}: a colour of your own`);
+      input.title = current ? current.toUpperCase() : 'Pick a colour';
+      input.onclick = (e) => e.stopPropagation();
+      input.oninput = () => { dot.classList.remove('is-auto'); onChange(key, input.value, true); };
+      input.onchange = () => onChange(key, input.value);
+      dot.appendChild(input);
+      if (current) {
+        const x = el('span', 'swatch-dot-x', '\u00d7');
+        x.title = "Back to the vehicle's paint";
+        x.setAttribute('role', 'button');
+        x.onclick = (e) => { e.stopPropagation(); onChange(key, null); };
+        dot.appendChild(x);
+      }
+      tile.appendChild(dot);
+    }
     grid.appendChild(tile);
   }
   if (control.custom) {
@@ -455,6 +482,7 @@ function icon(id) {
  * live options object and `onChange(key, value, live)` is called on
  * every edit. Returns `{ id, label, badge }` for the panel's head. */
 let activeTab = null;
+const subTab = {};       // a tabbed group's open tab, by group id
 export function openTool(id) { activeTab = id; }
 export function renderControls(host, values, onChange, opts = {}) {
   const { thumbFor = null, rail = null, before = [], after = [], placeholders = {}, uploads = {}, onUpload = null, onRemoveUpload = null } = opts;
@@ -519,7 +547,33 @@ export function renderControls(host, values, onChange, opts = {}) {
     else if (text) head.badge = [text, cls];
     const elsewhere = [];
 
+    /* A group with tabs (Backdrop: Gradient | Image) shows one tab's
+     * controls and choices at a time. The tab opens on whichever holds
+     * the chosen value, and stays where it was put across redraws. */
+    let tab = null;
+    if (group.tabs?.length) {
+      if (!subTab[group.id]) {
+        const picker = visible.find((c) => c.presentation === 'swatches' && (c.choices || []).some((ch) => ch.tab));
+        const chosen = picker && (picker.choices || []).find((ch) => String(ch.value) === String(values[picker.key] ?? picker.default));
+        subTab[group.id] = chosen?.tab || group.tabs[0].id;
+      }
+      tab = subTab[group.id];
+      const seg = el('div', 'segment ctrl-subtabs');
+      seg.setAttribute('role', 'tablist');
+      for (const t of group.tabs) {
+        const b = el('button', 'seg', t.label);
+        b.type = 'button';
+        b.setAttribute('role', 'tab');
+        b.setAttribute('aria-pressed', String(t.id === tab));
+        b.title = t.hint || '';
+        b.onclick = () => { subTab[group.id] = t.id; if (opts.onOpen) opts.onOpen(group.id); else renderControls(host, values, onChange, opts); };
+        seg.appendChild(b);
+      }
+      body.appendChild(seg);
+    }
+
     for (const control of visible) {
+      if (tab && control.tab && control.tab !== tab) continue;
       const { ok, why, onServer } = availability(control);
       if (control.presentation === 'swatches') {
         const block = el('div', 'opt opt-block');
@@ -529,7 +583,7 @@ export function renderControls(host, values, onChange, opts = {}) {
         // one line of hint under the summary.
         if (control.label !== group.label) text.appendChild(el('strong', null, control.label));
         text.appendChild(el('span', null, ok ? control.hint : why));
-        block.append(text, buildSwatches(control, values, onChange, !ok, thumbFor, allControls, { uploads, onUpload, onRemoveUpload }));
+        block.append(text, buildSwatches(control, values, onChange, !ok, thumbFor, allControls, { uploads, onUpload, onRemoveUpload, tab }));
         body.appendChild(block);
         continue;
       }

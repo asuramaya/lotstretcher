@@ -713,6 +713,28 @@
 .opt.opt-block .opt-text span:only-child { font-size: var(--t-sm); color: var(--ink-2); }
 .swatch-hint { font-size: 10px; color: var(--ink-3); line-height: 1.25; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A tabbed group's tabs, above its controls. */
+.ctrl-subtabs { margin: 0 0 var(--s-4); }
+/* A choice's own colour, picked on its tile: a dot in the thumb's
+   corner, shown while the tile is chosen. */
+.swatch-dot {
+  position: absolute; right: 12px; top: 12px; display: none; align-items: center; gap: 4px;
+}
+.swatch[aria-pressed="true"] .swatch-dot { display: flex; }
+.swatch-dot input {
+  appearance: none; -webkit-appearance: none; width: 28px; height: 28px; padding: 0;
+  border: 2px solid #fff; border-radius: var(--r-full); background: transparent; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,.45);
+}
+.swatch-dot input::-webkit-color-swatch-wrapper { padding: 0; }
+.swatch-dot input::-webkit-color-swatch { border: 0; border-radius: var(--r-full); }
+.swatch-dot input::-moz-color-swatch { border: 0; border-radius: var(--r-full); }
+.swatch-dot.is-auto input { background: conic-gradient(#f66, #fc6, #6f6, #6ff, #66f, #f6f, #f66); }
+.swatch-dot.is-auto input::-webkit-color-swatch { opacity: 0; }
+.swatch-dot-x {
+  width: 20px; height: 20px; display: grid; place-items: center; border-radius: var(--r-full);
+  background: rgba(0,0,0,.6); color: #fff; font-size: 12px; line-height: 1; cursor: pointer;
+}
 /* The Your-own tile: the platform picker fills the thumb. */
 .swatch-custom .swatch-thumb { padding: 0; }
 .swatch-color {

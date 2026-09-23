@@ -685,21 +685,26 @@
               {
                 "value": "vehicle",
                 "label": "Vehicle paint",
-                "hint": "A gradient from its own colours"
+                "hint": "A gradient from its own colours",
+                "tab": "gradient"
               },
               {
                 "value": "generic",
                 "label": "Hue bands",
                 "hint": "Seeded colour bands, no paint read",
                 "cli": "--backdrop",
-                "cliValue": "generic"
+                "cliValue": "generic",
+                "tab": "gradient",
+                "color": "backdropColor"
               },
               {
                 "value": "sweep",
                 "label": "Sweep",
                 "hint": "A studio cyclorama in the vehicle's colours, lit at the floor line",
                 "cli": "--backdrop",
-                "cliValue": "sweep"
+                "cliValue": "sweep",
+                "tab": "gradient",
+                "color": "backdropColor"
               },
               {
                 "value": "asset",
@@ -708,14 +713,16 @@
                 "cli": "--photo-background",
                 "cliNamed": "--background",
                 "expand": "backgrounds",
-                "into": "background"
+                "into": "background",
+                "tab": "image"
               },
               {
                 "value": "custom",
                 "label": "Your image",
                 "hint": "A photo of your lot or showroom",
                 "cli": "--photo-background",
-                "file": "customBackground"
+                "file": "customBackground",
+                "tab": "image"
               }
             ],
             "cliNote": "Vehicle paint is the default and has no flag. Hue bands and Sweep are --backdrop generic / --backdrop sweep. Stock is --photo-background with --background NAME; your own image goes to --photo-background as a path, which the file control echoes."
@@ -723,7 +730,7 @@
           {
             "key": "backdropColor",
             "label": "Colour",
-            "hint": "Your own, or the vehicle's paint",
+            "hint": "Hue bands and the sweep in a colour of your own, picked on their tile; blank takes the vehicle's paint",
             "type": "color",
             "default": null,
             "cli": "--backdrop-color",
@@ -734,7 +741,8 @@
                 "sweep"
               ]
             },
-            "cliNote": "--backdrop-color #rrggbb; the vehicle backdrop is computed from the paint and ignores it."
+            "cliNote": "--backdrop-color #rrggbb; the vehicle backdrop is computed from the paint and ignores it.",
+            "presentation": "hidden"
           },
           {
             "key": "background",
@@ -767,6 +775,18 @@
               "equals": "custom"
             },
             "cliNote": "On the command line the same thing is --photo-background with a path; the browser has no path, so it takes the file itself."
+          }
+        ],
+        "tabs": [
+          {
+            "id": "gradient",
+            "label": "Gradient",
+            "hint": "Drawn by the core from colours"
+          },
+          {
+            "id": "image",
+            "label": "Image",
+            "hint": "A photo behind the vehicle"
           }
         ]
       },
