@@ -671,15 +671,6 @@
               "equals": "custom"
             },
             "cliNote": "On the command line the same thing is --photo-background with a path; the browser has no path, so it takes the file itself."
-          },
-          {
-            "key": "spotlight",
-            "label": "Spotlight",
-            "hint": "Dim the backdrop around the vehicle",
-            "type": "toggle",
-            "default": true,
-            "cli": "--no-spotlight",
-            "cliInvert": true
           }
         ]
       },
@@ -869,7 +860,7 @@
           {
             "key": "textColor",
             "label": "Colour",
-            "hint": "White with a soft shadow, or black; the badge inverts",
+            "hint": "White with a soft shadow, black, or the vehicle's own paint on the badge",
             "type": "select",
             "default": "white",
             "choices": [
@@ -880,6 +871,10 @@
               {
                 "value": "black",
                 "label": "Black"
+              },
+              {
+                "value": "paint",
+                "label": "Paint"
               }
             ],
             "cli": "--text-color"
@@ -899,10 +894,19 @@
         ]
       },
       {
-        "id": "glow",
+        "id": "light",
         "affects": "still",
-        "label": "Glow",
+        "label": "Light",
         "controls": [
+          {
+            "key": "spotlight",
+            "label": "Spotlight",
+            "hint": "Dim the backdrop around the vehicle",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-spotlight",
+            "cliInvert": true
+          },
           {
             "key": "glow",
             "label": "Glow",

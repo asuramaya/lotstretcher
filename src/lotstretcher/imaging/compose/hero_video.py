@@ -388,7 +388,8 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     # The still's text on every frame: planned once inside the window,
     # and the cars laid out clear of its band.
     from ..text import plan_overlays, text_window
-    overlays = plan_overlays(canvas_size[0], canvas_size[1], vehicle, text or {}, window)
+    overlays = plan_overlays(canvas_size[0], canvas_size[1], vehicle, text or {}, window,
+                             sample=Image.open(carousel_paths[0]).convert("RGBA"))
     window = text_window(window, canvas_size[1], overlays)
 
     # "conveyor" means the conveyor arrangement that suits this frame, not

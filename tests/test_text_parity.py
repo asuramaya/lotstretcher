@@ -132,6 +132,32 @@ def test_video_frames_carry_the_text_and_the_window_shrinks_for_it():
     assert (np.asarray(framed)[band_top:].min(axis=2) > 240).any(), "no white text on the frame"
 
 
+def test_paint_colour_takes_the_vehicles_own():
+    """Colour "paint" puts the vehicle's colour on the badge: the record's
+    colour name when it has one, else the paint sampled off the cutout;
+    the words stay white on a dark paint and go black on a pale one."""
+    named = {**VEHICLE, "exterior_color_factory": "Rapid Red Metallic"}
+    plan = plan_overlays(800, 800, named, text_options({**CONTROLS, "textColor": "paint"}))
+    badge = next(o for o in plan if o["pill"])
+    r, g, b, a = badge["pill"]["color"]
+    assert r > g + 60 and r > b + 60, f"a red name gave {badge['pill']['color']}"
+    assert badge["color"] == [255, 255, 255]
+    # No colour word: sampled off the cutout, which is red too.
+    unnamed = {**VEHICLE, "exterior_color_factory": None, "exterior_color": None}
+    sampled = plan_overlays(800, 800, unnamed, text_options({**CONTROLS, "textColor": "paint"}), sample=cutout())
+    r2, g2, b2, _ = next(o for o in sampled if o["pill"])["pill"]["color"]
+    assert r2 > g2 + 60 and r2 > b2 + 60
+    # A pale paint flips the words to black.
+    pale = {**VEHICLE, "exterior_color_factory": "Oxford White"}
+    plan = plan_overlays(800, 800, pale, text_options({**CONTROLS, "textColor": "paint"}))
+    assert next(o for o in plan if o["pill"])["color"] == [16, 16, 16]
+    # The still composes with it too, sampling car 0 when unnamed.
+    from lotstretcher.imaging.text import text_request
+    img = core.compose_hero([cutout()], 400, 400, {"kind": "generic", "seed": "p"}, spotlight=False,
+                            text=text_request(unnamed, text_options({**CONTROLS, "textColor": "paint"})))
+    assert img.size == (400, 400)
+
+
 def test_unknown_values_are_refused():
     ensure_font()
     with pytest.raises(RuntimeError):

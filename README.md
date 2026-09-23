@@ -400,8 +400,9 @@ lotstretcher URL --title vehicle --price-badge --text-line "Ask for Alex" \
 `--title vehicle` writes year make model trim from the listing;
 `--title custom` writes `--title-text`. `--price-badge` puts the post's
 own resolved price in a pill (MSRP for new, the listed price for used).
-The app's Text group is the same seven levers, previewed live as you
-type. `recompose` takes them too. The clip carries the same text on
+`--text-color paint` puts the vehicle's own colour on the badge, from
+the listing's colour name or sampled off the cutout. The app's Text
+group is the same seven levers, previewed live as you type. `recompose` takes them too. The clip carries the same text on
 every frame, with the conveyor laid out in the room beside it.
 
 ---

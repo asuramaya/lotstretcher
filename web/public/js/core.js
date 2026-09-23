@@ -100,8 +100,10 @@ export function loadFont(name, bytes) {
 
 /* Text overlays for one canvas from the vehicle and the Text controls
  * (core/src/text.rs::plan). The font must be loaded first. */
-export function overlayPlan(width, height, vehicle, text) {
-  return call({ op: 'overlay_plan', width, height, vehicle: vehicle || {}, ...text });
+export function overlayPlan(width, height, vehicle, text, sample = null) {
+  const op = { op: 'overlay_plan', width, height, vehicle: vehicle || {}, ...text };
+  if (sample) op.sample = { $image: 0 };
+  return call(op, sample ? [sample] : []);
 }
 
 export function retain(image) { return call({ op: 'retain', image: { $image: 0 } }, [image]); }

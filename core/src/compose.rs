@@ -214,7 +214,12 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     // in what is left, so a title never sits across a bumper.
     let mut overlays = req.overlays.clone();
     if let Some(t) = req.text.as_ref().filter(|t| !t.is_empty()) {
-        overlays.extend(crate::text::plan_in(&t.for_canvas(w, h), window)?);
+        let mut plan = t.for_canvas(w, h);
+        if plan.accent.is_none() && plan.color == "paint" {
+            let hero = match req.cars.first() { Some(s) => Some(slice_image(arena, s)?), None => None };
+            plan.accent = crate::text::accent_for(&plan.vehicle, hero.as_deref());
+        }
+        overlays.extend(crate::text::plan_in(&plan, window)?);
     }
     window = crate::text::shrink_window(window, &overlays, h);
     let cars: Vec<Rc<Image>> = req.cars.iter().map(|s| slice_image(arena, s)).collect::<Result<_, _>>()?;

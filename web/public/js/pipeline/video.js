@@ -207,12 +207,6 @@ export function prepareClip(cutouts, {
 } = {}) {
   const explicitDuration = duration !== null;
   if (duration === null) duration = DEFAULT_DURATION_S;
-  // The text is planned once inside the canvas, and the cars are laid
-  // out in the window left beside its band, as the CLI's clip does.
-  const overlays = text ? core.overlayPlan(width, height, text.vehicle, { ...text, window: [0, 0, width, height] }) : [];
-  const window = overlays.length
-    ? core.call({ op: 'text_window', window: [0, 0, width, height], height, overlays })
-    : [0, 0, width, height];
   // One palette per shot (the CLI seeds per image too), and each shot's
   // pixels and spotlight dim measured once. The gradient itself is
   // rebuilt by the core per frame because it rotates.
@@ -220,6 +214,13 @@ export function prepareClip(cutouts, {
     const data = ctxOf(cut, { willReadFrequently: true }).getImageData(0, 0, cut.width, cut.height);
     return { width: cut.width, height: cut.height, data, dim: 1.0 };
   });
+  // The text is planned once inside the canvas (its paint colour read
+  // off the first shot), and the cars are laid out in the window left
+  // beside its band, as the CLI's clip does.
+  const overlays = text ? core.overlayPlan(width, height, text.vehicle, { ...text, window: [0, 0, width, height] }, shots[0]?.data || null) : [];
+  const window = overlays.length
+    ? core.call({ op: 'text_window', window: [0, 0, width, height], height, overlays })
+    : [0, 0, width, height];
   const palette = cutouts.map((cut, i) => {
     const s = `${seed}:v${i}`;
     let start; let end;

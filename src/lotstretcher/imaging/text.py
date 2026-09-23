@@ -32,7 +32,7 @@ def ensure_font(name: str = DEFAULT_FONT) -> str:
 
 
 POSITIONS = ("tl", "tr", "bl", "br", "tc", "bc")
-COLORS = ("white", "black")
+COLORS = ("white", "black", "paint")
 TITLE_MODES = ("none", "vehicle", "custom")
 
 
@@ -52,7 +52,8 @@ def add_text_args(parser) -> None:
     parser.add_argument("--text-position", default="bl", choices=POSITIONS,
                         help="Where the text stack sits: tl, tr, bl, br, tc or bc (default: bl).")
     parser.add_argument("--text-color", default="white", choices=COLORS,
-                        help="Text colour (default: white, with a soft shadow; the badge is inverted).")
+                        help="Text colour: white (default, with a soft shadow; the badge inverted), black, or paint "
+                             "(the badge in the vehicle's own colour, from its colour name or sampled off the cutout).")
     parser.add_argument("--text-size", type=float, default=0.05, metavar="FRACTION",
                         help="Title size as a fraction of the canvas height (default: 0.05).")
 
@@ -99,15 +100,20 @@ def text_request(vehicle: dict | None, text: dict) -> dict | None:
 
 
 def plan_overlays(width: int, height: int, vehicle: dict | None, text: dict,
-                  window: tuple | None = None) -> list[dict]:
+                  window: tuple | None = None, sample=None) -> list[dict]:
     """Overlays for one canvas, or [] when no text is asked for (so a
     run without text never loads the font). `window` is the frame's car
-    window to inset from; a video host passes the one it lays out in."""
+    window to inset from; a video host passes the one it lays out in.
+    `sample` is the hero cutout (RGBA PIL) the "paint" colour is read off
+    when the record names no colour."""
     if not wants_text(text):
         return []
     font = ensure_font(text.get("font") or DEFAULT_FONT)
-    return core.overlay_plan(width, height, vehicle, font=font, window=list(window) if window else None,
-                             **{k: v for k, v in text.items() if k != "font"})
+    op = {"font": font, "window": list(window) if window else None, **{k: v for k, v in text.items() if k != "font"}}
+    if sample is not None:
+        op["sample"] = {"$image": 0}
+    return core.call({"op": "overlay_plan", "width": width, "height": height, "vehicle": vehicle or {}, **op},
+                     [sample] if sample is not None else [])
 
 
 def text_window(window: tuple, height: int, overlays: list[dict]) -> tuple:

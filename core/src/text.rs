@@ -213,6 +213,20 @@ pub struct PlanRequest {
     /// The window to inset from (a frame's car window), else the canvas.
     #[serde(default)]
     pub window: Option<[i64; 4]>,
+    /// The vehicle's paint for colour "paint": from the record's colour
+    /// name, else sampled off `sample` (the hero cutout) by the caller.
+    #[serde(default)]
+    pub accent: Option<[u8; 3]>,
+    #[serde(default)]
+    pub sample: Option<crate::compose::Slice>,
+}
+
+/// The paint an overlay plan colours itself with: the record's exterior
+/// colour name when it names a colour, else the cutout's own paint.
+pub fn accent_for(vehicle: &Value, sample: Option<&Image>) -> Option<[u8; 3]> {
+    let name = opt(vehicle, "exterior_color_factory").or_else(|| opt(vehicle, "exterior_color"));
+    crate::palette::parse_color_name(name.as_deref())
+        .or_else(|| sample.and_then(crate::palette::sample_cutout_color))
 }
 /// The same controls without a canvas: what a compose request carries,
 /// sized once the request's own canvas and window are known.
@@ -236,6 +250,8 @@ pub struct TextRequest {
     pub size: f64,
     #[serde(default)]
     pub font: Option<String>,
+    #[serde(default)]
+    pub accent: Option<[u8; 3]>,
 }
 
 impl TextRequest {
@@ -244,7 +260,7 @@ impl TextRequest {
             width, height, vehicle: self.vehicle.clone(), title: self.title.clone(),
             custom_title: self.custom_title.clone(), price_badge: self.price_badge, line: self.line.clone(),
             position: self.position.clone(), color: self.color.clone(), size: self.size, font: self.font.clone(),
-            window: None,
+            window: None, accent: self.accent, sample: None,
         }
     }
 
@@ -315,12 +331,17 @@ pub fn plan_in(req: &PlanRequest, window: (i64, i64, i64, i64)) -> Result<Vec<Ov
     if w <= 0.0 || h <= 0.0 { return Err("text window is empty".into()); }
     let font = req.font.clone().unwrap_or_else(|| DEFAULT_FONT.into());
     if !has_font(&font) { return Err(format!("font {font:?} is not loaded; load_font first")); }
-    let color: [u8; 3] = match req.color.as_str() {
-        "black" => [16, 16, 16],
-        "white" => [255, 255, 255],
-        other => return Err(format!("unknown text colour {other:?}; white or black")),
+    // "paint": the badge takes the vehicle's own colour and the words
+    // stay white (black on a pale paint), so the text reads as part of
+    // the car rather than a label stuck on it.
+    let accent = req.accent.unwrap_or([120, 120, 130]);
+    let pale = 0.299 * accent[0] as f64 + 0.587 * accent[1] as f64 + 0.114 * accent[2] as f64 > 170.0;
+    let (color, pill_color): ([u8; 3], [u8; 4]) = match req.color.as_str() {
+        "black" => ([16, 16, 16], [255, 255, 255, 220]),
+        "white" => ([255, 255, 255], [16, 18, 22, 210]),
+        "paint" => (if pale { [16, 16, 16] } else { [255, 255, 255] }, [accent[0], accent[1], accent[2], 235]),
+        other => return Err(format!("unknown text colour {other:?}; white, black or paint")),
     };
-    let pill_color: [u8; 4] = if req.color == "black" { [255, 255, 255, 220] } else { [16, 18, 22, 210] };
     let base = (req.size * ch).max(8.0);
     let inset = (w.min(h) * 0.045).round();
     let gap = (base * 0.35).round();

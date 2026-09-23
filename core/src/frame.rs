@@ -254,7 +254,13 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
             crate::text::load_font(&name, &arena[data.offset..end])?;
             OpResult::Json(serde_json::to_string(&Scalar { value: true }).unwrap())
         }
-        Op::OverlayPlan(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::text::plan(&req)? }).unwrap()),
+        Op::OverlayPlan(mut req) => {
+            if req.accent.is_none() && req.color == "paint" {
+                let sample = match &req.sample { Some(s) => Some(slice_image(arena, s)?), None => None };
+                req.accent = crate::text::accent_for(&req.vehicle, sample.as_deref());
+            }
+            OpResult::Json(serde_json::to_string(&Scalar { value: crate::text::plan(&req)? }).unwrap())
+        }
         Op::TextWindow { window, height, overlays } => {
             let (l, t, r, b) = crate::text::shrink_window((window[0], window[1], window[2], window[3]), &overlays, height);
             OpResult::Json(serde_json::to_string(&Scalar { value: [l, t, r, b] }).unwrap())
