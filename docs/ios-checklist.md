@@ -69,7 +69,7 @@ Safari. For each step, note pass, fail, or the message shown.
 - With photos and a make in, pull to refresh (or close and reopen the
   tab). A banner should offer the car back: tap **Resume** and report
   whether the photos and fields return; try **Discard** once too.
-- After Next, tap a photo's sort tag in the strip ("interior", "detail"):
+- Once the header's progress line has finished, tap a photo's sort tag in the strip ("interior", "detail"):
   a menu offers Exterior / Interior / Detail / Skip. Correct one and
   report whether the run honours it.
 - In the booth, paste a dealer vehicle page address from the clipboard

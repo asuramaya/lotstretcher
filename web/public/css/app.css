@@ -141,10 +141,14 @@
 .pane-next .grow { flex: 1; }
 /* The bar's own progress line, along its bottom edge: the sort and
    cut when the booth is left, a listing being read, a run. */
-.top-progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--line); overflow: hidden; }
-.top-progress[hidden] { display: none; }
-.top-progress > div { height: 100%; width: 0; background: var(--accent); transition: width .25s var(--ease); }
-.top-progress.is-indeterminate > div { width: 30%; animation: slide 1.1s ease-in-out infinite; }
+.app-progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 6px; background: var(--accent-wash); overflow: hidden; }
+.app-progress[hidden] { display: none; }
+.app-progress > div { height: 100%; width: 0; background: var(--accent); transition: width .25s var(--ease); box-shadow: 0 0 8px var(--accent); }
+.app-progress.is-indeterminate > div { width: 30%; animation: slide 1.1s ease-in-out infinite; }
+#appStatus { display: inline-block; min-width: 0; max-width: 26vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent); font-weight: 600; }
+@media (min-width: 620px) { #appStatus { max-width: 40vw; } }
+.appbar-actions { min-width: 0; }
+.appbar { position: sticky; }
 @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
 .pane-next { position: sticky; }
 .small.is-ok { color: var(--ok); } .small.is-err { color: var(--err); }

@@ -41,7 +41,7 @@
     <button class="nav-btn" data-go="options">
       <span class="step-n"><span>2</span></span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
-      <span>Look</span>
+      <span>Studio</span>
     </button>
     <button class="nav-btn" data-go="results" disabled>
       <span class="step-n"><span>3</span></span>
@@ -64,9 +64,13 @@
       <div class="appbar-actions">
         <a class="btn btn-ghost btn-sm hide-sm" data-go-surface="landing" href="index.html">Home</a>
         <button class="btn btn-ghost btn-sm" id="aboutBtn" aria-label="About this app">About</button>
+        <span class="small" id="appStatus" aria-live="polite"></span>
         <button class="btn btn-primary btn-sm" id="runBtn" disabled>Process</button>
       </div>
     </div>
+    <!-- One progress line for the whole app, along the header's edge:
+         the sort and cut as photos land, a listing being read, a run. -->
+    <div class="app-progress" id="appProgress" hidden><div></div></div>
   </header>
 
   <main class="main">
@@ -75,11 +79,6 @@
     <section class="pane" id="pane-booth" aria-label="Booth">
       <div class="pane-inner">
         <div id="resumeBox"></div>
-        <div class="pane-next">
-          <span class="small dim grow" id="sourceFootNote">Add photos to continue.</span>
-          <button class="btn btn-primary" id="toOptionsBtn">Next: the look</button>
-          <div class="top-progress" id="boothProgress" hidden><div></div></div>
-        </div>
         <div id="isolationWarn" class="banner banner-err hidden" style="margin-bottom:var(--s-5)">
           <div>
             <strong>Running single-threaded.</strong>
@@ -193,19 +192,12 @@
     </section>
 
     <!-- ---------- options: the Look ---------- -->
-    <section class="pane" id="pane-options" hidden aria-label="Look">
+    <section class="pane" id="pane-options" hidden aria-label="Studio">
       <div class="pane-inner wide">
         <div class="pane-head">
-          <h1>Choose the look</h1>
-          <p class="lede">Every lever redraws the preview as you move it, on a sample
-            vehicle or on your own once one is cut out. What you cannot see, such as
-            video length, shows up as a time and size estimate instead.</p>
-        </div>
-        <div class="pane-next">
-          <button class="btn btn-ghost" data-back="booth">Back</button>
-          <span class="small dim grow" id="optionsFootNote"></span>
-          <button class="btn btn-primary" id="runBtn2" disabled>Process</button>
-          <div class="top-progress" id="lookProgress" hidden><div></div></div>
+          <h1>Studio</h1>
+          <p class="lede">Every lever redraws your vehicle as you move it. What you cannot see,
+            such as video length, shows up as a time and size estimate instead.</p>
         </div>
 
         <div class="look">
@@ -220,7 +212,6 @@
               <input type="range" id="previewScrub" min="0" max="1000" value="350" aria-label="Position in the clip" hidden>
             </div>
             <div class="preview-formats" id="previewFormats" aria-label="Which shape to preview"></div>
-            <div class="preview-samples" id="previewSamples"></div>
             <div class="estimates" id="estimates"></div>
           </aside>
 

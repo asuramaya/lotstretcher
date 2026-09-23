@@ -71,7 +71,7 @@ let preview = null;
  * pane; one function keeps them agreeing. */
 function setRunEnabled(on) {
   $('runBtn').disabled = !on;
-  const b = $('runBtn2');
+  const b = null;
   if (b) b.disabled = !on;
 }
 
@@ -86,13 +86,10 @@ function renderSteps() {
   for (const btn of document.querySelectorAll('.nav-btn')) {
     btn.classList.toggle('is-done', !!done[btn.dataset.go]);
   }
-  const n = state.photos.length;
-  const note = $('sourceFootNote');
-  if (note) note.textContent = n ? `${n} photo${n === 1 ? '' : 's'} added.` : 'Add photos to continue.';
-  const onote = $('optionsFootNote');
-  if (onote) onote.textContent = !n ? 'Add photos in the booth first.'
-    : state.preparing ? `Sorting and cutting out ${n} photo${n === 1 ? '' : 's'} for the preview…`
-    : `Ready to process ${n} photo${n === 1 ? '' : 's'}.`;
+  // The studio needs the cut-outs: its step opens once they exist.
+  const ready = state.photos.length > 0 && !state.preparing && state.prepared?.key === photoKey();
+  const studio = document.querySelector('.nav-btn[data-go="options"]');
+  if (studio) { studio.disabled = !ready; studio.title = ready ? '' : state.photos.length ? 'Sorting and cutting out the photos first' : 'Add photos first'; }
 }
 
 /* ---------- persistence -------------------------------------------
@@ -208,7 +205,6 @@ function go(pane) {
   if (pane === 'results') $('resultsDot').classList.add('hidden');
   if (pane === 'options') {
     state.lookVisited = true;
-    preload();
     // The preview is drawn only while it can be seen.
     preview?.renderSamples();
     preview?.update();
@@ -296,8 +292,11 @@ function renderPhotos() {
   const by = {};
   for (const p of state.photos) by[p.source || 'chosen'] = (by[p.source || 'chosen'] || 0) + 1;
   setStatus('photosStatus', Object.entries(by).map(([k, c]) => `${c} ${SOURCE_LABEL[k] || k}`).join(' · '), 'ok');
-  // A changed photo set starts any preparation over.
+  // A changed photo set starts any preparation over, and the sort and
+  // cut start on their own once the adding has settled.
   if (state.prepared && state.prepared.key !== photoKey() && !state.preparing) state.prepared = null;
+  clearTimeout(preloadTimer);
+  if (n && !state.running && !state.preparing && !state.restoring) preloadTimer = setTimeout(preload, 600);
   // A strip, so the vehicle fields stay a glance below; a tile opens
   // the lightbox.
   $('photoGrid').classList.add('is-strip');
@@ -376,16 +375,18 @@ function setProgress(frac) {
   topProgress(frac);
 }
 
-/* The thin line along the top bar of the booth and the look: a
- * fraction, 'busy' for an indeterminate wait, or null to hide. */
-function topProgress(value) {
-  for (const id of ['boothProgress', 'lookProgress']) {
-    const bar = $(id);
-    if (!bar) continue;
-    bar.hidden = value === null;
-    bar.classList.toggle('is-indeterminate', value === 'busy');
-    if (typeof value === 'number') bar.firstElementChild.style.width = `${Math.round(value * 100)}%`;
-  }
+/* The one progress line, along the header's edge, and the words beside
+ * the Process button: a fraction, 'busy' for an indeterminate wait, or
+ * null to hide. Seen from every step. */
+let topText = '';
+function topProgress(value, text = null) {
+  const bar = $('appProgress');
+  bar.hidden = value === null;
+  // Nothing done yet reads as a slide, not an empty track.
+  bar.classList.toggle('is-indeterminate', value === 'busy' || value === 0);
+  if (typeof value === 'number') bar.firstElementChild.style.width = `${Math.round(value * 100)}%`;
+  if (text !== null || value === null) topText = text || '';
+  $('appStatus').textContent = typeof value === 'number' && value > 0 && topText ? `${topText} ${Math.round(value * 100)}%` : topText;
 }
 
 function renderResults() {
@@ -904,8 +905,9 @@ function runStages() {
 /* Start sorting and cutting out as soon as the booth is left, so the
  * Look step previews the real vehicle rather than a sample. A run that
  * follows takes the result; a photo added later starts it over. */
+let preloadTimer = null;
 function preload() {
-  if (state.running || !state.photos.length) return;
+  if (state.running || state.preparing || !state.photos.length) return;
   const key = photoKey();
   if (state.prepared?.key === key) return;
   const stages = runStages();
@@ -914,6 +916,8 @@ function preload() {
   setProgress(0);
   state.preparing = true;
   state.errors = [];
+  topProgress(0, `Sorting and cutting out ${state.photos.length} photo${state.photos.length === 1 ? '' : 's'}…`);
+  renderSteps();
   const promise = (async () => {
     try {
       return await sortAndCut(stages);
@@ -922,6 +926,8 @@ function preload() {
       state.preparing = false;
       topProgress(null);
       renderPhotos();
+      // A finished preparation for the same photos: prepare again if they changed meanwhile.
+      if (state.prepared?.key !== photoKey()) { state.prepared = null; renderPhotos(); }
       if (preview?.getUserCutout?.()) { preview.current = 'yours'; preview.renderSamples(); preview.update(); preview.onSubjectChange?.(); }
     }
   })();
@@ -937,6 +943,7 @@ async function run() {
   if (state.prepared?.key !== photoKey()) state.errors = [];
   setRunEnabled(false);
   go('results');
+  topProgress(0, 'Processing…');
   $('progressSection').hidden = false;
   $('resultsEmpty').hidden = true;
   setProgress(0);
@@ -1626,7 +1633,7 @@ async function init() {
     n.textContent = note;
     n.className = `small ${status === 'failed' ? 'is-err' : status === 'done' ? 'is-ok' : 'dim'}`;
     $('listingBusy').hidden = status !== 'reading';
-    topProgress(status === 'reading' ? 'busy' : null);
+    if (!state.preparing && !state.running) topProgress(status === 'reading' ? 'busy' : null, status === 'reading' ? 'Reading the listing…' : null);
     $('listingUrlInput').disabled = status === 'reading';
   };
   let reading = false;
@@ -1696,9 +1703,7 @@ async function init() {
 
   // The walkthrough's own buttons: next at the foot of each step, back
   // where there is somewhere to go back to.
-  $('toOptionsBtn').onclick = () => go('options');
   for (const b of document.querySelectorAll('[data-back]')) b.onclick = () => go(b.dataset.back);
-  $('runBtn2').onclick = run;
 
   preview = new Preview($('lookPreview'), {
     getOptions: () => state.options,

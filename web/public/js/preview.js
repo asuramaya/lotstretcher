@@ -1,10 +1,10 @@
 /* The live preview beside the levers.
  *
  * Every option that changes the still redraws a real composite through
- * the core, on a sample vehicle shipped with the site (three cutouts
- * from real listings, with their real paint names) or on the user's own
- * cutout once a run has produced one. Nothing here is a mock-up: the
- * preview is the same call the run makes, at a smaller size.
+ * the core, on the person's own vehicle: the studio opens once the
+ * photos have been sorted and cut, so the subject is always theirs.
+ * Nothing here is a mock-up: the preview is the same call the run
+ * makes, at a smaller size.
  *
  * What cannot be seen is said in numbers. Formats, video length and the
  * pipeline switches turn into an estimate of what the run will produce
@@ -23,7 +23,6 @@ import { textOptions, textRequestNow, frameStyle, shadowStyle, reflectionStyle }
  * when it lands. */
 const assetImage = (kind, name, onReady) => imageNow(kind, name, onReady);
 
-const SAMPLES_URL = 'demo/samples/samples.json';
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -31,17 +30,6 @@ const el = (tag, cls, text) => {
   if (text != null) n.textContent = text;
   return n;
 };
-
-async function loadImage(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`${r.status} loading ${url}`);
-  const bitmap = await createImageBitmap(await r.blob());
-  const c = document.createElement('canvas');
-  c.width = bitmap.width; c.height = bitmap.height;
-  c.getContext('2d').drawImage(bitmap, 0, 0);
-  bitmap.close?.();
-  return c;
-}
 
 export class Preview {
   /* `host` holds #previewCanvas, #previewSamples and #estimates.
@@ -82,14 +70,10 @@ export class Preview {
   }
 
   async load() {
-    try {
-      const list = await (await fetch(SAMPLES_URL)).json();
-      this.samples = await Promise.all(list.map(async (s) => ({ ...s, cutout: await loadImage(s.file) })));
-    } catch (e) {
-      this.samples = [];
-      this.estimatesHost.textContent = `The sample vehicles did not load: ${e.message || e}`;
-    }
-    this.current = this.samples[0]?.key || null;
+    // The subject is always the person's own vehicle: the studio opens
+    // once a cut-out exists, so there is nothing to stand in for it.
+    this.samples = [];
+    this.current = 'yours';
     this.renderSamples();
     this.update();
     // Anything drawn on the subject (the look tiles) can draw now.
@@ -97,20 +81,10 @@ export class Preview {
   }
 
   renderSamples() {
-    const host = this.samplesHost;
-    host.innerHTML = '';
-    const yours = this.getUserCutout();
-    const options = [...this.samples.map((s) => ({ key: s.key, label: s.title, note: s.exterior }))];
-    if (yours) options.unshift({ key: 'yours', label: 'Your vehicle', note: 'from this run' });
-    if (this.current === 'yours' && !yours) this.current = this.samples[0]?.key || null;
-    for (const o of options) {
-      const b = el('button', 'chip');
-      b.type = 'button';
-      b.setAttribute('aria-pressed', String(o.key === this.current));
-      b.append(el('strong', null, o.label), el('span', null, o.note));
-      b.onclick = () => { this.current = o.key; this.renderSamples(); this.update(); this.onSubjectChange?.(); };
-      host.appendChild(b);
-    }
+    // One subject, so no picker; kept as the hook callers use when a
+    // cut-out appears.
+    this.current = 'yours';
+    if (this.samplesHost) this.samplesHost.innerHTML = '';
   }
 
   setMode(mode) {
@@ -170,10 +144,7 @@ export class Preview {
     }
   }
 
-  subjectLabel() {
-    if (this.current === 'yours') return 'Your vehicle';
-    return this.samples.find((x) => x.key === this.current)?.title || 'Sample';
-  }
+  subjectLabel() { return 'Your vehicle'; }
 
   /* The cutout and colours the preview draws: the user's own vehicle
    * takes the form's colours, a sample takes its real ones. */
@@ -185,8 +156,7 @@ export class Preview {
         return { cutout: cut, exterior: v.exterior_color || null, interior: v.interior_color || null, seed: 'yours', vehicle: v };
       }
     }
-    const s = this.samples.find((x) => x.key === this.current) || this.samples[0];
-    return s ? { cutout: s.cutout, exterior: s.exterior, interior: s.interior, seed: s.key, vehicle: s.vehicle || {} } : null;
+    return null;
   }
 
   /* Coalesced: a slider fires many times a second and one compose is a
@@ -217,7 +187,7 @@ export class Preview {
     if (this.busy) { this.pending = true; return; }
     const subject = this.subject();
     const o = this.getOptions();
-    if (!subject || !o) { this.renderEstimates(); return; }
+    if (!subject || !o) { this.renderEstimates(); if (!subject) this.estimatesHost.textContent = 'No exterior was cut out, so there is nothing to style yet.'; return; }
     this.busy = true;
     this.canvas.classList.add('is-busy');
     try {
@@ -287,13 +257,8 @@ export class Preview {
     const [fw, fh] = fmt.size;
     const [width, height] = this.targetSize(fw, fh);
     let cutouts; let seed;
-    if (this.current === 'yours') {
-      cutouts = (this.getUserCutouts?.() || [subject.cutout]).slice(0, 5);
-      seed = 'yours';
-    } else {
-      cutouts = this.samples.map((s) => s.cutout);
-      seed = subject.seed;
-    }
+    cutouts = (this.getUserCutouts?.() || [subject.cutout]).slice(0, 5);
+    seed = 'yours';
     const text = textRequestNow(subject.vehicle, textOptions(o), () => this.update());
     // The clip's backdrop is the still's: a stock or the user's photo,
     // else the gradient.

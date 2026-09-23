@@ -414,7 +414,7 @@ the core on the preview's subject.
 
 ### Looks: one tap, several levers
 
-The Look pane opens with a row of looks, each a named set of light and
+The Studio pane opens with a row of looks, each a named set of light and
 frame values defined once in the spec (`controls.looks`): Clean,
 Showroom (shadow and reflection), Gallery (a white line and a soft
 shadow) and Paint line (the vehicle's colour on the line, a glow and
