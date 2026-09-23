@@ -426,28 +426,53 @@
 .ctrl-badge.is-server { background: var(--sunken); }
 
 /* ---------- the Look pane: preview beside the levers -------------- */
+/* The pane measures ITSELF (a container query), not the window: with
+   the rail open, a 1100 px laptop window leaves the pane about 800 px,
+   which a viewport breakpoint at 900 treated as a phone and stacked the
+   preview full-width above the levers, blurry and enormous. Two columns
+   from 720 px of pane width; the preview takes the larger share, since
+   it is what the pane is for. */
+.pane-inner.wide { max-width: 1240px; container-type: inline-size; }
 .look { display: grid; gap: var(--s-5); grid-template-columns: 1fr; align-items: start; }
-@media (min-width: 900px) {
-  .look { grid-template-columns: minmax(300px, 380px) 1fr; }
-  .look-preview { position: sticky; top: var(--s-4); }
+.look-preview {
+  display: flex; flex-direction: column; gap: var(--s-3);
+  max-width: 520px; margin: 0 auto; width: 100%;
 }
-.look-preview { display: flex; flex-direction: column; gap: var(--s-3); }
-.preview-canvas {
-  width: 100%; aspect-ratio: 1; border-radius: var(--r-md);
+@container (min-width: 720px) {
+  .look { grid-template-columns: minmax(360px, 52%) minmax(300px, 1fr); gap: var(--s-6); }
+  .look-preview { position: sticky; top: 0; max-width: none; margin: 0; }
+}
+.preview-frame {
+  position: relative; border-radius: var(--r-lg); overflow: hidden;
   border: 1px solid var(--line); background: var(--sunken);
-  display: block;
+  box-shadow: var(--sh-2, 0 10px 30px rgba(0,0,0,.25));
 }
-.preview-canvas.is-busy { opacity: .7; }
+.preview-canvas { width: 100%; height: auto; display: block; }
+.preview-canvas.is-busy { opacity: .8; }
+.preview-caption {
+  position: absolute; left: var(--s-3); bottom: var(--s-3);
+  padding: 3px var(--s-3); border-radius: var(--r-full);
+  background: rgba(0,0,0,.6); backdrop-filter: blur(8px); color: #fff;
+  font-size: var(--t-xs); font-weight: 600; letter-spacing: .02em;
+  pointer-events: none;
+}
 .preview-modes { display: flex; align-items: center; gap: var(--s-2); }
+.preview-modes[hidden] { display: none; }
 .preview-modes .chip { min-height: 32px; padding: var(--s-1) var(--s-3); }
 .preview-modes input[type="range"] { flex: 1; min-width: 80px; accent-color: var(--accent); }
 .preview-samples { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.preview-samples .chip { min-height: 34px; padding: var(--s-1) var(--s-3); }
-.estimates { display: flex; flex-direction: column; gap: var(--s-2); font-size: var(--t-sm); }
-.estimate { display: flex; gap: var(--s-3); align-items: baseline; }
-.estimate strong { flex: none; min-width: 64px; font-weight: 600; color: var(--ink-2); }
+.preview-samples .chip { min-height: 36px; padding: var(--s-1) var(--s-3); }
+.estimates {
+  display: grid; grid-template-columns: auto 1fr; gap: var(--s-2) var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface);
+  font-size: var(--t-sm);
+}
+.estimate { display: contents; }
+.estimate strong { font-weight: 600; color: var(--ink-2); white-space: nowrap; }
 .estimate span { color: var(--ink-3); }
 .look-controls { min-width: 0; }
+.look-controls .section + .section { margin-top: var(--s-4); }
 
 .opt.is-locked .opt-text strong { color: var(--ink-3); }
 .opt.is-locked { opacity: .72; }

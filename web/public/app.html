@@ -210,13 +210,20 @@
     <!-- ---------- library ---------- -->
     <section class="pane" id="pane-library" hidden aria-label="Library">
       <div class="pane-inner">
+        <div class="pane-head">
+          <span class="eyebrow">Library</span>
+          <h1>What has been made</h1>
+          <p class="lede">A listings folder, read as the command line writes it: every vehicle's
+            heroes, framed and interior sets, clips and posts. On your own server it is managed
+            from here too; anywhere, a folder can be opened.</p>
+        </div>
         <div class="section" id="libraryHost"></div>
       </div>
     </section>
 
     <!-- ---------- options: the Look ---------- -->
     <section class="pane" id="pane-options" hidden aria-label="Look">
-      <div class="pane-inner">
+      <div class="pane-inner wide">
         <div class="pane-head">
           <span class="eyebrow">Step 3 of 4</span>
           <h1>Choose the look</h1>
@@ -227,7 +234,10 @@
 
         <div class="look">
           <aside class="look-preview" id="lookPreview" aria-label="Live preview">
-            <canvas class="preview-canvas" id="previewCanvas" width="600" height="600"></canvas>
+            <div class="preview-frame">
+              <canvas class="preview-canvas" id="previewCanvas" width="600" height="600"></canvas>
+              <span class="preview-caption" id="previewCaption">Preview</span>
+            </div>
             <div class="preview-modes" id="previewModes" hidden>
               <button type="button" class="chip" data-mode="still" aria-pressed="true"><strong>Still</strong></button>
               <button type="button" class="chip" data-mode="video" aria-pressed="false"><strong>Video frame</strong></button>

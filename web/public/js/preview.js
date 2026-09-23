@@ -46,6 +46,7 @@ export class Preview {
     this.canvas = host.querySelector('#previewCanvas');
     this.samplesHost = host.querySelector('#previewSamples');
     this.estimatesHost = host.querySelector('#estimates');
+    this.caption = host.querySelector('#previewCaption');
     this.getOptions = getOptions;
     this.getVehicle = getVehicle;
     this.getUserCutout = getUserCutout;
@@ -116,6 +117,11 @@ export class Preview {
     if (!wantVideo && this.mode === 'video') this.setMode('still');
   }
 
+  subjectLabel() {
+    if (this.current === 'yours') return 'Your vehicle';
+    return this.samples.find((x) => x.key === this.current)?.title || 'Sample';
+  }
+
   /* The cutout and colours the preview draws: the user's own vehicle
    * takes the form's colours, a sample takes its real ones. */
   subject() {
@@ -130,11 +136,24 @@ export class Preview {
     return s ? { cutout: s.cutout, exterior: s.exterior, interior: s.interior, seed: s.key } : null;
   }
 
-  /* Debounced: a slider fires many times a second and one compose is
-   * about a tenth of one, so edits coalesce and never queue up. */
+  /* Coalesced: a slider fires many times a second and one compose is a
+   * few hundredths of one, so edits collapse onto the next frame and a
+   * draw in flight is followed by exactly one more. */
   update() {
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.draw(), 90);
+    if (this.timer) return;
+    this.timer = requestAnimationFrame(() => { this.timer = null; this.draw(); });
+  }
+
+  /* The size to draw at: the canvas's displayed width times the device
+   * pixel ratio, so the preview is crisp on a 2x screen and never a
+   * 600 px bitmap stretched across 900. Capped: the run's own size is
+   * the ceiling, and the estimate scales from whatever this is. */
+  targetSize(fw, fh) {
+    const shown = this.canvas.clientWidth || 600;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const px = Math.min(Math.max(fw, fh), Math.max(320, Math.round(shown * dpr)));
+    const scale = px / Math.max(fw, fh);
+    return [Math.max(2, Math.round(fw * scale / 2) * 2), Math.max(2, Math.round(fh * scale / 2) * 2)];
   }
 
   async draw() {
@@ -149,15 +168,14 @@ export class Preview {
       // The first selected still format decides the preview's shape.
       const fmt = OPTS.HERO_FORMATS[o.heroFormats?.[0]] || OPTS.HERO_FORMATS.square || { size: [1254, 1254] };
       const [fw, fh] = fmt.size;
-      const scale = 600 / Math.max(fw, fh);
-      const width = Math.max(1, Math.round(fw * scale));
-      const height = Math.max(1, Math.round(fh * scale));
+      const [width, height] = this.targetSize(fw, fh);
+      if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || o.heroFormats?.[0] || 'still'}`;
       const t0 = performance.now();
       // A frame decides the canvas size, so a large one is scaled down
       // to the preview's size first: the run uses it at full size.
       let border = o.customFrame || null;
-      if (border && Math.max(border.width, border.height) > 600) {
-        const k = 600 / Math.max(border.width, border.height);
+      if (border && Math.max(border.width, border.height) > Math.max(width, height)) {
+        const k = Math.max(width, height) / Math.max(border.width, border.height);
         const small = document.createElement('canvas');
         small.width = Math.max(1, Math.round(border.width * k));
         small.height = Math.max(1, Math.round(border.height * k));
@@ -200,9 +218,8 @@ export class Preview {
   drawVideoFrame(subject, o) {
     const fmt = OPTS.VIDEO_FORMATS[o.videoFormats?.[0]] || { size: [720, 720] };
     const [fw, fh] = fmt.size;
-    const scale = 600 / Math.max(fw, fh);
-    const width = Math.max(2, Math.round(fw * scale / 2) * 2);
-    const height = Math.max(2, Math.round(fh * scale / 2) * 2);
+    const [width, height] = this.targetSize(fw, fh);
+    if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || 'video'} \u00b7 ${(this.scrub * (this.clip?.duration || 0)).toFixed(1)} s`;
     let cutouts; let seed;
     if (this.current === 'yours') {
       cutouts = (this.getUserCutouts?.() || [subject.cutout]).slice(0, 5);

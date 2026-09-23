@@ -141,6 +141,10 @@ function buildSelect(control, value, onChange, disabled) {
   return sel;
 }
 
+/* A slider reports every movement as a LIVE change (the preview follows
+ * the thumb) and the final value on release as a real one; re-rendering
+ * the pane on every movement would rebuild the very slider being
+ * dragged. */
 function buildRange(control, value, onChange, disabled) {
   const wrap = el('div', 'range-wrap');
   const input = document.createElement('input');
@@ -152,7 +156,10 @@ function buildRange(control, value, onChange, disabled) {
   input.disabled = disabled;
   input.setAttribute('aria-label', control.label);
   const out = el('span', 'range-out', formatValue(control, value));
-  input.oninput = () => { out.textContent = formatValue(control, Number(input.value)); };
+  input.oninput = () => {
+    out.textContent = formatValue(control, Number(input.value));
+    onChange(Number(input.value), true);
+  };
   input.onchange = () => onChange(Number(input.value));
   wrap.append(input, out);
   return wrap;
@@ -258,7 +265,7 @@ export function renderControls(host, values, onChange) {
       row.appendChild(text);
 
       const value = values[control.key] ?? control.default;
-      const change = (v) => onChange(control.key, v);
+      const change = (v, live = false) => onChange(control.key, v, live);
 
       let widget;
       if (control.type === 'toggle') widget = buildToggle(control, value, change, !ok);

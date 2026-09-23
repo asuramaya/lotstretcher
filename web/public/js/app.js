@@ -415,8 +415,11 @@ function renderOptions() {
 
   // One host, filled from the spec. The old hand-built Pipeline and
   // Look sections are gone: a new control now needs no code here.
-  renderControls($('controlsHost'), o, (key, value) => {
+  renderControls($('controlsHost'), o, (key, value, live) => {
     o[key] = value;
+    // A slider mid-drag: redraw the preview and nothing else, so the
+    // slider under the finger is not rebuilt.
+    if (live) { if (affectsPreview(key)) preview?.update(); return; }
     // The user's own images are remembered on this device, in
     // IndexedDB, since the options blob is JSON and holds no image.
     if (key === 'customBackground' || key === 'customFrame') {
