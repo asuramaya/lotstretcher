@@ -200,10 +200,10 @@ function buildColor(control, value, onChange, disabled) {
   if (!value) wrap.classList.add('is-auto');
   input.oninput = () => { wrap.classList.remove('is-auto'); onChange(input.value, true); };
   input.onchange = () => onChange(input.value);
-  const word = el('span', 'color-word', value ? value.toUpperCase() : 'Paint');
-  const clear = el('button', 'btn btn-ghost btn-sm', 'Paint');
+  const word = el('span', 'color-word', value ? value.toUpperCase() : (control.auto || 'Auto'));
+  const clear = el('button', 'btn btn-ghost btn-sm', control.auto || 'Auto');
   clear.type = 'button';
-  clear.title = "Back to the vehicle's own paint";
+  clear.title = control.auto ? "Back to the vehicle's own paint" : 'Computed';
   clear.hidden = !value;
   clear.disabled = disabled;
   clear.onclick = () => onChange(null);
@@ -222,17 +222,87 @@ function buildRange(control, value, onChange, disabled) {
   input.min = control.min;
   input.max = control.max;
   input.step = control.step;
-  input.value = value;
+  // A nullable lever (an angle that is seeded unless set) reads Auto
+  // at null; moving the slider sets it, the Auto button clears it.
+  const isAuto = control.nullable && (value === null || value === undefined);
+  input.value = isAuto ? control.min : value;
   input.disabled = disabled;
   input.setAttribute('aria-label', control.label);
-  const out = el('span', 'range-out', formatValue(control, value));
+  const out = el('span', 'range-out', isAuto ? 'Auto' : formatValue(control, value));
   input.oninput = () => {
     out.textContent = formatValue(control, Number(input.value));
+    wrap.classList.remove('is-auto');
     onChange(Number(input.value), true);
   };
   input.onchange = () => onChange(Number(input.value));
   wrap.append(input, out);
+  if (control.nullable) {
+    if (isAuto) wrap.classList.add('is-auto');
+    const auto = el('button', 'btn btn-ghost btn-sm', 'Auto');
+    auto.type = 'button';
+    auto.hidden = isAuto;
+    auto.onclick = () => onChange(null);
+    wrap.appendChild(auto);
+  }
   return wrap;
+}
+
+/* A select's choices as one segment row: the compact form a
+ * configurator wants for its style (Paint | Bands | Sweep ...). */
+function buildSegment(control, values, onChange, disabled, choices) {
+  const seg = el('div', 'segment seg-wrap');
+  seg.setAttribute('role', 'radiogroup');
+  const current = values[control.key] ?? control.default;
+  for (const choice of choices) {
+    const b = el('button', 'seg', choice.label ?? String(choice.value));
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(String(current) === String(choice.value)));
+    b.title = choice.hint || '';
+    b.disabled = disabled || (choice.requires && !can(choice.requires));
+    b.onclick = () => {
+      if (choice.sets) for (const [k, v] of Object.entries(choice.sets)) onChange(k, v, true);
+      onChange(control.key, choice.value);
+    };
+    seg.appendChild(b);
+  }
+  return seg;
+}
+
+/* A colour lever as a row of dots: the named choices (white, black,
+ * the paint) as coloured dots, then the picker dot for a colour of the
+ * user's own. `thumbFor` supplies each named dot's colour. */
+function buildDots(control, values, onChange, disabled, thumbFor) {
+  const row = el('div', 'dots');
+  const current = values[control.key] ?? control.default;
+  for (const choice of choicesFor(control)) {
+    const dot = el('button', 'dot');
+    dot.type = 'button';
+    dot.setAttribute('aria-pressed', String(String(current) === String(choice.value)));
+    dot.setAttribute('aria-label', choice.label ?? String(choice.value));
+    dot.title = choice.label ?? String(choice.value);
+    dot.disabled = disabled;
+    const art = thumbFor ? thumbFor(control, choice, values, null) : null;
+    if (art && art.color) dot.style.background = art.color;
+    else dot.classList.add('is-plain');
+    dot.onclick = () => onChange(control.key, choice.value);
+    row.appendChild(dot);
+  }
+  if (control.custom) {
+    const isHex = typeof current === 'string' && /^#[0-9a-f]{3,6}$/i.test(current);
+    const wrap = el('span', `dot dot-custom${isHex ? '' : ' is-auto'}`);
+    wrap.setAttribute('aria-pressed', String(isHex));
+    const input = document.createElement('input');
+    input.type = 'color';
+    input.value = isHex && current.length === 7 ? current : '#4a6fa5';
+    input.disabled = disabled;
+    input.setAttribute('aria-label', `${control.label}: your own`);
+    input.title = isHex ? current.toUpperCase() : 'Your own';
+    input.oninput = () => { wrap.classList.remove('is-auto'); onChange(control.key, input.value, true); };
+    input.onchange = () => onChange(control.key, input.value);
+    wrap.appendChild(input);
+    row.appendChild(wrap);
+  }
+  return row;
 }
 
 /* An image of the user's own: a picker, a thumbnail once chosen, and a
@@ -575,24 +645,35 @@ export function renderControls(host, values, onChange, opts = {}) {
         b.setAttribute('role', 'tab');
         b.setAttribute('aria-pressed', String(t.id === tab));
         b.title = t.hint || '';
-        b.onclick = () => { subTab[group.id] = t.id; if (opts.onOpen) opts.onOpen(group.id); else renderControls(host, values, onChange, opts); };
+        b.onclick = () => { subTab[group.id] = t.id; if (opts.onOpen) opts.onOpen(group.id, { keep: true }); else renderControls(host, values, onChange, opts); };
         seg.appendChild(b);
       }
       body.appendChild(seg);
     }
 
+    const tabSpec = tab ? group.tabs.find((t) => t.id === tab) : null;
     for (const control of visible) {
       if (tab && control.tab && control.tab !== tab) continue;
       const { ok, why, onServer } = availability(control);
       if (control.presentation === 'swatches') {
+        // A tab presented as a segment shows this tab's choices as one
+        // row (a configurator's style), not as tiles.
+        if (tabSpec?.presentation === 'segment') {
+          const choices = choicesFor(control).filter((c) => !c.tab || c.tab === tab);
+          const row = el('div', 'opt opt-block');
+          if (!ok) row.appendChild(el('span', 'xs dim', why));
+          row.appendChild(buildSegment(control, values, onChange, !ok, choices));
+          body.appendChild(row);
+          continue;
+        }
         const block = el('div', 'opt opt-block');
         const text = el('div', 'opt-text');
         // A picker named the same as its group ("Backdrop" inside
-        // Backdrop) is the group: its heading is not repeated, only its
-        // one line of hint under the summary.
+        // Backdrop) is the group: its heading is not repeated.
         if (control.label !== group.label) text.appendChild(el('strong', null, control.label));
-        text.appendChild(el('span', null, ok ? control.hint : why));
-        block.append(text, buildSwatches(control, values, onChange, !ok, thumbFor, allControls, { uploads, onUpload, onRemoveUpload, tab }));
+        if (ok ? control.hint : why) text.appendChild(el('span', null, ok ? control.hint : why));
+        if (text.childNodes.length) block.appendChild(text);
+        block.appendChild(buildSwatches(control, values, onChange, !ok, thumbFor, allControls, { uploads, onUpload, onRemoveUpload, tab }));
         body.appendChild(block);
         continue;
       }
@@ -606,14 +687,16 @@ export function renderControls(host, values, onChange, opts = {}) {
       const hint = ok
         ? [control.hint, onServer ? 'Runs on your server' : ''].filter(Boolean).join(' \u00b7 ')
         : why;
-      text.append(el('strong', null, control.label), el('span', null, hint));
+      text.appendChild(el('strong', null, control.label));
+      if (hint) text.appendChild(el('span', null, hint));
       row.appendChild(text);
 
       const value = values[control.key] ?? control.default;
       const change = (v, live = false) => onChange(control.key, v, live);
 
       let widget;
-      if (control.type === 'toggle') widget = buildToggle(control, value, change, !ok);
+      if (control.presentation === 'dots') widget = buildDots(control, values, (k, v, live) => onChange(k, v, live), !ok, thumbFor);
+      else if (control.type === 'toggle') widget = buildToggle(control, value, change, !ok);
       else if (control.type === 'select') widget = buildSelect(control, value, change, !ok);
       else if (control.type === 'range') widget = buildRange(control, value, change, !ok);
       else if (control.type === 'file') widget = buildFile(control, value, change, !ok);

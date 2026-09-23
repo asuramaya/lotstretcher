@@ -54,4 +54,4 @@ pub fn call(op: &str, arena: &[u8]) -> Result<JsValue, JsError> {
 }
 
 #[wasm_bindgen]
-pub fn version() -> u32 { 14 }
+pub fn version() -> u32 { 15 }

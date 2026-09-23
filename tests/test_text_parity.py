@@ -406,3 +406,25 @@ def test_the_halo_and_the_two_tone_draw_from_the_stops():
     orange = np.asarray(core.render_frame([], 60, 60, {"kind": "horizon", "seed": "s", "exterior": None, "interior": None, "color": "#ff8800"})).astype(int)
     r, g, b = orange.reshape(-1, 3).mean(axis=0)
     assert r > g > b
+
+
+def test_two_chosen_stops_are_taken_as_they_are_and_an_angle_fixes_the_direction():
+    """--backdrop-color and --backdrop-color2 together are the two stops
+    raw (the wall and the floor of a two-tone); --backdrop-angle fixes a
+    linear backdrop's direction, so 0 and 180 are mirror images. The
+    drawn frame carries its inset and corner radius."""
+    from lotstretcher.imaging.text import backdrop_angle, backdrop_color2, backdrop_spec, frame_style
+    spec = backdrop_spec("horizon", "s", None, None, "#ff8800", "#2244aa")
+    assert spec["color"] == "#ff8800" and spec["color2"] == "#2244aa"
+    assert backdrop_spec("vehicle", "s", "Blue", None, "#ff8800", "#2244aa", 45.0) == {"kind": "vehicle", "seed": "s", "exterior": "Blue", "interior": None, "angle": 45.0}
+    assert backdrop_color2({"backdrop": "horizon", "backdropColor2": "#2244aa"}) == "#2244aa"
+    assert backdrop_angle({"backdrop": "generic", "backdropAngle": 90}) == 90.0
+    assert backdrop_angle({"backdrop": "sweep", "backdropAngle": 90}) is None
+    two = np.asarray(core.render_frame([], 100, 100, spec)).astype(int)
+    assert list(two[5, 50]) != list(two[95, 50])
+    assert two[5, 50][0] > 200 and two[95, 50][2] > 120   # the wall orange, the floor blue, as picked
+    a = np.asarray(core.render_frame([], 80, 80, {"kind": "generic", "seed": "s", "color": "#ff8800", "color2": "#2244aa", "angle": 0.0})).astype(int)
+    b = np.asarray(core.render_frame([], 80, 80, {"kind": "generic", "seed": "s", "color": "#ff8800", "color2": "#2244aa", "angle": 180.0})).astype(int)
+    assert np.abs(a - b[:, ::-1]).mean() < 6
+    fs = frame_style({"border": "line", "frameInset": 0.1, "frameRadius": 0.05})
+    assert fs["inset"] == 0.1 and fs["radius"] == 0.05

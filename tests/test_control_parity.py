@@ -98,6 +98,8 @@ def test_browser_only_controls_explain_themselves(control):
                          ids=lambda c: c["key"])
 def test_range_controls_have_sane_bounds(control):
     assert control["min"] < control["max"]
+    if control.get("nullable") and control["default"] is None:
+        return   # a lever that can be "auto": no default to bound
     assert control["min"] <= control["default"] <= control["max"], (
         f"{control['key']}: default {control['default']} is outside "
         f"[{control['min']}, {control['max']}]"

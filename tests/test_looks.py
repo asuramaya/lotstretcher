@@ -75,7 +75,8 @@ def test_look_applies_and_typed_flags_win():
     argv = ["--look", "gallery"]
     args = p.parse_args(argv)
     looks.apply_look(args, p, argv)
-    assert controls_from_frame_style_args(args) == {"frameStyle": "line", "frameColor": "white", "frameWeight": 0.008}
+    assert controls_from_frame_style_args(args) == {"frameStyle": "line", "frameColor": "white", "frameWeight": 0.008,
+                                                    "frameInset": 0.035, "frameRadius": 0.02}
     assert controls_from_reflection_args(args)["reflection"] is False
 
     # "none" for the Frame picker resets the line and the art flag.

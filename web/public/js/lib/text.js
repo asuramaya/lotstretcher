@@ -55,7 +55,8 @@ export function textOptions(o) {
  * same mapping as imaging/text.py::frame_style. */
 export function frameStyle(o) {
   if (o.border !== 'line') return null;
-  return { kind: 'line', color: o.frameColor || 'white', weight: o.frameWeight != null ? Number(o.frameWeight) : 0.008 };
+  const num = (k, d) => (o[k] != null ? Number(o[k]) : d);
+  return { kind: 'line', color: o.frameColor || 'white', weight: num('frameWeight', 0.008), inset: num('frameInset', 0.035), radius: num('frameRadius', 0.02) };
 }
 
 /* The app's shadow controls as the core's `shadow` field, or null: the

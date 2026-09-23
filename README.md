@@ -417,7 +417,10 @@ group has the same lever, previewed live per format.
 Frame art is drawn for one shape. `--frame-style line` draws a rounded
 line inset from the edge at whatever size the canvas is, so it fits a
 square, a portrait and a horizontal exactly, on the stills and on the clip.
-`--frame-color` is white, black or `paint` (the vehicle's own colour,
+`--frame-inset` and `--frame-radius` set how far in from the edge the
+line sits and how round its corners are, as fractions of the shorter
+side; the app's Frame tool has a Drawn tab with those dials and an
+Image tab for frame art. `--frame-color` is white, black or `paint` (the vehicle's own colour,
 from the listing's name or sampled off the cutout); `--frame-weight`
 is the line's weight as a share of the shorter side. In the app it is
 the "Studio line" tile of the Frame picker, with the colour and weight
@@ -440,6 +443,14 @@ stands and falls to the dark one at the edges (a halo); `--backdrop
 horizon` is a flat wall above a flat floor with a soft band between
 (two-tone). In the app they are the Halo and Two-tone tiles on the
 Backdrop tool's Gradient tab; its Image tab holds the photos.
+
+`--backdrop-color2` is the second stop: with both given they are used
+as picked (a two-tone's wall and floor, a halo's centre and edge);
+with one, its dark and light. `--backdrop-angle DEG` fixes the paint
+gradient's or the bands' direction instead of the seeded one. In the
+app the Backdrop tool's Gradient tab is one configurator: the style
+as a row (Paint, Bands, Sweep, Halo, Two-tone), Colour A and B with a
+Paint button back to the computed colour, and the angle with Auto.
 
 `--backdrop-color "#rrggbb"` puts the hue bands, the sweep, the halo or the two-tone in a
 colour of your own instead of the paint's (a colour word works too);

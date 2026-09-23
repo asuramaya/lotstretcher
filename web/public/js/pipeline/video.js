@@ -217,7 +217,8 @@ export function prepareClip(cutouts, {
   width = 1254, height = 1254, seed = 'lotstretcher', angles = null,
   exterior = null, interior = null, generic = false, spotlight = true, duration = null,
   backdrop = null,            // the generated backdrop's kind: a sweep is drawn once and held like a photo
-  backdropColor = null,       // #rrggbb: hue bands or the sweep in this colour rather than the paint's
+  backdropColor = null,       // #rrggbb: the coloured backdrops' first stop, rather than the paint's
+  backdropColor2 = null,      // the second stop
   text = null,                // lib/text.js::textRequest; the still's text on every frame
   background = null,          // a canvas: a stock or the user's photo behind the clip, cover-fitted
   frameStyle = null,          // lib/text.js::frameStyle: a frame the core draws at the clip's size
@@ -240,7 +241,7 @@ export function prepareClip(cutouts, {
   // A sweep is one backdrop frame for the whole clip, its paint read
   // off the first shot when the names give none; held like a photo.
   if (!bgData && (backdrop === 'sweep' || backdrop === 'radial' || backdrop === 'horizon')) {
-    const kind = { kind: backdrop, seed: `${seed}:${backdrop}`, exterior: generic ? null : exterior, interior: generic ? null : interior, sample: shots[0] ? { $image: 0 } : null, color: backdropColor || null };
+    const kind = { kind: backdrop, seed: `${seed}:${backdrop}`, exterior: generic ? null : exterior, interior: generic ? null : interior, sample: shots[0] ? { $image: 0 } : null, color: backdropColor || null, color2: backdropColor2 || null };
     bgData = core.toImageData(core.call({ op: 'render_frame', width, height, background: kind, cars: [], rgba: true }, shots[0] ? [shots[0].data] : []));
   }
   // The text is planned once inside the canvas (its paint colour read
@@ -260,8 +261,10 @@ export function prepareClip(cutouts, {
     // Generic means no colour names: the palette is measured off the
     // cutout's own paint, which is what the core does with no names. A
     // chosen colour is both stops, as the CLI's clip takes it.
-    const chosen = backdropColor && (generic || ['generic', 'sweep', 'radial', 'horizon'].includes(backdrop)) ? backdropColor : null;
-    [start, end] = core.vehicleGradientColors(chosen || (generic ? null : exterior), chosen || (generic ? null : interior), shots[i].data);
+    const coloured = generic || ['generic', 'sweep', 'radial', 'horizon'].includes(backdrop);
+    const a = coloured ? backdropColor || null : null;
+    const b = coloured ? backdropColor2 || null : null;
+    [start, end] = core.vehicleGradientColors(a || b || (generic ? null : exterior), b || a || (generic ? null : interior), shots[i].data);
     // The angle is the seed's, as the still's would be.
     const angle = (hashAngle(s));
     return { start, end, angle };
@@ -382,6 +385,7 @@ export async function renderHeroVideoHere(cutouts, {
   generic = false,
   backdrop = null,            // the generated backdrop's kind; a sweep is one held frame
   backdropColor = null,
+  backdropColor2 = null,
   spotlight = true,
   // The glow halo behind each car, as the CLI's --glow-* flags set it.
   // Memoized per scaled car inside the core, so it costs one blur per
@@ -447,7 +451,7 @@ export async function renderHeroVideoHere(cutouts, {
       : new Promise((resolve) => { drained = resolve; })
   );
 
-  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, backdrop, backdropColor, spotlight, duration: explicitDuration ? duration : null, text, background, frameStyle, vehicle });
+  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, backdrop, backdropColor, backdropColor2, spotlight, duration: explicitDuration ? duration : null, text, background, frameStyle, vehicle });
   const { shots, palette, plan } = prepared;
   duration = prepared.duration;
 

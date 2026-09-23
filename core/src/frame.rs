@@ -18,7 +18,7 @@ use std::rc::Rc;
 
 use crate::compose::{slice_image, Background, Slice};
 use crate::glow::{glow_color, make_glow_layer, paste_alpha, paste_reflection, paste_shadow};
-use crate::gradient::{generic_gradient, linear_gradient, vehicle_gradient};
+use crate::gradient::{generic_gradient, linear_gradient};
 use crate::resize::{cover_fit, crop, resize_bilinear, resize_lanczos};
 use crate::spec;
 use crate::spotlight::{apply_spotlight, compute_dim_strength};
@@ -106,20 +106,20 @@ pub fn render_frame(req: &FrameRequest, arena: &[u8]) -> Result<Image, String> {
         return Err("canvas must be within 8192x8192".into());
     }
     let mut canvas = match &req.background {
-        Background::Vehicle { seed, exterior, interior } => vehicle_gradient(w, h, seed, exterior.as_deref(), interior.as_deref(), None),
-        Background::Generic { seed, color } => generic_gradient(w, h, seed, color.as_deref()),
+        Background::Vehicle { seed, exterior, interior, angle } => crate::gradient::vehicle_gradient_at(w, h, seed, exterior.as_deref(), interior.as_deref(), None, *angle),
+        Background::Generic { seed, color, color2, angle } => generic_gradient(w, h, seed, color.as_deref(), color2.as_deref(), *angle),
         Background::Linear { angle, start, end } => linear_gradient(w, h, *angle, *start, *end),
-        Background::Sweep { seed, exterior, interior, sample, color } => {
+        Background::Sweep { seed, exterior, interior, sample, color, color2 } => {
             let s = match sample { Some(s) => Some(slice_image(arena, s)?), None => None };
-            crate::gradient::sweep(w, h, seed, exterior.as_deref(), interior.as_deref(), s.as_deref(), color.as_deref())
+            crate::gradient::sweep(w, h, seed, exterior.as_deref(), interior.as_deref(), s.as_deref(), color.as_deref(), color2.as_deref())
         }
-        Background::Radial { seed, exterior, interior, sample, color } => {
+        Background::Radial { seed, exterior, interior, sample, color, color2 } => {
             let s = match sample { Some(s) => Some(slice_image(arena, s)?), None => None };
-            crate::gradient::radial(w, h, seed, exterior.as_deref(), interior.as_deref(), s.as_deref(), color.as_deref())
+            crate::gradient::radial(w, h, seed, exterior.as_deref(), interior.as_deref(), s.as_deref(), color.as_deref(), color2.as_deref())
         }
-        Background::Horizon { seed, exterior, interior, sample, color } => {
+        Background::Horizon { seed, exterior, interior, sample, color, color2 } => {
             let s = match sample { Some(s) => Some(slice_image(arena, s)?), None => None };
-            crate::gradient::horizon(w, h, seed, exterior.as_deref(), interior.as_deref(), s.as_deref(), color.as_deref())
+            crate::gradient::horizon(w, h, seed, exterior.as_deref(), interior.as_deref(), s.as_deref(), color.as_deref(), color2.as_deref())
         }
         Background::Image { image } => {
             let img = slice_image(arena, image)?;

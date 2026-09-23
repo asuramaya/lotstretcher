@@ -18,7 +18,8 @@ from pathlib import Path
 
 from lotstretcher.imaging import assets
 from lotstretcher.imaging.compose import compose_interiors, compose_vehicle, compose_wheel_shots
-from lotstretcher.imaging.text import BACKDROPS, backdrop_color, frame_style, reflection_style, shadow_style, text_options
+from lotstretcher.imaging.text import (BACKDROPS, backdrop_angle, backdrop_color, backdrop_color2, frame_style, reflection_style,
+                                       shadow_style, text_options)
 
 
 def generated_backdrop(options: dict) -> str:
@@ -107,6 +108,8 @@ def resolve_recompose_options(options: dict) -> dict:
             "reflection": reflection_style(options),
             "backdrop": generated_backdrop(options),
             "backdrop_color": backdrop_color(options),
+            "backdrop_color2": backdrop_color2(options),
+            "backdrop_angle": backdrop_angle(options),
         },
         "interiors": bool(options.get("interiors", False)),
         "interior_captions": bool(options.get("interiorCaptions", False)),
@@ -161,6 +164,8 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
         reflection=reflection_style(options),
         backdrop=generated_backdrop(options),
         backdrop_color=backdrop_color(options),
+        backdrop_color2=backdrop_color2(options),
+        backdrop_angle=backdrop_angle(options),
         gradient=not wants_photo,
         video=video_on,
         video_encoder="h264_nvenc" if options.get("nvenc") else "libx264",

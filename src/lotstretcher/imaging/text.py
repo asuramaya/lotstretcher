@@ -87,10 +87,15 @@ def add_frame_style_args(parser) -> None:
                         help="The drawn frame's colour: white, black, paint (the vehicle's own), or your own as #rrggbb.")
     parser.add_argument("--frame-weight", type=float, default=0.008, metavar="FRACTION",
                         help="The drawn frame's line weight as a fraction of the shorter side (default: 0.008).")
+    parser.add_argument("--frame-inset", type=float, default=0.035, metavar="FRACTION",
+                        help="How far in from the edge the drawn frame sits, as a fraction of the shorter side (default: 0.035).")
+    parser.add_argument("--frame-radius", type=float, default=0.02, metavar="FRACTION",
+                        help="The drawn frame's corner radius as a fraction of the shorter side (default: 0.02).")
 
 
 def controls_from_frame_style_args(args) -> dict:
-    return {"frameStyle": args.frame_style, "frameColor": args.frame_color, "frameWeight": args.frame_weight}
+    return {"frameStyle": args.frame_style, "frameColor": args.frame_color, "frameWeight": args.frame_weight,
+            "frameInset": args.frame_inset, "frameRadius": args.frame_radius}
 
 
 def frame_style(options: dict) -> dict | None:
@@ -100,8 +105,9 @@ def frame_style(options: dict) -> dict | None:
     wanted = options.get("border") == "line" or options.get("frameStyle") == "line"
     if not wanted:
         return None
+    num = lambda key, default: float(options.get(key) if options.get(key) is not None else default)
     return {"kind": "line", "color": options.get("frameColor") or "white",
-            "weight": float(options.get("frameWeight") if options.get("frameWeight") is not None else 0.008)}
+            "weight": num("frameWeight", 0.008), "inset": num("frameInset", 0.035), "radius": num("frameRadius", 0.02)}
 
 
 SHADOW_STRENGTH = 0.5
@@ -144,9 +150,14 @@ def add_backdrop_arg(parser) -> None:
                              "stands; 'horizon', two tones about a soft horizon. Ignored when "
                              "--photo-background is given.")
     parser.add_argument("--backdrop-color", default=None, metavar="HEX",
-                        help="A colour of your own for the hue bands or the sweep, as #rrggbb (or a colour "
-                             "word). Without it they take the vehicle's paint. The vehicle backdrop is "
-                             "always the paint's, so it ignores this.")
+                        help="A colour of your own for the coloured backdrops (bands, sweep, halo, two-tone), "
+                             "as #rrggbb or a colour word; the first stop (the wall, the centre). Without it "
+                             "they take the vehicle's paint. The vehicle backdrop is always the paint's.")
+    parser.add_argument("--backdrop-color2", default=None, metavar="HEX",
+                        help="The second stop (the floor, the edge) when both are yours; with only one "
+                             "colour given, its dark and light are used.")
+    parser.add_argument("--backdrop-angle", type=float, default=None, metavar="DEG",
+                        help="The direction of the paint gradient or the bands, in degrees; default seeded per image.")
 
 
 def backdrop_color(options: dict) -> str | None:
@@ -158,18 +169,43 @@ def backdrop_color(options: dict) -> str | None:
     return color or None
 
 
+def backdrop_color2(options: dict) -> str | None:
+    """The second chosen stop, or None."""
+    if options.get("backdrop") not in COLOURED_BACKDROPS:
+        return None
+    color = (options.get("backdropColor2") or "").strip()
+    return color or None
+
+
+ANGLED_BACKDROPS = ("vehicle", "generic")
+
+
+def backdrop_angle(options: dict) -> float | None:
+    """A fixed direction for the linear backdrops, or None (seeded)."""
+    if options.get("backdrop") not in ANGLED_BACKDROPS:
+        return None
+    angle = options.get("backdropAngle")
+    return float(angle) if angle is not None and angle != "" else None
+
+
 def backdrop_spec(kind: str, seed: str, exterior: str | None, interior: str | None,
-                  color: str | None = None) -> dict:
+                  color: str | None = None, color2: str | None = None, angle: float | None = None) -> dict:
     """The core's background field for a generated backdrop of `kind`.
-    `color` (#rrggbb or a colour word) puts hue bands or a sweep in that
-    colour; the vehicle backdrop ignores it."""
-    if kind == "generic":
-        return {"kind": "generic", "seed": seed, **({"color": color} if color else {})}
+    `color` and `color2` (#rrggbb or colour words) are the stops the
+    coloured kinds draw from; `angle` fixes the linear kinds' direction.
+    The vehicle backdrop takes only the angle."""
     if kind not in BACKDROPS:
         raise ValueError(f"unknown backdrop {kind!r}; one of {', '.join(BACKDROPS)}")
-    out = {"kind": kind, "seed": seed, "exterior": exterior, "interior": interior}
-    if kind in COLOURED_BACKDROPS and color:
-        out["color"] = color
+    out: dict = {"kind": kind, "seed": seed}
+    if kind != "generic":
+        out.update(exterior=exterior, interior=interior)
+    if kind in COLOURED_BACKDROPS:
+        if color:
+            out["color"] = color
+        if color2:
+            out["color2"] = color2
+    if kind in ANGLED_BACKDROPS and angle is not None:
+        out["angle"] = float(angle)
     return out
 
 

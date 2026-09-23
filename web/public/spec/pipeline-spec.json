@@ -677,25 +677,24 @@
           {
             "key": "backdrop",
             "label": "Backdrop",
-            "hint": "What sits behind the vehicle",
+            "hint": "",
             "type": "select",
             "presentation": "swatches",
             "default": "vehicle",
             "choices": [
               {
                 "value": "vehicle",
-                "label": "Vehicle paint",
+                "label": "Paint",
                 "hint": "A gradient from its own colours",
                 "tab": "gradient"
               },
               {
                 "value": "generic",
-                "label": "Hue bands",
+                "label": "Bands",
                 "hint": "Seeded colour bands, no paint read",
                 "cli": "--backdrop",
                 "cliValue": "generic",
-                "tab": "gradient",
-                "color": "backdropColor"
+                "tab": "gradient"
               },
               {
                 "value": "sweep",
@@ -703,8 +702,7 @@
                 "hint": "A studio cyclorama in the vehicle's colours, lit at the floor line",
                 "cli": "--backdrop",
                 "cliValue": "sweep",
-                "tab": "gradient",
-                "color": "backdropColor"
+                "tab": "gradient"
               },
               {
                 "value": "radial",
@@ -712,8 +710,7 @@
                 "hint": "A pool of light where the vehicle stands, dark at the edges",
                 "cli": "--backdrop",
                 "cliValue": "radial",
-                "tab": "gradient",
-                "color": "backdropColor"
+                "tab": "gradient"
               },
               {
                 "value": "horizon",
@@ -721,8 +718,7 @@
                 "hint": "A flat wall and floor about a soft horizon",
                 "cli": "--backdrop",
                 "cliValue": "horizon",
-                "tab": "gradient",
-                "color": "backdropColor"
+                "tab": "gradient"
               },
               {
                 "value": "asset",
@@ -743,12 +739,12 @@
                 "tab": "image"
               }
             ],
-            "cliNote": "Vehicle paint is the default and has no flag. Hue bands, Sweep, Halo and Two-tone are --backdrop generic / sweep / radial / horizon, each taking --backdrop-color. Stock is --photo-background with --background NAME; your own image goes to --photo-background as a path, which the file control echoes."
+            "cliNote": "Paint is the default and has no flag. Bands, Sweep, Halo and Two-tone are --backdrop generic / sweep / radial / horizon, each taking --backdrop-color and --backdrop-color2; Paint and Bands take --backdrop-angle. Stock is --photo-background with --background NAME; your own image goes to --photo-background as a path, which the file control echoes."
           },
           {
             "key": "backdropColor",
-            "label": "Colour",
-            "hint": "The coloured backdrops in a colour of your own, picked on their tile; blank takes the vehicle's paint",
+            "label": "Colour A",
+            "hint": "",
             "type": "color",
             "default": null,
             "cli": "--backdrop-color",
@@ -762,7 +758,50 @@
               ]
             },
             "cliNote": "--backdrop-color #rrggbb; the vehicle backdrop is computed from the paint and ignores it.",
-            "presentation": "hidden"
+            "tab": "gradient",
+            "auto": "Paint"
+          },
+          {
+            "key": "backdropColor2",
+            "label": "Colour B",
+            "hint": "",
+            "type": "color",
+            "default": null,
+            "cli": "--backdrop-color2",
+            "tab": "gradient",
+            "auto": "Paint",
+            "showWhen": {
+              "key": "backdrop",
+              "in": [
+                "generic",
+                "sweep",
+                "radial",
+                "horizon"
+              ]
+            },
+            "cliNote": "--backdrop-color2 #rrggbb, the second stop (the floor, the edge)."
+          },
+          {
+            "key": "backdropAngle",
+            "label": "Angle",
+            "hint": "",
+            "type": "range",
+            "default": null,
+            "nullable": true,
+            "min": 0,
+            "max": 360,
+            "step": 5,
+            "unit": "deg",
+            "cli": "--backdrop-angle",
+            "tab": "gradient",
+            "showWhen": {
+              "key": "backdrop",
+              "in": [
+                "vehicle",
+                "generic"
+              ]
+            },
+            "cliNote": "--backdrop-angle DEG; without it the direction is seeded per image."
           },
           {
             "key": "background",
@@ -801,7 +840,8 @@
           {
             "id": "gradient",
             "label": "Gradient",
-            "hint": "Drawn by the core from colours"
+            "hint": "Drawn by the core from colours",
+            "presentation": "segment"
           },
           {
             "id": "image",
@@ -818,37 +858,41 @@
           {
             "key": "border",
             "label": "Frame",
-            "hint": "Border artwork around the composition; the vehicle is placed in its window",
+            "hint": "",
             "type": "select",
             "presentation": "swatches",
             "default": "none",
             "choices": [
               {
                 "value": "none",
-                "label": "No frame",
-                "hint": "The backdrop runs to the edge"
+                "label": "None",
+                "hint": "",
+                "tab": "drawn"
               },
               {
                 "value": "line",
-                "label": "Studio line",
-                "hint": "A line the core draws to fit every shape",
+                "label": "Line",
+                "hint": "",
                 "cli": "--frame-style",
-                "cliValue": "line"
+                "cliValue": "line",
+                "tab": "drawn"
               },
               {
                 "value": "asset",
                 "label": "Stock",
-                "hint": "A frame from the studio library",
+                "hint": "",
                 "cli": "--frame",
                 "cliNamed": "--border",
                 "expand": "borders",
-                "into": "border"
+                "into": "border",
+                "tab": "image"
               },
               {
                 "value": "custom",
                 "label": "Your frame",
-                "hint": "A PNG with a transparent window",
-                "file": "customFrame"
+                "hint": "",
+                "file": "customFrame",
+                "tab": "image"
               }
             ],
             "cliNote": "No frame has no flag. Studio line is --frame-style line (its colour and weight below). A stock frame is --frame for the library's default or --border NAME for a named one; the app names it. Your own PNG goes to --border as a path, which the file control echoes."
@@ -856,7 +900,7 @@
           {
             "key": "customFrame",
             "label": "Your own frame",
-            "hint": "A PNG with a transparent window. The vehicle is placed inside it and the frame goes on top, exactly as --border does",
+            "hint": "",
             "type": "file",
             "presentation": "hidden",
             "default": null,
@@ -868,8 +912,8 @@
           },
           {
             "key": "frameColor",
-            "label": "Line colour",
-            "hint": "White, black, or the vehicle's own paint",
+            "label": "Colour",
+            "hint": "",
             "type": "select",
             "default": "white",
             "choices": [
@@ -891,14 +935,15 @@
               "equals": "line"
             },
             "cli": "--frame-color",
-            "presentation": "swatches",
+            "presentation": "dots",
             "custom": true,
-            "cliNote": "--frame-color takes a name or your own #rrggbb."
+            "cliNote": "--frame-color takes a name or your own #rrggbb.",
+            "tab": "drawn"
           },
           {
             "key": "frameWeight",
-            "label": "Line weight",
-            "hint": "As a share of the shorter side",
+            "label": "Weight",
+            "hint": "",
             "type": "range",
             "default": 0.008,
             "min": 0.003,
@@ -909,41 +954,77 @@
               "key": "border",
               "equals": "line"
             },
-            "cli": "--frame-weight"
+            "cli": "--frame-weight",
+            "tab": "drawn"
+          },
+          {
+            "key": "frameInset",
+            "label": "Inset",
+            "hint": "",
+            "type": "range",
+            "default": 0.035,
+            "min": 0.0,
+            "max": 0.12,
+            "step": 0.005,
+            "unit": "fraction",
+            "showWhen": {
+              "key": "border",
+              "equals": "line"
+            },
+            "cli": "--frame-inset",
+            "tab": "drawn"
+          },
+          {
+            "key": "frameRadius",
+            "label": "Corners",
+            "hint": "",
+            "type": "range",
+            "default": 0.02,
+            "min": 0.0,
+            "max": 0.2,
+            "step": 0.005,
+            "unit": "fraction",
+            "showWhen": {
+              "key": "border",
+              "equals": "line"
+            },
+            "cli": "--frame-radius",
+            "tab": "drawn"
           },
           {
             "key": "frameFit",
-            "label": "Frame fit",
-            "hint": "How the frame meets a format of another shape. The format always decides the canvas",
+            "label": "Fit",
+            "hint": "",
             "type": "select",
             "default": "fit",
             "choices": [
               {
                 "value": "fit",
                 "label": "Fit",
-                "hint": "The whole frame, centred; the backdrop fills the rest"
+                "hint": ""
               },
               {
                 "value": "fill",
                 "label": "Fill",
-                "hint": "The frame covers the canvas; its edges are cropped"
+                "hint": ""
               },
               {
                 "value": "stretch",
                 "label": "Stretch",
-                "hint": "The frame is pulled to the canvas shape"
+                "hint": ""
               }
             ],
             "showWhen": {
               "key": "border",
               "notEquals": "none"
             },
-            "cli": "--frame-fit"
+            "cli": "--frame-fit",
+            "tab": "image"
           },
           {
             "key": "margin",
             "label": "Margin",
-            "hint": "Breathing room inside the frame",
+            "hint": "",
             "type": "range",
             "default": 0.06,
             "min": 0.0,
@@ -951,6 +1032,19 @@
             "step": 0.01,
             "unit": "fraction",
             "cli": "--margin-frac"
+          }
+        ],
+        "tabs": [
+          {
+            "id": "drawn",
+            "label": "Drawn",
+            "hint": "A frame the core draws to fit every shape",
+            "presentation": "segment"
+          },
+          {
+            "id": "image",
+            "label": "Image",
+            "hint": "Frame art with a window"
           }
         ]
       },
@@ -1048,7 +1142,7 @@
           {
             "key": "textColor",
             "label": "Colour",
-            "hint": "White with a soft shadow, black, or the vehicle's own paint on the badge",
+            "hint": "",
             "type": "select",
             "default": "white",
             "choices": [
@@ -1066,7 +1160,7 @@
               }
             ],
             "cli": "--text-color",
-            "presentation": "swatches",
+            "presentation": "dots",
             "custom": true,
             "cliNote": "--text-color takes a name or your own #rrggbb."
           },
@@ -1112,7 +1206,7 @@
             "label": "Colour",
             "hint": "",
             "type": "select",
-            "presentation": "swatches",
+            "presentation": "dots",
             "default": "white",
             "choices": [],
             "dynamic": "glowColors",

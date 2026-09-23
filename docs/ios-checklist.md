@@ -76,9 +76,12 @@ Safari. For each step, note pass, fail, or the message shown.
   the shape chips still in view above it. Tap **Backdrop** again, or
   its ×: the card goes and the stage takes the screen. Report whether
   the card scrolls on its own without the page moving behind it.
-- In the Backdrop card, switch **Gradient** and **Image**: the tiles
-  should change; on **Sweep**, a colour dot appears in the tile's
-  corner and opens iOS's picker; its × goes back to the paint.
+- In the Backdrop card, switch **Gradient** and **Image**: the card
+  must stay open. On Gradient tap **Two-tone**, then the Colour A and
+  Colour B dots: iOS's picker should open and the stage follow; **Paint**
+  goes back. Tap **Bands** and move **Angle**; **Auto** clears it.
+- Frame card: **Drawn**, tap **Line**; move Weight, Inset and Corners
+  and tap the colour dots (White, Black, Paint, and the picker dot).
 - In the Studio, tap the **Portrait** chip under the stage: the stage
   should turn tall, the whole portrait in view, nothing clipped. Tick
   its circle and report whether it joins the run (the Output tool's

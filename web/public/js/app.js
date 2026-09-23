@@ -649,10 +649,10 @@ function renderOptions() {
     rail: $('studioRail'),
     // On a phone the panel is a card: a tool opens it, the same tool
     // again (or its ×) closes it and gives the stage the screen back.
-    onOpen: (id) => {
+    onOpen: (id, { keep = false } = {}) => {
       const studio = document.querySelector('.studio');
       const wasOpen = studio.classList.contains('panel-open');
-      if (wasOpen && id === state.studioTool) studio.classList.remove('panel-open');
+      if (wasOpen && id === state.studioTool && !keep) studio.classList.remove('panel-open');
       else studio.classList.add('panel-open');
       state.studioTool = id;
       renderOptions();
@@ -804,7 +804,7 @@ function lookArt(lk, values) {
   const subject = preview?.subject?.();
   if (!subject) return null;
   const v = { ...values, ...lk.values };
-  const key = JSON.stringify([lk.id, subject.seed, v.backdrop, v.backdropColor, v.spotlight, v.glow, v.glowColor, v.glowRadius, v.glowIntensity,
+  const key = JSON.stringify([lk.id, subject.seed, v.backdrop, v.backdropColor, v.backdropColor2, v.backdropAngle, v.spotlight, v.glow, v.glowColor, v.glowRadius, v.glowIntensity,
     v.shadow, v.shadowStrength, v.reflection, v.reflectionStrength, v.border, v.frameColor, v.frameWeight]);
   if (!lookArtCache.has(key)) {
     try {
@@ -812,10 +812,10 @@ function lookArt(lk, values) {
       const composed = composeHero(subject.cutout, {
         width: size, height: size, seed: `${subject.seed}:look`,
         exterior: subject.exterior, interior: subject.interior, generic: v.backdrop === 'generic', backdrop: v.backdrop,
-        backdropColor: v.backdropColor || null,
+        backdropColor: v.backdropColor || null, backdropColor2: v.backdropColor2 || null, backdropAngle: v.backdropAngle ?? null,
         spotlight: v.spotlight, marginFrac: 0.08,
         glow: v.glow, glowColor: v.glowColor, glowRadius: Math.max(2, Math.round((v.glowRadius || 24) / 6)), glowIntensity: v.glowIntensity,
-        border: null, borderStyle: v.border === 'line' ? { kind: 'line', color: v.frameColor || 'white', weight: Math.max(0.02, Number(v.frameWeight) || 0.008) * 2 } : null,
+        border: null, borderStyle: v.border === 'line' ? { ...frameStyle(v), weight: Math.max(0.02, Number(v.frameWeight) || 0.008) * 2 } : null,
         shadow: shadowStyle(v), reflection: reflectionStyle(v),
         text: null,
       });
@@ -1191,6 +1191,8 @@ async function run() {
           marginFrac: state.options.margin,
           generic: state.options.backdrop === 'generic', backdrop: state.options.backdrop,
           backdropColor: state.options.backdropColor || null,
+          backdropColor2: state.options.backdropColor2 || null,
+          backdropAngle: state.options.backdropAngle ?? null,
           // The user's own images, the browser's --photo-background and
           // --border: drawn by the core exactly as the CLI's are.
           background: state.options.backdrop === 'custom' ? state.options.customBackground || null : stockBackground,
@@ -1247,6 +1249,7 @@ async function run() {
             interior: state.vehicle.interior_color,
             generic: state.options.backdrop === 'generic', backdrop: state.options.backdrop,
             backdropColor: state.options.backdropColor || null,
+            backdropColor2: state.options.backdropColor2 || null,
             spotlight: state.options.spotlight,
             glow: state.options.glow,
             glowColor: state.options.glowColor,

@@ -113,7 +113,8 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         border_style=hero_opts.border_style,
         shadow=hero_opts.shadow,
         reflection=hero_opts.reflection,
-        backdrop_spec=(backdrop_spec(hero_opts.backdrop, folder.name, *colors_from_details(folder), hero_opts.backdrop_color)
+        backdrop_spec=(backdrop_spec(hero_opts.backdrop, folder.name, *colors_from_details(folder), hero_opts.backdrop_color,
+                                     hero_opts.backdrop_color2, hero_opts.backdrop_angle)
                        if hero_opts.backdrop != "vehicle" else None),
         # --photo-background / --background NAME: the same photo the
         # stills sit on, unless a flag video was asked for instead.
@@ -202,6 +203,8 @@ class HeroOptions:
     # the user's for the latter two (#rrggbb); None takes the paint's.
     backdrop: str = "vehicle"
     backdrop_color: str | None = None
+    backdrop_color2: str | None = None
+    backdrop_angle: float | None = None
 
 
 def process_vehicle(playwright, session: requests.Session, url: str, out_root: Path,
@@ -349,6 +352,8 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 reflection=hero_opts.reflection,
                 backdrop=hero_opts.backdrop,
                 backdrop_color=hero_opts.backdrop_color,
+                backdrop_color2=hero_opts.backdrop_color2,
+                backdrop_angle=hero_opts.backdrop_angle,
             )
             if compose_result["hero"]:
                 n_framed = len(compose_result["framed"])
@@ -383,6 +388,8 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 reflection=hero_opts.reflection,
                 backdrop=hero_opts.backdrop,
                 backdrop_color=hero_opts.backdrop_color,
+                backdrop_color2=hero_opts.backdrop_color2,
+                backdrop_angle=hero_opts.backdrop_angle,
             )
             if wheel_shots:
                 log(f"    wheel money shot{'s' if len(wheel_shots) != 1 else ''}: "

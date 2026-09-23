@@ -23,7 +23,9 @@ export function composeHero(cutout, {
   marginFrac = null,
   generic = false,
   backdrop = null,            // the generated backdrop's kind: vehicle (default), generic or sweep
-  backdropColor = null,       // #rrggbb: hue bands or the sweep in this colour rather than the paint's
+  backdropColor = null,       // #rrggbb: the coloured backdrops' first stop, rather than the paint's
+  backdropColor2 = null,      // the second stop
+  backdropAngle = null,       // degrees: the linear backdrops' direction, else seeded
   glow = false,
   glowColor = null,
   glowRadius = null,
@@ -49,11 +51,11 @@ export function composeHero(cutout, {
     backgroundImage = ctxOf(fitted, { willReadFrequently: true }).getImageData(0, 0, width, height);
     bg = { kind: 'image' };
   } else if (backdrop === 'sweep' || backdrop === 'radial' || backdrop === 'horizon') {
-    bg = { kind: backdrop, seed: String(seed), exterior: exterior || null, interior: interior || null, color: backdropColor || null };
+    bg = { kind: backdrop, seed: String(seed), exterior: exterior || null, interior: interior || null, color: backdropColor || null, color2: backdropColor2 || null };
   } else if (generic || backdrop === 'generic') {
-    bg = { kind: 'generic', seed: String(seed), color: backdropColor || null };
+    bg = { kind: 'generic', seed: String(seed), color: backdropColor || null, color2: backdropColor2 || null, angle: backdropAngle ?? null };
   } else {
-    bg = { kind: 'vehicle', seed: String(seed), exterior: exterior || null, interior: interior || null };
+    bg = { kind: 'vehicle', seed: String(seed), exterior: exterior || null, interior: interior || null, angle: backdropAngle ?? null };
   }
   const out = core.composeHero([cutData], width, height, bg, {
     layout: 'single', spotlight, glow, glowColor, glowRadius, glowIntensity, marginFrac, backgroundImage,

@@ -82,39 +82,60 @@ pub fn linear_gradient(w: usize, h: usize, angle: f64, start: [u8; 3], end: [u8;
 /// Seeded hue bands; with a chosen colour ("#rrggbb" or a colour
 /// word), the bands are that hue: its backdrop-safe dark and light
 /// stops (the same pair the paint would give) at the seeded angle.
-pub fn generic_gradient(w: usize, h: usize, seed: &str, color: Option<&str>) -> Image {
-    if let Some(c) = color.filter(|c| crate::palette::parse_color_name(Some(c)).is_some()) {
-        let (mut start, mut end) = vehicle_gradient_colors(Some(c), Some(c), None);
+/// `angle` (degrees) fixes the direction; None keeps the seeded one.
+pub fn generic_gradient(w: usize, h: usize, seed: &str, color: Option<&str>, color2: Option<&str>, angle: Option<f64>) -> Image {
+    let parse = |c: Option<&str>| c.and_then(|c| crate::palette::parse_color_name(Some(c)));
+    if parse(color).is_some() || parse(color2).is_some() {
+        let (mut start, mut end) = stop_pair(None, None, None, color, color2);
         let mut rng = Rng::from_seed(seed);
-        let angle = rng.uniform(0.0, 360.0);
-        if rng.random() < 0.5 {
-            std::mem::swap(&mut start, &mut end);
+        let seeded = rng.uniform(0.0, 360.0);
+        if color.is_none() || color2.is_none() {
+            if rng.random() < 0.5 { std::mem::swap(&mut start, &mut end); }
         }
-        return linear_gradient(w, h, angle, start, end);
+        return linear_gradient(w, h, angle.unwrap_or(seeded), start, end);
     }
     let g = gradient_spec(seed);
-    linear_gradient(w, h, g.angle, g.start, g.end)
+    linear_gradient(w, h, angle.unwrap_or(g.angle), g.start, g.end)
 }
 
 /// A gradient from THIS vehicle's own colours at a seeded angle; only
 /// the angle and the stop order are random.
 pub fn vehicle_gradient(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>) -> Image {
+    vehicle_gradient_at(w, h, seed, exterior, interior, sample, None)
+}
+
+/// The same with `angle` fixed (degrees) rather than seeded.
+pub fn vehicle_gradient_at(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, angle: Option<f64>) -> Image {
     let (mut start, mut end) = vehicle_gradient_colors(exterior, interior, sample);
     let mut rng = Rng::from_seed(seed);
-    let angle = rng.uniform(0.0, 360.0);
+    let seeded = rng.uniform(0.0, 360.0);
     if rng.random() < 0.5 {
         std::mem::swap(&mut start, &mut end);
     }
-    linear_gradient(w, h, angle, start, end)
+    linear_gradient(w, h, angle.unwrap_or(seeded), start, end)
 }
 
 /// The dark and light stops a backdrop is drawn from: the chosen colour
 /// (both stops from it) when one is given, else the paint's.
-fn stops(exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>) -> ([f64; 3], [f64; 3]) {
-    let (a, b) = match color.filter(|c| crate::palette::parse_color_name(Some(c)).is_some()) {
-        Some(c) => vehicle_gradient_colors(Some(c), Some(c), None),
-        None => vehicle_gradient_colors(exterior, interior, sample),
-    };
+/// The two stops as bytes: both chosen (color, color2: taken as they
+/// are), one chosen (its backdrop-safe dark and light), or the paint's.
+pub fn stop_pair(exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>, color2: Option<&str>) -> ([u8; 3], [u8; 3]) {
+    let parse = |c: Option<&str>| c.and_then(|c| crate::palette::parse_color_name(Some(c)));
+    match (parse(color), parse(color2)) {
+        (Some(a), Some(b)) => (a, b),
+        (Some(_), None) => vehicle_gradient_colors(color, color, None),
+        (None, Some(_)) => vehicle_gradient_colors(color2, color2, None),
+        (None, None) => vehicle_gradient_colors(exterior, interior, sample),
+    }
+}
+
+fn stops(exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>, color2: Option<&str>) -> ([f64; 3], [f64; 3]) {
+    let (a, b) = stop_pair(exterior, interior, sample, color, color2);
+    // With both chosen, A is the first stop (the wall, the centre) and B
+    // the second, as picked; otherwise dark and light are sorted.
+    if color.is_some() && color2.is_some() {
+        return ([b[0] as f64, b[1] as f64, b[2] as f64], [a[0] as f64, a[1] as f64, a[2] as f64]);
+    }
     let lum = |c: [u8; 3]| 0.299 * c[0] as f64 + 0.587 * c[1] as f64 + 0.114 * c[2] as f64;
     let (dark, light) = if lum(a) <= lum(b) { (a, b) } else { (b, a) };
     ([dark[0] as f64, dark[1] as f64, dark[2] as f64], [light[0] as f64, light[1] as f64, light[2] as f64])
@@ -126,8 +147,8 @@ fn mix3(p: [f64; 3], q: [f64; 3], t: f64) -> [f64; 3] { [p[0] + (q[0] - p[0]) * 
 /// where the car stands, falling to the dark stop at the edges. Only
 /// the pool's centre is seeded, a touch off-centre so a run's images
 /// are not identical.
-pub fn radial(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>) -> Image {
-    let (dark, light) = stops(exterior, interior, sample, color);
+pub fn radial(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>, color2: Option<&str>) -> Image {
+    let (dark, light) = stops(exterior, interior, sample, color, color2);
     let mut rng = Rng::from_seed(seed);
     let cx = rng.uniform(0.46, 0.54);
     let cy = rng.uniform(0.52, 0.60);
@@ -152,8 +173,8 @@ pub fn radial(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: 
 /// Two tones with a soft horizon: a flat wall above, a flat floor below,
 /// the light stop on the wall and the dark one on the floor, blended
 /// across a band about the seeded horizon. A plain studio table.
-pub fn horizon(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>) -> Image {
-    let (dark, light) = stops(exterior, interior, sample, color);
+pub fn horizon(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>, color2: Option<&str>) -> Image {
+    let (dark, light) = stops(exterior, interior, sample, color, color2);
     let mut rng = Rng::from_seed(seed);
     let horizon = rng.uniform(0.62, 0.70);
     let wall = [light[0] * 0.85, light[1] * 0.85, light[2] * 0.85];
@@ -184,11 +205,8 @@ pub fn horizon(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior:
 /// centre are seeded, so a rerun reproduces the file.
 /// `color` ("#rrggbb" or a colour word) puts the sweep in that colour
 /// instead of the paint's.
-pub fn sweep(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>) -> Image {
-    let (a, b) = match color.filter(|c| crate::palette::parse_color_name(Some(c)).is_some()) {
-        Some(c) => vehicle_gradient_colors(Some(c), Some(c), None),
-        None => vehicle_gradient_colors(exterior, interior, sample),
-    };
+pub fn sweep(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>, color2: Option<&str>) -> Image {
+    let (a, b) = stop_pair(exterior, interior, sample, color, color2);
     let lum = |c: [u8; 3]| 0.299 * c[0] as f64 + 0.587 * c[1] as f64 + 0.114 * c[2] as f64;
     let (dark, light) = if lum(a) <= lum(b) { (a, b) } else { (b, a) };
     let mut rng = Rng::from_seed(seed);

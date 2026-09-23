@@ -137,7 +137,8 @@ def main():
         gradient_colors = (_random.Random(vehicle_folder.name).uniform(0, 360), start, end)
         if args.backdrop != "vehicle" and background_image is None:
             from lotstretcher.imaging.text import backdrop_spec
-            args.backdrop_spec = backdrop_spec(args.backdrop, vehicle_folder.name, ext, inr, args.backdrop_color)
+            args.backdrop_spec = backdrop_spec(args.backdrop, vehicle_folder.name, ext, inr, args.backdrop_color,
+                                               args.backdrop_color2, args.backdrop_angle)
 
     if args.music or args.audio:
         audio_path, bars_per_loop = resolve_audio(args.audio)

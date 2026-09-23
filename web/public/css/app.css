@@ -734,6 +734,25 @@
 .opt.opt-block .opt-text span:only-child { font-size: var(--t-sm); color: var(--ink-2); }
 .swatch-hint { font-size: 10px; color: var(--ink-3); line-height: 1.25; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A configurator's style row and its colour dots. */
+.seg-wrap { flex-wrap: wrap; }
+.dots { display: flex; align-items: center; gap: var(--s-2); flex: none; }
+.dot {
+  width: 30px; height: 30px; border-radius: var(--r-full); border: 2px solid var(--line-2); padding: 0;
+  background: var(--surface); cursor: pointer; position: relative; display: grid; place-items: center;
+}
+.dot[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-wash); }
+.dot.is-plain { background: var(--surface-3); }
+.dot-custom input {
+  appearance: none; -webkit-appearance: none; width: 100%; height: 100%; padding: 0; border: 0;
+  border-radius: var(--r-full); background: transparent; cursor: pointer;
+}
+.dot-custom input::-webkit-color-swatch-wrapper { padding: 0; }
+.dot-custom input::-webkit-color-swatch { border: 0; border-radius: var(--r-full); }
+.dot-custom input::-moz-color-swatch { border: 0; border-radius: var(--r-full); }
+.dot-custom.is-auto { background: conic-gradient(#f66, #fc6, #6f6, #6ff, #66f, #f6f, #f66); }
+.dot-custom.is-auto input::-webkit-color-swatch { opacity: 0; }
+.range-wrap.is-auto input[type="range"] { opacity: .45; }
 /* A heading across the grid for a category of library tiles. */
 .swatch-group { grid-column: 1 / -1; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-top: var(--s-2); }
 /* A tabbed group's tabs, above its controls. */
