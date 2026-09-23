@@ -453,8 +453,9 @@
     <div class="sheet-content selectable">
       <p class="small">
         lotstretcher turns vehicle photos into post-ready images and copy.
-        Background removal, classification and compositing all run in this
-        browser tab, on this device.
+        Background removal and classification run as models in this tab;
+        the compositing, frames, text and video are the same Rust core the
+        command line uses, compiled to WebAssembly. All of it on this device.
       </p>
       <hr class="rule">
       <h3 style="font-size:var(--t-base);margin-bottom:var(--s-2)">What leaves this device</h3>
