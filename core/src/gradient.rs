@@ -108,6 +108,75 @@ pub fn vehicle_gradient(w: usize, h: usize, seed: &str, exterior: Option<&str>, 
     linear_gradient(w, h, angle, start, end)
 }
 
+/// The dark and light stops a backdrop is drawn from: the chosen colour
+/// (both stops from it) when one is given, else the paint's.
+fn stops(exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>) -> ([f64; 3], [f64; 3]) {
+    let (a, b) = match color.filter(|c| crate::palette::parse_color_name(Some(c)).is_some()) {
+        Some(c) => vehicle_gradient_colors(Some(c), Some(c), None),
+        None => vehicle_gradient_colors(exterior, interior, sample),
+    };
+    let lum = |c: [u8; 3]| 0.299 * c[0] as f64 + 0.587 * c[1] as f64 + 0.114 * c[2] as f64;
+    let (dark, light) = if lum(a) <= lum(b) { (a, b) } else { (b, a) };
+    ([dark[0] as f64, dark[1] as f64, dark[2] as f64], [light[0] as f64, light[1] as f64, light[2] as f64])
+}
+
+fn mix3(p: [f64; 3], q: [f64; 3], t: f64) -> [f64; 3] { [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t] }
+
+/// A radial halo: the light stop pooled a little below the centre,
+/// where the car stands, falling to the dark stop at the edges. Only
+/// the pool's centre is seeded, a touch off-centre so a run's images
+/// are not identical.
+pub fn radial(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>) -> Image {
+    let (dark, light) = stops(exterior, interior, sample, color);
+    let mut rng = Rng::from_seed(seed);
+    let cx = rng.uniform(0.46, 0.54);
+    let cy = rng.uniform(0.52, 0.60);
+    let mut out = Image::new(w, h, 3);
+    let (wf, hf) = (w as f64, h as f64);
+    crate::par::rows_mut(&mut out.data, w * 3, |y, row| {
+        let v = (y as f64 + 0.5) / hf;
+        for x in 0..w {
+            let u = (x as f64 + 0.5) / wf;
+            let d = (((u - cx) * 1.15).powi(2) + ((v - cy) * 1.35).powi(2)).sqrt();
+            // Bright to about a third out, then a smooth fall to the edge.
+            let t = (d / 0.72).clamp(0.0, 1.0);
+            let k = t * t * (3.0 - 2.0 * t);
+            let c = mix3(light, dark, k);
+            let i = x * 3;
+            for ch in 0..3 { row[i + ch] = c[ch].round().clamp(0.0, 255.0) as u8; }
+        }
+    });
+    out
+}
+
+/// Two tones with a soft horizon: a flat wall above, a flat floor below,
+/// the light stop on the wall and the dark one on the floor, blended
+/// across a band about the seeded horizon. A plain studio table.
+pub fn horizon(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>) -> Image {
+    let (dark, light) = stops(exterior, interior, sample, color);
+    let mut rng = Rng::from_seed(seed);
+    let horizon = rng.uniform(0.62, 0.70);
+    let wall = [light[0] * 0.85, light[1] * 0.85, light[2] * 0.85];
+    let floor = [dark[0] * 0.75, dark[1] * 0.75, dark[2] * 0.75];
+    let band = 0.05;
+    let mut out = Image::new(w, h, 3);
+    let hf = h as f64;
+    crate::par::rows_mut(&mut out.data, w * 3, |y, row| {
+        let v = (y as f64 + 0.5) / hf;
+        let t = ((v - (horizon - band)) / (2.0 * band)).clamp(0.0, 1.0);
+        let k = t * t * (3.0 - 2.0 * t);
+        // The wall lightens a little toward the horizon, the floor darkens away from it.
+        let wall_here = mix3([wall[0] * 0.9, wall[1] * 0.9, wall[2] * 0.9], wall, (v / horizon).clamp(0.0, 1.0));
+        let floor_here = mix3(floor, [floor[0] * 0.8, floor[1] * 0.8, floor[2] * 0.8], ((v - horizon) / (1.0 - horizon)).clamp(0.0, 1.0));
+        let c = mix3(wall_here, floor_here, k);
+        for x in 0..w {
+            let i = x * 3;
+            for ch in 0..3 { row[i + ch] = c[ch].round().clamp(0.0, 255.0) as u8; }
+        }
+    });
+    out
+}
+
 /// A studio sweep: a cyclorama in the vehicle's own colours. The wall
 /// darkens toward the top, brightens to a lit floor line, and the floor
 /// falls off below it, with a pool of light about the middle of the

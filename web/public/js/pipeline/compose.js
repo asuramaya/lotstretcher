@@ -48,8 +48,8 @@ export function composeHero(cutout, {
     const fitted = coverFit(background, width, height);
     backgroundImage = ctxOf(fitted, { willReadFrequently: true }).getImageData(0, 0, width, height);
     bg = { kind: 'image' };
-  } else if (backdrop === 'sweep') {
-    bg = { kind: 'sweep', seed: String(seed), exterior: exterior || null, interior: interior || null, color: backdropColor || null };
+  } else if (backdrop === 'sweep' || backdrop === 'radial' || backdrop === 'horizon') {
+    bg = { kind: backdrop, seed: String(seed), exterior: exterior || null, interior: interior || null, color: backdropColor || null };
   } else if (generic || backdrop === 'generic') {
     bg = { kind: 'generic', seed: String(seed), color: backdropColor || null };
   } else {

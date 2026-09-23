@@ -414,7 +414,13 @@ them. The clip holds one sweep frame behind the conveyor, as it holds
 a photo. In the app it is the Backdrop picker's Sweep tile, drawn by
 the core on the preview's subject.
 
-`--backdrop-color "#rrggbb"` puts the hue bands or the sweep in a
+Two more: `--backdrop radial` pools the light stop where the car
+stands and falls to the dark one at the edges (a halo); `--backdrop
+horizon` is a flat wall above a flat floor with a soft band between
+(two-tone). In the app they are the Halo and Two-tone tiles on the
+Backdrop tool's Gradient tab; its Image tab holds the photos.
+
+`--backdrop-color "#rrggbb"` puts the hue bands, the sweep, the halo or the two-tone in a
 colour of your own instead of the paint's (a colour word works too);
 the vehicle backdrop is computed from the paint and ignores it. The
 colour goes through the same backdrop-safe treatment the paint does,

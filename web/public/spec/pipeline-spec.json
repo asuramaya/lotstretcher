@@ -707,6 +707,24 @@
                 "color": "backdropColor"
               },
               {
+                "value": "radial",
+                "label": "Halo",
+                "hint": "A pool of light where the vehicle stands, dark at the edges",
+                "cli": "--backdrop",
+                "cliValue": "radial",
+                "tab": "gradient",
+                "color": "backdropColor"
+              },
+              {
+                "value": "horizon",
+                "label": "Two-tone",
+                "hint": "A flat wall and floor about a soft horizon",
+                "cli": "--backdrop",
+                "cliValue": "horizon",
+                "tab": "gradient",
+                "color": "backdropColor"
+              },
+              {
                 "value": "asset",
                 "label": "Stock",
                 "hint": "A photo from the studio library",
@@ -725,12 +743,12 @@
                 "tab": "image"
               }
             ],
-            "cliNote": "Vehicle paint is the default and has no flag. Hue bands and Sweep are --backdrop generic / --backdrop sweep. Stock is --photo-background with --background NAME; your own image goes to --photo-background as a path, which the file control echoes."
+            "cliNote": "Vehicle paint is the default and has no flag. Hue bands, Sweep, Halo and Two-tone are --backdrop generic / sweep / radial / horizon, each taking --backdrop-color. Stock is --photo-background with --background NAME; your own image goes to --photo-background as a path, which the file control echoes."
           },
           {
             "key": "backdropColor",
             "label": "Colour",
-            "hint": "Hue bands and the sweep in a colour of your own, picked on their tile; blank takes the vehicle's paint",
+            "hint": "The coloured backdrops in a colour of your own, picked on their tile; blank takes the vehicle's paint",
             "type": "color",
             "default": null,
             "cli": "--backdrop-color",
@@ -738,7 +756,9 @@
               "key": "backdrop",
               "in": [
                 "generic",
-                "sweep"
+                "sweep",
+                "radial",
+                "horizon"
               ]
             },
             "cliNote": "--backdrop-color #rrggbb; the vehicle backdrop is computed from the paint and ignores it.",

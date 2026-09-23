@@ -385,3 +385,24 @@ def test_a_hex_is_taken_wherever_a_named_colour_goes():
 
 
 COLORS_TUPLE = ("white", "black", "paint")
+
+
+def test_the_halo_and_the_two_tone_draw_from_the_stops():
+    """--backdrop radial: brightest about the middle, darker at the
+    corners. --backdrop horizon: a lighter wall above a darker floor
+    with a soft band between. Both take a colour, both are seeded."""
+    from lotstretcher.imaging.text import BACKDROPS, backdrop_spec
+    assert "radial" in BACKDROPS and "horizon" in BACKDROPS
+    assert backdrop_spec("radial", "s", None, None, "#ff8800")["color"] == "#ff8800"
+    halo = np.asarray(core.render_frame([], 200, 200, {"kind": "radial", "seed": "s", "exterior": "Deep Blue", "interior": None})).astype(int)
+    lum = halo.sum(axis=2)
+    assert lum[110, 100] > lum[5, 5] + 60 and lum[110, 100] > lum[195, 195] + 60
+    same = np.asarray(core.render_frame([], 200, 200, {"kind": "radial", "seed": "s", "exterior": "Deep Blue", "interior": None})).astype(int)
+    assert np.array_equal(halo, same)
+    two = np.asarray(core.render_frame([], 200, 200, {"kind": "horizon", "seed": "s", "exterior": "Deep Blue", "interior": None})).astype(int)
+    lum2 = two.sum(axis=2)
+    assert lum2[40, 100] > lum2[190, 100] + 40
+    assert abs(int(lum2[40, 100]) - int(lum2[60, 100])) < 30  # the wall is flat-ish
+    orange = np.asarray(core.render_frame([], 60, 60, {"kind": "horizon", "seed": "s", "exterior": None, "interior": None, "color": "#ff8800"})).astype(int)
+    r, g, b = orange.reshape(-1, 3).mean(axis=0)
+    assert r > g > b

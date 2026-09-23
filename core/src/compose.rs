@@ -104,6 +104,10 @@ pub enum Background {
     /// uses car 0 for that.
     /// With `color` the sweep is in that colour instead of the paint's.
     Sweep { seed: String, exterior: Option<String>, interior: Option<String>, #[serde(default)] sample: Option<Slice>, #[serde(default)] color: Option<String> },
+    /// A radial halo in the paint's (or `color`'s) stops (gradient::radial).
+    Radial { seed: String, exterior: Option<String>, interior: Option<String>, #[serde(default)] sample: Option<Slice>, #[serde(default)] color: Option<String> },
+    /// Two tones about a soft horizon (gradient::horizon).
+    Horizon { seed: String, exterior: Option<String>, interior: Option<String>, #[serde(default)] sample: Option<Slice>, #[serde(default)] color: Option<String> },
 }
 
 #[derive(Deserialize)]
@@ -262,6 +266,10 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
         Background::Linear { angle, start, end } => crate::gradient::linear_gradient(w, h, *angle, *start, *end),
         Background::Sweep { seed, exterior, interior, color, .. } =>
             crate::gradient::sweep(w, h, seed, exterior.as_deref(), interior.as_deref(), cars.first().map(|c| &**c), color.as_deref()),
+        Background::Radial { seed, exterior, interior, color, .. } =>
+            crate::gradient::radial(w, h, seed, exterior.as_deref(), interior.as_deref(), cars.first().map(|c| &**c), color.as_deref()),
+        Background::Horizon { seed, exterior, interior, color, .. } =>
+            crate::gradient::horizon(w, h, seed, exterior.as_deref(), interior.as_deref(), cars.first().map(|c| &**c), color.as_deref()),
         Background::Image { image } => {
             let img = slice_image(arena, image)?;
             let rgb = if img.channels == 3 { (*img).clone() } else { drop_alpha(&img) };

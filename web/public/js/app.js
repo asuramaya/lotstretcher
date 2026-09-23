@@ -764,7 +764,7 @@ function swatchArt(control, choice, values, image) {
     if (!c) return null;
     const copy = tileCanvas(); copy.getContext('2d').drawImage(c, 0, 0); return copy;
   }
-  if (control.key === 'backdrop' && ['vehicle', 'generic', 'sweep'].includes(choice.value)) {
+  if (control.key === 'backdrop' && ['vehicle', 'generic', 'sweep', 'radial', 'horizon'].includes(choice.value)) {
     const subject = preview?.subject?.();
     // Hue bands and the sweep show the chosen colour once it is theirs.
     const color = choice.value !== 'vehicle' && values.backdrop === choice.value ? values.backdropColor || null : null;
@@ -776,8 +776,9 @@ function swatchArt(control, choice, values, image) {
           : { kind: choice.value, seed: `${subject?.seed || 'sample'}:preview`, exterior: subject?.exterior || null, interior: subject?.interior || null, color };
         // The sweep reads the paint off the subject when the names give none.
         const sample = subject?.cutout ? ctxOf(subject.cutout, { willReadFrequently: true }).getImageData(0, 0, subject.cutout.width, subject.cutout.height) : null;
-        if (choice.value === 'sweep' && sample) bg.sample = { $image: 0 };
-        const out = choice.value === 'sweep'
+        const held = ['sweep', 'radial', 'horizon'].includes(choice.value);
+        if (held && sample) bg.sample = { $image: 0 };
+        const out = held
           ? coreToImageData(coreCall({ op: 'render_frame', width: 96, height: 96, background: bg, cars: [], rgba: true }, sample ? [sample] : []))
           : coreRenderFrame([], 96, 96, bg);
         const c = tileCanvas();

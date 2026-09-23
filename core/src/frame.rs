@@ -113,6 +113,14 @@ pub fn render_frame(req: &FrameRequest, arena: &[u8]) -> Result<Image, String> {
             let s = match sample { Some(s) => Some(slice_image(arena, s)?), None => None };
             crate::gradient::sweep(w, h, seed, exterior.as_deref(), interior.as_deref(), s.as_deref(), color.as_deref())
         }
+        Background::Radial { seed, exterior, interior, sample, color } => {
+            let s = match sample { Some(s) => Some(slice_image(arena, s)?), None => None };
+            crate::gradient::radial(w, h, seed, exterior.as_deref(), interior.as_deref(), s.as_deref(), color.as_deref())
+        }
+        Background::Horizon { seed, exterior, interior, sample, color } => {
+            let s = match sample { Some(s) => Some(slice_image(arena, s)?), None => None };
+            crate::gradient::horizon(w, h, seed, exterior.as_deref(), interior.as_deref(), s.as_deref(), color.as_deref())
+        }
         Background::Image { image } => {
             let img = slice_image(arena, image)?;
             let rgb = if img.channels == 3 { (*img).clone() } else { drop_alpha(&img) };
