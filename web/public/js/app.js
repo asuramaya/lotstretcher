@@ -697,6 +697,15 @@ async function run() {
       ? await libraryImage('backgrounds', state.options.background) : null;
     const stockBorder = !delegating && state.options.border && !['none', 'custom'].includes(state.options.border)
       ? await libraryImage('borders', state.options.border) : null;
+    // A name remembered from another host (a server's private frame,
+    // opened later on the site) is not in this library: say so rather
+    // than compose on the gradient or frameless as if nothing was asked.
+    if (!delegating && state.options.backdrop === 'asset' && !stockBackground) {
+      state.errors.push(`background "${state.options.background || ''}" is not in this library; the stills use the gradient`);
+    }
+    if (!delegating && state.options.border && !['none', 'custom'].includes(state.options.border) && !stockBorder) {
+      state.errors.push(`frame "${state.options.border}" is not in this library; the stills are frameless`);
+    }
 
     for (let i = 0; i < cut.length; i++) {
       const p = cut[i];

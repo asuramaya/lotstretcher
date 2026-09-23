@@ -18,12 +18,11 @@ let threads = 0;
  * running outside a page, such as the parity tests under node, which
  * cannot fetch the module relative to this file.
  *
- * Two builds ship. The threaded one (core-threads/, rayon over web
- * workers) is used when the page is cross-origin isolated, which the
- * app already needs for ORT's threads; it spreads every row loop in
- * the core across the cores. Anything else, including node and a page
- * served without the isolation headers, gets the plain build, which
- * produces the same bytes on one thread. */
+ * One build ships, single-threaded. A threaded build (rayon over web
+ * workers) links now, but every core call is made from the page's main
+ * thread and rayon's join blocks there waiting for the workers, which
+ * a browser main thread cannot do; using it means running the core in
+ * a worker of its own. Until then the loader never tries it. */
 export async function loadCore(source) {
   if (mod) return mod;
   if (loading) return loading;
