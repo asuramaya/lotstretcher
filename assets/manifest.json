@@ -9,7 +9,8 @@
         "red-white-blue",
         "americana",
         "waving-fabric"
-      ]
+      ],
+      "studio": true
     },
     {
       "file": "backgrounds/futuristic-showroom.png",
@@ -20,7 +21,8 @@
         "reflective-floor",
         "ai-generated"
       ],
-      "prompt": "a sleek futuristic car showroom interior, empty, wide reflective floor, dramatic spotlights, moody atmosphere, no vehicles, no text, no logos"
+      "prompt": "a sleek futuristic car showroom interior, empty, wide reflective floor, dramatic spotlights, moody atmosphere, no vehicles, no text, no logos",
+      "studio": true
     }
   ],
   "videos": [
@@ -59,7 +61,8 @@
         "dealer-frame",
         "generic",
         "license-plate-style"
-      ]
+      ],
+      "studio": true
     },
     {
       "file": "borders/tomball-ford-frame.png",

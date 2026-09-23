@@ -33,6 +33,7 @@ import { Preview } from './preview.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlDefaults, controlsToFlags, affectsPreview } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
+import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
 import { normalizeListing, takeListingFromHash, bookmarkletSource, recordFromHtml } from './pipeline/listing.js';
 import { LibraryView } from './library/view.js';
 import { HttpSource, DirectorySource } from './library/source.js';
@@ -467,9 +468,8 @@ function swatchArt(control, choice, values, image) {
     const rgb = specGet('glow', 'colors')[choice.value];
     return rgb ? { color: `rgb(${rgb.join(',')})` } : null;
   }
-  if (choice.asset && isSelfHosted()) {
-    const kind = choice.expand || 'backgrounds';
-    return `assets/thumb/${kind}/${encodeURIComponent(choice.asset)}`;
+  if (choice.asset) {
+    return libraryEntry(choice.expand || 'backgrounds', choice.asset)?.thumb || null;
   }
   if (control.key === 'backdrop' && (choice.value === 'vehicle' || choice.value === 'generic')) {
     const subject = preview?.subject?.();
@@ -681,6 +681,12 @@ async function run() {
       stages[3].label = 'Composing on your server';
       renderStages(stages);
     }
+    // A stock backdrop or frame the site ships is composed here, from
+    // its own file; the core fits the frame to each format.
+    const stockBackground = !delegating && state.options.backdrop === 'asset'
+      ? await libraryImage('backgrounds', state.options.background) : null;
+    const stockBorder = !delegating && state.options.border && !['none', 'custom'].includes(state.options.border)
+      ? await libraryImage('borders', state.options.border) : null;
 
     for (let i = 0; i < cut.length; i++) {
       const p = cut[i];
@@ -733,8 +739,8 @@ async function run() {
           generic: state.options.backdrop === 'generic',
           // The user's own images, the browser's --photo-background and
           // --border: drawn by the core exactly as the CLI's are.
-          background: state.options.backdrop === 'custom' ? state.options.customBackground || null : null,
-          border: state.options.border === 'custom' ? state.options.customFrame || null : null,
+          background: state.options.backdrop === 'custom' ? state.options.customBackground || null : stockBackground,
+          border: state.options.border === 'custom' ? state.options.customFrame || null : stockBorder,
           borderFit: state.options.frameFit,
           glow: state.options.glow, glowColor: state.options.glowColor,
           glowRadius: state.options.glowRadius, glowIntensity: state.options.glowIntensity,

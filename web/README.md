@@ -172,8 +172,10 @@ Measured on desktop Chromium, 4 threads (i9-12900H):
 
 The core processing is the CLI's, one to one. What the browser lacks is
 what needs a server: scraping a dealer page (the bookmarklet hands the
-listing over instead), stock backdrops and branded frames (reachable
-against a self-hosted server through `POST /compose`), GPU upscaling,
+listing over instead), a server's private frames and backdrops (the
+studio library under `studio/` ships with the site and composes here;
+anything else in a self-hosted `assets/` reaches the browser through
+`POST /compose`), GPU upscaling,
 wheel money shots (CLIPSeg and SAM2 have no browser build), and library
 management beyond reading a folder. The app's capabilities list names
 each one and why. The self-hosted server is never less than this page.

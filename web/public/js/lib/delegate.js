@@ -16,6 +16,7 @@
  * maps to. */
 
 import { isSelfHosted } from '../host.js';
+import { loadLibrary, library, isLocal } from './library.js';
 
 /* Controls that can only be honoured by a server. Derived from the spec
  * rather than listed here, so adding one to the spec is enough. */
@@ -39,13 +40,13 @@ export function needsServer(options, specGet) {
   if (!isSelfHosted()) return false;
   const on = (value) => value !== undefined && value !== null && value !== false && value !== '';
   if (serverOnlyKeys(specGet).some((key) => on(options[key]))) return true;
-  // The Frame picker's own values are "none" and "custom"; anything else
-  // names a stock border only a server has.
-  if (options.border && !['none', 'custom'].includes(options.border)) return true;
-  if (options.backdrop === 'asset') return true;
+  // A stock frame or backdrop the site ships composes here; one only
+  // the server's library holds goes to the server. The Frame picker's
+  // own values are "none" and "custom"; anything else names a frame.
+  if (options.border && !['none', 'custom'].includes(options.border) && !isLocal('borders', options.border)) return true;
+  if (options.backdrop === 'asset' && !isLocal('backgrounds', options.background)) return true;
   /* A browser-capable select can still hold one choice the browser
-   * cannot honour: "Stock background" is a real option of the backdrop
-   * select, and picking it is what sends the run to the server. */
+   * cannot honour, and picking it is what sends the run to the server. */
   for (const group of specGet('controls', 'groups')) {
     for (const control of group.controls) {
       const choice = (control.choices || []).find((c) => c.value === options[control.key]);
@@ -55,30 +56,10 @@ export function needsServer(options, specGet) {
   return false;
 }
 
-let assetCache = null;
-
-/* The host's asset library, for the background and border selects.
- * Returns empty lists on a static host, which is the honest answer:
- * a browser has no asset library. */
-export async function loadAssets() {
-  if (assetCache) return assetCache;
-  if (!isSelfHosted()) {
-    assetCache = { backgrounds: [], borders: [], videos: [], audio: [] };
-    return assetCache;
-  }
-  try {
-    const res = await fetch('assets', { cache: 'no-store' });
-    if (!res.ok) throw new Error(String(res.status));
-    assetCache = await res.json();
-  } catch {
-    assetCache = { backgrounds: [], borders: [], videos: [], audio: [] };
-  }
-  return assetCache;
-}
-
-export function assets() {
-  return assetCache || { backgrounds: [], borders: [], videos: [], audio: [] };
-}
+/* The asset library: the site's own studio plus whatever a self-hosted
+ * server adds. See lib/library.js. */
+export const loadAssets = loadLibrary;
+export const assets = library;
 
 /* Ask the server to read a vehicle page. Returns the same record shape
  * the bookmarklet's normaliser produces (scrape.Vehicle), so the caller

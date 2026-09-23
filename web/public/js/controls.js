@@ -74,7 +74,9 @@ function expanded(control) {
     if (!library.length) { out.push({ ...c, empty: true }); continue; }
     for (const a of library) {
       out.push({
-        ...c, label: a.label, hint: c.label, asset: a.value,
+        // The tile says where the asset lives: the site's own studio
+        // composes here, a server-only asset is composed by the server.
+        ...c, label: a.label, hint: a.local ? 'Studio' : 'Your server', asset: a.value,
         value: c.into === control.key ? a.value : c.value,
         sets: c.into && c.into !== control.key ? { [c.into]: a.value } : null,
       });

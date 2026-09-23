@@ -1,0 +1,45 @@
+{
+  "backgrounds": [
+    {
+      "name": "American Flag",
+      "file": "backgrounds/american-flag.webp",
+      "tags": [
+        "patriotic",
+        "flag",
+        "red-white-blue",
+        "americana",
+        "waving-fabric"
+      ],
+      "width": 2048,
+      "height": 1365,
+      "bytes": 90546
+    },
+    {
+      "name": "Futuristic Showroom",
+      "file": "backgrounds/futuristic-showroom.webp",
+      "tags": [
+        "showroom",
+        "sci-fi",
+        "reflective-floor",
+        "ai-generated"
+      ],
+      "width": 1024,
+      "height": 1024,
+      "bytes": 51304
+    }
+  ],
+  "borders": [
+    {
+      "name": "Generic Dealer Frame",
+      "file": "borders/generic-dealer-frame.webp",
+      "tags": [
+        "dealer-frame",
+        "generic",
+        "license-plate-style"
+      ],
+      "width": 1254,
+      "height": 1254,
+      "bytes": 408
+    }
+  ]
+}

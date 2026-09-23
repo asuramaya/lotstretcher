@@ -624,8 +624,7 @@
               {
                 "value": "asset",
                 "label": "Stock",
-                "hint": "A photo from your server's library",
-                "requires": "filesystem",
+                "hint": "A photo from the studio library",
                 "cli": "--photo-background",
                 "cliNamed": "--background",
                 "expand": "backgrounds",
@@ -651,11 +650,6 @@
             "choices": [],
             "dynamic": "backgrounds",
             "cli": "--background",
-            "surfaces": [
-              "cli",
-              "server"
-            ],
-            "requires": "filesystem",
             "showWhen": {
               "key": "backdrop",
               "equals": "asset"
@@ -710,8 +704,7 @@
               {
                 "value": "asset",
                 "label": "Stock",
-                "hint": "A frame from your server's library",
-                "requires": "filesystem",
+                "hint": "A frame from the studio library",
                 "cli": "--frame",
                 "cliNamed": "--border",
                 "expand": "borders",

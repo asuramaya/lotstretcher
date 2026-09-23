@@ -360,6 +360,24 @@ lotstretcher composites vehicle cutouts onto branded border frames. These assets
    ```
 4. Use `--border "My Dealership Frame"` or set `"default_border_tag": "custom"` in your configuration.
 
+### The studio library (what the app ships)
+
+The app's "Stock" tiles on lotstretcher.org come from the same
+manifest. An entry carrying `"studio": true` is exported by
+
+```bash
+python3 web/build-studio.py
+```
+
+into `web/public/studio/` (backgrounds as WebP at most 2048 px, frames
+as lossless WebP so the window keeps its alpha) with a manifest the app
+reads at start. The site composes those on the visitor's own machine;
+there is no server behind lotstretcher.org, and the whole library is a
+few hundred KB. Entries without the tag, such as a dealer's private
+frames, stay on your machine and appear in the app only against your
+own server, which composes them. The exported files are committed, so
+run the build and commit its output when you add or retag an asset.
+
 A frame is drawn for one shape, and the still formats have several. The
 format always decides the canvas; `--frame-fit` decides how the frame
 meets it: `fit` (the default) keeps the whole frame centred with the
