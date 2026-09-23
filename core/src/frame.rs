@@ -109,6 +109,10 @@ pub fn render_frame(req: &FrameRequest, arena: &[u8]) -> Result<Image, String> {
         Background::Vehicle { seed, exterior, interior } => vehicle_gradient(w, h, seed, exterior.as_deref(), interior.as_deref(), None),
         Background::Generic { seed } => generic_gradient(w, h, seed),
         Background::Linear { angle, start, end } => linear_gradient(w, h, *angle, *start, *end),
+        Background::Sweep { seed, exterior, interior, sample } => {
+            let s = match sample { Some(s) => Some(slice_image(arena, s)?), None => None };
+            crate::gradient::sweep(w, h, seed, exterior.as_deref(), interior.as_deref(), s.as_deref())
+        }
         Background::Image { image } => {
             let img = slice_image(arena, image)?;
             let rgb = if img.channels == 3 { (*img).clone() } else { drop_alpha(&img) };

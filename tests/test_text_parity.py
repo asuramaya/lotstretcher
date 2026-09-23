@@ -282,3 +282,33 @@ def test_the_floor_reflection_mirrors_the_car_below_it_and_fades_out():
     full, half = frame(1.0), frame(0.5)
     y, x = 200 + 260 + 2, 150 + 250
     assert full[y, x, 0] - full[y, x, 1] > half[y, x, 0] - half[y, x, 1] > 0
+
+
+def test_the_sweep_is_a_lit_floor_line_in_the_vehicles_colours():
+    """Brightest at the horizon, darker at the top and the bottom, a pool
+    of light about the middle of the line; the same seed gives the same
+    pixels; a frame takes it with a sample for the paint."""
+    from lotstretcher.imaging.text import backdrop_spec
+    assert backdrop_spec("sweep", "s", "Rapid Red", None) == {"kind": "sweep", "seed": "s", "exterior": "Rapid Red", "interior": None}
+    assert backdrop_spec("generic", "s", "x", "y") == {"kind": "generic", "seed": "s"}
+    with pytest.raises(ValueError):
+        backdrop_spec("neon", "s", None, None)
+    bg = {"kind": "sweep", "seed": "s", "exterior": "Rapid Red", "interior": None}
+    img = np.asarray(core.render_frame([], 600, 600, bg)).astype(int)
+    lum = img.sum(axis=2)
+    horizon = int(np.argmax(lum[:, 300]))
+    assert 0.55 * 600 < horizon < 0.72 * 600, horizon
+    assert lum[horizon, 300] > lum[20, 300] + 150 and lum[horizon, 300] > lum[590, 300] + 100
+    assert lum[horizon, 300] > lum[horizon, 10] + 40, "the pool of light sits about the middle"
+    assert img[horizon, 300, 0] > img[horizon, 300, 1] + 30, "a red name gives a red sweep"
+    again = np.asarray(core.render_frame([], 600, 600, bg)).astype(int)
+    assert (again == img).all()
+    # Composed with a car on it: the still's backdrop is the same sweep.
+    still = np.asarray(core.compose_hero([cutout()], 600, 600, bg, spotlight=False)).astype(int)
+    assert (still[5, 5] == img[5, 5]).all() and (still[595, 5] == img[595, 5]).all()
+    # No colour name: the paint is read off the sample (red cutout).
+    sampled = core.call({"op": "render_frame", "width": 200, "height": 200,
+                         "background": {"kind": "sweep", "seed": "s", "exterior": None, "interior": None, "sample": {"$image": 0}},
+                         "cars": []}, [cutout()])
+    row = np.asarray(sampled).astype(int)[int(np.argmax(np.asarray(sampled).astype(int).sum(axis=2)[:, 100])), 100]
+    assert row[0] > row[1] + 20

@@ -28,7 +28,7 @@ import {
 } from './options.js';
 import { store, blobToCanvas } from './lib/store.js';
 import { loadSpec, get as specGet } from './spec.js';
-import { loadCore, version as coreVersion, threadCount as coreThreads, enhanceInterior, renderFrame as coreRenderFrame, drawFrame as coreDrawFrame } from './core.js';
+import { loadCore, version as coreVersion, threadCount as coreThreads, enhanceInterior, renderFrame as coreRenderFrame, drawFrame as coreDrawFrame, call as coreCall, toImageData as coreToImageData } from './core.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { Preview } from './preview.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
@@ -515,15 +515,20 @@ function swatchArt(control, choice, values, image) {
     if (!c) return null;
     const copy = tileCanvas(); copy.getContext('2d').drawImage(c, 0, 0); return copy;
   }
-  if (control.key === 'backdrop' && (choice.value === 'vehicle' || choice.value === 'generic')) {
+  if (control.key === 'backdrop' && ['vehicle', 'generic', 'sweep'].includes(choice.value)) {
     const subject = preview?.subject?.();
     const key = JSON.stringify([choice.value, subject?.exterior, subject?.interior, subject?.seed]);
     if (!artCache.has(key)) {
       try {
         const bg = choice.value === 'generic'
           ? { kind: 'generic', seed: `${subject?.seed || 'sample'}:preview` }
-          : { kind: 'vehicle', seed: `${subject?.seed || 'sample'}:preview`, exterior: subject?.exterior || null, interior: subject?.interior || null };
-        const out = coreRenderFrame([], 96, 96, bg);
+          : { kind: choice.value, seed: `${subject?.seed || 'sample'}:preview`, exterior: subject?.exterior || null, interior: subject?.interior || null };
+        // The sweep reads the paint off the subject when the names give none.
+        const sample = subject?.cutout ? ctxOf(subject.cutout, { willReadFrequently: true }).getImageData(0, 0, subject.cutout.width, subject.cutout.height) : null;
+        if (choice.value === 'sweep' && sample) bg.sample = { $image: 0 };
+        const out = choice.value === 'sweep'
+          ? coreToImageData(coreCall({ op: 'render_frame', width: 96, height: 96, background: bg, cars: [], rgba: true }, sample ? [sample] : []))
+          : coreRenderFrame([], 96, 96, bg);
         const c = tileCanvas();
         c.getContext('2d').putImageData(out, 0, 0);
         artCache.set(key, c);
@@ -554,7 +559,7 @@ function lookArt(lk, values) {
       const size = 128;
       const composed = composeHero(subject.cutout, {
         width: size, height: size, seed: `${subject.seed}:look`,
-        exterior: subject.exterior, interior: subject.interior, generic: v.backdrop === 'generic',
+        exterior: subject.exterior, interior: subject.interior, generic: v.backdrop === 'generic', backdrop: v.backdrop,
         spotlight: v.spotlight, marginFrac: 0.08,
         glow: v.glow, glowColor: v.glowColor, glowRadius: Math.max(2, Math.round((v.glowRadius || 24) / 6)), glowIntensity: v.glowIntensity,
         border: null, borderStyle: v.border === 'line' ? { kind: 'line', color: v.frameColor || 'white', weight: Math.max(0.02, Number(v.frameWeight) || 0.008) * 2 } : null,
@@ -832,7 +837,7 @@ async function run() {
           width: w, height: h,
           spotlight: state.options.spotlight,
           marginFrac: state.options.margin,
-          generic: state.options.backdrop === 'generic',
+          generic: state.options.backdrop === 'generic', backdrop: state.options.backdrop,
           // The user's own images, the browser's --photo-background and
           // --border: drawn by the core exactly as the CLI's are.
           background: state.options.backdrop === 'custom' ? state.options.customBackground || null : stockBackground,
@@ -887,7 +892,7 @@ async function run() {
             seed: `${vid}:video:${fmt}`,
             exterior: state.vehicle.exterior_color,
             interior: state.vehicle.interior_color,
-            generic: state.options.backdrop === 'generic',
+            generic: state.options.backdrop === 'generic', backdrop: state.options.backdrop,
             spotlight: state.options.spotlight,
             glow: state.options.glow,
             glowColor: state.options.glowColor,

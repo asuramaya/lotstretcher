@@ -26,7 +26,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ..imaging.text import frame_style, reflection_style, shadow_style, text_options, text_request
+from ..imaging.text import backdrop_spec, frame_style, reflection_style, shadow_style, text_options, text_request
 
 MAX_CUTOUT_BYTES = 24 * 1024 * 1024
 MAX_CANVAS = 4096
@@ -150,14 +150,12 @@ def compose(cutout_png: bytes, options: dict[str, Any],
             # Unnamed means the library's default, exactly as
             # `--photo-background` with no `--background` does in cli.py.
             background = _default_asset("backgrounds", "American Flag", warnings)
-    elif options.get("backdrop") == "generic":
-        warnings.append("the generated hue-band backdrop is browser-only; "
-                        "used the vehicle gradient instead")
     if background is None:
-        # A spec for the core rather than pixels: the same gradient the
+        # A spec for the core rather than pixels: the same backdrop the
         # browser would have drawn for this seed, since it is the same code.
-        background = {"kind": "vehicle", "seed": str(options.get("seed", "")),
-                      "exterior": options.get("exteriorColor"), "interior": options.get("interiorColor")}
+        from ..library_ops import generated_backdrop
+        background = backdrop_spec(generated_backdrop(options), str(options.get("seed", "")),
+                                   options.get("exteriorColor"), options.get("interiorColor"))
 
     from ..library_ops import stock_border
     wants_border = bool(options.get("frame")) or stock_border(options) is not None

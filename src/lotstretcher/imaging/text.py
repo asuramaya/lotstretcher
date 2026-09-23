@@ -113,6 +113,27 @@ def shadow_style(options: dict) -> dict | None:
     return {"strength": float(strength if strength is not None else SHADOW_STRENGTH)}
 
 
+BACKDROPS = ("vehicle", "generic", "sweep")
+
+
+def add_backdrop_arg(parser) -> None:
+    """The generated backdrop's kind, shared by the CLIs. A photo
+    (--photo-background) wins over it."""
+    parser.add_argument("--backdrop", default="vehicle", choices=BACKDROPS,
+                        help="The generated backdrop: 'vehicle', a gradient from the vehicle's own colours "
+                             "(default); 'generic', seeded hue bands; 'sweep', a studio cyclorama in the "
+                             "vehicle's colours with a lit floor line. Ignored when --photo-background is given.")
+
+
+def backdrop_spec(kind: str, seed: str, exterior: str | None, interior: str | None) -> dict:
+    """The core's background field for a generated backdrop of `kind`."""
+    if kind == "generic":
+        return {"kind": "generic", "seed": seed}
+    if kind not in BACKDROPS:
+        raise ValueError(f"unknown backdrop {kind!r}; one of {', '.join(BACKDROPS)}")
+    return {"kind": kind, "seed": seed, "exterior": exterior, "interior": interior}
+
+
 REFLECTION_STRENGTH = 0.35
 
 

@@ -95,3 +95,47 @@ pub fn vehicle_gradient(w: usize, h: usize, seed: &str, exterior: Option<&str>, 
     }
     linear_gradient(w, h, angle, start, end)
 }
+
+/// A studio sweep: a cyclorama in the vehicle's own colours. The wall
+/// darkens toward the top, brightens to a lit floor line, and the floor
+/// falls off below it, with a pool of light about the middle of the
+/// line where the car stands. Only the horizon's height and the pool's
+/// centre are seeded, so a rerun reproduces the file.
+pub fn sweep(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>) -> Image {
+    let (a, b) = vehicle_gradient_colors(exterior, interior, sample);
+    let lum = |c: [u8; 3]| 0.299 * c[0] as f64 + 0.587 * c[1] as f64 + 0.114 * c[2] as f64;
+    let (dark, light) = if lum(a) <= lum(b) { (a, b) } else { (b, a) };
+    let mut rng = Rng::from_seed(seed);
+    let horizon = rng.uniform(0.60, 0.68);
+    let pool_x = rng.uniform(0.46, 0.54);
+    let dark = [dark[0] as f64, dark[1] as f64, dark[2] as f64];
+    let light = [light[0] as f64, light[1] as f64, light[2] as f64];
+    let mix = |p: [f64; 3], q: [f64; 3], t: f64| [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t];
+    let scale = |p: [f64; 3], k: f64| [p[0] * k, p[1] * k, p[2] * k];
+    let top = scale(dark, 0.55);
+    let wall = scale(light, 0.92);
+    let floor_near = scale(light, 0.80);
+    let floor_far = scale(dark, 0.70);
+    let mut out = Image::new(w, h, 3);
+    let (wf, hf) = (w as f64, h as f64);
+    crate::par::rows_mut(&mut out.data, w * 3, |y, row| {
+        let v = (y as f64 + 0.5) / hf;
+        let base = if v < horizon {
+            let t = (v / horizon).powf(1.5);
+            mix(top, wall, t)
+        } else {
+            let u = ((v - horizon) / (1.0 - horizon)).sqrt();
+            mix(floor_near, floor_far, u)
+        };
+        for x in 0..w {
+            let dx = ((x as f64 + 0.5) / wf - pool_x) * 1.7;
+            let dy = (v - horizon) / 0.22;
+            let glow = (-(dx * dx + dy * dy)).exp() * 0.32;
+            let i = x * 3;
+            for c in 0..3 {
+                row[i + c] = (base[c] + (255.0 - base[c]) * glow).round().clamp(0.0, 255.0) as u8;
+            }
+        }
+    });
+    out
+}

@@ -216,6 +216,7 @@ function drawFrame(ctx, prepared, { width, height, shots, t, duration, palette, 
 export function prepareClip(cutouts, {
   width = 1254, height = 1254, seed = 'lotstretcher', angles = null,
   exterior = null, interior = null, generic = false, spotlight = true, duration = null,
+  backdrop = null,            // the generated backdrop's kind: a sweep is drawn once and held like a photo
   text = null,                // lib/text.js::textRequest; the still's text on every frame
   background = null,          // a canvas: a stock or the user's photo behind the clip, cover-fitted
   frameStyle = null,          // lib/text.js::frameStyle: a frame the core draws at the clip's size
@@ -225,7 +226,7 @@ export function prepareClip(cutouts, {
   if (duration === null) duration = DEFAULT_DURATION_S;
   // A photo backdrop is fitted once and held for the clip; the gradient
   // is the fallback, rebuilt per frame because it rotates.
-  const bgData = background
+  let bgData = background
     ? ctxOf(coverFit(background, width, height), { willReadFrequently: true }).getImageData(0, 0, width, height)
     : null;
   // One palette per shot (the CLI seeds per image too), and each shot's
@@ -235,6 +236,12 @@ export function prepareClip(cutouts, {
     const data = ctxOf(cut, { willReadFrequently: true }).getImageData(0, 0, cut.width, cut.height);
     return { width: cut.width, height: cut.height, data, dim: 1.0 };
   });
+  // A sweep is one backdrop frame for the whole clip, its paint read
+  // off the first shot when the names give none; held like a photo.
+  if (!bgData && backdrop === 'sweep') {
+    const kind = { kind: 'sweep', seed: `${seed}:sweep`, exterior: generic ? null : exterior, interior: generic ? null : interior, sample: shots[0] ? { $image: 0 } : null };
+    bgData = core.toImageData(core.call({ op: 'render_frame', width, height, background: kind, cars: [], rgba: true }, shots[0] ? [shots[0].data] : []));
+  }
   // The text is planned once inside the canvas (its paint colour read
   // off the first shot), and the cars are laid out in the window left
   // beside its band, as the CLI's clip does.
@@ -370,6 +377,7 @@ export async function renderHeroVideoHere(cutouts, {
   exterior = null,
   interior = null,
   generic = false,
+  backdrop = null,            // the generated backdrop's kind; a sweep is one held frame
   spotlight = true,
   // The glow halo behind each car, as the CLI's --glow-* flags set it.
   // Memoized per scaled car inside the core, so it costs one blur per
@@ -435,7 +443,7 @@ export async function renderHeroVideoHere(cutouts, {
       : new Promise((resolve) => { drained = resolve; })
   );
 
-  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, spotlight, duration: explicitDuration ? duration : null, text, background, frameStyle, vehicle });
+  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, backdrop, spotlight, duration: explicitDuration ? duration : null, text, background, frameStyle, vehicle });
   const { shots, palette, plan } = prepared;
   duration = prepared.duration;
 

@@ -64,6 +64,7 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
     spec = VIDEO_FORMATS[fmt]
     from lotstretcher.imaging.compose import render_hero_video
     from lotstretcher.imaging.palette import colors_from_details, vehicle_gradient_colors
+    from lotstretcher.imaging.text import backdrop_spec
     from lotstretcher.library_ops import vehicle_record
     from lotstretcher.imaging.select import load_angles, order_for_conveyor_start, pick_all_for_carousel
 
@@ -112,6 +113,8 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         border_style=hero_opts.border_style,
         shadow=hero_opts.shadow,
         reflection=hero_opts.reflection,
+        backdrop_spec=(backdrop_spec(hero_opts.backdrop, folder.name, *colors_from_details(folder))
+                       if hero_opts.backdrop != "vehicle" else None),
         # --photo-background / --background NAME: the same photo the
         # stills sit on, unless a flag video was asked for instead.
         background_image=hero_opts.background_path if not hero_opts.gradient else None,
@@ -194,6 +197,9 @@ class HeroOptions:
     shadow: dict | None = None
     # A floor reflection under the cars (imaging/text.py::reflection_style); None means none.
     reflection: dict | None = None
+    # The generated backdrop's kind when no photo is chosen: vehicle,
+    # generic or sweep (imaging/text.py::backdrop_spec).
+    backdrop: str = "vehicle"
 
 
 def process_vehicle(playwright, session: requests.Session, url: str, out_root: Path,
@@ -339,6 +345,7 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 border_style=hero_opts.border_style,
                 shadow=hero_opts.shadow,
                 reflection=hero_opts.reflection,
+                backdrop=hero_opts.backdrop,
             )
             if compose_result["hero"]:
                 n_framed = len(compose_result["framed"])
@@ -371,6 +378,7 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 border_style=hero_opts.border_style,
                 shadow=hero_opts.shadow,
                 reflection=hero_opts.reflection,
+                backdrop=hero_opts.backdrop,
             )
             if wheel_shots:
                 log(f"    wheel money shot{'s' if len(wheel_shots) != 1 else ''}: "

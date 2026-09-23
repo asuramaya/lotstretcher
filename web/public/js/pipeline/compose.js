@@ -22,6 +22,7 @@ export function composeHero(cutout, {
   spotlight = true,
   marginFrac = null,
   generic = false,
+  backdrop = null,            // the generated backdrop's kind: vehicle (default), generic or sweep
   glow = false,
   glowColor = null,
   glowRadius = null,
@@ -46,7 +47,9 @@ export function composeHero(cutout, {
     const fitted = coverFit(background, width, height);
     backgroundImage = ctxOf(fitted, { willReadFrequently: true }).getImageData(0, 0, width, height);
     bg = { kind: 'image' };
-  } else if (generic) {
+  } else if (backdrop === 'sweep') {
+    bg = { kind: 'sweep', seed: String(seed), exterior: exterior || null, interior: interior || null };
+  } else if (generic || backdrop === 'generic') {
     bg = { kind: 'generic', seed: String(seed) };
   } else {
     bg = { kind: 'vehicle', seed: String(seed), exterior: exterior || null, interior: interior || null };

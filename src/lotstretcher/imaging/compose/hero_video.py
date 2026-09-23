@@ -358,6 +358,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        border_style: dict | None = None,
                        shadow: dict | None = None,
                        reflection: dict | None = None,
+                       backdrop_spec: dict | None = None,
                        encoder: str = "libx264",
                        hood_sides: dict[str, str] | None = None,
                        target_duration_s: float | None = None) -> dict:
@@ -423,8 +424,15 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
 
     # A still photo behind the clip is one backdrop frame held for the
     # whole clip; the core cover-fits it to the canvas as it draws.
+    # A generated backdrop other than the turning gradient (a sweep, hue
+    # bands) is drawn once by the core and held, like a photo; its paint
+    # is read off the first shot when the record names none.
     bg_frames = (_read_bg_frames(background_video, canvas_size) if background_video is not None
                  else [Image.open(background_image).convert("RGB")] if background_image is not None
+                 else [core.call({"op": "render_frame", "width": canvas_size[0], "height": canvas_size[1],
+                                  "background": {**backdrop_spec, "sample": {"$image": 0}}, "cars": []},
+                                 [Image.open(carousel_paths[0]).convert("RGBA")])]
+                 if backdrop_spec is not None and backdrop_spec.get("kind") != "vehicle"
                  else None)
     # One representative backdrop frame for the spotlight's contrast
     # measurement (compute_dim_strength) -- it only needs a sample of
@@ -614,7 +622,8 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
         "audio_loop_s": round(audio_loop_s, 3),
         "bars_per_loop": bars_per_loop,
         "clock": "audio" if audio_path is not None else f"{bpm:g} bpm",
-        "backdrop": "video" if background_video is not None else "photo" if background_image is not None else "gradient",
+        "backdrop": "video" if background_video is not None else "photo" if background_image is not None
+        else backdrop_spec["kind"] if backdrop_spec is not None else "gradient",
         "framed": border is not None,
         "bar_dwell_s": round(dwell, 3),
         "beat_s": round(beat_s, 3),

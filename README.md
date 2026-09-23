@@ -396,6 +396,18 @@ is the line's weight as a share of the shorter side. In the app it is
 the "Studio line" tile of the Frame picker, with the colour and weight
 levers beside it. Frame art, when given, wins.
 
+### The sweep backdrop
+
+`--backdrop sweep` draws a studio cyclorama in the vehicle's own
+colours: the wall darkens toward the top, brightens to a lit floor
+line, and the floor falls off below it with a pool of light where the
+car stands. `--backdrop generic` is the seeded hue bands the app has
+had all along, now on the command line too; `--backdrop vehicle` is
+the default gradient. A photo (`--photo-background`) wins over any of
+them. The clip holds one sweep frame behind the conveyor, as it holds
+a photo. In the app it is the Backdrop picker's Sweep tile, drawn by
+the core on the preview's subject.
+
 ### Looks: one tap, several levers
 
 The Look pane opens with a row of looks, each a named set of light and

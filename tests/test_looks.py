@@ -7,7 +7,7 @@ import argparse
 import pytest
 
 from lotstretcher import looks, spec
-from lotstretcher.imaging.text import (add_frame_style_args, add_reflection_args, add_shadow_args,
+from lotstretcher.imaging.text import (add_backdrop_arg, add_frame_style_args, add_reflection_args, add_shadow_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args)
 
@@ -23,6 +23,8 @@ def parser():
     add_frame_style_args(p)
     add_shadow_args(p)
     add_reflection_args(p)
+    p.add_argument("--photo-background", action="store_true")
+    add_backdrop_arg(p)
     looks.add_look_arg(p)
     return p
 
@@ -89,3 +91,22 @@ def test_look_applies_and_typed_flags_win():
     assert looks.apply_look(p.parse_args([]), p, []) == []
     with pytest.raises(ValueError):
         looks.find("neon")
+
+
+def test_backdrop_flag_reaches_the_controls_and_the_showroom_look_uses_the_sweep():
+    p = parser()
+    argv = ["--look", "showroom"]
+    args = p.parse_args(argv)
+    looks.apply_look(args, p, argv)
+    assert args.backdrop == "sweep" and args.photo_background is False
+    argv = ["--look", "showroom", "--backdrop", "generic"]
+    args = p.parse_args(argv)
+    looks.apply_look(args, p, argv)
+    assert args.backdrop == "generic"
+    argv = ["--look", "clean"]
+    args = p.parse_args(argv)
+    looks.apply_look(args, p, argv)
+    assert args.backdrop == "vehicle", "clean leaves the backdrop alone"
+    from lotstretcher.library_ops import generated_backdrop
+    assert generated_backdrop({"backdrop": "sweep"}) == "sweep"
+    assert generated_backdrop({"backdrop": "asset"}) == "vehicle" and generated_backdrop({}) == "vehicle"

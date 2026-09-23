@@ -18,7 +18,14 @@ from pathlib import Path
 
 from lotstretcher.imaging import assets
 from lotstretcher.imaging.compose import compose_interiors, compose_vehicle, compose_wheel_shots
-from lotstretcher.imaging.text import frame_style, reflection_style, shadow_style, text_options
+from lotstretcher.imaging.text import BACKDROPS, frame_style, reflection_style, shadow_style, text_options
+
+
+def generated_backdrop(options: dict) -> str:
+    """The generated backdrop's kind from the app's backdrop select:
+    vehicle unless generic or sweep was picked (a photo is `gradient`)."""
+    kind = options.get("backdrop")
+    return kind if kind in BACKDROPS else "vehicle"
 
 
 def find_vehicle_folders(root: Path) -> list[Path]:
@@ -98,6 +105,7 @@ def resolve_recompose_options(options: dict) -> dict:
             "border_style": frame_style(options),
             "shadow": shadow_style(options),
             "reflection": reflection_style(options),
+            "backdrop": generated_backdrop(options),
         },
         "interiors": bool(options.get("interiors", False)),
         "interior_captions": bool(options.get("interiorCaptions", False)),
@@ -150,6 +158,7 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
         border_style=frame_style(options),
         shadow=shadow_style(options),
         reflection=reflection_style(options),
+        backdrop=generated_backdrop(options),
         gradient=not wants_photo,
         video=video_on,
         video_encoder="h264_nvenc" if options.get("nvenc") else "libx264",

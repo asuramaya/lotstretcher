@@ -75,7 +75,7 @@ from lotstretcher.imaging.dedupe import DEFAULT_TEMPLATES_DIR, JunkFilter
 from lotstretcher.listing import expand_listing_url, is_vdp_url
 from lotstretcher.local_source import is_local_source, load_local_vehicle, local_vehicle_key
 from lotstretcher.scrape import USER_AGENT, vin_from_url
-from lotstretcher.imaging.text import (add_frame_style_args, add_reflection_args, add_shadow_args, add_text_args,
+from lotstretcher.imaging.text import (add_backdrop_arg, add_frame_style_args, add_reflection_args, add_shadow_args, add_text_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args)
 from lotstretcher.library_ops import hero_options_from_controls
@@ -232,7 +232,7 @@ def controls_from_args(args) -> dict:
         "glowIntensity": args.glow_intensity,
         "spotlight": not args.no_spotlight,
         "margin": args.margin_frac,
-        "backdrop": "asset" if (args.photo_background or args.background) else "vehicle",
+        "backdrop": "asset" if (args.photo_background or args.background) else args.backdrop,
         "background": args.background,
         "frame": bool(args.frame or args.border),
         "border": args.border,
@@ -320,6 +320,7 @@ def main():
     add_frame_style_args(parser)
     add_shadow_args(parser)
     add_reflection_args(parser)
+    add_backdrop_arg(parser)
     add_look_arg(parser)
     parser.add_argument("--frame-fit", default="fit", choices=["fit", "fill", "stretch"],
                          help="How a frame meets a format of another shape (a square dealer frame on a "

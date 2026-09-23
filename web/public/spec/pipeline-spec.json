@@ -609,8 +609,8 @@
       {
         "id": "showroom",
         "label": "Showroom",
-        "hint": "Set down on a lit, glossy floor",
-        "values": {"spotlight": true, "glow": false, "shadow": true, "shadowStrength": 0.55,
+        "hint": "A sweep, set down on a lit, glossy floor",
+        "values": {"backdrop": "sweep", "spotlight": true, "glow": false, "shadow": true, "shadowStrength": 0.55,
                    "reflection": true, "reflectionStrength": 0.35, "border": "none"}
       },
       {
@@ -650,8 +650,17 @@
               },
               {
                 "value": "generic",
-                "label": "Studio",
-                "hint": "Seeded hue bands"
+                "label": "Hue bands",
+                "hint": "Seeded colour bands, no paint read",
+                "cli": "--backdrop",
+                "cliValue": "generic"
+              },
+              {
+                "value": "sweep",
+                "label": "Sweep",
+                "hint": "A studio cyclorama in the vehicle's colours, lit at the floor line",
+                "cli": "--backdrop",
+                "cliValue": "sweep"
               },
               {
                 "value": "asset",
@@ -670,7 +679,7 @@
                 "file": "customBackground"
               }
             ],
-            "cliNote": "The CLI's gradient is always measured from the vehicle's own paint, so only the 'Stock background' choice has a flag; the generated hue bands are a browser-only look."
+        "cliNote": "Vehicle paint is the default and has no flag. Hue bands and Sweep are --backdrop generic / --backdrop sweep. Stock is --photo-background with --background NAME; your own image goes to --photo-background as a path, which the file control echoes."
           },
           {
             "key": "background",

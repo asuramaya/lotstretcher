@@ -98,6 +98,10 @@ pub enum Background {
     /// An explicit linear gradient: what a video host asks for per
     /// frame as the angle turns, without a round trip for the pixels.
     Linear { angle: f64, start: [u8; 3], end: [u8; 3] },
+    /// A studio sweep in the vehicle's colours (gradient::sweep). The
+    /// paint is read off `sample` when the names give none; compose_hero
+    /// uses car 0 for that.
+    Sweep { seed: String, exterior: Option<String>, interior: Option<String>, #[serde(default)] sample: Option<Slice> },
 }
 
 #[derive(Deserialize)]
@@ -254,6 +258,8 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
             vehicle_gradient(w, h, seed, exterior.as_deref(), interior.as_deref(), cars.first().map(|c| &**c)),
         Background::Generic { seed } => generic_gradient(w, h, seed),
         Background::Linear { angle, start, end } => crate::gradient::linear_gradient(w, h, *angle, *start, *end),
+        Background::Sweep { seed, exterior, interior, .. } =>
+            crate::gradient::sweep(w, h, seed, exterior.as_deref(), interior.as_deref(), cars.first().map(|c| &**c)),
         Background::Image { image } => {
             let img = slice_image(arena, image)?;
             let rgb = if img.channels == 3 { (*img).clone() } else { drop_alpha(&img) };
