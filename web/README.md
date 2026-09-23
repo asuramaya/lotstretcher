@@ -221,8 +221,9 @@ Measured on desktop Chromium, 4 threads (i9-12900H):
 ## What the browser does not do
 
 The core processing is the CLI's, one to one. What the browser lacks is
-what needs a server: scraping a dealer page (the bookmarklet hands the
-listing over instead), a server's private frames and backdrops (the
+what needs a server: scraping a dealer page (the address's VIN is
+decoded on the device instead, and a saved page can be loaded), a
+server's private frames and backdrops (the
 studio library under `studio/` ships with the site and composes here;
 anything else in a self-hosted `assets/` reaches the browser through
 `POST /compose`), GPU upscaling,
