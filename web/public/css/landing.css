@@ -174,7 +174,8 @@
   color: #fff; font-size: 10px; font-weight: 650;
 }
 
-.outgrid { display: grid; grid-template-columns: 1.1fr .9fr; gap: var(--s-3); align-items: start; }
+/* A square beside a 9:16 portrait, the two about one height. */
+.outgrid { display: grid; grid-template-columns: 1.3fr .75fr; gap: var(--s-3); align-items: start; }
 .outgrid img { width: 100%; border-radius: var(--r-md); border: 1px solid var(--line); box-shadow: var(--sh-2); }
 
 /* ---------- swatches ---------- */

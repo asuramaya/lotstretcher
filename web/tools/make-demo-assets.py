@@ -10,8 +10,9 @@ from pathlib import Path
 sys.path.insert(0, "src")
 from PIL import Image
 
-from lotstretcher.imaging.compose.background import vehicle_gradient_background
 from lotstretcher.imaging.compose.hero import compose_hero
+from lotstretcher.imaging.compose.pipeline import HERO_STILL_FORMATS
+from lotstretcher.imaging.text import backdrop_spec
 
 V = Path("/home/asuramaya/Documents/listings/new/2026-Ford-Maverick-XLT-RB41981")
 OUT = Path("web/public/demo")
@@ -37,12 +38,16 @@ save(before_sq, "before.jpg", 900)
 
 # AFTER: composed from that same photo's cutout, by the real composer.
 cut = V / "images/exterior/cutout" / (Path(SRC).stem + ".png")
-bg = vehicle_gradient_background((1254, 1254), seed=SRC, exterior=EXT, interior=INT, sample_path=cut)
-after = compose_hero(bg, None, [cut], layout="single", spotlight=True)
+# The backdrop is the core's: a gradient from the vehicle's own colours,
+# seeded per image, exactly as a run makes it.
+bg = backdrop_spec("vehicle", SRC, EXT, INT)
+after = compose_hero(bg, None, [cut], layout="single", spotlight=True, canvas_size=tuple(HERO_STILL_FORMATS["square"]))
 save(after, "after.jpg", 900)
 
-# Supporting shots for the feature sections.
-save(Image.open(V / "bundle/hero-portrait.png"), "portrait.jpg", 620)
+# The portrait, composed the same way at the spec's portrait size (the
+# video's 9:16), so the pair shows the two shapes a run makes.
+portrait = compose_hero(bg, None, [cut], layout="single", spotlight=True, canvas_size=tuple(HERO_STILL_FORMATS["portrait"]))
+save(portrait, "portrait.jpg", 620)
 save(Image.open(V / "bundle/window-sticker-1a.png"), "sticker.jpg", 800, quality=78)
 
 # A strip of raw lot photos, for the "drop in a folder" visual.
