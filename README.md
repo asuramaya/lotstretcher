@@ -173,10 +173,13 @@ than once per frame. Measured on a real five-shot vehicle at 1254²: a glowing c
 21 ms, byte-identical; the whole 26 s clip's frames 84 s to 42 s. In the browser a 720² three-shot conveyor
 renders in about 4 s for a 9.6 s clip. Interior photos are the core's too (`enhance_interior`: the
 capped white balance from bright near-neutral pixels, then the highlight-holding exposure lift), so the
-browser now writes the same `interior/` set the CLI's bundle carries, at the photo's own size. What
-remains outside the core: wheel shots and the sticker parser, each of which moves in turn, deleting its
-Python and JavaScript copy in the same commit its parity test passes. Models stay in ONNX Runtime on both
-sides.
+browser now writes the same `interior/` set the CLI's bundle carries, at the photo's own size. The wheel
+money shot's mask arithmetic is the core's as well (`mask_stats`, `cutout_from_mask`, `duplicate_score`:
+bounds, 8-connected blobs, the dominance, width and angle gates, the crop, the duplicate check); the
+models that make the masks, CLIPSeg and SAM2, stay in the CLI, which is why wheel shots are a server
+feature the app's capabilities list says the browser lacks. What remains outside the core: the sticker
+parser and the copy builders, which move in turn, deleting their Python and JavaScript copies in the
+same commit their parity test passes. Models stay in ONNX Runtime on both sides.
 
 [`tests/test_core_parity.py`](tests/test_core_parity.py) holds the core to the Python it replaced, and is
 skipped with a message when the core has not been built (`cargo build --release` in `core/`).

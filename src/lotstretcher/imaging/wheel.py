@@ -68,9 +68,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import numpy as np
 from PIL import Image
 
+from .. import core
+from .. import spec as _spec
 from .classify import SpareTireClassifier, WheelDetailClassifier
 
 CLIPSEG_MODEL = "CIDAS/clipseg-rd64-refined"
@@ -82,24 +83,24 @@ SAM2_MODEL = "facebook/sam2.1-hiera-small"
 # prompt). 0.5 is the plain more-likely-than-not default; the box it
 # produced was validated against all 11 real test photos without needing
 # adjustment.
-WHEEL_MASK_THRESHOLD = 0.5
+WHEEL_MASK_THRESHOLD = _spec.get("wheel", "maskThreshold")
 
 # Calibrated: the lowest confidence seen on a genuine wheel photo was 0.52;
 # every false-positive category (mirror/light/badge/handle/tread/other)
 # scored its own label higher than "wheel" in every case checked.
-WHEEL_CONFIDENCE_THRESHOLD = 0.5
+WHEEL_CONFIDENCE_THRESHOLD = _spec.get("wheel", "confidenceThreshold")
 
 # Calibrated: a real mounted spare scored 0.75-0.96; every genuine rolling-
 # wheel shot tested (6 real cases) scored "rolling_wheel" instead, several
 # with real margin (0.59-0.98).
-SPARE_TIRE_CONFIDENCE_THRESHOLD = 0.5
+SPARE_TIRE_CONFIDENCE_THRESHOLD = _spec.get("wheel", "spareConfidenceThreshold")
 
 # Calibrated: every confirmed-good 3/4-angle wheel photo measured a mask
 # bbox aspect ratio (width/height) of 1.0-1.9; every confirmed-bad front/
 # back tread-on angle measured 0.39-0.66 (re-confirmed at 0.53 under
 # SAM2). 0.85 sits in the clean gap between them, closer to the bad side
 # for a small safety margin.
-MIN_ANGLE_ASPECT = 0.85
+MIN_ANGLE_ASPECT = _spec.get("wheel", "minAngleAspect")
 
 # Upper bound, added as defense in depth after seeing what a routing
 # failure produces: when a full-car photo slipped into extraction (before
@@ -109,7 +110,7 @@ MIN_ANGLE_ASPECT = 0.85
 # real full-body masks measured 1.68 and 3.38. 1.4 sits mid-gap. (The old
 # 1.9 upper figure came from rembg-era bboxes, which ran looser than
 # SAM2's tight object masks.)
-MAX_ANGLE_ASPECT = 1.4
+MAX_ANGLE_ASPECT = _spec.get("wheel", "maxAngleAspect")
 
 # is_wheel_centric_shot() gates (see its docstring). Calibrated across all
 # 18 photos an earlier, classifier-only reroute pulled in, plus the
@@ -120,8 +121,12 @@ MAX_ANGLE_ASPECT = 1.4
 # thresholds sit in their respective measured gaps. The width gate also
 # guarantees money-shot resolution: even a hypothetical single-visible-
 # wheel photo taken from across the lot would be too small to ship.
-WHEEL_CENTRIC_MIN_DOMINANCE = 0.8
-WHEEL_CENTRIC_MIN_WIDTH_FRACTION = 0.24
+WHEEL_CENTRIC_MIN_DOMINANCE = _spec.get("wheel", "centricMinDominance")
+WHEEL_CENTRIC_MIN_WIDTH_FRACTION = _spec.get("wheel", "centricMinWidthFraction")
+
+# What is done with a mask once a model has made it -- bounds, blobs,
+# the gates, the crop -- is the core's (core/src/mask.rs), shared with
+# the browser for the day these models have a build there.
 
 
 @dataclass
@@ -198,14 +203,14 @@ def _sam2():
 _mask_memo: dict = {"key": None, "mask": None}
 
 
-def _wheel_mask(img: Image.Image) -> "np.ndarray | None":
-    """CLIPSeg wheel segmentation: boolean mask of every pixel it's at
-    least WHEEL_MASK_THRESHOLD confident matches WHEEL_SEGMENT_PROMPT,
-    upsampled to the image's size, or None when there's no confident wheel
-    pixel at all. Never used as an alpha channel directly -- CLIPSeg's
-    mask edges are too low-res to matte with (its decoder runs at a fixed
-    small resolution and upsamples); callers use its bounds and blob
-    structure only.
+def _wheel_mask(img: Image.Image) -> "Image.Image | None":
+    """CLIPSeg wheel segmentation: an L image of its per-pixel confidence
+    that the pixel matches WHEEL_SEGMENT_PROMPT, upsampled to the image's
+    size, or None when no pixel clears WHEEL_MASK_THRESHOLD. Never used as
+    an alpha channel directly -- CLIPSeg's mask edges are too low-res to
+    matte with (its decoder runs at a fixed small resolution and
+    upsamples); callers use its bounds and blob structure only, through
+    the core's mask_stats.
 
     Single-slot memo: the same photo gets examined twice back-to-back on
     the reroute path (is_wheel_centric_shot() during routing, then
@@ -223,21 +228,22 @@ def _wheel_mask(img: Image.Image) -> "np.ndarray | None":
     inputs = processor(text=[WHEEL_SEGMENT_PROMPT], images=[img], return_tensors="pt").to(device)
     with torch.no_grad():
         outputs = model(**inputs)
-    probs = torch.sigmoid(outputs.logits[0]).cpu().numpy()
-    prob_img = Image.fromarray((probs * 255).astype(np.uint8)).resize(img.size, Image.BILINEAR)
-    mask = np.array(prob_img) > int(WHEEL_MASK_THRESHOLD * 255)
-    result = mask if mask.any() else None
+    probs = torch.sigmoid(outputs.logits[0]).cpu()
+    prob_img = Image.fromarray((probs * 255).to(torch.uint8).numpy(), mode="L").resize(img.size, Image.BILINEAR)
+    stats = core.call({"op": "mask_stats", "mask": {"$image": 0}}, [prob_img])
+    result = prob_img if stats["any"] else None
     _mask_memo["key"], _mask_memo["mask"] = key, result
     return result
 
 
 def _find_wheel_bbox(img: Image.Image) -> tuple[int, int, int, int] | None:
-    """Bounding box of _wheel_mask(), or None -- SAM2's box prompt."""
+    """Bounding box of _wheel_mask() (inclusive corners), or None --
+    SAM2's box prompt."""
     mask = _wheel_mask(img)
     if mask is None:
         return None
-    ys, xs = np.where(mask)
-    return int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())
+    left, top, right, bottom = core.call({"op": "mask_stats", "mask": {"$image": 0}}, [mask])["bbox"]
+    return left, top, right - 1, bottom - 1
 
 
 def is_wheel_centric_shot(content: bytes) -> bool:
@@ -256,34 +262,26 @@ def is_wheel_centric_shot(content: bytes) -> bool:
     separation (no overlap on either signal across every real case)."""
     import io
 
-    import cv2
-
     img = Image.open(io.BytesIO(content)).convert("RGB")
     mask = _wheel_mask(img)
     if mask is None:
         return False
-    _n, labels = cv2.connectedComponents(mask.astype(np.uint8))
-    counts = np.bincount(labels.ravel())
-    counts[0] = 0
-    largest = labels == int(counts.argmax())
-    dominance = largest.sum() / mask.sum()
-    xs = np.where(largest)[1]
-    width_frac = (xs.max() - xs.min() + 1) / img.size[0]
-    return bool(dominance >= WHEEL_CENTRIC_MIN_DOMINANCE
-                and width_frac >= WHEEL_CENTRIC_MIN_WIDTH_FRACTION)
+    stats = core.call({"op": "mask_stats", "mask": {"$image": 0}}, [mask])
+    return bool(stats["dominance"] >= WHEEL_CENTRIC_MIN_DOMINANCE
+                and stats["largest_width_frac"] >= WHEEL_CENTRIC_MIN_WIDTH_FRACTION)
 
 
-def _segment_wheel(img: Image.Image, box: tuple[int, int, int, int]) -> "np.ndarray | None":
-    """SAM2 with a box prompt on the full photo: returns a boolean mask of
-    the single object the box indicates. SAM2 proposes several candidate
-    masks per prompt (part vs whole ambiguity); its own predicted-IoU
-    score picks the winner -- on every real photo tested the best-scoring
-    candidate was the complete wheel+tire. Reduced to its largest
-    connected component: SAM occasionally tacks on a small detached
-    fragment (confirmed real case: a scrap of mudguard floating beside an
-    otherwise perfect wheel mask, which also skewed the bbox the aspect
-    gate measures). Returns None only if the mask comes back empty."""
-    import cv2
+def _segment_wheel(img: Image.Image, box: tuple[int, int, int, int]) -> "Image.Image | None":
+    """SAM2 with a box prompt on the full photo: returns an L mask (255 =
+    object) of the single object the box indicates. SAM2 proposes several
+    candidate masks per prompt (part vs whole ambiguity); its own
+    predicted-IoU score picks the winner -- on every real photo tested the
+    best-scoring candidate was the complete wheel+tire. The reduction to
+    the largest connected component happens in the core's cutout (SAM
+    occasionally tacks on a small detached fragment: a confirmed real
+    case was a scrap of mudguard floating beside an otherwise perfect
+    wheel mask, which also skewed the bbox the aspect gate measures).
+    Returns None only if the mask comes back empty."""
     import torch
 
     processor, model = _sam2()
@@ -292,19 +290,11 @@ def _segment_wheel(img: Image.Image, box: tuple[int, int, int, int]) -> "np.ndar
     with torch.no_grad():
         outputs = model(**inputs, multimask_output=True)
     masks = processor.post_process_masks(outputs.pred_masks.cpu(), inputs.original_sizes)[0]
-    scores = outputs.iou_scores.cpu().numpy().ravel()
-    arr = masks.numpy() if hasattr(masks, "numpy") else np.array(masks)
-    arr = arr.reshape(-1, arr.shape[-2], arr.shape[-1])
-    mask = arr[int(scores.argmax())].astype(bool)
-    if not mask.any():
-        return None
-
-    n_labels, labels = cv2.connectedComponents(mask.astype(np.uint8))
-    if n_labels > 2:  # background + more than one foreground piece
-        counts = np.bincount(labels.ravel())
-        counts[0] = 0  # never pick the background
-        mask = labels == int(counts.argmax())
-    return mask
+    scores = outputs.iou_scores.cpu().reshape(-1)
+    masks = torch.as_tensor(masks).reshape(-1, masks.shape[-2], masks.shape[-1])
+    best = (masks[int(scores.argmax())] > 0).to(torch.uint8) * 255
+    mask = Image.fromarray(best.numpy(), mode="L")
+    return mask if mask.getbbox() else None
 
 
 def extract_wheel_shot(content: bytes, wheel_classifier: WheelDetailClassifier,
@@ -330,15 +320,14 @@ def extract_wheel_shot(content: bytes, wheel_classifier: WheelDetailClassifier,
     if mask is None:
         return None
 
-    ys, xs = np.where(mask)
-    left, top, right, bottom = int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
-    aspect = (right - left) / (bottom - top)
-    if not (MIN_ANGLE_ASPECT <= aspect <= MAX_ANGLE_ASPECT):
+    stats = core.call({"op": "mask_stats", "mask": {"$image": 0}}, [mask])
+    if not (MIN_ANGLE_ASPECT <= stats["largest_aspect"] <= MAX_ANGLE_ASPECT):
         return None
 
-    alpha = np.where(mask, 255, 0).astype(np.uint8)
-    rgba = Image.fromarray(np.dstack([np.array(img), alpha]), mode="RGBA")
-    cutout = rgba.crop((left, top, right, bottom))
+    cutout = core.call({"op": "cutout_from_mask", "photo": {"$image": 0}, "mask": {"$image": 1},
+                        "largest_only": True}, [img, mask])
+    if cutout is None:
+        return None
 
     # Final verification, independent of every gate above: the finished
     # cutout itself must read as a wheel. Guards against a localization or

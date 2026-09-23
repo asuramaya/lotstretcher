@@ -18,34 +18,25 @@ from urllib.parse import urlparse
 import requests
 from PIL import Image
 
+from lotstretcher import core
+from lotstretcher import spec as _spec
 from lotstretcher.scrape import Vehicle
 
 
-WHEEL_DUPLICATE_SIMILARITY = 0.9995
+WHEEL_DUPLICATE_SIMILARITY = _spec.get("wheel", "duplicateSimilarity")
 
 
-def _wheel_signature(img):
-    """A tiny normalised vector for comparing one wheel crop to another.
-    32x32 is plenty: these are tight crops of the same object, so a real
-    duplicate matches almost exactly and two different wheels do not come
-    close."""
-    import numpy as np
-
-    small = img.convert("RGB").resize((32, 32))
-    vec = np.asarray(small, dtype=np.float64).ravel()
-    norm = np.linalg.norm(vec)
-    return vec / norm if norm else vec
-
-
-def _is_duplicate_wheel(img, signatures: list) -> bool:
-    """True if this wheel crop matches one already kept for this vehicle.
-    Appends its signature when it doesn't, so the caller just asks."""
-    import numpy as np
-
-    sig = _wheel_signature(img)
-    if any(float(sig @ prior) > WHEEL_DUPLICATE_SIMILARITY for prior in signatures):
+def _is_duplicate_wheel(img, kept: list) -> bool:
+    """True if this wheel crop matches one already kept for this vehicle,
+    by the core's signature (a tiny normalised thumbnail: tight crops of
+    the same object match almost exactly, two different wheels do not
+    come close). Appends the crop when it doesn't, so the caller just
+    asks."""
+    rgb = img.convert("RGB")
+    if any(core.call({"op": "duplicate_score", "a": {"$image": 0}, "b": {"$image": 1}}, [rgb, prior])
+           > WHEEL_DUPLICATE_SIMILARITY for prior in kept):
         return True
-    signatures.append(sig)
+    kept.append(rgb)
     return False
 
 

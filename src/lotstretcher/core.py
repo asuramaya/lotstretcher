@@ -109,19 +109,22 @@ def _arena(images) -> tuple[bytearray, list[dict]]:
     rather than joined and then copied again."""
     slices = []
     total = 0
+    def mode_of(img):
+        return img.mode if img.mode in ("RGBA", "L") else "RGB"
+
     for img in images:
         if isinstance(img, int):
             slices.append({"retained": img})
             continue
-        n = img.width * img.height * (4 if img.mode == "RGBA" else 3)
-        slices.append({"offset": total, "len": n, "width": img.width, "height": img.height,
-                       "channels": 4 if img.mode == "RGBA" else 3})
+        channels = {"RGBA": 4, "L": 1}.get(mode_of(img), 3)
+        n = img.width * img.height * channels
+        slices.append({"offset": total, "len": n, "width": img.width, "height": img.height, "channels": channels})
         total += n
     arena = bytearray(total)
     for img, s in zip(images, slices):
         if isinstance(img, int):
             continue
-        mode = "RGBA" if img.mode == "RGBA" else "RGB"
+        mode = mode_of(img)
         raw = (img if img.mode == mode else img.convert(mode)).tobytes()
         arena[s["offset"]:s["offset"] + s["len"]] = raw
     return arena, slices

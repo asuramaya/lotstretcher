@@ -159,6 +159,25 @@
     "scrimGamma": 1.6,
     "calloutTextFrac": 0.04
   },
+  "wheel": {
+    "$comment": [
+      "imaging/wheel.py and photos.py: the wheel money shot. The models",
+      "(CLIP gates, CLIPSeg localisation, SAM2 cutout) are the host's; the",
+      "mask arithmetic they feed (core/src/mask.rs: bounds, components,",
+      "the angle gate, the crop, the duplicate check) is the core's. Every",
+      "number here was calibrated on real inventory photos; the reasoning",
+      "is in wheel.py next to each name."
+    ],
+    "maskThreshold": 0.5,
+    "confidenceThreshold": 0.5,
+    "spareConfidenceThreshold": 0.5,
+    "minAngleAspect": 0.85,
+    "maxAngleAspect": 1.4,
+    "centricMinDominance": 0.8,
+    "centricMinWidthFraction": 0.24,
+    "duplicateSimilarity": 0.9995,
+    "signatureSize": 32
+  },
   "cutout": {
     "$comment": "imaging/cutout.py",
     "alphaThreshold": 16,
@@ -512,6 +531,7 @@
       "say WHY something is missing rather than silently omitting it."
     ],
     "upscale": "SwinIR and Real-ESRGAN are far too heavy for a browser tab",
+    "wheels": "Wheel money shots need CLIPSeg and SAM2, which have no browser build yet",
     "nvenc": "No GPU encoder access from a page",
     "scraping": "Cross-origin HTML is unreadable, and dealer sites sit behind Cloudflare challenges",
     "inventorySync": "Long-running batch work with no browser equivalent",

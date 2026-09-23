@@ -191,6 +191,13 @@ pub enum Op {
     EnhanceExposure { image: Slice, #[serde(default)] target_median: Option<f64>, #[serde(default)] max_lift: Option<f64> },
     WhiteBalance { image: Slice },
     Scrim { image: Slice, #[serde(default)] band_frac: Option<f64> },
+    MaskStats { mask: Slice, #[serde(default)] threshold: Option<u8> },
+    CutoutFromMask { photo: Slice, mask: Slice, #[serde(default)] threshold: Option<u8>, #[serde(default)] largest_only: bool },
+    DuplicateScore { a: Slice, b: Slice, #[serde(default)] size: Option<usize> },
+}
+
+fn mask_threshold(t: Option<u8>) -> u8 {
+    t.unwrap_or_else(|| (spec::f64_at(&["wheel", "maskThreshold"]) * 255.0) as u8)
 }
 
 pub enum OpResult { Image(Image), Json(String) }
@@ -249,6 +256,22 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
         Op::Scrim { image, band_frac } => {
             let img = slice_image(arena, &image)?;
             OpResult::Image(crate::interior::scrim(&img, band_frac.unwrap_or_else(|| spec::f64_at(&["interior", "scrimFrac"])) as f32))
+        }
+        Op::MaskStats { mask, threshold } => {
+            let m = slice_image(arena, &mask)?;
+            OpResult::Json(serde_json::to_string(&Scalar { value: crate::mask::mask_stats(&m, mask_threshold(threshold)) }).unwrap())
+        }
+        Op::CutoutFromMask { photo, mask, threshold, largest_only } => {
+            let (p, m) = (slice_image(arena, &photo)?, slice_image(arena, &mask)?);
+            match crate::mask::cutout_from_mask(&p, &m, mask_threshold(threshold), largest_only)? {
+                Some(img) => OpResult::Image(img),
+                None => OpResult::Json(serde_json::to_string(&Scalar { value: Option::<u8>::None }).unwrap()),
+            }
+        }
+        Op::DuplicateScore { a, b, size } => {
+            let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
+            let n = size.unwrap_or_else(|| spec::f64_at(&["wheel", "signatureSize"]) as usize);
+            OpResult::Json(serde_json::to_string(&Scalar { value: crate::mask::duplicate_score(&a, &b, n) }).unwrap())
         }
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
