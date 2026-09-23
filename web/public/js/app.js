@@ -96,7 +96,9 @@ function renderSteps() {
 }
 
 /* ---------- persistence -------------------------------------------
- * localStorage holds the dealer block and nothing else. It is a
+ * localStorage holds the dealer block; IndexedDB (lib/store.js) holds
+ * the person's own images and the car in progress (SESSION_KEY). All
+ * per-viewer, on this device only. localStorage is a
  * per-viewer convenience, it never contains a photo or anything derived
  * from one, and every access is wrapped because it throws in a private
  * window and returns empty after a site-data clear. */
@@ -111,6 +113,86 @@ function loadDealer() {
 
 function saveDealer() {
   try { localStorage.setItem(DEALER_KEY, JSON.stringify(state.dealer)); } catch { /* ignore */ }
+}
+
+/* ---------- the car in progress, kept on this device ----------------
+ * A refresh, a back-swipe or a closed tab used to lose everything. The
+ * photos (as the files or links they came in as), the vehicle fields,
+ * the listing and sticker reads and the step are saved to IndexedDB
+ * on this device as they change, and offered back on the next load as
+ * Resume or Discard. Nothing derived (cutouts, stills) is saved: a
+ * resumed car is sorted and cut again on Next, a second's work. */
+const SESSION_KEY = 'session';
+const FORM_IDS = ['f-year', 'f-make', 'f-model', 'f-trim', 'f-ext', 'f-int', 'f-price', 'f-miles', 'f-vin', 'f-stock', 'f-cond'];
+const EXTRA_KEYS = ['engine', 'transmission', 'drivetrain', 'seating'];
+let sessionTimer = null;
+function saveSessionSoon() { clearTimeout(sessionTimer); sessionTimer = setTimeout(saveSession, 400); }
+async function saveSession() {
+  if (state.restoring) return;
+  const fields = Object.fromEntries(FORM_IDS.map((id) => [id, $(id).value]));
+  const photos = state.photos.map((p) => ({
+    name: p.name, blob: p.blob || null, url: p.url || null, source: p.source || 'chosen',
+    userScene: !!p.userScene, scene: p.userScene ? p.scene : null, rejected: !!p.rejected,
+  }));
+  try {
+    if (!photos.length && !Object.values(fields).some((v) => v && v.trim())) { await store.del(SESSION_KEY); return; }
+    await store.set(SESSION_KEY, {
+      v: 1, savedAt: Date.now(), pane: ['booth', 'options'].includes(state.pane) ? state.pane : 'booth',
+      fields, photos, listing: state.listing || null, sticker: state.sticker || null,
+      extras: Object.fromEntries(EXTRA_KEYS.filter((k) => state.vehicle?.[k]).map((k) => [k, state.vehicle[k]])),
+    });
+  } catch { /* private window or blocked storage: the app works without it */ }
+}
+async function discardSession() {
+  try { await store.del(SESSION_KEY); } catch { /* ignore */ }
+  $('resumeBox').innerHTML = '';
+}
+function restoreSession(s) {
+  state.restoring = true;
+  for (const [id, v] of Object.entries(s.fields || {})) if ($(id) && v) $(id).value = v;
+  state.listing = s.listing || null;
+  state.sticker = s.sticker || null;
+  for (const p of s.photos || []) {
+    if (state.photos.length >= LIMITS.maxPhotos) break;
+    const photo = { id: nextId++, name: p.name, status: 'ready', source: p.source };
+    if (p.blob) { photo.blob = p.blob; photo.thumb = URL.createObjectURL(p.blob); }
+    else if (p.url) { photo.url = p.url; photo.thumb = p.url; }
+    else continue;
+    if (p.userScene) { photo.userScene = true; photo.scene = p.scene; photo.rejected = p.rejected; if (p.rejected) photo.scene = photo.scene || 'unsure'; }
+    state.photos.push(photo);
+  }
+  readVehicle();
+  for (const [k, v] of Object.entries(s.extras || {})) state.vehicle[k] = v;
+  state.restoring = false;
+  renderPhotos();
+  $('resumeBox').innerHTML = '';
+  go(s.pane === 'options' ? 'options' : 'booth');
+}
+async function offerResume() {
+  // Nothing is saved (or wiped) until the saved car has been looked at.
+  state.restoring = true;
+  let s = null;
+  try { s = await store.get(SESSION_KEY); } catch { s = null; }
+  if (!s || (!s.photos?.length && !s.fields?.['f-make'] && !s.fields?.['f-vin'])) { state.restoring = false; return; }
+  const f = s.fields || {};
+  const title = [f['f-year'], f['f-make'], f['f-model'], f['f-trim']].filter(Boolean).join(' ') || 'a vehicle';
+  const n = s.photos?.length || 0;
+  const mins = Math.max(1, Math.round((Date.now() - (s.savedAt || Date.now())) / 60000));
+  const ago = mins < 60 ? `${mins} min ago` : mins < 1440 ? `${Math.round(mins / 60)} h ago` : `${Math.round(mins / 1440)} d ago`;
+  const box = $('resumeBox');
+  box.innerHTML = '';
+  const b = el('div', 'banner');
+  b.append(el('div', 'grow', `${title}${n ? `, ${n} photo${n === 1 ? '' : 's'}` : ''}, left ${ago}.`));
+  const yes = el('button', 'btn btn-primary btn-sm', 'Resume');
+  yes.onclick = () => restoreSession(s);
+  const no = el('button', 'btn btn-ghost btn-sm', 'Discard');
+  no.onclick = () => { discardSession(); state.restoring = false; };
+  b.append(yes, no);
+  box.appendChild(b);
+  // Until Resume or Discard, edits made meanwhile save over the offer.
+  const arm = () => { state.restoring = false; };
+  for (const id of FORM_IDS) $(id).addEventListener('input', arm, { once: true });
+  state.armSession = arm;
 }
 
 /* ---------- navigation --------------------------------------------- */
@@ -208,6 +290,8 @@ function renderPhotos() {
   const n = state.photos.length;
   $('photosSection').hidden = n === 0;
   $('photoCount').textContent = `${n} photo${n === 1 ? '' : 's'}`;
+  if (n && state.armSession && state.restoring) { state.armSession(); $('resumeBox').innerHTML = ''; }
+  saveSessionSoon();
   // Where they came from, in the head: "23 from the listing · 4 captured".
   const by = {};
   for (const p of state.photos) by[p.source || 'chosen'] = (by[p.source || 'chosen'] || 0) + 1;
@@ -1077,6 +1161,7 @@ function renderStepsSoon() {
 
 function readVehicle() {
   renderStepsSoon();
+  saveSessionSoon();
   // Spec fields come from the sticker and have no form input; carry them
   // across the rebuild rather than losing them on every run.
   const carried = {};
@@ -1724,11 +1809,15 @@ async function init() {
     $('isolationWarn').classList.toggle('hidden', runtime.isolated);
   }).catch(() => { /* surfaced properly on run() */ });
 
-  // Losing in-progress work to an accidental back-swipe would be
-  // infuriating, and the work cannot be recovered -- nothing is stored.
+  // The photos and fields are saved on this device as they change and
+  // offered back on the next load; a run's results are not, so leaving
+  // mid-run still asks.
   window.addEventListener('beforeunload', (e) => {
     if (state.running) { e.preventDefault(); e.returnValue = ''; }
   });
+  for (const id of FORM_IDS) $(id).addEventListener('input', saveSessionSoon);
+  state.restoring = true;   // until offerResume has looked
+  offerResume();
 
   renderOptions();
   renderPhotos();

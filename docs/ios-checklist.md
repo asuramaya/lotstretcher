@@ -66,6 +66,9 @@ Safari. For each step, note pass, fail, or the message shown.
   door-jamb VIN barcode. Report whether the VIN, year and make fill in;
   if the camera is refused, try **A photo of the barcode instead**.
 - Tap a photo in the strip: it opens full size; swipe for the next.
+- With photos and a make in, pull to refresh (or close and reopen the
+  tab). A banner should offer the car back: tap **Resume** and report
+  whether the photos and fields return; try **Discard** once too.
 - After Next, tap a photo's sort tag in the strip ("interior", "detail"):
   a menu offers Exterior / Interior / Detail / Skip. Correct one and
   report whether the run honours it.
