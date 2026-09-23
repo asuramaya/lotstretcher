@@ -180,8 +180,10 @@
 }
 @keyframes sweep { from { background-position: 180% 0; } to { background-position: -80% 0; } }
 
+/* Top-left, not bottom-left: a still's own title and price sit in a
+   bottom corner and the tag was covering them. */
 .tile-tag {
-  position: absolute; left: var(--s-2); bottom: var(--s-2);
+  position: absolute; left: var(--s-2); top: var(--s-2);
   padding: 2px var(--s-2);
   border-radius: var(--r-full);
   background: rgba(0,0,0,.66);

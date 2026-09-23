@@ -292,18 +292,27 @@ function renderResults() {
     interiorHost.appendChild(tile);
   }
 
+  // One tile per still: every format of every photo, each in its own
+  // shape, since the run composed each one separately and a square
+  // crop of a portrait would hide what the format is for.
   const grid = $('resultGrid');
   grid.innerHTML = '';
+  $('progHead').textContent = state.running ? 'Working' : 'Done';
   for (const p of heroes) {
-    const tile = el('div', 'tile');
-    const c = makeCanvas(420, 420);
-    ctxOf(c).drawImage(p.hero, 0, 0, 420, 420);
-    const img = el('img');
-    canvasToBlob(c, 'image/jpeg', 0.85).then((b) => { img.src = URL.createObjectURL(b); });
-    img.alt = `Composed image from ${p.name}`;
-    tile.append(img, tagOf(p.angle || 'hero'));
-    tile.onclick = () => saveOne(p);
-    grid.appendChild(tile);
+    for (const [fmt, canvas] of Object.entries(p.heroes || { square: p.hero })) {
+      const tile = el('div', 'tile');
+      tile.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
+      const k = 480 / Math.max(canvas.width, canvas.height);
+      const c = makeCanvas(Math.round(canvas.width * k), Math.round(canvas.height * k));
+      ctxOf(c).drawImage(canvas, 0, 0, c.width, c.height);
+      const img = el('img');
+      canvasToBlob(c, 'image/jpeg', 0.85).then((b) => { img.src = URL.createObjectURL(b); });
+      const label = OPTS.HERO_FORMATS[fmt]?.label || fmt;
+      img.alt = `${label} still from ${p.name}`;
+      tile.append(img, tagOf(`${p.angle || 'hero'} \u00b7 ${label}`));
+      tile.onclick = () => saveOne(p, fmt);
+      grid.appendChild(tile);
+    }
   }
 
   const videoHost = $('videoGrid');
@@ -886,9 +895,11 @@ function bundleName() {
   return [t || 'lotstretcher', id].filter(Boolean).join('-');
 }
 
-async function saveOne(photo) {
-  const blob = await canvasToBlob(photo.hero, 'image/png');
-  await deliver(blob, `${bundleName()}-${photo.angle || 'hero'}.png`);
+async function saveOne(photo, fmt = null) {
+  const canvas = (fmt && photo.heroes?.[fmt]) || photo.hero;
+  const blob = await canvasToBlob(canvas, 'image/png');
+  const shape = fmt && fmt !== 'square' ? `-${fmt}` : '';
+  await deliver(blob, `${bundleName()}-${photo.angle || 'hero'}${shape}.png`);
 }
 
 async function saveInterior(photo) {
