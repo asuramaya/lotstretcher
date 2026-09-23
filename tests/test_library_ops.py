@@ -128,6 +128,23 @@ def test_hero_options_defaults_are_the_cli_defaults():
     assert got.hero_formats == ("square", "portrait")
 
 
+def test_hero_options_carry_the_studio_levers():
+    """The frame fit and the Text controls reach HeroOptions in the
+    core's own field names, so the pipeline's stills and clip get what
+    the app or the flags asked for."""
+    from lotstretcher.imaging.text import text_options
+    controls = {"frameFit": "fill", "titleMode": "custom", "titleText": "Just arrived", "priceBadge": True,
+                "textLine": "Ask for Alex", "textPosition": "tr", "textColor": "paint", "textSize": 0.07}
+    got = library_ops.hero_options_from_controls(controls)
+    assert got.border_fit == "fill"
+    assert got.text == text_options(controls)
+    assert got.text["title"] == "custom" and got.text["custom_title"] == "Just arrived"
+    assert got.text["price_badge"] is True and got.text["color"] == "paint" and got.text["size"] == 0.07
+    # And nothing asked for means no text: the still never loads the font.
+    from lotstretcher.imaging.text import wants_text
+    assert not wants_text(library_ops.hero_options_from_controls({}).text)
+
+
 def test_hero_options_apply_the_once_dead_flags():
     got = library_ops.hero_options_from_controls(
         {"spotlight": False, "margin": 0.1, "videoFps": 30, "videoDuration": 8, "videoFormats": []})
