@@ -145,7 +145,7 @@
 .app-progress[hidden] { display: none; }
 .app-progress > div { height: 100%; width: 0; background: var(--accent); transition: width .25s var(--ease); box-shadow: 0 0 8px var(--accent); }
 .app-progress.is-indeterminate > div { width: 30%; animation: slide 1.1s ease-in-out infinite; }
-#appStatus { display: inline-block; min-width: 0; max-width: 26vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent); font-weight: 600; }
+.appbar-status { flex: 1; min-width: 0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent); font-weight: 600; }
 @media (min-width: 620px) { #appStatus { max-width: 40vw; } }
 .appbar-actions { min-width: 0; }
 .appbar { position: sticky; }
@@ -512,40 +512,40 @@
 .ctrl-badge.is-live { background: var(--accent-wash); color: var(--accent); }
 .ctrl-badge.is-server { background: var(--sunken); }
 
-/* ---------- the Look pane: preview beside the levers -------------- */
-/* The pane measures ITSELF (a container query), not the window: with
-   the rail open, a 1100 px laptop window leaves the pane about 800 px,
-   which a viewport breakpoint at 900 treated as a phone and stacked the
-   preview full-width above the levers, blurry and enormous. Two columns
-   from 720 px of pane width; the preview takes the larger share, since
-   it is what the pane is for. */
-.pane-inner.wide { max-width: 1240px; container-type: inline-size; }
-.look { display: grid; gap: var(--s-5); grid-template-columns: 1fr; align-items: start; }
-.look-preview {
-  display: flex; flex-direction: column; gap: var(--s-3);
-  max-width: 520px; margin: 0 auto; width: 100%;
+/* ---------- the Studio: an editor, not a page ---------------------- */
+/* The stage in the middle, a rail of tools and one open panel. The
+   pane measures ITSELF (a container query), not the window: with the
+   app's rail open, a 1100 px laptop window leaves the pane about 800
+   px, which a viewport breakpoint treated as a phone. Nothing here
+   scrolls but the panel, so the stage never leaves the screen. */
+.pane.pane-studio { padding: 0; overflow: hidden; container-type: size; }
+.studio {
+  height: 100%; display: grid;
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas: "stage" "rail" "panel";
 }
-@container (min-width: 720px) {
-  .look { grid-template-columns: minmax(360px, 52%) minmax(300px, 1fr); gap: var(--s-6); }
-  .look-preview { position: sticky; top: 0; max-width: none; margin: 0; }
+.studio-stage {
+  grid-area: stage; display: flex; flex-direction: column; align-items: center; gap: var(--s-2);
+  padding: var(--s-3) var(--gutter) var(--s-2); min-height: 0;
 }
-/* A square stage. The preview keeps the chosen format's own shape and
-   sits centred inside it, so switching to portrait letterboxes the
-   image rather than stretching the car across a square. */
+/* The stage box is the room the frame has: a third of the screen on a
+   phone, whatever the height leaves on a wide pane. The frame inside
+   it takes the chosen format's own shape (preview.js fitStage), so a
+   story stands tall and a landscape lies wide, each as large as fits. */
+.stage-box { width: 100%; height: 34vh; min-height: 0; display: grid; place-items: center; }
 .preview-frame {
   position: relative; border-radius: var(--r-lg); overflow: hidden;
   border: 1px solid var(--line); background: var(--sunken);
   box-shadow: var(--sh-2, 0 10px 30px rgba(0,0,0,.25));
-  aspect-ratio: 1; display: grid; place-items: center;
+  display: grid; place-items: center;
+  width: 34vh; height: 34vh; max-width: 100%; max-height: 100%;
 }
-.preview-canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; }
+.preview-canvas { width: 100%; height: 100%; display: block; }
 .preview-canvas.is-busy { opacity: .8; }
+.stage-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--s-2) var(--s-3); width: 100%; }
 /* Under the stage, not on it: a badge over the picture sat on top of
    the still's own text. */
-.preview-caption {
-  margin-top: calc(-1 * var(--s-1));
-  font-size: var(--t-xs); font-weight: 600; letter-spacing: .02em; color: var(--ink-3);
-}
+.preview-caption { font-size: var(--t-xs); font-weight: 600; letter-spacing: .02em; color: var(--ink-3); }
 .preview-modes { display: flex; align-items: center; gap: var(--s-2); }
 .preview-modes[hidden] { display: none; }
 .preview-modes .chip { min-height: 32px; padding: var(--s-1) var(--s-3); }
@@ -553,8 +553,6 @@
 .preview-formats { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .preview-formats[hidden] { display: none; }
 .preview-formats .chip { min-height: 32px; padding: var(--s-1) var(--s-3); }
-.preview-samples { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.preview-samples .chip { min-height: 36px; padding: var(--s-1) var(--s-3); }
 .estimates {
   display: grid; grid-template-columns: auto 1fr; gap: var(--s-2) var(--s-4);
   padding: var(--s-3) var(--s-4);
@@ -564,31 +562,57 @@
 .estimate { display: contents; }
 .estimate strong { font-weight: 600; color: var(--ink-2); white-space: nowrap; }
 .estimate span { color: var(--ink-3); }
-.look-controls { min-width: 0; }
-/* The tool strip: one row of tabs, one panel. */
-.ctrl-tabs { display: flex; gap: var(--s-1); overflow-x: auto; border-bottom: 1px solid var(--line); margin-bottom: var(--s-3); scrollbar-width: none; }
-.ctrl-tabs::-webkit-scrollbar { display: none; }
-.ctrl-tab {
-  flex: none; border: 0; background: transparent; color: var(--ink-3); cursor: pointer;
-  padding: var(--s-3) var(--s-3); font-size: var(--t-sm); font-weight: 600; white-space: nowrap;
-  border-bottom: 2px solid transparent; margin-bottom: -1px;
+
+/* The rail: one button per tool, an icon over a word. A row across the
+   pane on a phone, a column down its edge on a wide one. */
+.studio-rail {
+  grid-area: rail; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
+  padding: var(--s-1) var(--s-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  background: var(--surface);
 }
-.ctrl-tab:hover { color: var(--ink); }
-.ctrl-tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
-.ctrl-tab.is-server { opacity: .6; }
+.studio-rail::-webkit-scrollbar { display: none; }
+.tool {
+  flex: 1 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-width: 60px; min-height: 52px; padding: var(--s-1) var(--s-2);
+  border: 0; border-radius: var(--r-md); background: transparent; color: var(--ink-3); cursor: pointer;
+  font-size: 10px; font-weight: 600; letter-spacing: .03em; white-space: nowrap;
+  transition: color var(--dur-1) var(--ease), background var(--dur-1) var(--ease);
+}
+.tool svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tool svg text { fill: currentColor; stroke: none; font-size: 13px; font-weight: 700; }
+.tool:hover { color: var(--ink); background: var(--surface-2); }
+.tool[aria-selected="true"] { color: var(--accent); background: var(--accent-wash); }
+.tool.is-server { opacity: .55; }
+
+/* The panel: the open tool's levers, and the only thing that scrolls. */
+.studio-panel { grid-area: panel; min-height: 0; display: flex; flex-direction: column; }
+.panel-head {
+  flex: none; display: flex; align-items: center; gap: var(--s-3);
+  padding: var(--s-3) var(--gutter) var(--s-2);
+}
+.panel-head h2 { flex: 1; font-size: var(--t-base); }
+.panel-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 var(--gutter) var(--s-8); }
 .ctrl-panel { padding: 0 0 var(--s-2); }
-.ctrl-panel > .ctrl-badge { display: inline-block; margin: 0 0 var(--s-3); }
-/* The stage stays in view while the levers scroll, on every width. */
-.look-preview { position: sticky; top: 0; z-index: 3; background: var(--bg); padding-bottom: var(--s-2); }
-/* The pane's own top padding sits above the pinned block; cover it so
-   nothing scrolls through the gap. */
-.look-preview::before { content: ''; position: absolute; left: -16px; right: -16px; bottom: 100%; height: 48px; background: var(--bg); }
-/* On a phone the pinned stage is a third of the screen and the numbers
-   scroll away with the levers; on a wide pane the whole column pins. */
-.preview-frame { width: min(100%, 34vh); margin: 0 auto; }
-.look-preview .estimates { display: none; }
-@container (min-width: 720px) { .preview-frame { width: 100%; } .look-preview { padding-bottom: 0; } .look-preview .estimates { display: grid; } }
-.look-controls .section + .section { margin-top: var(--s-4); }
+/* The looks as a grid of pictures: the tile is the choice. */
+.looks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--s-3); }
+.looks-grid .chip.has-art { flex-direction: column; align-items: stretch; padding: 6px; gap: var(--s-2); }
+.looks-grid .chip-art { width: 100%; height: auto; aspect-ratio: 1; }
+.looks-grid .chip-text { padding: 0 var(--s-1) var(--s-1); }
+
+@container (min-width: 720px) {
+  .studio {
+    grid-template-columns: 72px minmax(0, 1fr) minmax(300px, 340px);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "rail stage panel";
+  }
+  .studio-rail { flex-direction: column; overflow-x: hidden; overflow-y: auto; padding: var(--s-3) var(--s-1); border: 0; border-right: 1px solid var(--line); }
+  .tool { flex: none; min-width: 0; }
+  .studio-stage { justify-content: center; padding: var(--s-6); overflow: hidden; }
+  /* As big as the height leaves, after the bar under it. */
+  .stage-box { flex: 1; height: auto; }
+  .studio-panel { border-left: 1px solid var(--line); background: var(--surface); }
+  .panel-head, .panel-body { padding-left: var(--s-5); padding-right: var(--s-5); }
+}
 
 .opt.is-locked .opt-text strong { color: var(--ink-3); }
 .opt.is-locked { opacity: .72; }

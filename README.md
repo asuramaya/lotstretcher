@@ -414,7 +414,10 @@ the core on the preview's subject.
 
 ### Looks: one tap, several levers
 
-The Studio pane opens with a row of looks, each a named set of light and
+The Studio is laid out as an editor: the stage in the middle, in the
+chosen format's own shape, a rail of tools beside it (Looks, then the
+spec's groups, then Output and Host) and one tool's levers open at a
+time. Looks is the first tool: a grid of looks, each a named set of light and
 frame values defined once in the spec (`controls.looks`): Clean,
 Showroom (shadow and reflection), Gallery (a white line and a soft
 shadow) and Paint line (the vehicle's colour on the line, a glow and

@@ -131,7 +131,7 @@ bash web/build-core.sh     # needs rustup's wasm32-unknown-unknown target,
                            # and wasm-opt (cargo install wasm-opt)
 ```
 
-The About pane reports `core: wasm vN`; the parity tests in `tests/`
+The Studio's Host tool reports `core: wasm vN`; the parity tests in `tests/`
 hold the wasm build to the native one.
 
 ### Threads

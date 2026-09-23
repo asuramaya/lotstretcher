@@ -61,10 +61,11 @@
   <header class="appbar">
     <div class="appbar-row">
       <div class="brand-slot" id="brandSlot"></div>
+      <!-- What the app is doing, in the middle of the bar, over the
+           progress line along its edge. -->
+      <span class="small appbar-status" id="appStatus" aria-live="polite"></span>
       <div class="appbar-actions">
         <a class="btn btn-ghost btn-sm hide-sm" data-go-surface="landing" href="index.html">Home</a>
-        <button class="btn btn-ghost btn-sm" id="aboutBtn" aria-label="About this app">About</button>
-        <span class="small" id="appStatus" aria-live="polite"></span>
         <button class="btn btn-primary btn-sm" id="runBtn" disabled>Process</button>
       </div>
     </div>
@@ -192,19 +193,18 @@
     </section>
 
     <!-- ---------- options: the Look ---------- -->
-    <section class="pane" id="pane-options" hidden aria-label="Studio">
-      <div class="pane-inner wide">
-        <div class="pane-head">
-          <h1>Studio</h1>
-          <p class="lede">Every lever redraws your vehicle as you move it. What you cannot see,
-            such as video length, shows up as a time and size estimate instead.</p>
-        </div>
-
-        <div class="look">
-          <aside class="look-preview" id="lookPreview" aria-label="Live preview">
+    <!-- The studio is an editor, not a page: the stage in the middle, a
+         rail of tools, and one tool's panel open at a time. Nothing here
+         scrolls but the panel. -->
+    <section class="pane pane-studio" id="pane-options" hidden aria-label="Studio">
+      <div class="studio">
+        <div class="studio-stage" id="lookPreview" aria-label="Live preview">
+          <div class="stage-box">
             <div class="preview-frame">
               <canvas class="preview-canvas" id="previewCanvas" width="600" height="600"></canvas>
             </div>
+          </div>
+          <div class="stage-bar">
             <div class="preview-caption" id="previewCaption">Preview</div>
             <div class="preview-modes" id="previewModes" hidden>
               <button type="button" class="chip" data-mode="still" aria-pressed="true"><strong>Still</strong></button>
@@ -212,55 +212,48 @@
               <input type="range" id="previewScrub" min="0" max="1000" value="350" aria-label="Position in the clip" hidden>
             </div>
             <div class="preview-formats" id="previewFormats" aria-label="Which shape to preview"></div>
-            <div class="estimates" id="estimates"></div>
-          </aside>
-
-          <div class="look-controls">
-            <div class="section">
-              <div class="section-head">
-                <h2>Output</h2>
-                <button class="btn btn-ghost btn-sm" id="resetOptions">Reset</button>
-              </div>
-              <label class="label">Still formats</label>
-              <div class="chips" id="heroFormats"></div>
-
-              <label class="label" style="margin-top:var(--s-5)">Video formats</label>
-              <div class="chips" id="videoFormats"></div>
-              <p class="xs dim" id="videoNote" style="margin-top:var(--s-2)"></p>
-            </div>
-
-            <div class="section">
-              <div class="section-head">
-                <h2>Looks</h2>
-              </div>
-              <p class="xs dim" style="margin:0 0 var(--s-3)">One tap sets the light and the frame; every lever below stays yours to move after.</p>
-              <div class="chips" id="looksHost"></div>
-            </div>
-
-            <!-- Rendered from shared/pipeline-spec.json's controls block.
-                 Adding a control is a spec edit, not a markup change. -->
-            <div class="section" id="controlsHost"></div>
-
-            <details class="ctrl-group section" id="hostGroup">
-              <summary><span class="ctrl-group-head">This host</span><span class="pill" id="hostBadge">checking</span></summary>
-              <div class="ctrl-group-body">
-                <p class="small muted" style="margin:var(--s-2) 0 var(--s-4)" id="hostNote"></p>
-                <div class="opts" id="hostCaps"></div>
-              </div>
-            </details>
-
-            <details class="ctrl-group section">
-              <summary><span class="ctrl-group-head">The same run, on the command line</span></summary>
-              <div class="ctrl-group-body">
-                <p class="small muted" style="margin:var(--s-2) 0 var(--s-3)">
-                  One pipeline, one set of options. These map straight onto the CLI flags.
-                </p>
-                <div class="copybox mono" id="cliEcho"></div>
-              </div>
-            </details>
           </div>
         </div>
 
+        <nav class="studio-rail" id="studioRail" aria-label="Tools"></nav>
+
+        <div class="studio-panel">
+          <div class="panel-head">
+            <h2 id="panelTitle">Tool</h2>
+            <span class="ctrl-badge" id="panelBadge" hidden></span>
+            <button class="btn btn-ghost btn-sm" id="resetOptions" title="Every lever back to its default">Reset all</button>
+          </div>
+          <!-- Rendered from shared/pipeline-spec.json's controls block,
+               one group per tool. Adding a control is a spec edit, not a
+               markup change. The three hand-built tools below are parked
+               here and moved into the panel when theirs is the open one. -->
+          <div class="panel-body" id="controlsHost"></div>
+        </div>
+
+        <div id="studioParts" hidden>
+          <div id="looksPart">
+            <p class="xs dim" style="margin:0 0 var(--s-3)">One tap sets the light and the frame; every lever stays yours to move after.</p>
+            <div class="chips looks-grid" id="looksHost"></div>
+          </div>
+          <div id="outputPart">
+            <label class="label">Still formats</label>
+            <div class="chips" id="heroFormats"></div>
+            <label class="label" style="margin-top:var(--s-5)">Video formats</label>
+            <div class="chips" id="videoFormats"></div>
+            <p class="xs dim" id="videoNote" style="margin-top:var(--s-2)"></p>
+            <label class="label" style="margin-top:var(--s-5)">What a run makes</label>
+            <div class="estimates" id="estimates"></div>
+          </div>
+          <div id="hostPart">
+            <p class="small muted" style="margin:0 0 var(--s-2)"><span class="pill" id="hostBadge">checking</span></p>
+            <p class="small muted" style="margin:0 0 var(--s-2)" id="hostNote"></p>
+            <p class="xs muted mono" style="margin:0 0 var(--s-4)" id="aboutRuntime">checking</p>
+            <div class="opts" id="hostCaps"></div>
+            <label class="label" style="margin-top:var(--s-5)">The same run, on the command line</label>
+            <p class="small muted" style="margin:0 0 var(--s-3)">One pipeline, one set of options. These map straight onto the CLI flags.</p>
+            <div class="copybox mono" id="cliEcho"></div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -387,37 +380,6 @@
   </div>
 </div>
 
-<div class="sheet" id="aboutSheet" hidden>
-  <div class="sheet-body" role="dialog" aria-modal="true" aria-label="About">
-    <div class="sheet-grip"></div>
-    <div class="sheet-head"><h3 style="flex:1">About</h3></div>
-    <div class="sheet-content selectable">
-      <p class="small">
-        lotstretcher turns vehicle photos into post-ready images and copy.
-        Background removal and classification run as models in this tab;
-        the compositing, frames, text and video are the same Rust core the
-        command line uses, compiled to WebAssembly. All of it on this device.
-      </p>
-      <hr class="rule">
-      <h3 style="font-size:var(--t-base);margin-bottom:var(--s-2)">What leaves this device</h3>
-      <p class="small muted">
-        Your photos: nothing. There is no account, no upload, and no
-        server-side storage, because the site is static files. The only
-        network requests are the one-time model download and any image
-        URLs you paste.
-      </p>
-      <hr class="rule">
-      <h3 style="font-size:var(--t-base);margin-bottom:var(--s-2)">Runtime</h3>
-      <div class="small muted mono" id="aboutRuntime">checking</div>
-      <hr class="rule">
-      <p class="small muted">
-        Open source, MIT.
-        <a href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener">github.com/asuramaya/lotstretcher</a>
-      </p>
-    </div>
-    <div class="sheet-foot"><button class="btn btn-primary" data-close="aboutSheet">Done</button></div>
-  </div>
-</div>
 
 <script type="module" src="js/app.js"></script>
 </body>

@@ -117,8 +117,10 @@ function saveDealer() {
  * photos (as the files or links they came in as), the vehicle fields,
  * the listing and sticker reads and the step are saved to IndexedDB
  * on this device as they change, and offered back on the next load as
- * Resume or Discard. Nothing derived (cutouts, stills) is saved: a
- * resumed car is sorted and cut again on Next, a second's work. */
+ * Resume or Discard. Once the sort and cut has finished, its result
+ * (each photo's scene and angle, the cutouts and lifted interiors) is
+ * saved with them, so a resumed car opens the studio at once rather
+ * than being sorted and cut again; a run's stills are not kept. */
 const SESSION_KEY = 'session';
 const FORM_IDS = ['f-year', 'f-make', 'f-model', 'f-trim', 'f-ext', 'f-int', 'f-price', 'f-miles', 'f-vin', 'f-stock', 'f-cond'];
 const EXTRA_KEYS = ['engine', 'transmission', 'drivetrain', 'seating'];
@@ -127,14 +129,38 @@ function saveSessionSoon() { clearTimeout(sessionTimer); sessionTimer = setTimeo
 async function saveSession() {
   if (state.restoring) return;
   const fields = Object.fromEntries(FORM_IDS.map((id) => [id, $(id).value]));
-  const photos = state.photos.map((p) => ({
-    name: p.name, blob: p.blob || null, url: p.url || null, source: p.source || 'chosen',
-    userScene: !!p.userScene, scene: p.userScene ? p.scene : null, rejected: !!p.rejected,
-  }));
+  // The preparation is saved only once it is finished and for these
+  // very photos; a canvas goes in as a PNG, encoded once per cutout.
+  const done = !!state.prepared && !state.preparing && state.prepared.key === photoKey();
+  const asBlob = async (p, field) => {
+    const c = p[field];
+    if (!c) return null;
+    const memo = `${field}Blob`;
+    if (p[memo]?.for !== c) p[memo] = { for: c, blob: await canvasToBlob(c, 'image/png') };
+    return p[memo].blob;
+  };
+  const photos = [];
+  for (const p of state.photos) {
+    const entry = {
+      name: p.name, blob: p.blob || null, url: p.url || null, source: p.source || 'chosen',
+      userScene: !!p.userScene, scene: p.userScene ? p.scene : null, rejected: !!p.rejected,
+    };
+    if (done) {
+      Object.assign(entry, {
+        scene: p.scene || null, sceneConf: p.sceneConf ?? null, angle: p.angle || null, angleConf: p.angleConf ?? null,
+        angleUncertain: !!p.angleUncertain, coverage: p.coverage ?? null, ambiguous: p.ambiguous ?? null,
+        status: p.status, error: p.error || null,
+        cutout: await asBlob(p, 'cutout'), interior: await asBlob(p, 'interior'),
+      });
+    }
+    photos.push(entry);
+  }
+  if (state.restoring) return;
   try {
     if (!photos.length && !Object.values(fields).some((v) => v && v.trim())) { await store.del(SESSION_KEY); return; }
     await store.set(SESSION_KEY, {
-      v: 1, savedAt: Date.now(), pane: ['booth', 'options'].includes(state.pane) ? state.pane : 'booth',
+      v: 2, savedAt: Date.now(), pane: ['booth', 'options'].includes(state.pane) ? state.pane : 'booth',
+      prepared: done ? { stages: state.prepared.stages.slice(0, 3).map((st) => ({ ...st })), options: [state.options.interiors, state.options.cutType] } : null,
       fields, photos, listing: state.listing || null, sticker: state.sticker || null,
       extras: Object.fromEntries(EXTRA_KEYS.filter((k) => state.vehicle?.[k]).map((k) => [k, state.vehicle[k]])),
     });
@@ -144,11 +170,14 @@ async function discardSession() {
   try { await store.del(SESSION_KEY); } catch { /* ignore */ }
   $('resumeBox').innerHTML = '';
 }
-function restoreSession(s) {
+async function restoreSession(s) {
   state.restoring = true;
   for (const [id, v] of Object.entries(s.fields || {})) if ($(id) && v) $(id).value = v;
   state.listing = s.listing || null;
   state.sticker = s.sticker || null;
+  // The saved preparation counts only for the cut the options ask for now.
+  const prepared = s.prepared && s.prepared.options?.[0] === state.options.interiors && s.prepared.options?.[1] === state.options.cutType
+    ? s.prepared : null;
   for (const p of s.photos || []) {
     if (state.photos.length >= LIMITS.maxPhotos) break;
     const photo = { id: nextId++, name: p.name, status: 'ready', source: p.source };
@@ -156,14 +185,29 @@ function restoreSession(s) {
     else if (p.url) { photo.url = p.url; photo.thumb = p.url; }
     else continue;
     if (p.userScene) { photo.userScene = true; photo.scene = p.scene; photo.rejected = p.rejected; if (p.rejected) photo.scene = photo.scene || 'unsure'; }
+    if (prepared) {
+      Object.assign(photo, {
+        scene: p.scene || photo.scene, sceneConf: p.sceneConf ?? undefined, angle: p.angle || null, angleConf: p.angleConf ?? undefined,
+        angleUncertain: !!p.angleUncertain, coverage: p.coverage ?? undefined, ambiguous: p.ambiguous ?? undefined,
+        rejected: p.rejected || false, status: p.status || 'sorted', error: p.error || undefined,
+      });
+      if (p.cutout) photo.cutout = await blobToCanvas(p.cutout);
+      if (p.interior) photo.interior = await blobToCanvas(p.interior);
+    }
     state.photos.push(photo);
   }
   readVehicle();
   for (const [k, v] of Object.entries(s.extras || {})) state.vehicle[k] = v;
+  if (prepared) {
+    // The sort and cut as it was: a run takes it, the studio draws it.
+    const exteriors = state.photos.filter((p) => p.scene === 'exterior' && !p.rejected);
+    state.prepared = { key: photoKey(), promise: Promise.resolve(exteriors), stages: prepared.stages };
+  }
   state.restoring = false;
   renderPhotos();
   $('resumeBox').innerHTML = '';
   go(s.pane === 'options' ? 'options' : 'booth');
+  if (prepared && preview?.getUserCutout?.()) { preview.current = 'yours'; preview.renderSamples(); preview.update(); preview.onSubjectChange?.(); }
 }
 async function offerResume() {
   // Nothing is saved (or wiped) until the saved car has been looked at.
@@ -195,6 +239,8 @@ async function offerResume() {
 /* ---------- navigation --------------------------------------------- */
 function go(pane) {
   state.pane = pane;
+  // The step is part of the saved car, so a resume lands where it left.
+  if (state.photos.length && !state.restoring) saveSessionSoon();
   for (const p of ['booth', 'options', 'results', 'library']) {
     $(`pane-${p}`).hidden = p !== pane;
   }
@@ -573,9 +619,14 @@ function renderOptions() {
   // The tiles are drawn on the preview's subject: a new sample redraws them.
   if (preview) preview.onSubjectChange = () => renderLooks($('looksHost'), o, applyLook, { tileFor: lookArt });
 
-  // One host, filled from the spec. The old hand-built Pipeline and
-  // Look sections are gone: a new control now needs no code here.
-  renderControls($('controlsHost'), o, (key, value, live) => {
+  // The three tools the spec does not describe (the looks, what a run
+  // makes, this host) are parked in #studioParts and moved into the
+  // panel while theirs is open, so their ids stay live for the code
+  // above. Everything else is a spec group.
+  const parts = $('studioParts');
+  for (const id of ['looksPart', 'outputPart', 'hostPart']) parts.appendChild($(id));
+  const part = (id) => (body) => body.appendChild($(id));
+  const head = renderControls($('controlsHost'), o, (key, value, live) => {
     o[key] = value;
     // A slider mid-drag: redraw the preview and nothing else, so the
     // slider under the finger is not rebuilt.
@@ -589,7 +640,20 @@ function renderOptions() {
     // A moved lever may make or break a look: the chips say which.
     renderLooks($('looksHost'), o, applyLook, { tileFor: lookArt });
     if (affectsPreview(key)) preview?.update(); else preview?.renderEstimates();
-  }, { thumbFor: swatchArt });
+  }, {
+    thumbFor: swatchArt,
+    rail: $('studioRail'),
+    onOpen: () => renderOptions(),
+    before: [{ id: 'looks', label: 'Looks', hint: 'One tap, several levers', render: part('looksPart') }],
+    after: [
+      { id: 'output', label: 'Output', hint: 'Which shapes a run makes', render: part('outputPart') },
+      { id: 'host', label: 'Host', hint: 'What this host can do, and the command line', render: part('hostPart') },
+    ],
+  });
+  $('panelTitle').textContent = head?.label || '';
+  const badge = $('panelBadge');
+  badge.hidden = !head?.badge;
+  if (head?.badge) { badge.textContent = head.badge[0]; badge.className = `ctrl-badge ${head.badge[1]}`; }
 
   renderHost();
   // Built from the same control definitions the pane renders, so the
@@ -732,6 +796,15 @@ function renderHost() {
       + 'website, with the things a browser alone cannot do switched on.'
     : 'Running entirely in this browser. The features below need a '
       + 'lotstretcher server on your own machine.';
+
+  // The runtime, for the iOS checklist: threads, isolation, the core.
+  $('aboutRuntime').textContent = (runtime.isolated
+    ? `threads: ${runtime.threads} · SIMD: on · cross-origin isolated`
+    : 'single-threaded (no cross-origin isolation)')
+    + ` · core: wasm v${coreVersion()} on the page`
+    + (CoreWorker.supported()
+      ? (self.crossOriginIsolated ? '; a run uses the threaded core in a worker' : '; a run uses a worker, single-threaded (not isolated)')
+      : '; no worker here, a run composes on the page');
 
   const list = $('hostCaps');
   list.innerHTML = '';
@@ -1657,16 +1730,6 @@ async function init() {
   $('listingUrlInput').addEventListener('paste', () => setTimeout(readBox, 0));
   $('listingUrlInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); readBox(); } });
   $('listingUrlInput').addEventListener('change', readBox);
-  $('aboutBtn').onclick = () => {
-    $('aboutRuntime').textContent = (runtime.isolated
-      ? `threads: ${runtime.threads} · SIMD: on · cross-origin isolated`
-      : 'single-threaded (no cross-origin isolation)')
-      + ` · core: wasm v${coreVersion()} on the page`
-      + (CoreWorker.supported()
-        ? (self.crossOriginIsolated ? '; a run uses the threaded core in a worker' : '; a run uses a worker, single-threaded (not isolated)')
-        : '; no worker here, a run composes on the page');
-    openSheet('aboutSheet');
-  };
 
   $('fileInput').onchange = (e) => { addFiles(e.target.files, 'chosen'); e.target.value = ''; };
   $('folderInput').onchange = (e) => { addFiles(e.target.files, 'folder'); e.target.value = ''; };
@@ -1705,7 +1768,9 @@ async function init() {
   // where there is somewhere to go back to.
   for (const b of document.querySelectorAll('[data-back]')) b.onclick = () => go(b.dataset.back);
 
-  preview = new Preview($('lookPreview'), {
+  // The whole pane, not the stage: the estimates live in the Output
+  // tool, wherever that panel happens to be parked.
+  preview = new Preview($('pane-options'), {
     getOptions: () => state.options,
     getVehicle: () => state.vehicle,
     getUserCutout: () => state.photos.find((p) => p.cutout)?.cutout || null,

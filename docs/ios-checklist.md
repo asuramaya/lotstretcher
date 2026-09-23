@@ -11,10 +11,10 @@ Safari. For each step, note pass, fail, or the message shown.
 ## 1. Load
 
 - The app opens to the Photos pane with no error banner.
-- Tap **About**. Report the runtime line: threads and whether it says
-  "cross-origin isolated". Safari 17+ should show threads; older shows
-  single-threaded.
-- On the same About line, report the **core** entry. It should read
+- Open the Studio and tap the **Host** tool. Report the runtime line:
+  threads and whether it says "cross-origin isolated". Safari 17+ should
+  show threads; older shows single-threaded.
+- On the same runtime line, report the **core** entry. It should read
   "core: wasm v8 on the page; a run uses the threaded core in a worker"
   (or higher). That is the Rust core, built with SIMD, which Safari has
   had since 16.4; if it says the core failed to load, copy the message
@@ -24,7 +24,7 @@ Safari. For each step, note pass, fail, or the message shown.
 - Report iOS version and device model (Settings > General > About).
 
 - After a run (section 4), the Results pane's "Rendering video" line
-  should end "on N threads" when the About line promised the threaded
+  should end "on N threads" when the Host line promised the threaded
   core. Report N. If it is missing, the worker fell back to the page;
   open Safari's console (Settings > Safari > Advanced > Web Inspector)
   and copy any line starting "core worker" or "video worker".
@@ -68,7 +68,13 @@ Safari. For each step, note pass, fail, or the message shown.
 - Tap a photo in the strip: it opens full size; swipe for the next.
 - With photos and a make in, pull to refresh (or close and reopen the
   tab). A banner should offer the car back: tap **Resume** and report
-  whether the photos and fields return; try **Discard** once too.
+  whether the photos and fields return, and whether the Studio opens
+  at once (a finished sort and cut comes back with the car; the header
+  should not sort again); try **Discard** once too.
+- In the Studio, tap the **Output** tool and switch **Story** on, then
+  its chip under the stage: the stage should turn tall, the whole story
+  in view, nothing clipped. Turn the phone sideways and report whether
+  the stage refits.
 - Once the header's progress line has finished, tap a photo's sort tag in the strip ("interior", "detail"):
   a menu offers Exterior / Interior / Detail / Skip. Correct one and
   report whether the run honours it.

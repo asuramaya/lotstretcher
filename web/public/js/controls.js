@@ -346,19 +346,51 @@ const BADGES = {
   pipeline: ['Pipeline', ''],
 };
 
-/* Groups the user has shut or opened stay that way for the session;
- * without this every edit re-rendered them back to their defaults. */
+/* The rail's icons, one per tool: the spec's groups by id, and the
+ * app's own tools by the id it gives them. A tool without one shows
+ * its first letter. */
+const ICONS = {
+  looks: 'M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z',
+  backdrop: 'M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6',
+  frame: 'M3 3h18v18H3zM7 7h10v10H7z',
+  text: 'M5 5h14M12 5v14M9 19h6',
+  light: 'M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.5 1 2.5h6c0-1 .4-1.9 1-2.5A6 6 0 0 0 12 3z',
+  video: 'M3 6h13v12H3zM16 10l5-3v10l-5-3',
+  pipeline: 'M4 6h16M4 12h16M4 18h16M8 4v4M16 10v4M10 16v4',
+  output: 'M12 3v12M7 10l5 5 5-5M4 19h16',
+  host: 'M4 5h16v5H4zM4 14h16v5H4zM7 7.5h.01M7 16.5h.01',
+};
 
-/* Render every group into `host`. `values` is the live options object;
- * `onChange(key, value)` is called on every edit. Each group is a
- * collapsible: open when something in it is usable on this host, shut
- * with a "needs your server" badge when nothing is. */
+function icon(id) {
+  const d = ICONS[id];
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  if (d) {
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', d);
+    svg.appendChild(p);
+  } else {
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', '12'); t.setAttribute('y', '16'); t.setAttribute('text-anchor', 'middle');
+    t.textContent = id[0].toUpperCase();
+    svg.appendChild(t);
+  }
+  return svg;
+}
+
+/* The studio's tools: a rail of them and one panel, the open tool's.
+ * The spec's groups are tools; the app adds its own (`opts.before` and
+ * `opts.after`, each `{ id, label, hint?, render(body) }`) around them.
+ * The open tool stays open across redraws.
+ *
+ * `host` takes the panel's body; `opts.rail` the rail. `values` is the
+ * live options object and `onChange(key, value, live)` is called on
+ * every edit. Returns `{ id, label, badge }` for the panel's head. */
 let activeTab = null;
-/* The groups as tabs across the top and one panel below, an editor's
- * tool strip rather than a stack of accordions; the tab stays put
- * across redraws. */
+export function openTool(id) { activeTab = id; }
 export function renderControls(host, values, onChange, opts = {}) {
-  const { thumbFor = null } = opts;
+  const { thumbFor = null, rail = null, before = [], after = [] } = opts;
   host.innerHTML = '';
   const allControls = get('controls', 'groups').flatMap((g) => g.controls);
   const groups = get('controls', 'groups')
@@ -366,30 +398,48 @@ export function renderControls(host, values, onChange, opts = {}) {
     // is presented inside another one's swatches.
     .map((g) => ({ group: g, visible: g.controls.filter((c) => shownBy(c, values) && c.presentation !== 'hidden') }))
     .filter((x) => x.visible.length);
-  if (!groups.some((x) => x.group.id === activeTab)) activeTab = groups[0]?.group.id || null;
-  const tabs = el('div', 'ctrl-tabs');
-  tabs.setAttribute('role', 'tablist');
-  for (const { group: g, visible: v } of groups) {
-    const usable = v.some((c) => availability(c).ok);
-    const t = el('button', 'ctrl-tab', g.label);
-    t.type = 'button';
-    t.setAttribute('role', 'tab');
-    t.setAttribute('aria-selected', String(g.id === activeTab));
-    if (!usable) { t.classList.add('is-server'); t.title = isSelfHosted() ? 'This host lacks it' : 'Needs your server'; }
-    t.onclick = () => { activeTab = g.id; renderControls(host, values, onChange, opts); };
-    tabs.appendChild(t);
+  const tools = [
+    ...before.map((t) => ({ id: t.id, label: t.label, hint: t.hint, usable: true, tool: t })),
+    ...groups.map((x) => ({ id: x.group.id, label: x.group.label, usable: x.visible.some((c) => availability(c).ok), group: x })),
+    ...after.map((t) => ({ id: t.id, label: t.label, hint: t.hint, usable: true, tool: t })),
+  ];
+  if (!tools.some((t) => t.id === activeTab)) activeTab = tools[0]?.id || null;
+  const strip = rail || el('div', 'studio-rail');
+  strip.innerHTML = '';
+  strip.setAttribute('role', 'tablist');
+  for (const t of tools) {
+    const b = el('button', 'tool');
+    b.type = 'button';
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(t.id === activeTab));
+    b.append(icon(t.id), el('span', null, t.label));
+    b.title = t.hint || t.label;
+    if (!t.usable) { b.classList.add('is-server'); b.title = isSelfHosted() ? 'This host lacks it' : 'Needs your server'; }
+    // The app redraws the whole pane (its head names the tool) when it
+    // gave a hook; alone, the rail redraws itself.
+    b.onclick = () => { activeTab = t.id; if (opts.onOpen) opts.onOpen(t.id); else renderControls(host, values, onChange, opts); };
+    strip.appendChild(b);
   }
-  host.appendChild(tabs);
-  const current = groups.find((x) => x.group.id === activeTab);
-  if (!current) return;
+  if (!rail) host.appendChild(strip);
+  const current = tools.find((t) => t.id === activeTab);
+  if (!current) return null;
+  if (current.tool) {
+    const body = el('div', 'ctrl-panel');
+    body.setAttribute('role', 'tabpanel');
+    current.tool.render(body);
+    host.appendChild(body);
+    return { id: current.id, label: current.label, badge: null };
+  }
+  let head = null;
   {
-    const { group, visible } = current;
+    const { group, visible } = current.group;
     const usable = visible.some((c) => availability(c).ok);
     const body = el('div', 'ctrl-panel');
     body.setAttribute('role', 'tabpanel');
     const [text, cls] = BADGES[group.affects] || ['', ''];
-    if (!usable) body.appendChild(el('p', 'ctrl-badge is-server', isSelfHosted() ? 'This host lacks these' : 'These need your server'));
-    else if (text) body.appendChild(el('p', `ctrl-badge ${cls}`, text));
+    head = { id: group.id, label: group.label, badge: null };
+    if (!usable) head.badge = [isSelfHosted() ? 'This host lacks these' : 'These need your server', 'is-server'];
+    else if (text) head.badge = [text, cls];
     const elsewhere = [];
 
     for (const control of visible) {
@@ -448,6 +498,7 @@ export function renderControls(host, values, onChange, opts = {}) {
     }
     host.appendChild(body);
   }
+  return head;
 }
 
 /* One-tap looks (spec controls.looks): a chip per look, pressed when

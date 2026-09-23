@@ -67,6 +67,24 @@ export class Preview {
     this.lastMs = null;       // how long the last preview compose took
     this.busy = false;
     this.pending = false;
+    // The stage refits when its box changes size: a rotated phone, a
+    // resized window, the app's rail opening.
+    const box = this.canvas.closest('.stage-box');
+    if (box && 'ResizeObserver' in window) new ResizeObserver(() => this.update()).observe(box);
+  }
+
+  /* The frame takes the format's own shape, as large as its box allows:
+   * a story is a tall frame, a landscape a wide one, so the shape is
+   * judged from the stage and nothing is clipped into a square. */
+  fitStage(fw, fh) {
+    const frame = this.canvas.parentElement;
+    const box = frame?.parentElement;
+    if (!frame || !box) return;
+    const W = box.clientWidth; const H = box.clientHeight;
+    if (!W || !H) return;
+    const k = Math.min(W / fw, H / fh);
+    frame.style.width = `${Math.max(2, Math.floor(fw * k))}px`;
+    frame.style.height = `${Math.max(2, Math.floor(fh * k))}px`;
   }
 
   async load() {
@@ -175,8 +193,9 @@ export class Preview {
    * 600 px bitmap stretched across 900. Capped: the run's own size is
    * the ceiling, and the estimate scales from whatever this is. */
   targetSize(fw, fh) {
-    // The stage is square; the longer side of the format fills it.
-    const shown = this.canvas.parentElement?.clientWidth || this.canvas.clientWidth || 600;
+    // The frame has the format's shape, so its longer side is the format's.
+    const frame = this.canvas.parentElement;
+    const shown = Math.max(frame?.clientWidth || 0, frame?.clientHeight || 0) || this.canvas.clientWidth || 600;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const px = Math.min(Math.max(fw, fh), Math.max(320, Math.round(shown * dpr)));
     const scale = px / Math.max(fw, fh);
@@ -195,6 +214,7 @@ export class Preview {
       // The chosen still format decides the preview's shape.
       const fmt = this.currentFormat(OPTS.HERO_FORMATS.square || { size: [1254, 1254] });
       const [fw, fh] = fmt.size;
+      this.fitStage(fw, fh);
       const [width, height] = this.targetSize(fw, fh);
       if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || fmt.key || 'still'}`;
       const t0 = performance.now();
@@ -255,6 +275,7 @@ export class Preview {
   drawVideoFrame(subject, o) {
     const fmt = this.currentFormat({ size: [720, 720] });
     const [fw, fh] = fmt.size;
+    this.fitStage(fw, fh);
     const [width, height] = this.targetSize(fw, fh);
     let cutouts; let seed;
     cutouts = (this.getUserCutouts?.() || [subject.cutout]).slice(0, 5);
