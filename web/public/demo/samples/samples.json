@@ -1,0 +1,23 @@
+[
+ {
+  "key": "camry",
+  "title": "Toyota Camry",
+  "exterior": "Midnight Black Metallic",
+  "interior": "Black",
+  "file": "demo/samples/camry.webp"
+ },
+ {
+  "key": "maverick",
+  "title": "Ford Maverick",
+  "exterior": "Azure Gray Metallic Tri-Coat",
+  "interior": "Navy Pier",
+  "file": "demo/samples/maverick.webp"
+ },
+ {
+  "key": "mustang",
+  "title": "Ford Mustang",
+  "exterior": "Blue Metallic",
+  "interior": "Ebony",
+  "file": "demo/samples/mustang.webp"
+ }
+]

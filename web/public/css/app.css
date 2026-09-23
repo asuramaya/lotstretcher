@@ -15,19 +15,10 @@
 }
 
 /* ---------- top bar ---------------------------------------------- */
-.topbar {
-  grid-area: top;
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-  height: calc(52px + var(--safe-t));
-  padding: var(--safe-t) max(var(--gutter), var(--safe-r)) 0 max(var(--gutter), var(--safe-l));
-  background: color-mix(in srgb, var(--surface) 82%, transparent);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid var(--line);
-  z-index: 20;
-}
+/* The shared .appbar (base.css) sits in the grid's top row, across the
+   rail and the content on desktop, so it is the same bar as the landing
+   page's and not a second, narrower one. */
+.app > .appbar { grid-area: top; position: relative; z-index: 20; }
 
 /* ---------- main ------------------------------------------------- */
 .main { grid-area: main; position: relative; overflow: hidden; }
@@ -81,7 +72,7 @@
     grid-template-columns: var(--rail) 1fr;
     grid-template-rows: auto 1fr;
     grid-template-areas:
-      "nav top"
+      "top top"
       "nav main";
   }
   .nav {
@@ -109,11 +100,37 @@
   .nav-btn:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
   .nav-btn[aria-current="page"] { background: var(--accent-wash); color: var(--accent); }
   .nav-btn .dot { position: static; translate: none; margin-left: auto; }
-  .nav-rail-head { display: block; padding: 0 var(--s-3) var(--s-4); }
-  .topbar { border-bottom: 1px solid var(--line); }
+  .nav-rail-head { display: block; padding: var(--s-2) var(--s-3) var(--s-4); }
+  .nav-sep { display: block; height: 1px; background: var(--line); margin: var(--s-3) var(--s-2); }
+  .nav .nav-btn .step-n { display: grid; }
+  .nav .nav-btn svg { display: none; }
   .pane { padding: var(--s-6) var(--s-6) var(--s-8); }
 }
-.nav-rail-head { display: none; }
+.nav-rail-head, .nav-sep { display: none; }
+
+/* Step numbers on the rail: a small ring that fills in when the step is
+   done, so the rail reads as a checklist of the pipeline. On the phone
+   bar the icon stays and the number is dropped; on the rail the number
+   replaces the icon. */
+.nav-btn .step-n {
+  display: none; place-items: center; flex: none;
+  width: 22px; height: 22px; border-radius: var(--r-full);
+  border: 1.5px solid currentColor; font-size: 11px; font-weight: 700;
+}
+.nav-btn.is-done .step-n { background: var(--ok); border-color: var(--ok); color: #fff; }
+.nav-btn.is-done .step-n::before { content: '\2713'; }
+.nav-btn.is-done .step-n span { display: none; }
+
+/* ---------- a pane's head and foot: the walkthrough ---------------- */
+.pane-head { margin-bottom: var(--s-5); }
+.pane-head h1 { font-size: var(--t-lg); margin-top: var(--s-1); }
+.pane-head .lede { color: var(--ink-2); margin-top: var(--s-2); max-width: 60ch; }
+.pane-foot {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3);
+  margin-top: var(--s-7); padding-top: var(--s-5);
+  border-top: 1px solid var(--line);
+}
+.pane-foot .grow { flex: 1; }
 
 /* ---------- drop zone --------------------------------------------- */
 .dropzone {
@@ -380,15 +397,60 @@
 .clip figcaption { margin-top: var(--s-2); }
 
 /* ---------- spec-driven controls ---------- */
-.ctrl-group + .ctrl-group { margin-top: var(--s-6); }
-.ctrl-group-head {
-  font-size: var(--t-xs); font-weight: 700;
-  letter-spacing: .08em; text-transform: uppercase;
-  color: var(--ink-3);
-  margin-bottom: var(--s-2);
+/* Each group is a <details>: open when it changes something you can
+   see on this host, shut when everything in it needs your own server.
+   The summary carries what the group affects, so the preview beside it
+   is never a mystery. */
+.ctrl-group { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.ctrl-group + .ctrl-group { margin-top: var(--s-3); }
+.ctrl-group > summary {
+  display: flex; align-items: center; gap: var(--s-3);
+  min-height: var(--tap); padding: 0 var(--s-4);
+  cursor: pointer; list-style: none; user-select: none;
 }
+.ctrl-group > summary::-webkit-details-marker { display: none; }
+.ctrl-group > summary::after {
+  content: ''; width: 8px; height: 8px; margin-left: auto;
+  border-right: 1.5px solid var(--ink-3); border-bottom: 1.5px solid var(--ink-3);
+  transform: rotate(-45deg); transition: transform var(--dur-1) var(--ease);
+}
+.ctrl-group[open] > summary::after { transform: rotate(45deg); }
+.ctrl-group-head { font-size: var(--t-base); font-weight: 600; }
+.ctrl-group-body { padding: 0 var(--s-4) var(--s-2); }
+.ctrl-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  padding: 2px var(--s-2); border-radius: var(--r-full);
+  background: var(--surface-3); color: var(--ink-3);
+}
+.ctrl-badge.is-live { background: var(--accent-wash); color: var(--accent); }
+.ctrl-badge.is-server { background: var(--sunken); }
+
+/* ---------- the Look pane: preview beside the levers -------------- */
+.look { display: grid; gap: var(--s-5); grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 900px) {
+  .look { grid-template-columns: minmax(300px, 380px) 1fr; }
+  .look-preview { position: sticky; top: var(--s-4); }
+}
+.look-preview { display: flex; flex-direction: column; gap: var(--s-3); }
+.preview-canvas {
+  width: 100%; aspect-ratio: 1; border-radius: var(--r-md);
+  border: 1px solid var(--line); background: var(--sunken);
+  display: block;
+}
+.preview-canvas.is-busy { opacity: .7; }
+.preview-samples { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.preview-samples .chip { min-height: 34px; padding: var(--s-1) var(--s-3); }
+.estimates { display: flex; flex-direction: column; gap: var(--s-2); font-size: var(--t-sm); }
+.estimate { display: flex; gap: var(--s-3); align-items: baseline; }
+.estimate strong { flex: none; min-width: 64px; font-weight: 600; color: var(--ink-2); }
+.estimate span { color: var(--ink-3); }
+.look-controls { min-width: 0; }
+
 .opt.is-locked .opt-text strong { color: var(--ink-3); }
 .opt.is-locked { opacity: .72; }
+
+.file-wrap { display: flex; align-items: center; gap: var(--s-2); flex: none; }
+.file-thumb { width: auto; height: 40px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--sunken); }
 
 .range-wrap { display: flex; align-items: center; gap: var(--s-3); flex: none; }
 .range-wrap input[type="range"] { width: 130px; accent-color: var(--accent); }

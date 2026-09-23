@@ -26,41 +26,52 @@
   <!-- Nav is declared before main so the tab order is nav -> content.
        On desktop CSS grid places it as a left rail; on a phone it is the
        bottom bar. Same markup either way. -->
-  <nav class="nav" aria-label="Sections">
+  <!-- The four steps of the pipeline, in order, plus the library. On
+       desktop the rail numbers them and ticks them off; on a phone the
+       same buttons are the bottom bar. -->
+  <nav class="nav" aria-label="Steps">
     <div class="nav-rail-head">
-      <span class="brand"><span class="brand-mark"></span> lotstretcher</span>
-      <p class="xs dim" style="margin-top:6px">Runs entirely on this device</p>
+      <p class="xs dim">Four steps. Nothing leaves this device.</p>
     </div>
     <button class="nav-btn" data-go="source" aria-current="page">
+      <span class="step-n"><span>1</span></span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
       <span>Photos</span>
     </button>
     <button class="nav-btn" data-go="details">
+      <span class="step-n"><span>2</span></span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
-      <span>Details</span>
+      <span>Vehicle</span>
     </button>
     <button class="nav-btn" data-go="options">
+      <span class="step-n"><span>3</span></span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
-      <span>Options</span>
+      <span>Look</span>
     </button>
     <button class="nav-btn" data-go="results" disabled>
+      <span class="step-n"><span>4</span></span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       <span>Results</span>
       <span class="dot hidden" id="resultsDot"></span>
     </button>
+    <span class="nav-sep" role="separator"></span>
     <button class="nav-btn" data-go="library">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
       <span>Library</span>
     </button>
   </nav>
 
-  <header class="topbar">
-    <!-- Shared with the landing page; see js/chrome.js. The app used to
-         have no way back, which made it a place you could reach and not
-         leave. -->
-    <div class="brand-slot grow" id="brandSlot"></div>
-    <button class="btn btn-ghost btn-sm" id="aboutBtn" aria-label="About this app">About</button>
-    <button class="btn btn-primary btn-sm" id="runBtn" disabled>Process</button>
+  <!-- The same header as the landing page (css/base.css .appbar,
+       js/chrome.js): same height, same brand. Only the actions differ. -->
+  <header class="appbar">
+    <div class="appbar-row">
+      <div class="brand-slot" id="brandSlot"></div>
+      <div class="appbar-actions">
+        <a class="btn btn-ghost btn-sm hide-sm" data-go-surface="landing" href="index.html">Home</a>
+        <button class="btn btn-ghost btn-sm" id="aboutBtn" aria-label="About this app">About</button>
+        <button class="btn btn-primary btn-sm" id="runBtn" disabled>Process</button>
+      </div>
+    </div>
   </header>
 
   <main class="main">
@@ -68,6 +79,12 @@
     <!-- ---------- photos ---------- -->
     <section class="pane" id="pane-source" aria-label="Photos">
       <div class="pane-inner">
+        <div class="pane-head">
+          <span class="eyebrow">Step 1 of 4</span>
+          <h1>Add the vehicle's photos</h1>
+          <p class="lede">Five to ten shots of one vehicle, walking around it. Interiors are
+            welcome: they are sorted out and corrected, never cut out.</p>
+        </div>
         <div id="isolationWarn" class="banner banner-err hidden" style="margin-bottom:var(--s-5)">
           <div>
             <strong>Running single-threaded.</strong>
@@ -110,12 +127,24 @@
           <div id="warnBox"></div>
           <div class="grid" id="photoGrid"></div>
         </div>
+
+        <div class="pane-foot">
+          <span class="small dim grow" id="sourceFootNote">Add photos to continue.</span>
+          <button class="btn" id="toDetailsBtn">Next: the vehicle</button>
+        </div>
       </div>
     </section>
 
     <!-- ---------- details ---------- -->
     <section class="pane" id="pane-details" hidden aria-label="Vehicle details">
       <div class="pane-inner">
+        <div class="pane-head">
+          <span class="eyebrow">Step 2 of 4</span>
+          <h1>Say what it is</h1>
+          <p class="lede">All optional. The colours decide the backdrop, which is generated
+            from the vehicle's own paint; the rest writes the posts. A window sticker or a
+            listing fills it in for you.</p>
+        </div>
         <div class="section">
           <div class="section-head"><h2>Vehicle</h2></div>
 
@@ -169,6 +198,12 @@
             <div class="span-2"><label class="label" for="f-citytags">City hashtags</label><input class="field" id="f-citytags" placeholder="e.g. Austin, AustinTX, ATXCars" autocomplete="off"></div>
           </div>
         </div>
+
+        <div class="pane-foot">
+          <button class="btn btn-ghost" data-back="source">Back</button>
+          <span class="grow"></span>
+          <button class="btn" id="toOptionsBtn">Next: the look</button>
+        </div>
       </div>
     </section>
 
@@ -179,47 +214,66 @@
       </div>
     </section>
 
-    <!-- ---------- options ---------- -->
-    <section class="pane" id="pane-options" hidden aria-label="Options">
+    <!-- ---------- options: the Look ---------- -->
+    <section class="pane" id="pane-options" hidden aria-label="Look">
       <div class="pane-inner">
-        <div class="section">
-          <div class="section-head">
-            <h2>Output</h2>
-            <button class="btn btn-ghost btn-sm" id="resetOptions">Reset</button>
-          </div>
-          <p class="small muted" style="margin-bottom:var(--s-4)">
-            Same options the command line takes, minus the ones a browser
-            cannot do. Kept on this device.
-          </p>
-
-          <label class="label">Still formats</label>
-          <div class="chips" id="heroFormats"></div>
-
-          <label class="label" style="margin-top:var(--s-5)">Video formats</label>
-          <div class="chips" id="videoFormats"></div>
-          <p class="xs dim" id="videoNote" style="margin-top:var(--s-2)"></p>
+        <div class="pane-head">
+          <span class="eyebrow">Step 3 of 4</span>
+          <h1>Choose the look</h1>
+          <p class="lede">Every lever redraws the preview as you move it, on a sample
+            vehicle or on your own once one is cut out. What you cannot see, such as
+            video length, shows up as a time and size estimate instead.</p>
         </div>
 
-        <!-- Rendered from shared/pipeline-spec.json's controls block.
-             Adding a control is a spec edit, not a markup change. -->
-        <div class="section" id="controlsHost"></div>
+        <div class="look">
+          <aside class="look-preview" id="lookPreview" aria-label="Live preview">
+            <canvas class="preview-canvas" id="previewCanvas" width="600" height="600"></canvas>
+            <div class="preview-samples" id="previewSamples"></div>
+            <div class="estimates" id="estimates"></div>
+          </aside>
 
-        <div class="section">
-          <div class="section-head">
-            <h2>Host</h2>
-            <span class="pill" id="hostBadge">checking</span>
+          <div class="look-controls">
+            <div class="section">
+              <div class="section-head">
+                <h2>Output</h2>
+                <button class="btn btn-ghost btn-sm" id="resetOptions">Reset</button>
+              </div>
+              <label class="label">Still formats</label>
+              <div class="chips" id="heroFormats"></div>
+
+              <label class="label" style="margin-top:var(--s-5)">Video formats</label>
+              <div class="chips" id="videoFormats"></div>
+              <p class="xs dim" id="videoNote" style="margin-top:var(--s-2)"></p>
+            </div>
+
+            <!-- Rendered from shared/pipeline-spec.json's controls block.
+                 Adding a control is a spec edit, not a markup change. -->
+            <div class="section" id="controlsHost"></div>
+
+            <details class="ctrl-group section" id="hostGroup">
+              <summary><span class="ctrl-group-head">This host</span><span class="pill" id="hostBadge">checking</span></summary>
+              <div class="ctrl-group-body">
+                <p class="small muted" style="margin:var(--s-2) 0 var(--s-4)" id="hostNote"></p>
+                <div class="opts" id="hostCaps"></div>
+              </div>
+            </details>
+
+            <details class="ctrl-group section">
+              <summary><span class="ctrl-group-head">The same run, on the command line</span></summary>
+              <div class="ctrl-group-body">
+                <p class="small muted" style="margin:var(--s-2) 0 var(--s-3)">
+                  One pipeline, one set of options. These map straight onto the CLI flags.
+                </p>
+                <div class="copybox mono" id="cliEcho"></div>
+              </div>
+            </details>
           </div>
-          <p class="small muted" style="margin-bottom:var(--s-4)" id="hostNote"></p>
-          <div class="opts" id="hostCaps"></div>
         </div>
 
-        <div class="section">
-          <div class="section-head"><h2>The same run, on the command line</h2></div>
-          <p class="small muted" style="margin-bottom:var(--s-3)">
-            One pipeline, one set of options. These map straight onto the
-            CLI flags.
-          </p>
-          <div class="copybox mono" id="cliEcho"></div>
+        <div class="pane-foot">
+          <button class="btn btn-ghost" data-back="details">Back</button>
+          <span class="small dim grow" id="optionsFootNote"></span>
+          <button class="btn btn-primary" id="runBtn2" disabled>Process</button>
         </div>
       </div>
     </section>
@@ -227,6 +281,10 @@
     <!-- ---------- results ---------- -->
     <section class="pane" id="pane-results" hidden aria-label="Results">
       <div class="pane-inner">
+        <div class="pane-head">
+          <span class="eyebrow">Step 4 of 4</span>
+          <h1>Results</h1>
+        </div>
         <div class="section" id="progressSection" hidden>
           <div class="section-head"><h2>Working</h2><span class="pill" id="progPct">0%</span></div>
           <div class="bar" style="margin-bottom:var(--s-5)"><i id="progBar"></i></div>
@@ -259,6 +317,7 @@
 
         <div class="empty" id="resultsEmpty">
           <p>Nothing yet. Add photos and press Process.</p>
+          <p style="margin-top:var(--s-3)"><button class="btn" data-back="source">Go to step 1</button></p>
         </div>
       </div>
     </section>

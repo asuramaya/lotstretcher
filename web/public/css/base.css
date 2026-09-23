@@ -228,6 +228,38 @@ hr.rule { border: 0; border-top: 1px solid var(--line); margin: var(--s-5) 0; }
 .brand-slot { display: flex; align-items: center; gap: var(--s-4); min-width: 0; }
 .brand-slot .brand { flex: none; }
 
+/* THE header. One bar, the same height, brand and blur on both pages;
+   each page puts its own actions on the right (Source / Open app on
+   the landing page, Home / About / Process in the app). The app's used
+   to be 52px and the landing page's 60px, with the brand at two
+   weights, so crossing between them read as two products. */
+.appbar {
+  position: sticky; top: 0; z-index: 40;
+  padding-top: var(--safe-t);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-2) var(--ease);
+}
+.appbar.stuck, body.is-app .appbar { border-bottom-color: var(--line); }
+.appbar-row {
+  display: flex; align-items: center; gap: var(--s-3);
+  height: 60px;
+  padding: 0 max(var(--gutter), var(--safe-r)) 0 max(var(--gutter), var(--safe-l));
+}
+.appbar .brand { font-weight: 700; font-size: var(--t-base); }
+.appbar-actions { display: flex; align-items: center; gap: var(--s-2); margin-left: auto; }
+
+/* A small uppercase label above a heading: "Step 2 of 4", a section's
+   name. Shared because both pages count steps. */
+.eyebrow {
+  display: inline-block;
+  font-size: var(--t-xs); font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase;
+  color: var(--accent);
+}
+
 .appbar-x {
   display: inline-flex; align-items: center;
   height: 32px; padding: 0 var(--s-3);

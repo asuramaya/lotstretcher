@@ -2,23 +2,13 @@
 
 import { loadCore, vehicleGradientColors } from './core.js';
 import { loadSpec, get as specGet } from './spec.js';
-import { mountBrand, wireSurfaceLinks } from './chrome.js';
+import { mountBrand, wireSurfaceLinks, watchStuck } from './chrome.js';
 import { initConfigFromSpec } from './config.js';
 
-mountBrand(document.getElementById('brandSlot'), { compact: true });
+mountBrand(document.getElementById('brandSlot'));
 wireSurfaceLinks();
 
-/* ---------- sticky nav border, only once actually stuck ---------- */
-const nav = document.getElementById('topnav');
-if (nav) {
-  const sentinel = document.createElement('div');
-  sentinel.style.cssText = 'position:absolute;top:0;height:1px;width:1px';
-  document.body.prepend(sentinel);
-  new IntersectionObserver(
-    ([e]) => nav.classList.toggle('stuck', !e.isIntersecting),
-    { threshold: 0 },
-  ).observe(sentinel);
-}
+watchStuck(document.getElementById('appbar'));
 
 /* ---------- before / after ----------
  * A range input does the work: it is draggable, keyboard-operable and

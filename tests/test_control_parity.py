@@ -56,7 +56,7 @@ def test_controls_block_is_well_formed():
         )
         assert c["key"] not in seen, f"duplicate control key {c['key']!r}"
         seen.add(c["key"])
-        assert c["type"] in ("toggle", "select", "range", "chips"), c["type"]
+        assert c["type"] in ("toggle", "select", "range", "chips", "file"), c["type"]
 
 
 @pytest.mark.parametrize("control", [c for c in CONTROLS if "cli" in surfaces(c)],

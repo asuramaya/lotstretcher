@@ -7,33 +7,8 @@
 .shell { max-width: 1140px; margin: 0 auto; padding: 0 max(var(--gutter), var(--safe-l)) 0 max(var(--gutter), var(--safe-r)); }
 .shell.narrow { max-width: 760px; }
 
-/* .brand and .brand-mark come from base.css, shared with the app. Only
-   the landing page's slightly larger weight is set here. */
-.brand { font-weight: 700; }
-
 .hide-sm { display: none; }
 @media (min-width: 620px) { .hide-sm { display: inline-flex; } }
-
-/* ---------- nav ---------- */
-.topnav {
-  position: sticky; top: 0; z-index: 40;
-  padding-top: var(--safe-t);
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid transparent;
-  transition: border-color var(--dur-2) var(--ease);
-}
-.topnav .row { height: 60px; gap: var(--s-3); }
-.topnav.stuck { border-bottom-color: var(--line); }
-
-.eyebrow {
-  display: inline-block;
-  font-size: var(--t-xs); font-weight: 700;
-  letter-spacing: .09em; text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: var(--s-3);
-}
 
 /* ---------- hero ---------- */
 .hero { padding: clamp(var(--s-6), 5vw, var(--s-8)) 0 clamp(var(--s-7), 6vw, var(--s-9)); }

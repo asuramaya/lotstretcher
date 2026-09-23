@@ -20,14 +20,16 @@ export function currentSurface() {
   return document.body.classList.contains('is-app') ? 'app' : 'landing';
 }
 
-/* Fill `host` with the shared brand and a link to the other surface.
+/* Fill `host` with the shared brand.
  *
  * The brand is a link to the landing page from the app, and an anchor to
  * the top from the landing page itself. A brand that navigates when you
  * are already there is a small lie and a real annoyance on mobile, where
- * it is the easiest thing to hit by accident.
+ * it is the easiest thing to hit by accident. The cross-link to the
+ * other surface is one of the page's own actions (data-go-surface), so
+ * it sits with them on the right rather than crowding the brand.
  */
-export function mountBrand(host, { compact = false } = {}) {
+export function mountBrand(host) {
   if (!host) return;
   const here = currentSurface();
   const other = here === 'app' ? 'landing' : 'app';
@@ -44,16 +46,17 @@ export function mountBrand(host, { compact = false } = {}) {
   brand.append(mark, document.createTextNode(' lotstretcher'));
   host.appendChild(brand);
 
-  if (!compact) {
-    const link = document.createElement('a');
-    link.className = 'appbar-x';
-    link.href = SURFACES[other].href;
-    link.title = SURFACES[other].title;
-    link.textContent = SURFACES[other].label;
-    host.appendChild(link);
-  }
-
   return { here, other };
+}
+
+/* Keep the header's bottom rule off until the page has scrolled under
+ * it: a rule on an unscrolled page is a line for no reason. */
+export function watchStuck(bar) {
+  if (!bar || !('IntersectionObserver' in window)) return;
+  const sentinel = document.createElement('div');
+  sentinel.style.cssText = 'position:absolute;top:0;height:1px;width:1px;pointer-events:none';
+  document.body.prepend(sentinel);
+  new IntersectionObserver(([e]) => bar.classList.toggle('stuck', !e.isIntersecting)).observe(sentinel);
 }
 
 /* Wire any element carrying data-go-surface. Lets a page add its own

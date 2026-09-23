@@ -23,13 +23,15 @@ import { decode, makeCanvas, ctxOf, canvasToBlob } from './lib/imageio.js';
 import { makeZip, deliver } from './lib/zip.js';
 import * as OPTS from './options.js';
 import {
-  loadOptions, saveOptions, resetOptions, toCliFlags, initFromSpec,
+  loadOptions, saveOptions, resetOptions, toCliFlags, initFromSpec, serialisable,
 } from './options.js';
+import { store, blobToCanvas } from './lib/store.js';
 import { loadSpec, get as specGet } from './spec.js';
 import { loadCore, version as coreVersion, enhanceInterior } from './core.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
+import { Preview } from './preview.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
-import { renderControls, controlDefaults, controlsToFlags } from './controls.js';
+import { renderControls, controlDefaults, controlsToFlags, affectsPreview } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { normalizeListing, takeListingFromHash, bookmarkletSource } from './pipeline/listing.js';
 import { LibraryView } from './library/view.js';
@@ -55,9 +57,38 @@ const state = {
   sticker: null,
   options: null,
   errors: [],
+  lookVisited: false,
 };
 
 let nextId = 1;
+let preview = null;
+
+/* The run button lives in the header and again at the foot of the Look
+ * pane; one function keeps them agreeing. */
+function setRunEnabled(on) {
+  $('runBtn').disabled = !on;
+  const b = $('runBtn2');
+  if (b) b.disabled = !on;
+}
+
+/* The rail is a checklist: a step is ticked once it has what it needs.
+ * Called from every render that can change that. */
+function renderSteps() {
+  const done = {
+    source: state.photos.length > 0,
+    details: !!(state.vehicle.make || state.vehicle.model || state.vehicle.exterior_color),
+    options: state.lookVisited,
+    results: state.done,
+  };
+  for (const btn of document.querySelectorAll('.nav-btn')) {
+    btn.classList.toggle('is-done', !!done[btn.dataset.go]);
+  }
+  const n = state.photos.length;
+  const note = $('sourceFootNote');
+  if (note) note.textContent = n ? `${n} photo${n === 1 ? '' : 's'} added.` : 'Add photos to continue.';
+  const onote = $('optionsFootNote');
+  if (onote) onote.textContent = n ? `Ready to process ${n} photo${n === 1 ? '' : 's'}.` : 'Add photos in step 1 first.';
+}
 
 /* ---------- persistence -------------------------------------------
  * localStorage holds the dealer block and nothing else. It is a
@@ -88,6 +119,14 @@ function go(pane) {
     else btn.removeAttribute('aria-current');
   }
   if (pane === 'results') $('resultsDot').classList.add('hidden');
+  if (pane === 'options') {
+    state.lookVisited = true;
+    // The preview is drawn only while it can be seen.
+    preview?.renderSamples();
+    preview?.update();
+  }
+  $(`pane-${pane}`).scrollTop = 0;
+  renderSteps();
 }
 
 function openSheet(id) { $(id).hidden = false; }
@@ -160,7 +199,8 @@ function renderPhotos() {
   const n = state.photos.length;
   $('photosSection').hidden = n === 0;
   $('photoCount').textContent = n;
-  $('runBtn').disabled = n === 0 || state.running;
+  setRunEnabled(n > 0 && !state.running);
+  renderSteps();
 
   const warn = $('warnBox');
   warn.innerHTML = '';
@@ -366,8 +406,8 @@ function renderOptions() {
     commitOptions();
   };
 
-  chipRow($('heroFormats'), OPTS.HERO_FORMATS, o.heroFormats, (k) => toggleIn(o.heroFormats, k, true));
-  chipRow($('videoFormats'), OPTS.VIDEO_FORMATS, o.videoFormats, (k) => toggleIn(o.videoFormats, k));
+  chipRow($('heroFormats'), OPTS.HERO_FORMATS, o.heroFormats, (k) => { toggleIn(o.heroFormats, k, true); preview?.update(); });
+  chipRow($('videoFormats'), OPTS.VIDEO_FORMATS, o.videoFormats, (k) => { toggleIn(o.videoFormats, k); preview?.renderEstimates(); });
   $('videoNote').textContent = o.videoFormats.length
     ? 'Rendered after the stills. Measured around 5x realtime here, so a '
       + 'six second clip takes a second or two on a laptop.'
@@ -377,7 +417,13 @@ function renderOptions() {
   // Look sections are gone: a new control now needs no code here.
   renderControls($('controlsHost'), o, (key, value) => {
     o[key] = value;
+    // The user's own images are remembered on this device, in
+    // IndexedDB, since the options blob is JSON and holds no image.
+    if (key === 'customBackground' || key === 'customFrame') {
+      if (value?.sourceBlob) store.set(key, value.sourceBlob); else store.del(key);
+    }
     commitOptions();
+    if (affectsPreview(key)) preview?.update(); else preview?.renderEstimates();
   });
 
   renderHost();
@@ -440,7 +486,7 @@ async function run() {
   state.running = true;
   state.done = false;
   state.errors = [];
-  $('runBtn').disabled = true;
+  setRunEnabled(false);
   go('results');
   $('progressSection').hidden = false;
   $('resultsEmpty').hidden = true;
@@ -596,7 +642,7 @@ async function run() {
               seed: `${vid}:${p.name}:${fmt}`,
               exteriorColor: state.vehicle.exterior_color,
               interiorColor: state.vehicle.interior_color,
-              ...state.options,
+              ...serialisable(state.options),
             });
             // Normalise to a canvas: everything downstream (the result
             // grid, the bundle) expects one, not a bitmap.
@@ -628,6 +674,12 @@ async function run() {
           spotlight: state.options.spotlight,
           marginFrac: state.options.margin,
           generic: state.options.backdrop === 'generic',
+          // The user's own images, the browser's --photo-background and
+          // --border: drawn by the core exactly as the CLI's are.
+          background: state.options.backdrop === 'custom' ? state.options.customBackground || null : null,
+          border: state.options.customFrame || null,
+          glow: state.options.glow, glowColor: state.options.glowColor,
+          glowRadius: state.options.glowRadius, glowIntensity: state.options.glowIntensity,
         });
       }
       // The first format is the one shown in the grid.
@@ -701,14 +753,23 @@ async function run() {
     // hold and nothing downstream needs them once cutouts exist.
     for (const p of state.photos) { p.bitmap?.close?.(); p.bitmap = null; }
     state.running = false;
-    $('runBtn').disabled = state.photos.length === 0;
+    setRunEnabled(state.photos.length > 0);
     renderPhotos();
     renderResults();
+    // A cut-out vehicle of the user's own is now a preview subject.
+    preview?.renderSamples();
   }
 }
 
 /* ---------- output -------------------------------------------------- */
+let stepsTimer = null;
+function renderStepsSoon() {
+  clearTimeout(stepsTimer);
+  stepsTimer = setTimeout(() => { renderSteps(); if (preview?.current === 'yours') preview.update(); }, 0);
+}
+
 function readVehicle() {
+  renderStepsSoon();
   // Spec fields come from the sticker and have no form input; carry them
   // across the rebuild rather than losing them on every run.
   const carried = {};
@@ -973,6 +1034,11 @@ async function init() {
   // added since the last visit therefore arrives at its spec default
   // rather than undefined.
   state.options = { ...controlDefaults(), ...loadOptions() };
+  // The images chosen last time, if this device still has them.
+  for (const key of ['customBackground', 'customFrame']) {
+    const canvas = await blobToCanvas(await store.get(key));
+    if (canvas) state.options[key] = canvas;
+  }
   loadDealer();
   $('f-dealer').value = state.dealer.name || '';
   $('f-greeting').value = state.dealer.greeting || '';
@@ -1072,7 +1138,22 @@ async function init() {
     if (url) importSticker(url, 'the sticker');
   };
 
-  $('resetOptions').onclick = () => { state.options = resetOptions(); renderOptions(); };
+  $('resetOptions').onclick = () => { state.options = resetOptions(); renderOptions(); preview?.update(); };
+
+  // The walkthrough's own buttons: next at the foot of each step, back
+  // where there is somewhere to go back to.
+  $('toDetailsBtn').onclick = () => go('details');
+  $('toOptionsBtn').onclick = () => go('options');
+  for (const b of document.querySelectorAll('[data-back]')) b.onclick = () => go(b.dataset.back);
+  $('runBtn2').onclick = run;
+
+  preview = new Preview($('lookPreview'), {
+    getOptions: () => state.options,
+    getVehicle: () => state.vehicle,
+    getUserCutout: () => state.photos.find((p) => p.cutout)?.cutout || null,
+    getPhotoCount: () => state.photos.length,
+  });
+  preview.load();
 
   $('clearBtn').onclick = clearPhotos;
   $('runBtn').onclick = run;
@@ -1156,6 +1237,8 @@ async function init() {
    * real bugs this session were only visible from the inside. */
   window.lotstretcher = {
     state,
+    preview,
+    go,
     options: () => state.options,
     summary: () => ({
       photos: state.photos.map((p) => ({

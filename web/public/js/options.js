@@ -103,8 +103,20 @@ export function loadOptions() {
   }
 }
 
+/* The options without the images in them: what goes into the JSON
+ * blob, and what a server receives. The user's own background and frame
+ * are canvases held by the app and remembered in IndexedDB. */
+export function serialisable(options) {
+  const out = {};
+  for (const [k, v] of Object.entries(options || {})) {
+    if (v && typeof v === 'object' && !Array.isArray(v)) continue;
+    out[k] = v;
+  }
+  return out;
+}
+
 export function saveOptions(options) {
-  try { localStorage.setItem(KEY, JSON.stringify(options)); } catch { /* ignore */ }
+  try { localStorage.setItem(KEY, JSON.stringify(serialisable(options))); } catch { /* ignore */ }
 }
 
 export function resetOptions() {

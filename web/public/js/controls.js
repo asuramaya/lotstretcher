@@ -158,6 +158,50 @@ function buildRange(control, value, onChange, disabled) {
   return wrap;
 }
 
+/* An image of the user's own: a picker, a thumbnail once chosen, and a
+ * way to drop it. The value is a canvas (with .sourceBlob and .name),
+ * kept in memory and in IndexedDB by the app; it never goes into the
+ * options blob, which is JSON. */
+function buildFile(control, value, onChange, disabled) {
+  const wrap = el('div', 'file-wrap');
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.className = 'sr-only';
+  input.setAttribute('aria-label', control.label);
+  input.onchange = async () => {
+    const f = input.files?.[0];
+    input.value = '';
+    if (!f) return;
+    const { blobToCanvas } = await import('./lib/store.js');
+    const canvas = await blobToCanvas(f);
+    if (!canvas) return;
+    canvas.name = f.name;
+    onChange(canvas);
+  };
+  const pick = el('button', 'btn btn-sm', value ? 'Change' : 'Choose image');
+  pick.type = 'button';
+  pick.disabled = disabled;
+  pick.onclick = () => input.click();
+  wrap.append(input);
+  if (value) {
+    const thumb = document.createElement('canvas');
+    thumb.className = 'file-thumb';
+    const scale = 40 / Math.max(value.width, value.height);
+    thumb.width = Math.max(1, Math.round(value.width * scale));
+    thumb.height = Math.max(1, Math.round(value.height * scale));
+    thumb.getContext('2d').drawImage(value, 0, 0, thumb.width, thumb.height);
+    thumb.title = value.name || '';
+    const clear = el('button', 'btn btn-ghost btn-sm', 'Remove');
+    clear.type = 'button';
+    clear.onclick = () => onChange(null);
+    wrap.append(thumb, pick, clear);
+  } else {
+    wrap.append(pick);
+  }
+  return wrap;
+}
+
 function formatValue(control, value) {
   if (control.unit === 's') return `${value}s`;
   if (control.unit === 'px') return `${value}px`;
@@ -165,8 +209,23 @@ function formatValue(control, value) {
   return String(value);
 }
 
+/* What a group's badge says. `affects` comes from the spec: a group
+ * that changes the still is what the live preview answers to; video
+ * and pipeline groups are answered by the estimates instead. */
+const BADGES = {
+  still: ['Live preview', 'is-live'],
+  video: ['Video', ''],
+  pipeline: ['Pipeline', ''],
+};
+
+/* Groups the user has shut or opened stay that way for the session;
+ * without this every edit re-rendered them back to their defaults. */
+const openState = new Map();
+
 /* Render every group into `host`. `values` is the live options object;
- * `onChange(key, value)` is called on every edit. */
+ * `onChange(key, value)` is called on every edit. Each group is a
+ * collapsible: open when something in it is usable on this host, shut
+ * with a "needs your server" badge when nothing is. */
 export function renderControls(host, values, onChange) {
   host.innerHTML = '';
 
@@ -174,8 +233,18 @@ export function renderControls(host, values, onChange) {
     const visible = group.controls.filter((c) => shownBy(c, values));
     if (!visible.length) continue;
 
-    const section = el('div', 'ctrl-group');
-    section.appendChild(el('h3', 'ctrl-group-head', group.label));
+    const usable = visible.some((c) => availability(c).ok);
+    const section = el('details', 'ctrl-group');
+    section.open = openState.has(group.id) ? openState.get(group.id) : usable;
+    section.ontoggle = () => openState.set(group.id, section.open);
+    const summary = el('summary');
+    summary.appendChild(el('span', 'ctrl-group-head', group.label));
+    const [text, cls] = BADGES[group.affects] || ['', ''];
+    if (!usable) summary.appendChild(el('span', 'ctrl-badge is-server', isSelfHosted() ? 'Host lacks it' : 'Needs your server'));
+    else if (text) summary.appendChild(el('span', `ctrl-badge ${cls}`, text));
+    section.appendChild(summary);
+    const body = el('div', 'ctrl-group-body');
+    section.appendChild(body);
 
     for (const control of visible) {
       const { ok, why, onServer } = availability(control);
@@ -195,13 +264,23 @@ export function renderControls(host, values, onChange) {
       if (control.type === 'toggle') widget = buildToggle(control, value, change, !ok);
       else if (control.type === 'select') widget = buildSelect(control, value, change, !ok);
       else if (control.type === 'range') widget = buildRange(control, value, change, !ok);
+      else if (control.type === 'file') widget = buildFile(control, value, change, !ok);
       else widget = el('span', 'dim xs', control.type);
 
       row.appendChild(widget);
-      section.appendChild(row);
+      body.appendChild(row);
     }
     host.appendChild(section);
   }
+}
+
+/* Which groups change the still, for anything that wants to know
+ * whether an edit should redraw a preview. */
+export function affectsPreview(key) {
+  for (const group of get('controls', 'groups')) {
+    if (group.controls.some((c) => c.key === key)) return group.affects === 'still';
+  }
+  return false;
 }
 
 /* Defaults for every control, so a fresh install starts where the spec
@@ -234,6 +313,10 @@ export function controlsToFlags(values) {
         // all expressible on the CLI carries a flag only where one exists.
         const choice = chosen(control, value);
         if (choice?.cli) flags.push(choice.cli);
+      } else if (control.type === 'file') {
+        // A chosen image has no path here; the echo names the file so
+        // the command reads as what to run with it on disk.
+        if (value && control.cli) flags.push(`${control.cli} "${value.name || 'image.png'}"`);
       } else if (control.type === 'toggle') {
         // An inverted flag (--no-glow) is emitted when the value is OFF;
         // a plain flag when it is ON.

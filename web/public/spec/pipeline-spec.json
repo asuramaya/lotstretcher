@@ -572,6 +572,7 @@
     "groups": [
       {
         "id": "pipeline",
+        "affects": "pipeline",
         "label": "Pipeline",
         "controls": [
           {
@@ -627,6 +628,7 @@
       },
       {
         "id": "backdrop",
+        "affects": "still",
         "label": "Backdrop",
         "controls": [
           {
@@ -651,6 +653,12 @@
                 "label": "Stock background",
                 "hint": "A photo from the asset library",
                 "requires": "filesystem",
+                "cli": "--photo-background"
+              },
+              {
+                "value": "custom",
+                "label": "Your own image",
+                "hint": "A photo of your lot or showroom, chosen below",
                 "cli": "--photo-background"
               }
             ],
@@ -677,6 +685,19 @@
             "emptyNote": "Falls back to the library's default photo"
           },
           {
+            "key": "customBackground",
+            "label": "Your image",
+            "hint": "Any photo. It is cover-fitted behind the vehicle and stays on this device",
+            "type": "file",
+            "default": null,
+            "surfaces": ["browser"],
+            "showWhen": {
+              "key": "backdrop",
+              "equals": "custom"
+            },
+            "cliNote": "On the command line the same thing is --photo-background with a path; the browser has no path, so it takes the file itself."
+          },
+          {
             "key": "spotlight",
             "label": "Spotlight",
             "hint": "Dim the backdrop around the vehicle",
@@ -689,6 +710,7 @@
       },
       {
         "id": "frame",
+        "affects": "still",
         "label": "Frame",
         "controls": [
           {
@@ -720,6 +742,16 @@
             "requires": "filesystem"
           },
           {
+            "key": "customFrame",
+            "label": "Your own frame",
+            "hint": "A PNG with a transparent window. The vehicle is placed inside it and the frame goes on top, exactly as --border does",
+            "type": "file",
+            "default": null,
+            "surfaces": ["browser"],
+            "cli": "--border",
+            "cliNote": "On the command line the same thing is --border with a path to the PNG; the browser takes the file itself."
+          },
+          {
             "key": "margin",
             "label": "Margin",
             "hint": "Breathing room inside the frame",
@@ -735,6 +767,7 @@
       },
       {
         "id": "glow",
+        "affects": "still",
         "label": "Glow",
         "controls": [
           {
@@ -786,6 +819,7 @@
       },
       {
         "id": "video",
+        "affects": "video",
         "label": "Video",
         "controls": [
           {
