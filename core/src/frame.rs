@@ -194,6 +194,8 @@ pub enum Op {
     MaskStats { mask: Slice, #[serde(default)] threshold: Option<u8> },
     CutoutFromMask { photo: Slice, mask: Slice, #[serde(default)] threshold: Option<u8>, #[serde(default)] largest_only: bool },
     DuplicateScore { a: Slice, b: Slice, #[serde(default)] size: Option<usize> },
+    ParseSticker(crate::sticker::StickerRequest),
+    PanelSplitX { words: Vec<crate::sticker::Word>, #[serde(default)] y_tol: Option<f64> },
 }
 
 fn mask_threshold(t: Option<u8>) -> u8 {
@@ -272,6 +274,14 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
             let n = size.unwrap_or_else(|| spec::f64_at(&["wheel", "signatureSize"]) as usize);
             OpResult::Json(serde_json::to_string(&Scalar { value: crate::mask::duplicate_score(&a, &b, n) }).unwrap())
+        }
+        Op::ParseSticker(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::sticker::parse_sticker(&req) }).unwrap()),
+        Op::PanelSplitX { words, y_tol } => {
+            let v = crate::sticker::panel_split_x(
+                &words, y_tol.unwrap_or_else(|| spec::f64_at(&["sticker", "rowToleranceCli"])),
+                spec::f64_at(&["sticker", "panelSplit", "centerFrac"]), spec::f64_at(&["sticker", "panelSplit", "searchFrac"]),
+                spec::f64_at(&["sticker", "panelSplit", "minGap"]));
+            OpResult::Json(serde_json::to_string(&Scalar { value: v }).unwrap())
         }
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);

@@ -29,6 +29,7 @@ pub mod carousel;
 pub mod spin;
 pub mod interior;
 pub mod mask;
+pub mod sticker;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod ffi;

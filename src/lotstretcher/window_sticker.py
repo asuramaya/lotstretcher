@@ -18,10 +18,11 @@ from pathlib import Path
 import requests
 from PIL import Image
 
+from lotstretcher import spec as _spec
 from lotstretcher.imaging.sticker import find_panel_split_x, parse_sticker
 from lotstretcher.scrape import Vehicle, download_file
 
-PLACEHOLDER_STICKER_MARKERS = ("check back later", "has not yet been", "not available")
+PLACEHOLDER_STICKER_MARKERS = tuple(_spec.get("sticker", "placeholderMarkers"))
 
 
 def is_placeholder_sticker(pdf_path: Path) -> bool:

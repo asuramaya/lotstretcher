@@ -177,9 +177,12 @@ browser now writes the same `interior/` set the CLI's bundle carries, at the pho
 money shot's mask arithmetic is the core's as well (`mask_stats`, `cutout_from_mask`, `duplicate_score`:
 bounds, 8-connected blobs, the dominance, width and angle gates, the crop, the duplicate check); the
 models that make the masks, CLIPSeg and SAM2, stay in the CLI, which is why wheel shots are a server
-feature the app's capabilities list says the browser lacks. What remains outside the core: the sticker
-parser and the copy builders, which move in turn, deleting their Python and JavaScript copies in the
-same commit their parity test passes. Models stay in ONNX Runtime on both sides.
+feature the app's capabilities list says the browser lacks. The Monroney sticker parser is the core's
+(`parse_sticker`, `panel_split_x`): the CLI hands it `pdftotext -bbox` words and the browser hands it
+pdf.js words, and both get the same record, checked on every real sticker in the operator's library
+(114 of them, byte-identical to the Python parser they replaced) and, in the browser, against the same
+fixtures. What remains outside the core: the copy builders, which move next, deleting their Python and
+JavaScript copies in the same commit their parity test passes. Models stay in ONNX Runtime on both sides.
 
 [`tests/test_core_parity.py`](tests/test_core_parity.py) holds the core to the Python it replaced, and is
 skipped with a message when the core has not been built (`cargo build --release` in `core/`).

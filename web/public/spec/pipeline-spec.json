@@ -159,6 +159,19 @@
     "scrimGamma": 1.6,
     "calloutTextFrac": 0.04
   },
+  "sticker": {
+    "$comment": [
+      "imaging/sticker.py, sticker.js and core/src/sticker.rs: the Monroney",
+      "parser. placeholderMarkers identify Ford's 'check back later' PDF;",
+      "makes are looked for in the page furniture; panelSplit finds the",
+      "gutter of a two-panel landscape page (see find_panel_split_x)."
+    ],
+    "rowToleranceCli": 1.5,
+    "rowToleranceBrowser": 3.0,
+    "placeholderMarkers": ["check back later", "has not yet been", "not available"],
+    "makes": ["FORD", "LINCOLN", "CHEVROLET", "GMC", "RAM", "JEEP", "TOYOTA", "HONDA", "NISSAN", "HYUNDAI", "KIA", "SUBARU", "VOLKSWAGEN"],
+    "panelSplit": {"centerFrac": 0.5, "searchFrac": 0.15, "minGap": 8.0}
+  },
   "wheel": {
     "$comment": [
       "imaging/wheel.py and photos.py: the wheel money shot. The models",
