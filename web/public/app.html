@@ -66,6 +66,9 @@
       <span class="small appbar-status" id="appStatus" aria-live="polite"></span>
       <div class="appbar-actions">
         <a class="btn btn-ghost btn-sm hide-sm" data-go-surface="landing" href="index.html">Home</a>
+        <button class="btn btn-ghost btn-sm appbar-icon" id="settingsBtn" aria-label="Settings" title="Settings: your dealer, this host">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
         <button class="btn btn-primary btn-sm" id="runBtn" disabled>Process</button>
       </div>
     </div>
@@ -158,22 +161,6 @@
           </div>
         </div>
 
-        <div class="section">
-          <div class="section-head"><h2>Dealer</h2></div>
-          <p class="small muted" style="margin-bottom:var(--s-5)">
-            The same boilerplate the command line takes from its dealer
-            config. The greeting and address open the Marketplace post,
-            because the feed preview shows only the first three lines. No
-            phone number: Facebook hides numbers typed into post text.
-            Kept on this device only.
-          </p>
-          <div class="form-grid">
-            <div><label class="label" for="f-dealer">Name</label><input class="field" id="f-dealer" autocomplete="off"></div>
-            <div><label class="label" for="f-greeting">Greeting</label><input class="field" id="f-greeting" placeholder="e.g. Ask for Sam!" autocomplete="off"></div>
-            <div class="span-2"><label class="label" for="f-address">Address</label><input class="field" id="f-address" placeholder="e.g. 100 Main St, Austin, TX 78701" autocomplete="off"></div>
-            <div class="span-2"><label class="label" for="f-citytags">City hashtags</label><input class="field" id="f-citytags" placeholder="e.g. Austin, AustinTX, ATXCars" autocomplete="off"></div>
-          </div>
-        </div>
 
       </div>
     </section>
@@ -206,12 +193,12 @@
           </div>
           <div class="stage-bar">
             <div class="preview-caption" id="previewCaption">Preview</div>
-            <div class="preview-modes" id="previewModes" hidden>
-              <button type="button" class="chip" data-mode="still" aria-pressed="true"><strong>Still</strong></button>
-              <button type="button" class="chip" data-mode="video" aria-pressed="false"><strong>Video frame</strong></button>
-              <input type="range" id="previewScrub" min="0" max="1000" value="350" aria-label="Position in the clip" hidden>
+            <div class="preview-modes segment" id="previewModes" role="tablist" aria-label="Still or video">
+              <button type="button" class="seg" data-mode="still" aria-pressed="true">Still</button>
+              <button type="button" class="seg" data-mode="video" aria-pressed="false">Video</button>
             </div>
-            <div class="preview-formats" id="previewFormats" aria-label="Which shape to preview"></div>
+            <div class="preview-formats" id="previewFormats" aria-label="The shapes: tap to see one, tick to make it"></div>
+            <input type="range" id="previewScrub" min="0" max="1000" value="350" aria-label="Position in the clip" hidden>
           </div>
         </div>
 
@@ -236,21 +223,12 @@
             <div class="chips looks-grid" id="looksHost"></div>
           </div>
           <div id="outputPart">
-            <label class="label">Still formats</label>
-            <div class="chips" id="heroFormats"></div>
-            <label class="label" style="margin-top:var(--s-5)">Video formats</label>
-            <div class="chips" id="videoFormats"></div>
-            <p class="xs dim" id="videoNote" style="margin-top:var(--s-2)"></p>
-            <label class="label" style="margin-top:var(--s-5)">What a run makes</label>
+            <p class="xs dim" style="margin:0 0 var(--s-3)">The shapes are chosen under the stage: tap one to see it, tick it to make it.</p>
+            <label class="label">What a run makes</label>
             <div class="estimates" id="estimates"></div>
-          </div>
-          <div id="hostPart">
-            <p class="small muted" style="margin:0 0 var(--s-2)"><span class="pill" id="hostBadge">checking</span></p>
-            <p class="small muted" style="margin:0 0 var(--s-2)" id="hostNote"></p>
-            <p class="xs muted mono" style="margin:0 0 var(--s-4)" id="aboutRuntime">checking</p>
-            <div class="opts" id="hostCaps"></div>
+            <p class="xs dim" id="videoNote" style="margin-top:var(--s-2)"></p>
             <label class="label" style="margin-top:var(--s-5)">The same run, on the command line</label>
-            <p class="small muted" style="margin:0 0 var(--s-3)">One pipeline, one set of options. These map straight onto the CLI flags.</p>
+            <p class="xs dim" style="margin:0 0 var(--s-3)">One pipeline, one set of options. These map straight onto the CLI flags.</p>
             <div class="copybox mono" id="cliEcho"></div>
           </div>
         </div>
@@ -304,6 +282,34 @@
 </div>
 
 <!-- ---------- sheets ---------- -->
+<div class="sheet" id="settingsSheet" hidden>
+  <div class="sheet-body" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head"><h3 style="flex:1">Settings</h3></div>
+    <div class="sheet-content">
+      <h3 style="font-size:var(--t-base);margin-bottom:var(--s-2)">Your dealer</h3>
+      <p class="xs dim" style="margin-bottom:var(--s-4)">
+        Filled once, kept on this device: the same boilerplate the command
+        line takes from its dealer config. The greeting and address open
+        the Marketplace post, and the greeting is offered as the Studio's
+        text line. No phone number: Facebook hides numbers typed into post text.
+      </p>
+      <div class="form-grid">
+        <div><label class="label" for="f-dealer">Name</label><input class="field" id="f-dealer" autocomplete="off"></div>
+        <div><label class="label" for="f-greeting">Greeting</label><input class="field" id="f-greeting" placeholder="e.g. Ask for Sam!" autocomplete="off"></div>
+        <div class="span-2"><label class="label" for="f-address">Address</label><input class="field" id="f-address" placeholder="e.g. 100 Main St, Austin, TX 78701" autocomplete="off"></div>
+        <div class="span-2"><label class="label" for="f-citytags">City hashtags</label><input class="field" id="f-citytags" placeholder="e.g. Austin, AustinTX, ATXCars" autocomplete="off"></div>
+      </div>
+      <hr class="rule">
+      <h3 style="font-size:var(--t-base);margin-bottom:var(--s-2)">This host <span class="pill" id="hostBadge">checking</span></h3>
+      <p class="xs dim" style="margin:0 0 var(--s-2)" id="hostNote"></p>
+      <p class="xs muted mono" style="margin:0 0 var(--s-4)" id="aboutRuntime">checking</p>
+      <div class="opts" id="hostCaps"></div>
+    </div>
+    <div class="sheet-foot"><button class="btn btn-primary" data-close="settingsSheet">Done</button></div>
+  </div>
+</div>
+
 <div class="sheet" id="urlSheet" hidden>
   <div class="sheet-body" role="dialog" aria-modal="true" aria-label="Paste image URLs">
     <div class="sheet-grip"></div>

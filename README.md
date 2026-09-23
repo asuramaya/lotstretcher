@@ -148,8 +148,9 @@ The text side is held to the same rule, and more simply: the posts are built onc
 (`core/src/copy.rs`), and `facebook_post.py`, `social_post.py` and `web/public/js/pipeline/copy.js` are
 hosts that hand it the vehicle and the dealer boilerplate.
 [`tests/test_copy_parity.py`](tests/test_copy_parity.py) holds the core, natively and in the wasm build
-under node, to the posts the Python produced before it was deleted. The app's Dealer section holds the
-same boilerplate `dealer_config` does: greeting, address, city hashtags.
+under node, to the posts the Python produced before it was deleted. The app's Settings (the gear in the
+header) hold the same boilerplate `dealer_config` does: greeting, address, city hashtags, filled once
+and kept on the device.
 
 [`tests/test_spec_parity.py`](tests/test_spec_parity.py) enforces it, including the cases the
 indirection alone can't cover: it compares the remaining Python literals against the spec, greps the
@@ -416,8 +417,11 @@ the core on the preview's subject.
 
 The Studio is laid out as an editor: the stage in the middle, in the
 chosen format's own shape, a rail of tools beside it (Looks, then the
-spec's groups, then Output and Host) and one tool's levers open at a
-time. Looks is the first tool: a grid of looks, each a named set of light and
+spec's groups, then Output) and one tool's levers open at a time. The
+shapes are chosen under the stage, one chip per still or video format:
+tap one to see it in its own shape, tick it to make it. Output holds
+the run's estimates and the same run as a command line; what this host
+can do lives in Settings. Looks is the first tool: a grid of looks, each a named set of light and
 frame values defined once in the spec (`controls.looks`): Clean,
 Showroom (shadow and reflection), Gallery (a white line and a soft
 shadow) and Paint line (the vehicle's colour on the line, a glow and

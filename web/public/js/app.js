@@ -583,28 +583,9 @@ function selectRow(label, hint, value, choices, onChange) {
 function renderOptions() {
   const o = state.options;
 
-  const toggleIn = (list, key, atLeastOne = false) => {
-    const i = list.indexOf(key);
-    // Deselecting the last still format would leave the run with nothing
-    // to produce, and it silently fell back to square anyway, so the
-    // echo and the behaviour disagreed. Keep one selected instead.
-    if (i >= 0 && !(atLeastOne && list.length === 1)) list.splice(i, 1);
-    else if (i < 0) list.push(key);
-    commitOptions();
-  };
-
-  // Switching a shape on shows it; switching one off shows whatever is left.
-  chipRow($('heroFormats'), OPTS.HERO_FORMATS, o.heroFormats, (k) => {
-    toggleIn(o.heroFormats, k, true);
-    if (o.heroFormats.includes(k) && preview?.mode === 'still') preview.showFormat(k); else preview?.update();
-  });
-  chipRow($('videoFormats'), OPTS.VIDEO_FORMATS, o.videoFormats, (k) => {
-    toggleIn(o.videoFormats, k);
-    if (o.videoFormats.includes(k) && preview?.mode === 'video') preview.showFormat(k); else preview?.update();
-  });
   $('videoNote').textContent = o.videoFormats.length
-    ? 'Rendered after the stills, about twice realtime on a laptop: the '
-      + 'estimate beside the preview is measured on this device.'
+    ? 'Rendered after the stills, about twice realtime on a laptop; the '
+      + 'time above is measured on this device.'
     : 'No video. Stills only, which is faster on a phone.';
 
   // The looks: one tap sets several controls, then the pane is drawn
@@ -624,7 +605,7 @@ function renderOptions() {
   // panel while theirs is open, so their ids stay live for the code
   // above. Everything else is a spec group.
   const parts = $('studioParts');
-  for (const id of ['looksPart', 'outputPart', 'hostPart']) parts.appendChild($(id));
+  for (const id of ['looksPart', 'outputPart']) parts.appendChild($(id));
   const part = (id) => (body) => body.appendChild($(id));
   const head = renderControls($('controlsHost'), o, (key, value, live) => {
     o[key] = value;
@@ -645,17 +626,15 @@ function renderOptions() {
     rail: $('studioRail'),
     onOpen: () => renderOptions(),
     before: [{ id: 'looks', label: 'Looks', hint: 'One tap, several levers', render: part('looksPart') }],
-    after: [
-      { id: 'output', label: 'Output', hint: 'Which shapes a run makes', render: part('outputPart') },
-      { id: 'host', label: 'Host', hint: 'What this host can do, and the command line', render: part('hostPart') },
-    ],
+    after: [{ id: 'output', label: 'Output', hint: 'What a run makes, and the command line', render: part('outputPart') }],
+    // Settings supplies the Text tool's default line.
+    placeholders: { textLine: state.dealer.greeting || null },
   });
   $('panelTitle').textContent = head?.label || '';
   const badge = $('panelBadge');
   badge.hidden = !head?.badge;
   if (head?.badge) { badge.textContent = head.badge[0]; badge.className = `ctrl-badge ${head.badge[1]}`; }
 
-  renderHost();
   // Built from the same control definitions the pane renders, so the
   // echo cannot describe a flag the UI does not actually have.
   const formatFlags = o.heroFormats.map((f) => `--hero-format ${f}`)
@@ -821,6 +800,20 @@ function renderHost() {
 function commitOptions() {
   saveOptions(state.options);
   renderOptions();
+}
+
+/* A shape ticked under the stage goes into (or out of) the run.
+ * Deselecting the last still format would leave the run with nothing
+ * to produce, and it silently fell back to square anyway, so the echo
+ * and the behaviour disagreed. Keep one selected instead. */
+function toggleFormat(kind, key) {
+  const list = kind === 'video' ? state.options.videoFormats : state.options.heroFormats;
+  const i = list.indexOf(key);
+  if (i >= 0 && !(kind === 'still' && list.length === 1)) list.splice(i, 1);
+  else if (i < 0) list.push(key);
+  commitOptions();
+  preview?.renderEstimates();
+  preview?.update();
 }
 
 /* ---------- the run ------------------------------------------------ */
@@ -1776,8 +1769,16 @@ async function init() {
     getUserCutout: () => state.photos.find((p) => p.cutout)?.cutout || null,
     getUserCutouts: () => state.photos.filter((p) => p.cutout).map((p) => p.cutout),
     getPhotoCount: () => state.photos.length,
+    onToggleFormat: toggleFormat,
   });
   preview.load().then(() => renderOptions());
+
+  // Settings: the dealer and this host. Dealer edits are kept as typed
+  // and reach the Studio's Text tool as its default line.
+  $('settingsBtn').onclick = () => { renderHost(); openSheet('settingsSheet'); };
+  for (const id of ['f-dealer', 'f-greeting', 'f-address', 'f-citytags']) {
+    $(id).addEventListener('change', () => { readVehicle(); renderOptions(); });
+  }
 
   $('clearBtn').onclick = clearPhotos;
   $('lightboxClose').onclick = closeLightbox;

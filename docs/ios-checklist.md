@@ -11,7 +11,7 @@ Safari. For each step, note pass, fail, or the message shown.
 ## 1. Load
 
 - The app opens to the Photos pane with no error banner.
-- Open the Studio and tap the **Host** tool. Report the runtime line:
+- Tap the gear in the header (Settings), under **This host**. Report the runtime line:
   threads and whether it says "cross-origin isolated". Safari 17+ should
   show threads; older shows single-threaded.
 - On the same runtime line, report the **core** entry. It should read
@@ -24,7 +24,7 @@ Safari. For each step, note pass, fail, or the message shown.
 - Report iOS version and device model (Settings > General > About).
 
 - After a run (section 4), the Results pane's "Rendering video" line
-  should end "on N threads" when the Host line promised the threaded
+  should end "on N threads" when the Settings line promised the threaded
   core. Report N. If it is missing, the worker fell back to the page;
   open Safari's console (Settings > Safari > Advanced > Web Inspector)
   and copy any line starting "core worker" or "video worker".
@@ -71,9 +71,11 @@ Safari. For each step, note pass, fail, or the message shown.
   whether the photos and fields return, and whether the Studio opens
   at once (a finished sort and cut comes back with the car; the header
   should not sort again); try **Discard** once too.
-- In the Studio, tap the **Output** tool and switch **Story** on, then
-  its chip under the stage: the stage should turn tall, the whole story
-  in view, nothing clipped. Turn the phone sideways and report whether
+- In the Studio, tap the **Story** chip under the stage: the stage should
+  turn tall, the whole story in view, nothing clipped. Tick its circle
+  and report whether it joins the run (the Output tool's count). Switch
+  the segment to **Video** and tap **Vertical**: a frame of the clip
+  should show, with a scrub slider under the chips. Turn the phone sideways and report whether
   the stage refits.
 - Once the header's progress line has finished, tap a photo's sort tag in the strip ("interior", "detail"):
   a menu offers Exterior / Interior / Detail / Skip. Correct one and

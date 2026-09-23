@@ -170,12 +170,12 @@ function buildSelect(control, value, onChange, disabled) {
 /* A line of the user's own words. Every keystroke is a live change (the
  * preview redraws the title as it is typed) and leaving the box commits
  * it, the same split as a slider, for the same reason. */
-function buildText(control, value, onChange, disabled) {
+function buildText(control, value, onChange, disabled, placeholder = null) {
   const input = document.createElement('input');
   input.type = 'text';
   input.className = 'field';
   input.value = value ?? '';
-  input.placeholder = control.placeholder || '';
+  input.placeholder = placeholder || control.placeholder || '';
   input.maxLength = control.maxLength || 80;
   input.disabled = disabled;
   input.setAttribute('aria-label', control.label);
@@ -390,7 +390,7 @@ function icon(id) {
 let activeTab = null;
 export function openTool(id) { activeTab = id; }
 export function renderControls(host, values, onChange, opts = {}) {
-  const { thumbFor = null, rail = null, before = [], after = [] } = opts;
+  const { thumbFor = null, rail = null, before = [], after = [], placeholders = {} } = opts;
   host.innerHTML = '';
   const allControls = get('controls', 'groups').flatMap((g) => g.controls);
   const groups = get('controls', 'groups')
@@ -477,7 +477,7 @@ export function renderControls(host, values, onChange, opts = {}) {
       else if (control.type === 'select') widget = buildSelect(control, value, change, !ok);
       else if (control.type === 'range') widget = buildRange(control, value, change, !ok);
       else if (control.type === 'file') widget = buildFile(control, value, change, !ok);
-      else if (control.type === 'text') widget = buildText(control, value, change, !ok);
+      else if (control.type === 'text') widget = buildText(control, value, change, !ok, placeholders[control.key]);
       else widget = el('span', 'dim xs', control.type);
 
       row.appendChild(widget);

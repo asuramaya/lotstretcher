@@ -145,6 +145,8 @@
 .app-progress[hidden] { display: none; }
 .app-progress > div { height: 100%; width: 0; background: var(--accent); transition: width .25s var(--ease); box-shadow: 0 0 8px var(--accent); }
 .app-progress.is-indeterminate > div { width: 30%; animation: slide 1.1s ease-in-out infinite; }
+.appbar-icon { padding: 0 var(--s-2); }
+.appbar-icon svg { width: 20px; height: 20px; }
 .appbar-status { flex: 1; min-width: 0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent); font-weight: 600; }
 @media (min-width: 620px) { #appStatus { max-width: 40vw; } }
 .appbar-actions { min-width: 0; }
@@ -546,13 +548,29 @@
 /* Under the stage, not on it: a badge over the picture sat on top of
    the still's own text. */
 .preview-caption { font-size: var(--t-xs); font-weight: 600; letter-spacing: .02em; color: var(--ink-3); }
-.preview-modes { display: flex; align-items: center; gap: var(--s-2); }
-.preview-modes[hidden] { display: none; }
-.preview-modes .chip { min-height: 32px; padding: var(--s-1) var(--s-3); }
-.preview-modes input[type="range"] { flex: 1; min-width: 80px; accent-color: var(--accent); }
-.preview-formats { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.preview-formats[hidden] { display: none; }
-.preview-formats .chip { min-height: 32px; padding: var(--s-1) var(--s-3); }
+/* Still | Video, one segment. */
+.segment { display: inline-flex; padding: 2px; border-radius: var(--r-full); background: var(--surface-3); }
+.seg {
+  border: 0; background: transparent; color: var(--ink-3); cursor: pointer;
+  min-height: 28px; padding: 0 var(--s-3); border-radius: var(--r-full);
+  font-size: var(--t-xs); font-weight: 650;
+}
+.seg[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--sh-1); }
+#previewScrub { width: 100%; max-width: 360px; accent-color: var(--accent); }
+#previewScrub[hidden] { display: none; }
+/* The shapes: tap the chip to see one, tick it to make it. */
+.preview-formats { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-2); }
+.chip.fmt { flex-direction: row; align-items: center; gap: var(--s-2); min-height: 36px; padding: var(--s-1) var(--s-3) var(--s-1) var(--s-2); }
+.chip.fmt .fmt-text { display: flex; flex-direction: column; gap: 0; }
+.fmt-check {
+  flex: none; width: 18px; height: 18px; border-radius: var(--r-full);
+  border: 1.5px solid var(--line-2); background: var(--surface); color: transparent;
+  display: grid; place-items: center; font-size: 12px; line-height: 1;
+}
+.fmt-check::before { content: '\2713'; }
+.chip.fmt.is-on .fmt-check { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip.fmt.is-on:not([aria-pressed="true"]) { color: var(--ink-2); }
+.chip.fmt:not(.is-on) strong { color: var(--ink-3); }
 .estimates {
   display: grid; grid-template-columns: auto 1fr; gap: var(--s-2) var(--s-4);
   padding: var(--s-3) var(--s-4);

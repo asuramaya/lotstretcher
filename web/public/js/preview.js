@@ -36,7 +36,7 @@ export class Preview {
    * `getOptions()` returns the live options; `getVehicle()` the form's
    * vehicle (for its colours); `getUserCutout()` a cutout canvas from
    * the last run, or null. */
-  constructor(host, { getOptions, getVehicle, getUserCutout, getUserCutouts = null, getPhotoCount }) {
+  constructor(host, { getOptions, getVehicle, getUserCutout, getUserCutouts = null, getPhotoCount, onToggleFormat = null }) {
     this.host = host;
     this.canvas = host.querySelector('#previewCanvas');
     this.samplesHost = host.querySelector('#previewSamples');
@@ -47,6 +47,7 @@ export class Preview {
     this.getUserCutout = getUserCutout;
     this.getUserCutouts = getUserCutouts;
     this.getPhotoCount = getPhotoCount;
+    this.onToggleFormat = onToggleFormat;
     this.samples = [];
     this.current = null;      // the chosen sample's key, or 'yours'
     this.mode = 'still';      // or 'video': one frame of the clip a run would render
@@ -112,28 +113,28 @@ export class Preview {
     this.update();
   }
 
-  /* The video mode is offered only while a clip is going to be made. */
+  /* Both modes are always offered: a video is previewed whether or not
+   * one is ticked, since ticking is decided under the stage. */
   syncModes() {
-    const o = this.getOptions();
-    const wantVideo = !!(o?.videoFormats?.length);
-    if (this.modesHost) this.modesHost.hidden = !wantVideo;
-    if (!wantVideo && this.mode === 'video') this.setMode('still');
     this.renderFormats();
   }
 
-  /* Every selected format of the current mode, and which is shown. A
-   * run composes each shape separately, so each is previewed on its own
-   * rather than one cropped into another. */
-  selectedFormats() {
+  /* Every format of the current mode, ticked or not, with which are
+   * ticked into the run. A run composes each shape separately, so each
+   * is previewed on its own rather than one cropped into another. */
+  allFormats() {
     const o = this.getOptions() || {};
     const table = this.mode === 'video' ? OPTS.VIDEO_FORMATS : OPTS.HERO_FORMATS;
-    const keys = (this.mode === 'video' ? o.videoFormats : o.heroFormats) || [];
-    return keys.filter((k) => table[k]).map((k) => ({ key: k, ...table[k] }));
+    const on = new Set((this.mode === 'video' ? o.videoFormats : o.heroFormats) || []);
+    return Object.entries(table).map(([key, f]) => ({ key, ...f, on: on.has(key) }));
   }
 
+  selectedFormats() { return this.allFormats().filter((f) => f.on); }
+
+  /* The shown format: the one tapped, else the first ticked, else the first. */
   currentFormat(fallback) {
-    const list = this.selectedFormats();
-    return list.find((f) => f.key === this.format) || list[0] || fallback;
+    const list = this.allFormats();
+    return list.find((f) => f.key === this.format) || list.find((f) => f.on) || list[0] || fallback;
   }
 
   /* Show one format: what the app calls when a format chip is switched
@@ -144,19 +145,28 @@ export class Preview {
     this.update();
   }
 
+  /* One chip per shape under the stage: tap it to see it, tick it to
+   * make it. The tick is the run's format list; the tap is only what
+   * the stage shows. */
   renderFormats() {
     const host = this.formatsHost;
     if (!host) return;
     host.innerHTML = '';
-    const list = this.selectedFormats();
-    host.hidden = list.length < 2;
-    if (list.length < 2) return;
     const current = this.currentFormat();
-    for (const f of list) {
-      const b = el('button', 'chip');
+    for (const f of this.allFormats()) {
+      const b = el('button', 'chip fmt');
       b.type = 'button';
       b.setAttribute('aria-pressed', String(f.key === current?.key));
-      b.append(el('strong', null, f.label || f.key), el('span', null, `${f.size[0]}×${f.size[1]}`));
+      if (f.on) b.classList.add('is-on');
+      const tick = el('span', 'fmt-check');
+      tick.setAttribute('role', 'checkbox');
+      tick.setAttribute('aria-checked', String(f.on));
+      tick.setAttribute('aria-label', `Make the ${f.label || f.key}`);
+      tick.title = f.on ? 'In the run; tap to leave it out' : 'Not made; tap to make it';
+      tick.onclick = (e) => { e.stopPropagation(); this.format = f.key; this.onToggleFormat?.(this.mode, f.key); };
+      const text = el('span', 'fmt-text');
+      text.append(el('strong', null, f.label || f.key), el('span', null, `${f.size[0]}×${f.size[1]}`));
+      b.append(tick, text);
       b.onclick = () => this.showFormat(f.key);
       host.appendChild(b);
     }
