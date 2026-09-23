@@ -76,37 +76,44 @@ pub fn make_glow_layer(car: &Image, color: [u8; 3], radius: usize, intensity: f6
 /// destination treated as opaque RGB (its alpha, if any, is left alone).
 pub fn paste_alpha(dst: &mut Image, src: &Image, x: i64, y: i64) {
     let dc = dst.channels;
-    for sy in 0..src.height {
-        let dy = y + sy as i64;
-        if dy < 0 || dy >= dst.height as i64 { continue; }
+    let (dw, dh) = (dst.width, dst.height);
+    // Only the destination rows the source covers are visited; each row
+    // is independent, so they run in parallel when there are threads.
+    let y0 = y.max(0) as usize;
+    let y1 = (y + src.height as i64).min(dh as i64).max(0) as usize;
+    if y1 <= y0 { return; }
+    let band = &mut dst.data[y0 * dw * dc..y1 * dw * dc];
+    crate::par::rows_mut(band, dw * dc, |i, drow| {
+        let dy = (y0 + i) as i64;
+        let sy = (dy - y) as usize;
         for sx in 0..src.width {
             let dx = x + sx as i64;
-            if dx < 0 || dx >= dst.width as i64 { continue; }
+            if dx < 0 || dx >= dw as i64 { continue; }
             let si = (sy * src.width + sx) * 4;
             let a = src.data[si + 3] as u32;
             if a == 0 { continue; }
-            let di = (dy as usize * dst.width + dx as usize) * dc;
+            let di = dx as usize * dc;
             if a == 255 {
-                dst.data[di..di + 3].copy_from_slice(&src.data[si..si + 3]);
-                if dc == 4 { dst.data[di + 3] = 255; }
+                drow[di..di + 3].copy_from_slice(&src.data[si..si + 3]);
+                if dc == 4 { drow[di + 3] = 255; }
                 continue;
             }
             for c in 0..3 {
                 let s = src.data[si + c] as u32;
-                let d = dst.data[di + c] as u32;
+                let d = drow[di + c] as u32;
                 // (s*a + d*(255-a)) / 255, rounded as Pillow does; the
                 // divide is the exact-for-u8 shift form, which is what a
                 // per-pixel loop needs to vectorise.
                 let x = s * a + d * (255 - a) + 128;
-                dst.data[di + c] = ((x + (x >> 8)) >> 8) as u8;
+                drow[di + c] = ((x + (x >> 8)) >> 8) as u8;
             }
             if dc == 4 {
-                let d = dst.data[di + 3] as u32;
+                let d = drow[di + 3] as u32;
                 let x = d * (255 - a) + 128;
-                dst.data[di + 3] = (a + ((x + (x >> 8)) >> 8)).min(255) as u8;
+                drow[di + 3] = (a + ((x + (x >> 8)) >> 8)).min(255) as u8;
             }
         }
-    }
+    });
 }
 
 pub fn paste_with_glow(canvas: &mut Image, car: &Image, x: i64, y: i64, color: [u8; 3], radius: usize, intensity: f64) {

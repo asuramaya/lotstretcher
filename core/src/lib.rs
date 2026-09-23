@@ -14,6 +14,7 @@
 //! at build time, so a number changed there changes here.
 
 pub mod spec;
+pub mod par;
 pub mod prng;
 pub mod hsv;
 pub mod palette;

@@ -56,13 +56,17 @@ pub fn apply_spotlight(canvas: &mut Image, cx: f64, cy: f64, dim: f64) {
     let factor = spotlight_factor(w, h, cx, cy, dim);
     // Fixed point: the factor is in [dim, 1], so a 16.16 multiply and a
     // shift reproduce the f32 multiply-then-truncate to the pixel.
-    for i in 0..w * h {
-        let f = (factor[i] * 65536.0) as u32;
-        let p = i * c;
-        for ch in 0..3 {
-            canvas.data[p + ch] = ((canvas.data[p + ch] as u32 * f) >> 16) as u8;
+    let factor: &[f32] = &factor;
+    crate::par::rows_mut(&mut canvas.data, w * c, |y, row| {
+        let frow = &factor[y * w..(y + 1) * w];
+        for x in 0..w {
+            let f = (frow[x] * 65536.0) as u32;
+            let p = x * c;
+            for ch in 0..3 {
+                row[p + ch] = ((row[p + ch] as u32 * f) >> 16) as u8;
+            }
         }
-    }
+    });
 }
 
 thread_local! {
@@ -88,15 +92,15 @@ fn spotlight_factor(w: usize, h: usize, cx: f64, cy: f64, dim: f64) -> std::rc::
         .fold(0.0, f64::max);
     let inv = 1.0 / (max_dist * (outer - inner));
     let mut factor = vec![0f32; w * h];
-    for y in 0..h {
+    crate::par::rows_mut(&mut factor, w, |y, row| {
         let dy2 = (y as f64 - cy).powi(2);
         for x in 0..w {
             let dist = (((x as f64 - cx).powi(2) + dy2).sqrt() - inner * max_dist) * inv;
             let t = dist.clamp(0.0, 1.0);
             let smooth = t * t * (3.0 - 2.0 * t);
-            factor[y * w + x] = (1.0 - smooth * (1.0 - dim)) as f32;
+            row[x] = (1.0 - smooth * (1.0 - dim)) as f32;
         }
-    }
+    });
     let rc = std::rc::Rc::new(factor);
     FACTOR_CACHE.with(|c| {
         let mut c = c.borrow_mut();

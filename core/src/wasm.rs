@@ -3,6 +3,11 @@
 
 use wasm_bindgen::prelude::*;
 
+/// The threaded build exports initThreadPool(n); the loader awaits it
+/// before any call. Absent from the plain build.
+#[cfg(feature = "wasm-threads")]
+pub use wasm_bindgen_rayon::init_thread_pool;
+
 /// Composed RGB bytes for the request, or a thrown Error.
 #[wasm_bindgen]
 pub fn compose_hero(request: &str, arena: &[u8]) -> Result<Vec<u8>, JsError> {

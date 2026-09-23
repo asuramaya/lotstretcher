@@ -49,31 +49,34 @@ pub fn resize_lanczos(img: &Image, out_w: usize, out_h: usize) -> Image {
 
     // Horizontal pass into f32 rows.
     let mut tmp = vec![0f32; out_w * img.height * c];
-    for y in 0..img.height {
-        let row = &img.data[y * img.width * c..(y + 1) * img.width * c];
+    let (src, in_w) = (&img.data, img.width);
+    crate::par::rows_mut(&mut tmp, out_w * c, |y, trow| {
+        let row = &src[y * in_w * c..(y + 1) * in_w * c];
         for (ox, (lo, w)) in wx.iter().enumerate() {
             for ch in 0..c {
                 let mut acc = 0.0f64;
                 for (k, wk) in w.iter().enumerate() {
                     acc += *wk * row[(lo + k) * c + ch] as f64;
                 }
-                tmp[(y * out_w + ox) * c + ch] = acc as f32;
+                trow[ox * c + ch] = acc as f32;
             }
         }
-    }
+    });
     // Vertical pass.
     let mut out = Image::new(out_w, out_h, c);
-    for (oy, (lo, w)) in wy.iter().enumerate() {
+    let tmp: &[f32] = &tmp;
+    crate::par::rows_mut(&mut out.data, out_w * c, |oy, orow| {
+        let (lo, w) = &wy[oy];
         for x in 0..out_w {
             for ch in 0..c {
                 let mut acc = 0.0f64;
                 for (k, wk) in w.iter().enumerate() {
                     acc += *wk * tmp[((lo + k) * out_w + x) * c + ch] as f64;
                 }
-                out.data[(oy * out_w + x) * c + ch] = acc.round().clamp(0.0, 255.0) as u8;
+                orow[x * c + ch] = acc.round().clamp(0.0, 255.0) as u8;
             }
         }
-    }
+    });
     out
 }
 
@@ -83,7 +86,7 @@ pub fn resize_bilinear(img: &Image, out_w: usize, out_h: usize) -> Image {
     let mut out = Image::new(out_w, out_h, c);
     let sx = img.width as f64 / out_w as f64;
     let sy = img.height as f64 / out_h as f64;
-    for oy in 0..out_h {
+    crate::par::rows_mut(&mut out.data, out_w * c, |oy, orow| {
         let fy = ((oy as f64 + 0.5) * sy - 0.5).max(0.0);
         let y0 = fy.floor() as usize;
         let y1 = (y0 + 1).min(img.height - 1);
@@ -97,10 +100,10 @@ pub fn resize_bilinear(img: &Image, out_w: usize, out_h: usize) -> Image {
                 let p = |x: usize, y: usize| img.data[(y * img.width + x) * c + ch] as f64;
                 let v = p(x0, y0) * (1.0 - tx) * (1.0 - ty) + p(x1, y0) * tx * (1.0 - ty)
                     + p(x0, y1) * (1.0 - tx) * ty + p(x1, y1) * tx * ty;
-                out.data[(oy * out_w + ox) * c + ch] = v.round().clamp(0.0, 255.0) as u8;
+                orow[ox * c + ch] = v.round().clamp(0.0, 255.0) as u8;
             }
         }
-    }
+    });
     out
 }
 

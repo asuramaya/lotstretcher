@@ -65,9 +65,8 @@ pub fn linear_gradient(w: usize, h: usize, angle: f64, start: [u8; 3], end: [u8;
     let s = [start[0] as f32, start[1] as f32, start[2] as f32];
     let d = [end[0] as f32 - s[0], end[1] as f32 - s[1], end[2] as f32 - s[2]];
     let mut out = Image::new(w, h, 3);
-    for y in 0..h {
+    crate::par::rows_mut(&mut out.data, w * 3, |y, row| {
         let ty = ay * y as f32 + c0;
-        let row = &mut out.data[y * w * 3..(y + 1) * w * 3];
         for x in 0..w {
             let t = (ax * x as f32 + ty).clamp(0.0, 1.0);
             let i = x * 3;
@@ -75,7 +74,7 @@ pub fn linear_gradient(w: usize, h: usize, angle: f64, start: [u8; 3], end: [u8;
             row[i + 1] = (s[1] + d[1] * t) as u8;
             row[i + 2] = (s[2] + d[2] * t) as u8;
         }
-    }
+    });
     let _ = resize_bilinear;
     out
 }

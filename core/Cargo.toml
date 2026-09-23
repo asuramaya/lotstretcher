@@ -14,10 +14,17 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
 wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true }
+rayon = { version = "1", optional = true }
+wasm-bindgen-rayon = { version = "1.3", optional = true }
 
 [features]
-default = []
+# Native builds parallelise rows with rayon by default. The plain wasm
+# build must not (no threads without cross-origin isolation, and node
+# has no web workers); the threaded wasm build adds rayon over workers.
+default = ["threads"]
+threads = ["dep:rayon"]
 wasm = ["dep:wasm-bindgen", "dep:js-sys"]
+wasm-threads = ["wasm", "threads", "dep:wasm-bindgen-rayon"]
 
 [profile.release]
 opt-level = 3
