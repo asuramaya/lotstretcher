@@ -17,7 +17,7 @@ import { initRuntime, runtime, loadModel, totalBytes } from './pipeline/runtime.
 import { classifyScene, classifyAngle, loadLabels } from './pipeline/classify.js';
 import { matte, applyMatte, gateCutout } from './pipeline/matte.js';
 import { composeHero } from './pipeline/compose.js';
-import { renderHeroVideo, isSupported as videoSupported } from './pipeline/video.js';
+import { renderHeroVideo, videoThreads, isSupported as videoSupported } from './pipeline/video.js';
 import { buildAllPosts, vehicleTitle, PLATFORMS } from './pipeline/copy.js';
 import { decode, makeCanvas, ctxOf, canvasToBlob } from './lib/imageio.js';
 import { makeZip, deliver } from './lib/zip.js';

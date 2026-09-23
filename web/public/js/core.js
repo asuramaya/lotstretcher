@@ -18,21 +18,21 @@ let threads = 0;
  * running outside a page, such as the parity tests under node, which
  * cannot fetch the module relative to this file.
  *
- * One build ships, single-threaded. A threaded build (rayon over web
- * workers) links now, but every core call is made from the page's main
- * thread and rayon's join blocks there waiting for the workers, which
- * a browser main thread cannot do; using it means running the core in
- * a worker of its own. Until then the loader never tries it. */
-export async function loadCore(source) {
+ * Two builds ship. The page loads the plain, single-threaded one: a
+ * page's main thread may not block, and rayon's join does. The video
+ * renderer runs inside a worker (pipeline/video-worker.js) and asks
+ * for the threaded one there, where the same core spreads every row
+ * loop across the cores; measured about 3.5x on a clip. */
+export async function loadCore(source, { threads: wantPool = false } = {}) {
   if (mod) return mod;
   if (loading) return loading;
   loading = (async () => {
-    // The threaded build is not shipped yet: its wasm memory is not
-    // created shared, so the pool's workers refuse it (DataCloneError
-    // on the Memory). Until the build is fixed the loader never tries
-    // it; the plain build is complete on its own.
-    const THREADED_BUILD = false;
-    const wantThreads = THREADED_BUILD && source === undefined && typeof window !== 'undefined'
+    // The threaded build (core-threads/, rayon over web workers) may be
+    // asked for only from inside a worker: rayon's join blocks the
+    // calling thread, which a page's main thread may not do. The video
+    // renderer runs in one (pipeline/video-worker.js); the page itself
+    // always takes the plain build. A failed pool falls back to plain.
+    const wantThreads = wantPool && source === undefined && typeof window === 'undefined'
       && self.crossOriginIsolated && typeof SharedArrayBuffer !== 'undefined';
     if (wantThreads) {
       try {

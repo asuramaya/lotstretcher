@@ -19,5 +19,3 @@ node_modules/
 # Rust core build output; web/public/core/ (the wasm) is committed so the static site needs no toolchain
 core/target/
 
-# The threaded core is built on demand (LOTSTRETCHER_THREADS=1) and never committed.
-web/public/core-threads/

@@ -36,6 +36,9 @@ export function loadSpecFrom(json) {
   return spec;
 }
 
+/* The whole spec, for handing to a worker with its own module instance. */
+export function raw() { return spec; }
+
 /* Synchronous read, for code that runs after loadSpec() has resolved.
  * Throws rather than returning a default, because a silent fallback is
  * exactly the drift this file exists to prevent: the browser would carry

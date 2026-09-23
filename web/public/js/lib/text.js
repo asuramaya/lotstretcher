@@ -9,6 +9,7 @@ import { library } from './library.js';
 export const DEFAULT_FONT = 'Lato Bold';
 const loaded = new Set();
 const loading = new Map();
+const bytes = new Map();     // name -> Uint8Array, for a worker's own core
 
 /* Fetch and load a studio font once. Resolves to the name, or throws
  * when the studio has no such font. */
@@ -20,7 +21,9 @@ export async function ensureFont(name = DEFAULT_FONT) {
     if (!entry) throw new Error(`the studio has no font named ${name}`);
     const r = await fetch(entry.src);
     if (!r.ok) throw new Error(`${r.status} loading ${entry.src}`);
-    core.loadFont(name, new Uint8Array(await r.arrayBuffer()));
+    const data = new Uint8Array(await r.arrayBuffer());
+    core.loadFont(name, data);
+    bytes.set(name, data);
     loaded.add(name);
     return name;
   })();
@@ -29,6 +32,10 @@ export async function ensureFont(name = DEFAULT_FONT) {
 }
 
 export function fontReady(name = DEFAULT_FONT) { return loaded.has(name); }
+
+/* The loaded fonts' bytes, by name: what a worker with its own core
+ * needs to draw the same text. */
+export function loadedFonts() { return Object.fromEntries(bytes); }
 
 /* The Text controls (app keys) as the core's plan fields; the same
  * mapping as imaging/text.py::text_options. */

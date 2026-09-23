@@ -323,7 +323,55 @@ export function drawClipFrame(ctx, prepared, t, { spotlight = true, glow = false
  * `cutouts` are cropped RGBA canvases, best shot first. Returns a Blob.
  * onProgress receives 0..1.
  */
-export async function renderHeroVideo(cutouts, {
+/* Render a clip in a worker of its own, on the threaded core where the
+ * page is cross-origin isolated (about 3.5x), with the page left free
+ * to draw. Anything that stops the worker from doing it (no
+ * OffscreenCanvas, no WebCodecs there, a failed load) falls back to
+ * rendering here, with the same code. */
+export async function renderHeroVideo(cutouts, opts = {}) {
+  if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined') return renderHeroVideoHere(cutouts, opts);
+  const { onProgress = null, signal = null, background = null, text = null, ...rest } = opts;
+  const toData = (c) => (c instanceof ImageData ? c : ctxOf(c, { willReadFrequently: true }).getImageData(0, 0, c.width, c.height));
+  let worker;
+  try {
+    worker = new Worker(new URL('./video-worker.js', import.meta.url), { type: 'module' });
+  } catch (e) {
+    return renderHeroVideoHere(cutouts, opts);
+  }
+  const { loadedFonts } = await import('../lib/text.js');
+  const { raw: spec } = await import('../spec.js');
+  const shots = cutouts.map(toData);
+  const bg = background ? toData(background) : null;
+  return new Promise((resolve, reject) => {
+    const stop = () => { worker.terminate(); };
+    const onAbort = () => { stop(); reject(new Error('cancelled')); };
+    signal?.addEventListener('abort', onAbort, { once: true });
+    worker.onmessage = (e) => {
+      const m = e.data;
+      if (m.progress !== undefined) { onProgress?.(m.progress); return; }
+      if (m.threads !== undefined) { lastThreads = m.threads; return; }
+      signal?.removeEventListener('abort', onAbort);
+      stop();
+      if (m.error) {
+        // The worker could not do it: say so in the console and render
+        // here instead, so a clip is never lost to a worker's limits.
+        console.warn('video worker fell back to the page:', m.error);
+        renderHeroVideoHere(cutouts, opts).then(resolve, reject);
+        return;
+      }
+      resolve(new Blob([m.mp4], { type: 'video/mp4' }));
+    };
+    worker.onerror = (e) => { stop(); console.warn('video worker failed:', e.message); renderHeroVideoHere(cutouts, opts).then(resolve, reject); };
+    const transfer = [...shots.map((d) => d.data.buffer), ...(bg ? [bg.data.buffer] : [])];
+    worker.postMessage({ spec: spec(), fonts: loadedFonts(), shots, background: bg, text, opts: rest }, transfer);
+  });
+}
+
+let lastThreads = 0;
+/* How many threads the last clip was rendered on; 0 for the page's own build. */
+export function videoThreads() { return lastThreads; }
+
+export async function renderHeroVideoHere(cutouts, {
   width = 1254,
   height = 1254,
   fps = DEFAULT_FPS,

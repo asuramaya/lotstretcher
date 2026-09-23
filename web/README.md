@@ -116,14 +116,22 @@ bash web/build-core.sh     # needs rustup's wasm32-unknown-unknown target,
 The About pane reports `core: wasm vN`; the parity tests in `tests/`
 hold the wasm build to the native one.
 
-### Threads, measured
+### Threads
 
-A threaded build (rayon over web workers, `LOTSTRETCHER_THREADS=1
-bash web/build-core.sh`, nightly with rust-src) links and runs, but
-only inside a worker: rayon's join blocks the calling thread, which a
-page's main thread may not do, and every core call today is made from
-the main thread. `public/bench/` runs both builds inside one worker on
-a real cutout (Chromium, 20 hardware threads, pool of 8):
+Two builds of the core ship. The page loads the plain, single-threaded
+one: rayon's join blocks the calling thread, which a page's main thread
+may not do. The video renderer runs in a worker of its own
+(`js/pipeline/video-worker.js`) and loads the threaded build there
+(`public/core-threads/`, rayon over web workers, wasm-bindgen-rayon in
+its no-bundler mode, built by `build-core.sh` on nightly with
+rust-src). The page hands the worker the spec, the studio font's bytes,
+the cutouts and the backdrop as pixels, and gets the MP4 back; the page
+stays free to draw while it renders. Anything that stops the worker
+(no cross-origin isolation, no WebCodecs there, a failed load) falls
+back to rendering on the page with the same code.
+
+`public/bench/` times both builds inside one worker on a real cutout
+(Chromium, 20 hardware threads, pool of 8):
 
 | | plain | threaded x8 |
 |---|---|---|
@@ -131,11 +139,9 @@ a real cutout (Chromium, 20 hardware threads, pool of 8):
 | compose 1254², glow | 122 ms | 37 ms |
 | video frame 720² | 33 ms | 9.5 ms |
 
-So the speed is there, about 3.5x, and a 720² clip would render in
-under two seconds instead of five to seven. Taking it means moving the
-core's calls into a worker of their own, which makes the core's API
-asynchronous across the preview, the run and the video renderer. That
-is a design decision, not a build step, and it has not been taken.
+Stills and the live preview still run on the page's plain build; moving
+them into the worker would make the core's API asynchronous across the
+app, and has not been done.
 
 ## Cross-origin isolation
 
