@@ -16,6 +16,7 @@ import { prepareClip, drawClipFrame } from './pipeline/video.js';
 import { get as specGet } from './spec.js';
 import * as OPTS from './options.js';
 import { imageNow } from './lib/library.js';
+import { textOptions, textRequestNow } from './lib/text.js';
 
 /* A stock asset as a canvas: the site's own file, or the server's
  * picture of one only it holds. A fetch in flight redraws the preview
@@ -179,11 +180,11 @@ export class Preview {
       const cut = this.getUserCutout();
       if (cut) {
         const v = this.getVehicle() || {};
-        return { cutout: cut, exterior: v.exterior_color || null, interior: v.interior_color || null, seed: 'yours' };
+        return { cutout: cut, exterior: v.exterior_color || null, interior: v.interior_color || null, seed: 'yours', vehicle: v };
       }
     }
     const s = this.samples.find((x) => x.key === this.current) || this.samples[0];
-    return s ? { cutout: s.cutout, exterior: s.exterior, interior: s.interior, seed: s.key } : null;
+    return s ? { cutout: s.cutout, exterior: s.exterior, interior: s.interior, seed: s.key, vehicle: s.vehicle || {} } : null;
   }
 
   /* Coalesced: a slider fires many times a second and one compose is a
@@ -242,8 +243,11 @@ export class Preview {
         small.getContext('2d').drawImage(border, 0, 0, small.width, small.height);
         border = small;
       }
+      // Text is planned by the core at the preview's own size, inside
+      // the frame's window, so it sits exactly where the run's will.
+      const text = textRequestNow(subject.vehicle, textOptions(o), () => this.update());
       const composed = composeHero(subject.cutout, {
-        width, height,
+        width, height, text,
         seed: `${subject.seed}:preview`,
         exterior: subject.exterior, interior: subject.interior,
         generic: o.backdrop === 'generic',

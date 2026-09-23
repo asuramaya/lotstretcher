@@ -54,6 +54,20 @@ def export(kind: str, entry: dict) -> dict:
     }
 
 
+def export_font(entry: dict) -> dict:
+    """A font ships as is (a TTF is already compact) with its licence."""
+    src = REPO / "assets" / entry["file"]
+    dst = OUT / "fonts" / src.name
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_bytes(src.read_bytes())
+    out = {"name": entry["name"], "file": f"fonts/{src.name}", "bytes": dst.stat().st_size}
+    if entry.get("license"):
+        lic = REPO / "assets" / entry["license"]
+        (OUT / "fonts" / lic.name).write_bytes(lic.read_bytes())
+        out["license"] = f"fonts/{lic.name}"
+    return out
+
+
 def main() -> None:
     manifest = json.loads(MANIFEST.read_text())
     out = {kind: [] for kind in KINDS}
@@ -61,9 +75,10 @@ def main() -> None:
         for entry in manifest.get(kind, []):
             if entry.get("studio"):
                 out[kind].append(export(kind, entry))
+    out["fonts"] = [export_font(e) for e in manifest.get("fonts", []) if e.get("studio")]
     # Stale files from an entry that lost its studio tag are removed, so
     # the tree never ships an asset the manifest no longer offers.
-    keep = {OUT / e["file"] for k in out for e in out[k]}
+    keep = {OUT / e["file"] for k in out for e in out[k]} | {OUT / e["license"] for e in out["fonts"] if e.get("license")}
     for p in OUT.rglob("*"):
         if p.is_file() and p.name != "manifest.json" and p not in keep:
             p.unlink()
@@ -72,7 +87,8 @@ def main() -> None:
     total = sum(e["bytes"] for k in out for e in out[k])
     for kind in out:
         for e in out[kind]:
-            print(f"{kind}/{Path(e['file']).name}: {e['width']}x{e['height']}, {e['bytes'] / 1024:.0f} KB")
+            size = f"{e['width']}x{e['height']}, " if "width" in e else ""
+            print(f"{kind}/{Path(e['file']).name}: {size}{e['bytes'] / 1024:.0f} KB")
     print(f"studio library: {total / 1024:.0f} KB -> {OUT.relative_to(REPO)}")
 
 

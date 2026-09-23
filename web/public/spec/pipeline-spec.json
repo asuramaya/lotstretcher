@@ -776,6 +776,129 @@
         ]
       },
       {
+        "id": "text",
+        "affects": "still",
+        "label": "Text",
+        "controls": [
+          {
+            "key": "titleMode",
+            "label": "Title",
+            "hint": "A headline on the still, drawn by the core in the studio font",
+            "type": "select",
+            "default": "none",
+            "choices": [
+              {
+                "value": "none",
+                "label": "No title"
+              },
+              {
+                "value": "vehicle",
+                "label": "Year make model"
+              },
+              {
+                "value": "custom",
+                "label": "Your words"
+              }
+            ],
+            "cli": "--title"
+          },
+          {
+            "key": "titleText",
+            "label": "Title text",
+            "hint": "What the title says",
+            "type": "text",
+            "default": "",
+            "placeholder": "Just arrived",
+            "showWhen": {
+              "key": "titleMode",
+              "equals": "custom"
+            },
+            "cli": "--title-text"
+          },
+          {
+            "key": "priceBadge",
+            "label": "Price badge",
+            "hint": "The post's own price in a pill: MSRP for new, the listed price for used",
+            "type": "toggle",
+            "default": false,
+            "cli": "--price-badge"
+          },
+          {
+            "key": "textLine",
+            "label": "Line",
+            "hint": "A smaller line: the dealer, who to ask for, a call to action",
+            "type": "text",
+            "default": "",
+            "placeholder": "Ask for Alex",
+            "cli": "--text-line"
+          },
+          {
+            "key": "textPosition",
+            "label": "Position",
+            "hint": "Where the text sits; the vehicle keeps clear of it",
+            "type": "select",
+            "default": "bl",
+            "choices": [
+              {
+                "value": "tl",
+                "label": "Top left"
+              },
+              {
+                "value": "tc",
+                "label": "Top centre"
+              },
+              {
+                "value": "tr",
+                "label": "Top right"
+              },
+              {
+                "value": "bl",
+                "label": "Bottom left"
+              },
+              {
+                "value": "bc",
+                "label": "Bottom centre"
+              },
+              {
+                "value": "br",
+                "label": "Bottom right"
+              }
+            ],
+            "cli": "--text-position"
+          },
+          {
+            "key": "textColor",
+            "label": "Colour",
+            "hint": "White with a soft shadow, or black; the badge inverts",
+            "type": "select",
+            "default": "white",
+            "choices": [
+              {
+                "value": "white",
+                "label": "White"
+              },
+              {
+                "value": "black",
+                "label": "Black"
+              }
+            ],
+            "cli": "--text-color"
+          },
+          {
+            "key": "textSize",
+            "label": "Size",
+            "hint": "The title's height as a share of the canvas",
+            "type": "range",
+            "default": 0.05,
+            "min": 0.03,
+            "max": 0.12,
+            "step": 0.005,
+            "unit": "fraction",
+            "cli": "--text-size"
+          }
+        ]
+      },
+      {
         "id": "glow",
         "affects": "still",
         "label": "Glow",

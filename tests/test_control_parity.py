@@ -19,7 +19,10 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 SPEC = json.loads((REPO / "shared" / "pipeline-spec.json").read_text())
-CLI_SOURCE = (REPO / "src" / "lotstretcher" / "cli.py").read_text()
+# cli.py registers its own flags and the Text group's through
+# imaging/text.py::add_text_args (shared with recompose); both count.
+CLI_SOURCE = (REPO / "src" / "lotstretcher" / "cli.py").read_text() \
+    + (REPO / "src" / "lotstretcher" / "imaging" / "text.py").read_text()
 
 CONTROLS = [c for g in SPEC["controls"]["groups"] for c in g["controls"]]
 
@@ -56,7 +59,7 @@ def test_controls_block_is_well_formed():
         )
         assert c["key"] not in seen, f"duplicate control key {c['key']!r}"
         seen.add(c["key"])
-        assert c["type"] in ("toggle", "select", "range", "chips", "file"), c["type"]
+        assert c["type"] in ("toggle", "select", "range", "chips", "file", "text"), c["type"]
 
 
 @pytest.mark.parametrize("control", [c for c in CONTROLS if "cli" in surfaces(c)],

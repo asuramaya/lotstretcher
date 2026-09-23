@@ -85,5 +85,19 @@
         "retired"
       ]
     }
+  ],
+  "fonts": [
+    {
+      "file": "fonts/Lato-Bold.ttf",
+      "name": "Lato Bold",
+      "license": "fonts/Lato-LICENSE.txt",
+      "tags": [
+        "sans",
+        "bold",
+        "ofl"
+      ],
+      "studio": true,
+      "note": "The studio's text font (core/src/text.rs). OFL 1.1; the licence file ships beside it."
+    }
   ]
 }

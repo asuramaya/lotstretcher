@@ -4,20 +4,44 @@
   "title": "Toyota Camry",
   "exterior": "Midnight Black Metallic",
   "interior": "Black",
-  "file": "demo/samples/camry.webp"
+  "file": "demo/samples/camry.webp",
+  "vehicle": {
+   "year": "2025",
+   "make": "Toyota",
+   "model": "Camry",
+   "trim": "SE",
+   "condition": "Used",
+   "display_price": "$28,995"
+  }
  },
  {
   "key": "maverick",
   "title": "Ford Maverick",
   "exterior": "Azure Gray Metallic Tri-Coat",
   "interior": "Navy Pier",
-  "file": "demo/samples/maverick.webp"
+  "file": "demo/samples/maverick.webp",
+  "vehicle": {
+   "year": "2024",
+   "make": "Ford",
+   "model": "Maverick",
+   "trim": "XLT",
+   "condition": "New",
+   "display_price": "$31,480"
+  }
  },
  {
   "key": "mustang",
   "title": "Ford Mustang",
   "exterior": "Blue Metallic",
   "interior": "Ebony",
-  "file": "demo/samples/mustang.webp"
+  "file": "demo/samples/mustang.webp",
+  "vehicle": {
+   "year": "2023",
+   "make": "Ford",
+   "model": "Mustang",
+   "trim": "GT",
+   "condition": "Used",
+   "display_price": "$42,750"
+  }
  }
 ]

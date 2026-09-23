@@ -96,7 +96,7 @@ fn text(v: &Value) -> String {
 fn field<'a>(v: &'a Value, key: &str) -> &'a Value { v.get(key).unwrap_or(&Value::Null) }
 
 /// A present, truthy field as text.
-fn opt(v: &Value, key: &str) -> Option<String> {
+pub(crate) fn opt(v: &Value, key: &str) -> Option<String> {
     let f = field(v, key);
     if truthy(f) { Some(text(f)) } else { None }
 }
@@ -115,7 +115,7 @@ fn commas(n: i64) -> String {
 }
 
 /// f"{x:,.0f}": round half to even, then commas.
-fn commas0f(x: f64) -> String {
+pub(crate) fn commas0f(x: f64) -> String {
     let f = x.floor();
     let diff = x - f;
     let r = if diff > 0.5 { f + 1.0 } else if diff < 0.5 { f } else if (f as i64) % 2 == 0 { f } else { f + 1.0 };
@@ -123,7 +123,7 @@ fn commas0f(x: f64) -> String {
 }
 
 /// float(str(text).replace(",", "").replace("$", "").lstrip("+")).
-fn to_float(text: &str) -> Option<f64> {
+pub(crate) fn to_float(text: &str) -> Option<f64> {
     let s = text.replace(',', "").replace('$', "");
     let s = s.trim_start_matches('+').trim();
     if s.is_empty() { return None; }
@@ -163,7 +163,7 @@ fn is_new(v: &Value) -> bool { lower_trim(v, "condition") == "new" }
 /// Used vehicles show the listed price; new vehicles post at MSRP: the
 /// sticker's Total MSRP, then the site's MSRP pricing row, then the
 /// site's display price.
-fn resolve_display_price(v: &Value) -> Option<String> {
+pub(crate) fn resolve_display_price(v: &Value) -> Option<String> {
     if !is_new(v) { return opt(v, "display_price"); }
     if let Some(m) = sticker_msrp(v) { return Some(m); }
     if let Some(rows) = field(v, "pricing_rows").as_array() {

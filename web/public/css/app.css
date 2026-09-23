@@ -453,12 +453,11 @@
 }
 .preview-canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; }
 .preview-canvas.is-busy { opacity: .8; }
+/* Under the stage, not on it: a badge over the picture sat on top of
+   the still's own text. */
 .preview-caption {
-  position: absolute; left: var(--s-3); bottom: var(--s-3);
-  padding: 3px var(--s-3); border-radius: var(--r-full);
-  background: rgba(0,0,0,.6); backdrop-filter: blur(8px); color: #fff;
-  font-size: var(--t-xs); font-weight: 600; letter-spacing: .02em;
-  pointer-events: none;
+  margin-top: calc(-1 * var(--s-1));
+  font-size: var(--t-xs); font-weight: 600; letter-spacing: .02em; color: var(--ink-3);
 }
 .preview-modes { display: flex; align-items: center; gap: var(--s-2); }
 .preview-modes[hidden] { display: none; }

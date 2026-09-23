@@ -139,7 +139,7 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
                  spotlight: bool = True, glow: bool = False, glow_color: str | None = None,
                  glow_radius: int | None = None, glow_intensity: float | None = None,
                  margin_frac: float | None = None, background_image=None, border=None,
-                 border_fit: str | None = None):
+                 border_fit: str | None = None, overlays: list | None = None, text: dict | None = None):
     """Compose one hero the way the browser does, in the same code.
 
     `cars` are RGBA PIL images, hero first. `background` is one of
@@ -175,6 +175,10 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
         "glow_intensity": glow_intensity, "margin_frac": margin_frac,
         "border": slices[border_index] if border_index is not None else None,
         "border_fit": border_fit,
+        "overlays": list(overlays or []),
+        # The Text controls with the vehicle (imaging/text.py::text_request):
+        # the core plans them inside the frame's window once it knows it.
+        "text": text,
     }
     buf = _buffer(arena)
     result = lib.ls_compose_hero(json.dumps(req).encode("utf-8"), buf, len(arena))
@@ -254,6 +258,22 @@ def render_frame(cars, width: int, height: int, background: dict, *, border=None
     if spotlight is not None:
         op["spotlight"] = {"cx": spotlight[0], "cy": spotlight[1], "dim": spotlight[2]}
     return call(op, images)
+
+
+def load_font(name: str, data: bytes) -> None:
+    """Keep a font's bytes in the core under `name` (a TTF/OTF). The
+    bytes travel through the arena as a one-row single-channel image,
+    which is what the arena carries; the core reads them as a font."""
+    from PIL import Image
+    carrier = Image.frombytes("L", (len(data), 1), data)
+    call({"op": "load_font", "name": name, "data": {"$image": 0}}, [carrier])
+
+
+def overlay_plan(width: int, height: int, vehicle: dict | None, **text) -> list[dict]:
+    """Text overlays for one canvas from the Text controls: title
+    ("none" | "vehicle" | "custom"), custom_title, price_badge, line,
+    position, color, size (fraction of height), font."""
+    return call({"op": "overlay_plan", "width": width, "height": height, "vehicle": vehicle or {}, **text})
 
 
 def fit_border(border, width: int, height: int, fit: str = "fit"):

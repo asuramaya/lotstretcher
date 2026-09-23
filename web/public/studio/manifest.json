@@ -41,5 +41,13 @@
       "height": 1254,
       "bytes": 408
     }
+  ],
+  "fonts": [
+    {
+      "name": "Lato Bold",
+      "file": "fonts/Lato-Bold.ttf",
+      "bytes": 657188,
+      "license": "fonts/Lato-LICENSE.txt"
+    }
   ]
 }

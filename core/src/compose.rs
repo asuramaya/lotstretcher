@@ -132,6 +132,13 @@ pub struct ComposeRequest {
     /// edges cropped) or "stretch" (pulled to the canvas). Default fit.
     #[serde(default)]
     pub border_fit: Option<String>,
+    /// Text painted last, over the frame: either planned here from the
+    /// Text controls and the vehicle (`text`, inset from the frame's
+    /// window once that is known) or given ready-placed (`overlays`).
+    #[serde(default)]
+    pub text: Option<crate::text::TextRequest>,
+    #[serde(default)]
+    pub overlays: Vec<crate::text::Overlay>,
 }
 
 /// The transform that places a border of `bw`x`bh` on a `w`x`h` canvas:
@@ -194,7 +201,7 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     let fit = req.border_fit.as_deref().unwrap_or("fit");
     // The window comes from the border's own pixels and follows the fit;
     // the fitted border is what placements collide with and goes on top.
-    let (border, window) = match &req.border {
+    let (border, mut window) = match &req.border {
         Some(s) => {
             let b = slice_image(arena, s)?;
             if b.channels != 4 { return Err("border must be RGBA".into()); }
@@ -203,6 +210,21 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
         }
         None => (None, (0i64, 0i64, w as i64, h as i64)),
     };
+    // Text takes a band at the top or the bottom; the cars are laid out
+    // in what is left, so a title never sits across a bumper.
+    let mut overlays = req.overlays.clone();
+    if let Some(t) = req.text.as_ref().filter(|t| !t.is_empty()) {
+        overlays.extend(crate::text::plan_in(&t.for_canvas(w, h), window)?);
+    }
+    if let Some((top, bottom)) = crate::text::band(&overlays) {
+        let gap = (h as f64 * 0.02).round() as i64;
+        let (top, bottom) = (top.floor() as i64, bottom.ceil() as i64);
+        if (top + bottom) / 2 > (h as i64) / 2 {
+            window.3 = window.3.min(top - gap).max(window.1 + 1);
+        } else {
+            window.1 = window.1.max(bottom + gap).min(window.3 - 1);
+        }
+    }
     let cars: Vec<Rc<Image>> = req.cars.iter().map(|s| slice_image(arena, s)).collect::<Result<_, _>>()?;
     if cars.iter().any(|c| c.channels != 4) {
         return Err("cutouts must be RGBA".into());
@@ -267,6 +289,7 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     if let Some(b) = &border {
         paste_alpha(&mut canvas, b, 0, 0);
     }
+    crate::text::draw(&mut canvas, &overlays)?;
     Ok(canvas)
 }
 

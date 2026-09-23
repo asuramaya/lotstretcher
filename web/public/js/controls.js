@@ -167,6 +167,23 @@ function buildSelect(control, value, onChange, disabled) {
   return sel;
 }
 
+/* A line of the user's own words. Every keystroke is a live change (the
+ * preview redraws the title as it is typed) and leaving the box commits
+ * it, the same split as a slider, for the same reason. */
+function buildText(control, value, onChange, disabled) {
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'field';
+  input.value = value ?? '';
+  input.placeholder = control.placeholder || '';
+  input.maxLength = control.maxLength || 80;
+  input.disabled = disabled;
+  input.setAttribute('aria-label', control.label);
+  input.oninput = () => onChange(input.value, true);
+  input.onchange = () => onChange(input.value);
+  return input;
+}
+
 /* A slider reports every movement as a LIVE change (the preview follows
  * the thumb) and the final value on release as a real one; re-rendering
  * the pane on every movement would rebuild the very slider being
@@ -393,6 +410,7 @@ export function renderControls(host, values, onChange, { thumbFor = null } = {})
       else if (control.type === 'select') widget = buildSelect(control, value, change, !ok);
       else if (control.type === 'range') widget = buildRange(control, value, change, !ok);
       else if (control.type === 'file') widget = buildFile(control, value, change, !ok);
+      else if (control.type === 'text') widget = buildText(control, value, change, !ok);
       else widget = el('span', 'dim xs', control.type);
 
       row.appendChild(widget);

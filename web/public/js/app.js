@@ -34,6 +34,7 @@ import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './hos
 import { renderControls, controlDefaults, controlsToFlags, affectsPreview } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
+import { textOptions, textRequest } from './lib/text.js';
 import { normalizeListing, takeListingFromHash, bookmarkletSource, recordFromHtml } from './pipeline/listing.js';
 import { LibraryView } from './library/view.js';
 import { HttpSource, DirectorySource } from './library/source.js';
@@ -706,6 +707,8 @@ async function run() {
               exteriorColor: state.vehicle.exterior_color,
               interiorColor: state.vehicle.interior_color,
               ...serialisable(state.options),
+              // The form's record, for a title or price badge; no photo.
+              vehicle: state.vehicle,
             });
             // Normalise to a canvas: everything downstream (the result
             // grid, the bundle) expects one, not a bitmap.
@@ -742,6 +745,7 @@ async function run() {
           background: state.options.backdrop === 'custom' ? state.options.customBackground || null : stockBackground,
           border: state.options.border === 'custom' ? state.options.customFrame || null : stockBorder,
           borderFit: state.options.frameFit,
+          text: await textRequest(state.vehicle, textOptions(state.options)),
           glow: state.options.glow, glowColor: state.options.glowColor,
           glowRadius: state.options.glowRadius, glowIntensity: state.options.glowIntensity,
         });

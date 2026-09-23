@@ -202,6 +202,13 @@ pub enum Op {
     ParseSticker(crate::sticker::StickerRequest),
     PanelSplitX { words: Vec<crate::sticker::Word>, #[serde(default)] y_tol: Option<f64> },
     BuildPosts(crate::copy::CopyRequest),
+    /// A font's bytes, kept under a name; `data` is a 1-channel slice of
+    /// the arena (width = byte count, height 1).
+    LoadFont { name: String, data: Slice },
+    /// Text overlays for one canvas from the vehicle and the Text controls.
+    OverlayPlan(crate::text::PlanRequest),
+    /// The overlays painted onto an image (RGB or RGBA).
+    DrawOverlays { image: Slice, overlays: Vec<crate::text::Overlay> },
 }
 
 fn mask_threshold(t: Option<u8>) -> u8 {
@@ -232,6 +239,19 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
             let b = slice_image(arena, &border)?;
             let (l, t, r, bt) = detect_window(&b)?;
             OpResult::Json(serde_json::to_string(&Scalar { value: [l, t, r, bt] }).unwrap())
+        }
+        Op::LoadFont { name, data } => {
+            let end = data.offset.checked_add(data.len).filter(|e| *e <= arena.len())
+                .ok_or("font bytes lie outside the arena")?;
+            crate::text::load_font(&name, &arena[data.offset..end])?;
+            OpResult::Json(serde_json::to_string(&Scalar { value: true }).unwrap())
+        }
+        Op::OverlayPlan(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::text::plan(&req)? }).unwrap()),
+        Op::DrawOverlays { image, overlays } => {
+            let img = slice_image(arena, &image)?;
+            let mut out = (*img).clone();
+            crate::text::draw(&mut out, &overlays)?;
+            OpResult::Image(out)
         }
         Op::FitBorder { border, width, height, fit } => {
             let b = slice_image(arena, &border)?;

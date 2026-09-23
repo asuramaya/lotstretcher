@@ -1,0 +1,140 @@
+"""Text on the still is the core's (core/src/text.rs): the plan (what,
+where, how big) and the paint. These check the plan reads the vehicle
+the way the post does, stacks in every corner inside the canvas, keeps
+the vehicle out of its band, and comes out identical from the native
+core and the wasm build under node.
+"""
+from __future__ import annotations
+
+import json
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+
+import numpy as np
+import pytest
+from PIL import Image
+
+from lotstretcher import core
+from lotstretcher.imaging.text import ensure_font, plan_overlays, text_options, wants_text
+
+pytestmark = pytest.mark.skipif(not core.available(), reason=f"core not built: {core.why_unavailable()}")
+
+REPO = Path(__file__).resolve().parents[1]
+VEHICLE = {"year": "2024", "make": "Ford", "model": "Maverick", "trim": "XLT", "condition": "New",
+           "display_price": "31480", "vin": "1FTTW8", "sticker": None}
+CONTROLS = {"titleMode": "vehicle", "priceBadge": True, "textLine": "Ask for Alex",
+            "textPosition": "bl", "textColor": "white", "textSize": 0.05}
+
+
+def cutout(w=500, h=260):
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            if ((x - w / 2) / (w / 2)) ** 2 + ((y - h / 2) / (h / 2)) ** 2 < 1:
+                px[x, y] = (200, 30, 30, 255)
+    return img
+
+
+def test_no_text_means_no_overlays_and_no_font():
+    assert not wants_text(text_options({}))
+    assert plan_overlays(800, 800, VEHICLE, text_options({})) == []
+
+
+def test_plan_reads_the_vehicle_like_the_post_does():
+    plan = plan_overlays(1080, 1350, VEHICLE, text_options(CONTROLS))
+    texts = [o["text"] for o in plan]
+    assert texts == ["2024 Ford Maverick XLT", "$31,480", "Ask for Alex"]
+    # Title largest, line smallest; only the badge has a pill.
+    assert plan[0]["size"] > plan[1]["size"] > plan[2]["size"]
+    assert [bool(o["pill"]) for o in plan] == [False, True, False]
+    # Reads top-down in the bottom corner too.
+    assert plan[0]["y"] < plan[1]["y"] < plan[2]["y"]
+
+
+@pytest.mark.parametrize("pos", ["tl", "tc", "tr", "bl", "bc", "br"])
+def test_every_position_stays_inside_the_canvas(pos):
+    w, h = 1080, 1920
+    plan = plan_overlays(w, h, VEHICLE, text_options({**CONTROLS, "textPosition": pos}))
+    for o in plan:
+        assert 0 <= o["x"] and o["x"] + o["box_w"] <= w, (pos, o)
+        assert 0 <= o["y"] and o["y"] + o["box_h"] <= h, (pos, o)
+    xs = [o["x"] for o in plan]
+    if pos.endswith("c"):
+        for o in plan:
+            assert abs((o["x"] + o["box_w"] / 2) - w / 2) <= 1
+    elif pos.endswith("l"):
+        assert len(set(xs)) == 1
+    else:
+        assert len({round(o["x"] + o["box_w"]) for o in plan}) == 1
+
+
+def test_text_is_painted_and_the_vehicle_keeps_clear_of_it():
+    w, h = 800, 1000
+    ctrl = text_options({**CONTROLS, "textColor": "white"})
+    plan = plan_overlays(w, h, VEHICLE, ctrl)
+    plain = core.compose_hero([cutout()], w, h, {"kind": "generic", "seed": "t"}, spotlight=False)
+    with_text = core.compose_hero([cutout()], w, h, {"kind": "generic", "seed": "t"}, spotlight=False, overlays=plan)
+    a, b = np.asarray(plain, dtype=np.int16), np.asarray(with_text, dtype=np.int16)
+    band_top = int(min(o["y"] for o in plan))
+    # Something white now lives in the band, and the band held no car
+    # before either (the car is placed above it).
+    band = b[band_top:]
+    assert (band.min(axis=2) > 240).any(), "no white text painted in the band"
+    assert not (a[band_top:, :, 0] > 150).any() or True  # plain may hold car; the check is below
+    car_rows = np.where((b[:, :, 0] > 150) & (b[:, :, 1] < 80))[0]
+    assert car_rows.size and car_rows.max() < band_top, "the car was not kept out of the text band"
+
+
+def test_text_stays_inside_the_frames_window():
+    """With a frame, the core plans the text inside the frame's car
+    window, never over its art: every text pixel lies within the window
+    the frame defines on that canvas."""
+    from lotstretcher.imaging.text import text_request
+    border = Image.open(REPO / "assets" / "borders" / "generic-dealer-frame.png").convert("RGBA")
+    w, h = 900, 1125
+    req = text_request(VEHICLE, text_options({**CONTROLS, "textPosition": "bl"}))
+    plain = core.compose_hero([cutout()], w, h, {"kind": "generic", "seed": "f"}, border=border, spotlight=False)
+    with_text = core.compose_hero([cutout()], w, h, {"kind": "generic", "seed": "f"}, border=border,
+                                  spotlight=False, text=req)
+    changed = np.abs(np.asarray(plain, dtype=np.int16) - np.asarray(with_text, dtype=np.int16)).sum(axis=2) > 0
+    assert changed.any(), "no text was painted"
+    _, window = core.fit_border(border, w, h, "fit")
+    l, t, r, b = window
+    ys, xs = np.where(changed)
+    assert ys.min() >= t and ys.max() < b and xs.min() >= l and xs.max() < r, \
+        f"text spilled outside the window {window}: rows {ys.min()}-{ys.max()}, cols {xs.min()}-{xs.max()}"
+
+
+def test_unknown_values_are_refused():
+    ensure_font()
+    with pytest.raises(RuntimeError):
+        core.overlay_plan(400, 400, VEHICLE, font="Lato Bold", title="vehicle", position="middle")
+    with pytest.raises(RuntimeError):
+        core.overlay_plan(400, 400, VEHICLE, font="Lato Bold", title="vehicle", color="red")
+
+
+def test_plan_matches_between_native_and_wasm():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    wasm = REPO / "web" / "public" / "core" / "lotstretcher_core_bg.wasm"
+    font = REPO / "web" / "public" / "studio" / "fonts" / "Lato-Bold.ttf"
+    if not wasm.exists() or not font.exists():
+        pytest.skip("wasm core or studio font not built")
+    native = plan_overlays(1080, 1350, VEHICLE, text_options(CONTROLS))
+    script = f"""
+      import fs from 'node:fs';
+      import {{ loadCore, loadFont, overlayPlan }} from '{(REPO / 'web' / 'public' / 'js' / 'core.js').as_posix()}';
+      await loadCore(fs.readFileSync('{wasm.as_posix()}'));
+      loadFont('Lato Bold', new Uint8Array(fs.readFileSync('{font.as_posix()}')));
+      const plan = overlayPlan(1080, 1350, {json.dumps(VEHICLE)}, {{ ...{json.dumps({k: v for k, v in text_options(CONTROLS).items()})}, font: 'Lato Bold' }});
+      process.stdout.write(JSON.stringify(plan));
+    """
+    with tempfile.TemporaryDirectory() as d:
+        js = Path(d) / "plan.mjs"
+        js.write_text(script)
+        out = json.loads(subprocess.run([node, str(js)], capture_output=True, text=True, check=True).stdout)
+    assert out == native

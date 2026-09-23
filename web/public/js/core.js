@@ -91,6 +91,19 @@ function arena(images) {
  * id wherever it takes an image, and its pixels never cross into wasm
  * memory again. Pair with release; a clip's worth of scaled cars is a
  * few tens of MB. */
+/* A font's bytes, kept in the core under a name. They travel through
+ * the arena as a one-row single-channel image, the shape it carries. */
+export function loadFont(name, bytes) {
+  const carrier = { width: bytes.length, height: 1, channels: 1, data: bytes };
+  return call({ op: 'load_font', name, data: { $image: 0 } }, [carrier]);
+}
+
+/* Text overlays for one canvas from the vehicle and the Text controls
+ * (core/src/text.rs::plan). The font must be loaded first. */
+export function overlayPlan(width, height, vehicle, text) {
+  return call({ op: 'overlay_plan', width, height, vehicle: vehicle || {}, ...text });
+}
+
 export function retain(image) { return call({ op: 'retain', image: { $image: 0 } }, [image]); }
 export function release(id) { return call({ op: 'release', id }); }
 export function releaseAll() { return call({ op: 'release_all' }); }
@@ -100,7 +113,7 @@ export function releaseAll() { return call({ op: 'release_all' }); }
 export function composeHero(cars, width, height, background, {
   layout = 'single', spotlight = true, glow = false, glowColor = null,
   glowRadius = null, glowIntensity = null, marginFrac = null, backgroundImage = null, border = null,
-  borderFit = null,
+  borderFit = null, overlays = [], text = null,
 } = {}) {
   if (!mod) throw new Error('core not loaded; await loadCore() first');
   const images = [...cars];
@@ -119,7 +132,7 @@ export function composeHero(cars, width, height, background, {
     width, height, background: bg, cars: slices.slice(0, cars.length), layout, spotlight, glow,
     glow_color: glowColor, glow_radius: glowRadius, glow_intensity: glowIntensity, margin_frac: marginFrac,
     border: borderIndex !== null ? slices[borderIndex] : null,
-    border_fit: borderFit,
+    border_fit: borderFit, overlays, text,
   };
   const rgb = mod.compose_hero(JSON.stringify(req), buf);
   const out = new ImageData(width, height);

@@ -13,7 +13,7 @@
 
 import { isSelfHosted } from '../host.js';
 
-const EMPTY = () => ({ backgrounds: [], borders: [], videos: [], audio: [] });
+const EMPTY = () => ({ backgrounds: [], borders: [], videos: [], audio: [], fonts: [] });
 let lib = null;
 const images = new Map();   // "kind/name" -> canvas | null (loading) | undefined
 
@@ -36,6 +36,9 @@ export async function loadLibrary() {
     const res = await fetch('studio/manifest.json', { cache: 'no-store' });
     if (res.ok) {
       const studio = await res.json();
+      for (const f of studio.fonts || []) {
+        lib.fonts.push({ name: f.name, src: `studio/${f.file}`, license: f.license ? `studio/${f.license}` : null });
+      }
       for (const kind of ['backgrounds', 'borders']) {
         for (const e of studio[kind] || []) {
           lib[kind].push({

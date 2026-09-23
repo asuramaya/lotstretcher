@@ -18,6 +18,7 @@ from pathlib import Path
 
 from lotstretcher.imaging import assets
 from lotstretcher.imaging.compose import compose_interiors, compose_vehicle, compose_wheel_shots
+from lotstretcher.imaging.text import text_options
 
 
 def find_vehicle_folders(root: Path) -> list[Path]:
@@ -93,6 +94,7 @@ def resolve_recompose_options(options: dict) -> dict:
             "glow_intensity": float(options.get("glowIntensity") or 0.75),
             "gradient": not wants_photo,
             "border_fit": options.get("frameFit") or "fit",
+            "text": text_options(options),
         },
         "interiors": bool(options.get("interiors", False)),
         "interior_captions": bool(options.get("interiorCaptions", False)),
@@ -141,6 +143,7 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
         spotlight=bool(options.get("spotlight", True)),
         margin_frac=float(options.get("margin") if options.get("margin") is not None else 0.06),
         border_fit=options.get("frameFit") or "fit",
+        text=text_options(options),
         gradient=not wants_photo,
         video=video_on,
         video_encoder="h264_nvenc" if options.get("nvenc") else "libx264",
@@ -293,10 +296,11 @@ def recompose_folder(folder: Path, resolved: dict, interior_classifier=None) -> 
     colors = vehicle_colors(folder)
     style = resolved["style"]
 
+    vehicle = vehicle_record(folder)
     result = compose_vehicle(images / "cutout", bundle, resolved["background_path"], resolved["border_path"],
-                             hero_formats=resolved["hero_formats"], **style, **colors)
+                             hero_formats=resolved["hero_formats"], vehicle=vehicle, **style, **colors)
     wheels = compose_wheel_shots(images / "wheels", bundle, resolved["background_path"], resolved["border_path"],
-                                 **style, **colors)
+                                 vehicle=vehicle, **style, **colors)
     report = {
         "folder": folder.name,
         "hero": bool(result["hero"]),

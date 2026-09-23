@@ -385,6 +385,24 @@ backdrop filling the rest, `fill` covers the canvas and crops the frame's
 edges, `stretch` pulls the frame to the canvas shape. The app's Frame
 group has the same lever, previewed live per format.
 
+### Text on the still
+
+The core draws text (core/src/text.rs, the studio's Lato Bold, OFL) so
+the CLI's hero and the app's preview carry the same words at the same
+places. Three pieces stack in a corner and the vehicle is laid out clear
+of them; with a frame they sit inside its window, never on its art.
+
+```bash
+lotstretcher URL --title vehicle --price-badge --text-line "Ask for Alex" \
+    --text-position br --text-color white --text-size 0.05
+```
+
+`--title vehicle` writes year make model trim from the listing;
+`--title custom` writes `--title-text`. `--price-badge` puts the post's
+own resolved price in a pill (MSRP for new, the listed price for used).
+The app's Text group is the same seven levers, previewed live as you
+type. `recompose` takes them too.
+
 ---
 
 ## CLI Reference & Usage

@@ -42,7 +42,8 @@ def compose_hero(background_path, border_path: Path | None, car_paths: list[Path
                   glow_radius: int = 24, glow_intensity: float = 0.75,
                   margin_frac: float = 0.06,
                   canvas_size: tuple[int, int] = DEFAULT_CANVAS_SIZE,
-                  border_fit: str = "fit") -> Image.Image:
+                  border_fit: str = "fit", overlays: list | None = None,
+                  text: dict | None = None) -> Image.Image:
     """
     car_paths[0] is always the hero (drives the spotlight measurement and
     center). car_paths[1:] fill whatever accent slots `layout` defines --
@@ -97,4 +98,4 @@ def compose_hero(background_path, border_path: Path | None, car_paths: list[Path
                              border=border, layout=layout, spotlight=spotlight, glow=glow,
                              glow_color=str(glow_color), glow_radius=glow_radius,
                              glow_intensity=glow_intensity, margin_frac=margin_frac,
-                             border_fit=border_fit)
+                             border_fit=border_fit, overlays=overlays, text=text)

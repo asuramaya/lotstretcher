@@ -175,6 +175,9 @@ class HeroOptions:
     # How a frame meets a format of another shape: fit, fill or stretch
     # (compose/hero.py). The format always decides the canvas.
     border_fit: str = "fit"
+    # The Text controls in the core's plan form (imaging/text.py); None
+    # or an all-off dict means no text.
+    text: dict | None = None
 
 
 def process_vehicle(playwright, session: requests.Session, url: str, out_root: Path,
@@ -315,6 +318,8 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 spotlight=hero_opts.spotlight,
                 margin_frac=hero_opts.margin_frac,
                 border_fit=hero_opts.border_fit,
+                text=hero_opts.text,
+                vehicle=dataclasses.asdict(v),
             )
             if compose_result["hero"]:
                 n_framed = len(compose_result["framed"])
@@ -342,6 +347,8 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 spotlight=hero_opts.spotlight,
                 margin_frac=hero_opts.margin_frac,
                 border_fit=hero_opts.border_fit,
+                text=hero_opts.text,
+                vehicle=dataclasses.asdict(v),
             )
             if wheel_shots:
                 log(f"    wheel money shot{'s' if len(wheel_shots) != 1 else ''}: "

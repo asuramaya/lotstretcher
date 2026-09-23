@@ -28,6 +28,8 @@ export function composeHero(cutout, {
   glowIntensity = null,
   border = null,              // an RGBA canvas/ImageData of a frame, fitted to the format
   borderFit = null,           // fit | fill | stretch; the core's default is fit
+  overlays = [],              // ready-placed text, painted last
+  text = null,                // the Text controls + vehicle (lib/text.js::textRequest); planned in the window
 } = {}) {
   const cutData = ctxOf(cutout, { willReadFrequently: true }).getImageData(0, 0, cutout.width, cutout.height);
   let borderData = null;
@@ -48,7 +50,7 @@ export function composeHero(cutout, {
   }
   const out = core.composeHero([cutData], width, height, bg, {
     layout: 'single', spotlight, glow, glowColor, glowRadius, glowIntensity, marginFrac, backgroundImage,
-    border: borderData, borderFit,
+    border: borderData, borderFit, overlays, text,
   });
   const canvas = makeCanvas(width, height);
   ctxOf(canvas).putImageData(out, 0, 0);

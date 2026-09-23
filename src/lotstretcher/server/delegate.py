@@ -26,6 +26,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ..imaging.text import text_options, text_request
+
 MAX_CUTOUT_BYTES = 24 * 1024 * 1024
 MAX_CANVAS = 4096
 
@@ -174,6 +176,9 @@ def compose(cutout_png: bytes, options: dict[str, Any],
         margin_frac=float(options.get("margin") or 0.06),
         canvas_size=(width, height),
         border_fit=options.get("frameFit") or "fit",
+        # The app sends its vehicle form along, so a title or price
+        # badge on the server's still is the same as the browser's.
+        text=text_request(options.get("vehicle") or {}, text_options(options)),
     )
 
     buf = io.BytesIO()

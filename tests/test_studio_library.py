@@ -41,8 +41,17 @@ def test_exported_files_exist_and_are_small():
     assert total < 4 * 1024 * 1024, f"the studio library is {total / 1024 / 1024:.1f} MB; hosting must stay free"
 
 
+def test_fonts_ship_with_their_licence():
+    tagged = {e["name"] for e in SOURCE.get("fonts", []) if e.get("studio")}
+    assert {e["name"] for e in STUDIO.get("fonts", [])} == tagged
+    for e in STUDIO.get("fonts", []):
+        assert (STUDIO_DIR / e["file"]).is_file()
+        assert e.get("license") and (STUDIO_DIR / e["license"]).is_file(), f"{e['name']} ships without its licence"
+
+
 def test_no_stray_files_ship():
     listed = {STUDIO_DIR / e["file"] for k in KINDS for e in STUDIO.get(k, [])}
+    listed |= {STUDIO_DIR / e[k] for e in STUDIO.get("fonts", []) for k in ("file", "license") if e.get(k)}
     for p in STUDIO_DIR.rglob("*"):
         if p.is_file() and p.name != "manifest.json":
             assert p in listed, f"{p.relative_to(STUDIO_DIR)} is not in the studio manifest"

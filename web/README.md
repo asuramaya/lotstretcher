@@ -100,7 +100,7 @@ depthwise or HardSwish blocks.
 Everything that is not a model or IO runs in one Rust crate, `core/`,
 compiled to native for the CLI and to wasm32 for this client: backdrops,
 spotlight, layouts, glow, compositing, both videos' choreography and
-frames, the interior treatment, the sticker parser and the post copy.
+frames, the text layer, the interior treatment, the sticker parser and the post copy.
 `js/core.js` loads it and hands it JSON requests plus one byte arena;
 `pipeline/compose.js`, `video.js`, `sticker.js` and `copy.js` are thin
 hosts over it. The built `public/core/` is committed (737 KB, 272 KB
