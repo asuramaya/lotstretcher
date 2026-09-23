@@ -35,6 +35,8 @@ import { classifyScene, classifyAngle, loadLabels } from './js/pipeline/classify
 import { matte, applyMatte } from './js/pipeline/matte.js';
 import { composeHero } from './js/pipeline/compose.js';
 import { decode } from './js/lib/imageio.js';
+import { loadSpec } from './js/spec.js';
+import { loadCore, version as coreVersion } from './js/core.js';
 
 const logEl = document.getElementById('log');
 const outEl = document.getElementById('out');
@@ -56,8 +58,10 @@ async function run(sources) {
   window.SELFTEST = { status: 'running', photos: [] };
   try {
     const t0 = performance.now();
+    await loadSpec();
+    await loadCore();
     await initRuntime();
-    say(`crossOriginIsolated=${runtime.isolated} threads=${runtime.threads} simd=${runtime.simd}`);
+    say(`crossOriginIsolated=${runtime.isolated} threads=${runtime.threads} simd=${runtime.simd} core=wasm v${coreVersion()}`);
     if (!runtime.isolated) say('WARNING: not isolated -- single thread, expect ~2x slower');
 
     await loadLabels();

@@ -119,6 +119,10 @@ and `coverage=1.0` rather than as an error.
 ORT owns ~53% of the footprint. That is the strongest argument for a Rust core — **for memory,
 not for quality or speed.** Quality is already where it needs to be.
 
+*Since written:* the Rust core exists (`core/`, September 2026) and holds everything that is not a
+model or IO on both surfaces; see the root README's "The Rust core". ORT still owns the models, so
+the memory floor above stands until the matting model itself moves.
+
 ### Required runtime settings
 
 - `ort.env.wasm.numThreads = 4` (throughput saturates at 4; more does not help)
