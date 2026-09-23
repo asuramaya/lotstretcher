@@ -31,7 +31,8 @@ finished deliverables don't mix:
         window-sticker.json      structured data parsed from it (imaging/sticker.py)
         bundle/                  everything meant to actually be posted/shared:
             hero.png               the composed hero shot, square
-            hero-portrait.png      same hero at 4:5 for Instagram/Facebook feed
+            hero-portrait.png      same hero at 9:16 for Stories, Reels, TikTok
+            hero-horizontal.png    same hero at 16:9 for YouTube, landscape feed
             hero-video.mp4         animated hero, square (Marketplace/feed)
             hero-video-vertical.mp4    same edit, 9:16 (Reels/Stories/TikTok/Shorts)
             hero-video-horizontal.mp4  same edit, 16:9 (YouTube)
@@ -154,9 +155,9 @@ def resolve_video_formats(requested: list[str] | None) -> tuple[str, ...]:
 
 
 def resolve_hero_formats(requested: list[str] | None) -> tuple[str, ...]:
-    """Hero still shapes. Square (Marketplace) plus 4:5 portrait (the
-    tallest in-feed render Instagram and Facebook allow) by default;
-    vertical is Stories-only and the vertical VIDEO serves that better."""
+    """Hero still shapes. Square (Marketplace) plus 9:16 portrait (the
+    same shape as the vertical video, so a still and a clip pair up) by
+    default; horizontal is asked for."""
     from lotstretcher.imaging.compose.pipeline import HERO_STILL_FORMATS
 
     if not requested:
@@ -324,7 +325,7 @@ def main():
     add_look_arg(parser)
     parser.add_argument("--frame-fit", default="fit", choices=["fit", "fill", "stretch"],
                          help="How a frame meets a format of another shape (a square dealer frame on a "
-                              "4:5 post). fit: the whole frame, centred, the backdrop fills the rest. "
+                              "portrait post). fit: the whole frame, centred, the backdrop fills the rest. "
                               "fill: the frame covers the canvas and its edges are cropped. "
                               "stretch: the frame is pulled to the canvas shape. The format always "
                               "decides the canvas; the frame never does.")
@@ -339,9 +340,9 @@ def main():
     parser.add_argument("--video-flag-background", action="store_true",
                          help="Use the backdrop video clip instead of the default rotating vehicle-color gradient.")
     parser.add_argument("--hero-format", action="append", metavar="FORMAT",
-                         help="Shape(s) for the hero still; repeatable, or 'all'. square 1254x1254 "
-                              "(Marketplace), portrait 1080x1350 (4:5 Instagram/Facebook feed), "
-                              "vertical 1080x1920 (Stories). Default: square + portrait. "
+                         help="Shape(s) for the hero still; repeatable, or 'all'. The video's three: "
+                              "square 1254x1254 (Marketplace), portrait 1080x1920 (Stories, Reels, TikTok), "
+                              "horizontal 1920x1080 (YouTube, landscape feed). Default: square + portrait. "
                               "framed/ is always square.")
     parser.add_argument("--video-format", action="append", metavar="FORMAT",
                          help="Frame shape for the hero video; repeatable, or 'all'. "

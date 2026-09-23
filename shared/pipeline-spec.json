@@ -29,7 +29,7 @@
     "$comment": "compose/hero.py::DEFAULT_CANVAS_SIZE"
   },
   "heroStillFormats": {
-    "$comment": "compose/pipeline.py::HERO_STILL_FORMATS",
+    "$comment": "compose/pipeline.py::HERO_STILL_FORMATS. The same three shapes as the video, at the same sizes, so a still and a clip of one shape pair up.",
     "default": "square",
     "formats": {
       "square": {
@@ -43,18 +43,18 @@
       "portrait": {
         "size": [
           1080,
-          1350
-        ],
-        "label": "Portrait",
-        "note": "Instagram and Facebook feed"
-      },
-      "vertical": {
-        "size": [
-          1080,
           1920
         ],
-        "label": "Story",
+        "label": "Portrait",
         "note": "Stories, Reels, TikTok"
+      },
+      "horizontal": {
+        "size": [
+          1920,
+          1080
+        ],
+        "label": "Horizontal",
+        "note": "YouTube, landscape feed"
       }
     }
   },
@@ -77,8 +77,8 @@
           1920
         ],
         "budgetMb": 66.0,
-        "label": "Vertical",
-        "note": "Reels, Stories, TikTok, Shorts"
+        "label": "Portrait",
+        "note": "Stories, Reels, TikTok, Shorts"
       },
       "horizontal": {
         "size": [
@@ -1391,6 +1391,7 @@
       "dir": "bundle",
       "hero": "hero.png",
       "heroPortrait": "hero-portrait.png",
+      "heroHorizontal": "hero-horizontal.png",
       "framed": "framed",
       "interior": "interior",
       "videos": {

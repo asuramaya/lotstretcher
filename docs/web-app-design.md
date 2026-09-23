@@ -208,6 +208,7 @@ Reproduce what the CLI produces:
 ```
 hero.png
 hero-portrait.png
+hero-horizontal.png
 hero-video-1.mp4, hero-video-2.mp4, hero-video-3.mp4
 framed/          (4 files)
 interior/

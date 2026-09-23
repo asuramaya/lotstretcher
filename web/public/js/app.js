@@ -52,6 +52,7 @@ const el = (tag, cls, text) => {
 const state = {
   pane: 'booth',
   photos: [],            // { id, name, blob|url, thumb, status, scene, angle, cutout, hero }
+  uploads: { customBackground: [], customFrame: [] }, // the user's own images, by file control
   vehicle: {},
   dealer: {},
   running: false,
@@ -632,10 +633,10 @@ function renderOptions() {
     // A slider mid-drag: redraw the preview and nothing else, so the
     // slider under the finger is not rebuilt.
     if (live) { if (affectsPreview(key)) preview?.update(); return; }
-    // The user's own images are remembered on this device, in
-    // IndexedDB, since the options blob is JSON and holds no image.
+    // Which upload is chosen is remembered by its id; the images
+    // themselves live in IndexedDB, since the options blob is JSON.
     if (key === 'customBackground' || key === 'customFrame') {
-      if (value?.sourceBlob) store.set(key, value.sourceBlob); else store.del(key);
+      o[`${key}Id`] = value?.uploadId || null;
     }
     commitOptions();
     // A moved lever may make or break a look: the chips say which.
@@ -649,6 +650,9 @@ function renderOptions() {
     after: [{ id: 'output', label: 'Output', hint: 'What a run makes, and the command line', render: part('outputPart') }],
     // Settings supplies the Text tool's default line.
     placeholders: { textLine: state.dealer.greeting || null },
+    uploads: state.uploads,
+    onUpload: addUpload,
+    onRemoveUpload: removeUpload,
   });
   $('panelTitle').textContent = head?.label || '';
   const badge = $('panelBadge');
@@ -663,6 +667,33 @@ function renderOptions() {
       : ['--no-video']);
   $('cliEcho').textContent =
     `lotstretcher ./photos ${[...formatFlags, ...controlsToFlags(o)].join(' ')}`;
+}
+
+/* The user's own images, one list per file control, kept in IndexedDB
+ * as blobs so they are there next time and can be chosen again. */
+async function saveUploads(key) {
+  try {
+    await store.set(`uploads:${key}`, state.uploads[key].map((c) => ({ id: c.uploadId, name: c.name || '', blob: c.sourceBlob })));
+  } catch { /* blocked storage */ }
+}
+function addUpload(key, canvas) {
+  canvas.uploadId = crypto.randomUUID();
+  canvas.name = canvas.name || 'Your image';
+  state.uploads[key].push(canvas);
+  saveUploads(key);
+}
+function removeUpload(key, canvas) {
+  state.uploads[key] = state.uploads[key].filter((c) => c !== canvas);
+  saveUploads(key);
+  // Dropping the chosen image falls back to the default backdrop or frame.
+  if (state.options[key] === canvas) {
+    state.options[key] = null;
+    state.options[`${key}Id`] = null;
+    if (key === 'customBackground' && state.options.backdrop === 'custom') state.options.backdrop = 'vehicle';
+    if (key === 'customFrame' && state.options.border === 'custom') state.options.border = 'none';
+  }
+  commitOptions();
+  preview?.update();
 }
 
 /* What a swatch shows. Gradients are drawn by the core from the
@@ -1640,10 +1671,25 @@ async function init() {
   // added since the last visit therefore arrives at its spec default
   // rather than undefined.
   state.options = { ...controlDefaults(), ...loadOptions() };
-  // The images chosen last time, if this device still has them.
+  // The user's own images, kept on this device: every upload of each
+  // kind, and which one is chosen (by id, in the options blob). An
+  // image saved by an older build as the single choice joins the list.
+  state.uploads = { customBackground: [], customFrame: [] };
   for (const key of ['customBackground', 'customFrame']) {
-    const canvas = await blobToCanvas(await store.get(key));
-    if (canvas) state.options[key] = canvas;
+    const list = state.uploads[key];
+    let legacy = null;
+    try {
+      for (const u of (await store.get(`uploads:${key}`)) || []) {
+        const canvas = await blobToCanvas(u.blob);
+        if (canvas) { canvas.uploadId = u.id; canvas.name = u.name; list.push(canvas); }
+      }
+      if (!list.length) {
+        legacy = await blobToCanvas(await store.get(key));
+        if (legacy) { legacy.uploadId = crypto.randomUUID(); legacy.name = 'Your image'; list.push(legacy); await saveUploads(key); await store.del(key); }
+      }
+    } catch { /* blocked storage: the list is simply empty */ }
+    const chosenId = state.options[`${key}Id`];
+    state.options[key] = list.find((c) => c.uploadId === chosenId) || legacy || null;
   }
   loadDealer();
   $('f-dealer').value = state.dealer.name || '';

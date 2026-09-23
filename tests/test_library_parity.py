@@ -47,6 +47,7 @@ def test_hero_names_follow_the_composer_rule():
     default = full["heroStillFormats"]["default"]
     assert SPEC["bundle"]["hero"] == hero_still_name(default)
     assert SPEC["bundle"]["heroPortrait"] == hero_still_name("portrait")
+    assert SPEC["bundle"]["heroHorizontal"] == hero_still_name("horizontal")
 
 
 @pytest.mark.parametrize("name", [SPEC["bundle"]["framed"], SPEC["bundle"]["interior"]])

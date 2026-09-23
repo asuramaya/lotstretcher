@@ -276,17 +276,19 @@ function pickImage(fileControl, onPicked) {
  * a stock photo, a frame, a colour) through `thumbFor`, supplied by the
  * app. A choice with `file` is the user's own image: its tile shows the
  * image once chosen and opens the picker when tapped. */
-function buildSwatches(control, values, onChange, disabled, thumbFor, allControls) {
+function buildSwatches(control, values, onChange, disabled, thumbFor, allControls, opts = {}) {
   const grid = el('div', 'swatches');
   const current = values[control.key] ?? control.default;
-  for (const choice of choicesFor(control)) {
+  const { uploads = {}, onUpload = null, onRemoveUpload = null } = opts;
+  const choose = (choice) => {
+    if (choice.sets) for (const [k, v] of Object.entries(choice.sets)) onChange(k, v, true);
+    onChange(control.key, choice.value);
+  };
+  /* One tile, its name under its picture; the hint is a tooltip, and a
+   * locked tile says why in the hint's place. */
+  const tileFor = (choice, { image = null, pressed, locked, why = null }) => {
     const tile = el('button', 'swatch');
     tile.type = 'button';
-    const locked = disabled || (choice.requires && !can(choice.requires)) || choice.empty;
-    const fileControl = choice.file ? allControls.find((c) => c.key === choice.file) : null;
-    const image = fileControl ? values[fileControl.key] : null;
-    const pressed = String(current) === String(choice.value)
-      && (!choice.sets || Object.entries(choice.sets).every(([k, v]) => String(values[k]) === String(v)));
     tile.setAttribute('aria-pressed', String(pressed));
     if (locked) tile.classList.add('is-locked');
     const thumb = el('span', 'swatch-thumb');
@@ -294,37 +296,50 @@ function buildSwatches(control, values, onChange, disabled, thumbFor, allControl
     if (art instanceof HTMLElement) thumb.appendChild(art);
     else if (art && art.color) thumb.style.background = art.color;
     else if (typeof art === 'string') { const im = document.createElement('img'); im.src = art; im.alt = ''; im.loading = 'lazy'; thumb.appendChild(im); }
-    else thumb.classList.add(choice.file ? 'is-upload' : 'is-plain');
-    if (choice.file && image) thumb.classList.add('has-image');
-    const label = el('span', 'swatch-label', choice.label ?? String(choice.value));
-    const hint = el('span', 'swatch-hint', locked
-      ? (choice.empty ? (isSelfHosted() ? 'Library is empty' : 'Your server only') : (isSelfHosted() ? 'Host lacks it' : 'Your server only'))
-      : (choice.file && image ? (image.name || 'chosen') : (choice.hint || '')));
-    tile.append(thumb, label, hint);
+    else thumb.classList.add(choice.file && !image ? 'is-upload' : 'is-plain');
+    tile.append(thumb, el('span', 'swatch-label', image ? (image.name || choice.label) : (choice.label ?? String(choice.value))));
+    if (why) tile.appendChild(el('span', 'swatch-hint', why));
     tile.title = choice.hint || '';
     tile.disabled = !!locked;
-    tile.onclick = () => {
-      const choose = () => {
-        if (choice.sets) for (const [k, v] of Object.entries(choice.sets)) onChange(k, v, true);
-        onChange(control.key, choice.value);
-      };
-      if (fileControl) {
-        // Tap once to pick an image (and select it); tap again, once an
-        // image is set, to reselect it. Change it from the small link.
-        if (image) choose();
-        else pickImage(fileControl, (canvas) => { onChange(fileControl.key, canvas, true); onChange(fileControl.key, canvas); choose(); });
-        return;
+    return tile;
+  };
+  for (const choice of choicesFor(control)) {
+    const locked = disabled || (choice.requires && !can(choice.requires)) || choice.empty;
+    const why = locked
+      ? (choice.empty ? (isSelfHosted() ? 'Library is empty' : 'Your server only') : (isSelfHosted() ? 'Host lacks it' : 'Your server only'))
+      : null;
+    const fileControl = choice.file ? allControls.find((c) => c.key === choice.file) : null;
+    if (fileControl) {
+      /* The user's own images: one tile per upload kept on this device,
+       * pressed when it is the chosen one, and a tile that adds another.
+       * An upload can be dropped from its corner. */
+      const chosen = values[fileControl.key];
+      const isCurrent = String(current) === String(choice.value);
+      for (const up of uploads[fileControl.key] || []) {
+        const pressed = isCurrent && chosen && chosen.uploadId === up.uploadId;
+        const tile = tileFor(choice, { image: up, pressed, locked });
+        tile.onclick = () => { onChange(fileControl.key, up, true); onChange(fileControl.key, up); choose(choice); };
+        if (!locked && onRemoveUpload) {
+          const x = el('span', 'swatch-x', '\u00d7');
+          x.setAttribute('role', 'button');
+          x.setAttribute('aria-label', `Remove ${up.name || 'this image'}`);
+          x.onclick = (e) => { e.stopPropagation(); onRemoveUpload(fileControl.key, up); };
+          tile.appendChild(x);
+        }
+        grid.appendChild(tile);
       }
-      choose();
-    };
-    if (fileControl && image && !locked) {
-      const change = el('span', 'swatch-change', 'change');
-      change.onclick = (e) => {
-        e.stopPropagation();
-        pickImage(fileControl, (canvas) => { onChange(fileControl.key, canvas); if (pressed) onChange(control.key, choice.value); });
-      };
-      tile.appendChild(change);
+      const add = tileFor({ ...choice, label: (uploads[fileControl.key] || []).length ? 'Add another' : choice.label }, { pressed: false, locked, why });
+      add.onclick = () => pickImage(fileControl, (canvas) => {
+        if (onUpload) onUpload(fileControl.key, canvas);
+        onChange(fileControl.key, canvas, true); onChange(fileControl.key, canvas); choose(choice);
+      });
+      grid.appendChild(add);
+      continue;
     }
+    const pressed = String(current) === String(choice.value)
+      && (!choice.sets || Object.entries(choice.sets).every(([k, v]) => String(values[k]) === String(v)));
+    const tile = tileFor(choice, { pressed, locked, why });
+    tile.onclick = () => choose(choice);
     grid.appendChild(tile);
   }
   return grid;
@@ -390,7 +405,7 @@ function icon(id) {
 let activeTab = null;
 export function openTool(id) { activeTab = id; }
 export function renderControls(host, values, onChange, opts = {}) {
-  const { thumbFor = null, rail = null, before = [], after = [], placeholders = {} } = opts;
+  const { thumbFor = null, rail = null, before = [], after = [], placeholders = {}, uploads = {}, onUpload = null, onRemoveUpload = null } = opts;
   host.innerHTML = '';
   const allControls = get('controls', 'groups').flatMap((g) => g.controls);
   const groups = get('controls', 'groups')
@@ -462,7 +477,7 @@ export function renderControls(host, values, onChange, opts = {}) {
         // one line of hint under the summary.
         if (control.label !== group.label) text.appendChild(el('strong', null, control.label));
         text.appendChild(el('span', null, ok ? control.hint : why));
-        block.append(text, buildSwatches(control, values, onChange, !ok, thumbFor, allControls));
+        block.append(text, buildSwatches(control, values, onChange, !ok, thumbFor, allControls, { uploads, onUpload, onRemoveUpload }));
         body.appendChild(block);
         continue;
       }
@@ -531,8 +546,10 @@ export function renderLooks(host, values, onApply, { tileFor = null } = {}) {
     // own subject, so choosing a look is choosing a picture.
     const art = tileFor?.(lk, values);
     if (art) { art.className = 'chip-art'; chip.classList.add('has-art'); chip.appendChild(art); }
+    // The name alone; the picture says the rest.
     const text = el('span', 'chip-text');
-    text.append(el('strong', null, lk.label), el('span', null, lk.hint));
+    text.append(el('strong', null, lk.label));
+    chip.title = lk.hint || '';
     chip.appendChild(text);
     chip.onclick = () => onApply(lk);
     host.appendChild(chip);

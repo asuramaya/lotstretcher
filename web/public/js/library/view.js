@@ -529,7 +529,7 @@ export class LibraryView {
     const b = layout.bundle;
 
     // Hero stills.
-    const stills = [[b.hero, 'Square'], [b.heroPortrait, 'Portrait']]
+    const stills = [[b.hero, 'Square'], [b.heroPortrait, 'Portrait'], [b.heroHorizontal, 'Horizontal']]
       .map(([name, label]) => [`${b.dir}/${name}`, label]).filter(([rel]) => files.has(rel));
     if (stills.length) h.appendChild(await this.imageRow('Hero', v, stills));
 

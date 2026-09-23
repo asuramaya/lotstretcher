@@ -29,15 +29,12 @@ from ..text import text_request
 # from growing a per-slot margin list for one caller.
 CONVEYOR_MARGIN_FRAC = 0.03
 
-# Extra shapes for the hero still, mirroring hero_video.py's VIDEO_FORMATS.
-# Only the HERO gets them: framed/ is one solo composition per cutout and
-# rendering every one of those four times over would quadruple the folder
-# (213 images fleet-wide becomes 850) for gallery filler, where the hero is
-# the image that actually leads a post.
-#
-# 4:5 rather than another 9:16 for the feed shape -- 1080x1350 is the
-# tallest Instagram and Facebook render in-feed without cropping, so it is
-# the most screen a still can occupy there.
+# Extra shapes for the hero still: the same three as hero_video.py's
+# VIDEO_FORMATS at the same sizes, so a still and a clip of one shape
+# pair up in a post. Only the HERO gets them: framed/ is one solo
+# composition per cutout and rendering every one of those three times
+# over would triple the folder for gallery filler, where the hero is the
+# image that actually leads a post.
 # Sizes come from shared/pipeline-spec.json so the browser client cannot
 # drift from them -- see src/lotstretcher/spec.py for why.
 from ... import spec as _spec

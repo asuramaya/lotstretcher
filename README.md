@@ -277,7 +277,8 @@ Output lands in the current working directory under `new/` or `used/`, bucketed 
 ├── window-sticker.json           # Parsed window sticker options & equipment
 └── bundle/
     ├── hero.png                  # Composed hero collage (1:1 square for Facebook Marketplace)
-    ├── hero-portrait.png         # 4:5 portrait (Instagram & Facebook feed)
+    ├── hero-portrait.png         # 9:16 portrait (Stories, Reels, TikTok)
+    ├── hero-horizontal.png       # 16:9 horizontal (YouTube, landscape feed)
     ├── hero-video.mp4            # Animated video carousel (1:1 square)
     ├── hero-video-vertical.mp4   # 9:16 vertical video (Instagram Reels / TikTok / Shorts)
     ├── hero-video-horizontal.mp4 # 16:9 widescreen video (YouTube)
@@ -394,7 +395,7 @@ group has the same lever, previewed live per format.
 
 Frame art is drawn for one shape. `--frame-style line` draws a rounded
 line inset from the edge at whatever size the canvas is, so it fits a
-square, a portrait and a story exactly, on the stills and on the clip.
+square, a portrait and a horizontal exactly, on the stills and on the clip.
 `--frame-color` is white, black or `paint` (the vehicle's own colour,
 from the listing's name or sampled off the cutout); `--frame-weight`
 is the line's weight as a share of the shorter side. In the app it is

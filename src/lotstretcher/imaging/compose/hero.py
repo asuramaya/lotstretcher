@@ -65,7 +65,7 @@ def compose_hero(background_path, border_path: Path | None, car_paths: list[Path
     rather than run against an empty mask.
 
     canvas_size is the format's and always wins. A border drawn for
-    another shape (a square dealer frame on a 4:5 post) is fitted to it
+    another shape (a square dealer frame on a portrait post) is fitted to it
     by border_fit: "fit" keeps the whole frame, centred, with the
     backdrop filling the rest; "fill" covers the canvas and crops the
     frame's edges; "stretch" pulls it to the canvas shape.

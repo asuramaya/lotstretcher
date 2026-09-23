@@ -42,7 +42,6 @@ export const ORT_PATH = 'ort/';
 export const MAX_THREADS = 4;
 
 export const CANVAS = 1254;          // matches DEFAULT_CANVAS_SIZE in compose/hero.py
-export const PORTRAIT = [1080, 1350];
 
 /* ImageNet normalisation -- what both students were trained with. */
 export const NORM_MEAN = [0.485, 0.456, 0.406];

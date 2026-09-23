@@ -71,8 +71,8 @@ def main():
     add_look_arg(parser)
     parser.add_argument("--hero-format", action="append", metavar="FORMAT",
                          help="Shape(s) for the hero still; repeatable, or 'all'. square 1254x1254 "
-                              "(Marketplace), portrait 1080x1350 (4:5 Instagram/Facebook feed), "
-                              "vertical 1080x1920 (Stories). Default: square. framed/ is always "
+                              "(Marketplace), portrait 1080x1920 (Stories, Reels, TikTok), "
+                              "horizontal 1920x1080 (YouTube, landscape feed). Default: square. framed/ is always "
                               "square.")
     parser.add_argument("--interiors", action="store_true",
                          help="Also rebuild bundle/interior/ (white balance + exposure correction). "
