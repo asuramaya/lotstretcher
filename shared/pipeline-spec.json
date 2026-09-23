@@ -971,6 +971,7 @@
     ],
     "cms": "dealerinspire",
     "analyticsGlobal": "jzlAnalyticsObject",
+    "analyticsMarker": "jzlAnalyticsObject = ",
     "payloadKeys": [
       "boxLength",
       "cabStyle",

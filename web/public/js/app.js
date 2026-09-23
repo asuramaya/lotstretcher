@@ -33,7 +33,7 @@ import { Preview } from './preview.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlDefaults, controlsToFlags, affectsPreview } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
-import { normalizeListing, takeListingFromHash, bookmarkletSource } from './pipeline/listing.js';
+import { normalizeListing, takeListingFromHash, bookmarkletSource, recordFromHtml } from './pipeline/listing.js';
 import { LibraryView } from './library/view.js';
 import { HttpSource, DirectorySource } from './library/source.js';
 
@@ -1089,6 +1089,37 @@ async function init() {
     $('listingUrlNote').textContent = '';
     openSheet('listingSheet');
   };
+  /* A saved copy of the listing page, or its pasted source: read here,
+   * the way the bookmarklet reads the live page. */
+  const readListingHtml = (html, label) => {
+    const note = $('listingFileNote');
+    let raw;
+    try { raw = recordFromHtml(html); } catch (e) { note.textContent = String(e.message || e); return; }
+    if (!raw.payload && !raw.ldCar) {
+      note.textContent = `No vehicle data found in ${label}. Save the page as "Webpage, HTML only" while the listing is fully loaded.`;
+      return;
+    }
+    closeSheet('listingSheet');
+    applyVehicle(normalizeListing(raw));
+  };
+  $('listingFileBtn').onclick = () => $('listingFileInput').click();
+  $('listingFileInput').onchange = async (e) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (f) readListingHtml(await f.text(), f.name);
+  };
+  $('listingHtmlGo').onclick = () => {
+    const html = $('listingHtmlInput').value;
+    if (html.trim()) { readListingHtml(html, 'the pasted text'); $('listingHtmlInput').value = ''; }
+  };
+  const sheet = $('listingSheet');
+  sheet.addEventListener('dragover', (e) => { e.preventDefault(); });
+  sheet.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    const f = [...(e.dataTransfer?.files || [])].find((x) => /\.html?$/i.test(x.name) || x.type === 'text/html');
+    if (f) readListingHtml(await f.text(), f.name);
+  });
+
   $('listingUrlGo').onclick = async () => {
     const url = $('listingUrlInput').value.trim();
     if (!url) return;

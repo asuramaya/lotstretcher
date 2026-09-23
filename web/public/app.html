@@ -365,11 +365,26 @@
         </div>
         <p class="xs dim" style="margin-top:var(--s-4)">Or, from any browser:</p>
       </div>
+      <div class="importer" style="margin-bottom:var(--s-5)">
+        <p class="small muted" style="margin-bottom:var(--s-3)">
+          <strong>The simplest way, from any browser:</strong> on the listing page press
+          <span class="mono">Ctrl+S</span> (<span class="mono">Cmd+S</span> on a Mac), save it
+          as "Webpage, HTML only", then drop that file here. The page's own vehicle data and
+          photo links are read on this device; nothing is fetched from the dealer.
+        </p>
+        <div class="row wrap" style="gap:var(--s-3);align-items:center">
+          <button class="btn btn-primary btn-sm" id="listingFileBtn">Choose the saved page</button>
+          <span class="small dim" id="listingFileNote">or drop the .html file anywhere on this sheet</span>
+        </div>
+        <input type="file" id="listingFileInput" accept=".html,.htm,text/html" class="sr-only">
+        <p class="xs dim" style="margin-top:var(--s-3)">Or view the page source (<span class="mono">Ctrl+U</span>), select all, copy, and paste it here:</p>
+        <textarea class="field mono" id="listingHtmlInput" rows="3" spellcheck="false" placeholder="&lt;!doctype html&gt; ..."></textarea>
+        <div class="row" style="margin-top:var(--s-2)"><button class="btn btn-sm" id="listingHtmlGo">Read the pasted page</button></div>
+      </div>
       <p class="small muted">
-        Your server can scrape a vehicle page for you. A browser cannot
-        read another site's page, so here the hand-off runs the other way:
-        a bookmarklet on the listing itself collects the vehicle record and
-        photo links and opens this app with them filled in.
+        <strong>Or a bookmarklet.</strong> A browser cannot read another site's page, so the
+        hand-off runs the other way: a bookmarklet clicked on the listing itself collects the
+        vehicle record and photo links and opens this app with them filled in.
       </p>
       <p class="small muted" style="margin-top:var(--s-3)">
         Drag this to your bookmarks bar, then click it while viewing a

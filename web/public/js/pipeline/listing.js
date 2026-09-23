@@ -206,6 +206,82 @@ export function takeListingFromHash() {
   }
 }
 
+/* ---------- reading a page ------------------------------------------ */
+
+/* The JSON object embedded at `marker`, by matching balanced braces: a
+ * port of scrape.py::extract_balanced_json. Regex cannot match nested
+ * JSON, so this scans from the first '{' after the marker, tracking
+ * string state, until the braces balance. */
+export function extractBalancedJson(text, marker) {
+  const at = text.indexOf(marker);
+  if (at < 0) return null;
+  let start = at + marker.length;
+  while (start < text.length && text[start] !== '{') start++;
+  if (start >= text.length) return null;
+  let depth = 0; let inStr = false; let esc = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === '\\') esc = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    else if (c === '{') depth++;
+    else if (c === '}') {
+      depth--;
+      if (depth === 0) {
+        try { return JSON.parse(text.slice(start, i + 1)); } catch { return null; }
+      }
+    }
+  }
+  return null;
+}
+
+/* The payload trimmed to the keys the CLI reads, and the description
+ * capped, exactly as the bookmarklet ships it. */
+export function trimPayload(P) {
+  if (!P) return null;
+  const keys = get('listing', 'payloadKeys');
+  const maxDesc = get('listing', 'descriptionMaxChars');
+  const p = {};
+  for (const k of keys) if (P[k] !== undefined) p[k] = P[k];
+  if (p.dealerDescription) p.dealerDescription = String(p.dealerDescription).slice(0, maxDesc);
+  if (p.visual) {
+    const V = p.visual;
+    const t = (x) => (Array.isArray(x) ? x.map((i) => (i && i.source ? { source: i.source } : i)) : x);
+    p.visual = {
+      colors: V.colors, image: V.image, combinedPhotos: t(V.combinedPhotos),
+      dealerPhotos: t(V.dealerPhotos), stockPhotos: t(V.stockPhotos), dealerVideos: t(V.dealerVideos),
+    };
+  }
+  return p;
+}
+
+/* A raw listing record from a page's HTML: what the bookmarklet
+ * collects on the listing, collected here instead from a saved copy of
+ * it (File > Save Page As, or the page source pasted in). No network,
+ * no bookmark: the page's own text is read on this device. */
+export function recordFromHtml(html, url = null) {
+  const marker = get('listing', 'analyticsMarker');
+  const analytics = extractBalancedJson(html, marker);
+  const payload = analytics && analytics.vdp_gtm_payload ? trimPayload(analytics.vdp_gtm_payload) : null;
+  let ldCar = null;
+  const doc = typeof DOMParser !== 'undefined' ? new DOMParser().parseFromString(html, 'text/html') : null;
+  if (doc) {
+    for (const s of doc.querySelectorAll('script[type="application/ld+json"]')) {
+      try {
+        const d = JSON.parse(s.textContent);
+        for (const n of (Array.isArray(d) ? d : (d['@graph'] || [d]))) if (n && n['@type'] === 'Car') ldCar = n;
+      } catch { /* not JSON */ }
+    }
+    if (!url) url = doc.querySelector('link[rel="canonical"]')?.href || doc.querySelector('meta[property="og:url"]')?.content || null;
+  }
+  const carfax = /class="carfax-logo"[^>]*>\s*<a href="([^"]+)"/.exec(html);
+  return { v: get('listing', 'version'), url, payload, ldCar, carfaxUrl: carfax ? carfax[1] : null };
+}
+
 /* ---------- the bookmarklet ------------------------------------------ */
 
 /* Source for the bookmarklet, bound to the app origin that generated it,
@@ -220,12 +296,26 @@ export function takeListingFromHash() {
 export function bookmarkletSource(origin) {
   const keys = get('listing', 'payloadKeys');
   const globalName = get('listing', 'analyticsGlobal');
+  const marker = get('listing', 'analyticsMarker');
   const maxDesc = get('listing', 'descriptionMaxChars');
   const param = get('listing', 'hashParam');
   const version = get('listing', 'version');
 
+  /* The analytics object is NOT a window global on a live page: it is
+   * the default-parameter value of a function call inside an inline
+   * script, which is why the CLI scans the page text for it. Reading
+   * window[name] found nothing and the bookmarklet fell back to the thin
+   * schema.org record, with no photos. So this scans the inline scripts
+   * for the same marker the CLI uses, with the same brace matcher, and
+   * only then tries the global. */
   const body = `
-    var K=${JSON.stringify(keys)},A=window[${JSON.stringify(globalName)}],P=A&&A.vdp_gtm_payload,L=null,p=null;
+    var K=${JSON.stringify(keys)},M=${JSON.stringify(marker)},A=null,P=null,L=null,p=null;
+    function X(t){var a=t.indexOf(M);if(a<0)return null;var s=a+M.length;while(s<t.length&&t[s]!=='{')s++;
+      var d=0,q=false,e=false;for(var i=s;i<t.length;i++){var c=t[i];
+      if(q){if(e)e=false;else if(c==='\\\\')e=true;else if(c==='"')q=false;continue;}
+      if(c==='"')q=true;else if(c==='{')d++;else if(c==='}'){d--;if(d===0){try{return JSON.parse(t.slice(s,i+1));}catch(x){return null;}}}}return null;}
+    var S=document.scripts;for(var i=0;i<S.length&&!A;i++){if(!S[i].src&&S[i].textContent.indexOf(M)>=0)A=X(S[i].textContent);}
+    if(!A)A=window[${JSON.stringify(globalName)}];P=A&&A.vdp_gtm_payload;
     document.querySelectorAll('script[type="application/ld+json"]').forEach(function(s){
       try{var d=JSON.parse(s.textContent),gr=Array.isArray(d)?d:(d['@graph']||[d]);
       gr.forEach(function(n){if(n&&n['@type']==='Car')L=n;});}catch(e){}});

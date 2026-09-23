@@ -85,8 +85,45 @@ def test_payload_keys_cover_normalize_vehicle():
 
 def test_analytics_global_matches_the_marker():
     """scrape.py finds the blob by its assignment text; the bookmarklet
-    reads the same global by name. One must be derivable from the other."""
+    and the saved-page reader scan for the same text, from the spec."""
     assert DEALERINSPIRE_VAR_MARKER.strip().rstrip("=").strip() == SPEC["listing"]["analyticsGlobal"]
+    assert SPEC["listing"]["analyticsMarker"] == DEALERINSPIRE_VAR_MARKER
+
+
+TRICKY_HTML = (
+    '<html><script>jzlGa4AttachListenersToForms(jzlAnalyticsObject = '
+    + json.dumps({"vdp_gtm_payload": {"vin": "1FTEW1EP0PKD71397", "dealerDescription": "a } in \"quotes\" {",
+                                      "visual": {"dealerPhotos": [{"source": "https://p/1.jpg", "junk": 1}]},
+                                      "unlisted": True},
+                  "other": {"brace": "}"}})
+    + ');</script><script type="application/ld+json">{"@type":"Car","name":"X"}</script></html>'
+)
+
+
+def test_js_extractor_matches_the_python_brace_matcher():
+    """The bookmarklet and the saved-page reader must find the same
+    object scrape.py finds, through braces and quotes inside strings."""
+    from lotstretcher.scrape import extract_balanced_json
+
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    script = f"""
+      import {{ loadSpecFrom }} from '{(REPO / 'web' / 'public' / 'js' / 'spec.js').as_posix()}';
+      import {{ extractBalancedJson, recordFromHtml }} from '{(REPO / 'web' / 'public' / 'js' / 'pipeline' / 'listing.js').as_posix()}';
+      import fs from 'node:fs';
+      loadSpecFrom(JSON.parse(fs.readFileSync('{(REPO / 'shared' / 'pipeline-spec.json').as_posix()}', 'utf8')));
+      const html = fs.readFileSync(0, 'utf8');
+      process.stdout.write(JSON.stringify({{ whole: extractBalancedJson(html, {json.dumps(DEALERINSPIRE_VAR_MARKER)}), record: recordFromHtml(html, 'https://x') }}));
+    """
+    run = subprocess.run([node, "--input-type=module", "-e", script], input=TRICKY_HTML,
+                         capture_output=True, text=True, check=True)
+    out = json.loads(run.stdout)
+    assert out["whole"] == extract_balanced_json(TRICKY_HTML, DEALERINSPIRE_VAR_MARKER)
+    payload = out["record"]["payload"]
+    assert payload["vin"] == "1FTEW1EP0PKD71397"
+    assert "unlisted" not in payload                      # only the spec's keys travel
+    assert payload["visual"]["dealerPhotos"] == [{"source": "https://p/1.jpg"}]
 
 
 def python_record() -> Vehicle:
