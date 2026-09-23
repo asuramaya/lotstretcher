@@ -820,7 +820,9 @@ async function run() {
       }
       const made = Object.keys(state.videos).length;
       stages[4].state = 'done';
-      stages[4].detail = made ? `${made} clip${made === 1 ? '' : 's'}` : 'failed';
+      // Where it was rendered: the worker's threaded core, or the page.
+      const where = videoThreads() ? ` on ${videoThreads()} threads` : '';
+      stages[4].detail = made ? `${made} clip${made === 1 ? '' : 's'}${where}` : 'failed';
       renderStages(stages);
     }
 
