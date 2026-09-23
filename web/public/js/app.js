@@ -26,7 +26,7 @@ import {
   loadOptions, saveOptions, resetOptions, toCliFlags, initFromSpec,
 } from './options.js';
 import { loadSpec, get as specGet } from './spec.js';
-import { loadCore, version as coreVersion } from './core.js';
+import { loadCore, version as coreVersion, enhanceInterior } from './core.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlDefaults, controlsToFlags } from './controls.js';
@@ -223,15 +223,32 @@ function setProgress(frac) {
 
 function renderResults() {
   const heroes = state.photos.filter((p) => p.hero);
+  const interiors = state.photos.filter((p) => p.interior);
 
   const tab = document.querySelector('.nav-btn[data-go="results"]');
-  tab.disabled = !state.running && heroes.length === 0;
+  tab.disabled = !state.running && heroes.length === 0 && interiors.length === 0;
   // A badge only while the user is looking at something else.
   $('resultsDot').classList.toggle('hidden', !(state.done && state.pane !== 'results'));
 
-  $('heroSection').hidden = heroes.length === 0;
+  $('heroSection').hidden = heroes.length === 0 && interiors.length === 0;
   $('copySection').hidden = !state.posts;
-  $('resultsEmpty').hidden = heroes.length > 0 || state.running;
+  $('resultsEmpty').hidden = heroes.length > 0 || interiors.length > 0 || state.running;
+
+  const interiorHost = $('interiorGrid');
+  $('interiorSection').hidden = interiors.length === 0;
+  interiorHost.innerHTML = '';
+  for (const p of interiors) {
+    const tile = el('div', 'tile');
+    const scale = 420 / Math.max(p.interior.width, p.interior.height);
+    const c = makeCanvas(Math.round(p.interior.width * scale), Math.round(p.interior.height * scale));
+    ctxOf(c).drawImage(p.interior, 0, 0, c.width, c.height);
+    const img = el('img');
+    canvasToBlob(c, 'image/jpeg', 0.85).then((b) => { img.src = URL.createObjectURL(b); });
+    img.alt = `Interior photo ${p.name}, corrected`;
+    tile.append(img, tagOf('interior'));
+    tile.onclick = () => saveInterior(p);
+    interiorHost.appendChild(tile);
+  }
 
   const grid = $('resultGrid');
   grid.innerHTML = '';
@@ -475,6 +492,20 @@ async function run() {
       renderPhotos();
     }
     stages[1].state = 'done';
+
+    // Interiors: the photograph itself, neutralised and lifted by the
+    // core, at its own size, the same treatment the CLI's bundle/interior
+    // gets. No cutout, no compositing: rembg cannot cut out a cabin.
+    if (state.options.interiors) {
+      for (const p of state.photos) {
+        if (p.scene !== 'interior' || p.status === 'failed') continue;
+        try {
+          p.interior = enhanceInterior(p.bitmap);
+        } catch (e) {
+          state.errors.push(`${p.name}: ${e.message || e}`);
+        }
+      }
+    }
     // cut_type "none" is the server's classify-only mode: sort the
     // photos, compose nothing.
     const exteriors = state.options.cutType === 'none'
@@ -725,6 +756,14 @@ async function saveOne(photo) {
   await deliver(blob, `${bundleName()}-${photo.angle || 'hero'}.png`);
 }
 
+async function saveInterior(photo) {
+  const blob = await canvasToBlob(photo.interior, 'image/jpeg', INTERIOR_JPEG_QUALITY);
+  await deliver(blob, `${bundleName()}-interior-${photo.name.replace(/\.[^.]+$/, '')}.jpg`);
+}
+
+// The CLI writes bundle/interior/*.jpg at quality 92.
+const INTERIOR_JPEG_QUALITY = 0.92;
+
 async function downloadBundle() {
   const btn = $('downloadBtn');
   const label = btn.textContent;
@@ -752,6 +791,14 @@ async function downloadBundle() {
       if (p.cutout) {
         files.push({ name: `cutout/${tag}.png`, data: await canvasToBlob(p.cutout, 'image/png') });
       }
+    }
+
+    const interiors = state.photos.filter((p) => p.interior);
+    for (let i = 0; i < interiors.length; i++) {
+      files.push({
+        name: `${specGet('library').bundle.interior}/${String(i + 1).padStart(2, '0')}.jpg`,
+        data: await canvasToBlob(interiors[i].interior, 'image/jpeg', INTERIOR_JPEG_QUALITY),
+      });
     }
 
     for (const [fmt, blob] of Object.entries(state.videos || {})) {

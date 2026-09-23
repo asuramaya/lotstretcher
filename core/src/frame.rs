@@ -187,6 +187,10 @@ pub enum Op {
     SpinFrame { plan: crate::spin::SpinPlan, frame: usize },
     PlaceLayer { image: Slice, width: usize, height: usize, rect: [i64; 4] },
     Blend { a: Slice, b: Slice, t: f64 },
+    EnhanceInterior { image: Slice },
+    EnhanceExposure { image: Slice, #[serde(default)] target_median: Option<f64>, #[serde(default)] max_lift: Option<f64> },
+    WhiteBalance { image: Slice },
+    Scrim { image: Slice, #[serde(default)] band_frac: Option<f64> },
 }
 
 pub enum OpResult { Image(Image), Json(String) }
@@ -233,6 +237,18 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
         Op::PlaceLayer { image, width, height, rect } => {
             let car = slice_image(arena, &image)?;
             OpResult::Image(crate::spin::place_layer(&car, width, height, rect)?)
+        }
+        Op::EnhanceInterior { image } => { let img = slice_image(arena, &image)?; OpResult::Image(crate::interior::enhance_interior(&img)) }
+        Op::EnhanceExposure { image, target_median, max_lift } => {
+            let img = slice_image(arena, &image)?;
+            let target = target_median.unwrap_or_else(|| spec::f64_at(&["interior", "targetMedian"])) as f32;
+            let lift = max_lift.unwrap_or_else(|| spec::f64_at(&["interior", "maxLift"])) as f32;
+            OpResult::Image(crate::interior::enhance_exposure(&img, target, lift))
+        }
+        Op::WhiteBalance { image } => { let img = slice_image(arena, &image)?; OpResult::Image(crate::interior::correct_white_balance(&img)) }
+        Op::Scrim { image, band_frac } => {
+            let img = slice_image(arena, &image)?;
+            OpResult::Image(crate::interior::scrim(&img, band_frac.unwrap_or_else(|| spec::f64_at(&["interior", "scrimFrac"])) as f32))
         }
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);

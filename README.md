@@ -171,9 +171,12 @@ hosts retain their cutouts, scaled cars, layers and flag frames once, so a frame
 pixels in, only the finished frame out, and a retained car's glow halo is blurred once per clip rather
 than once per frame. Measured on a real five-shot vehicle at 1254²: a glowing conveyor frame 108 ms to
 21 ms, byte-identical; the whole 26 s clip's frames 84 s to 42 s. In the browser a 720² three-shot conveyor
-renders in about 4 s for a 9.6 s clip. What remains outside the core: interiors, wheel shots and the
-sticker parser, each of which moves in turn, deleting its Python and JavaScript copy in the same commit
-its parity test passes. Models stay in ONNX Runtime on both sides.
+renders in about 4 s for a 9.6 s clip. Interior photos are the core's too (`enhance_interior`: the
+capped white balance from bright near-neutral pixels, then the highlight-holding exposure lift), so the
+browser now writes the same `interior/` set the CLI's bundle carries, at the photo's own size. What
+remains outside the core: wheel shots and the sticker parser, each of which moves in turn, deleting its
+Python and JavaScript copy in the same commit its parity test passes. Models stay in ONNX Runtime on both
+sides.
 
 [`tests/test_core_parity.py`](tests/test_core_parity.py) holds the core to the Python it replaced, and is
 skipped with a message when the core has not been built (`cargo build --release` in `core/`).

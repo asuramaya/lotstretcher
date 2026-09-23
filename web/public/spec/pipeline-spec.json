@@ -136,6 +136,29 @@
     "containerOverheadFrac": 0.9,
     "angleOrder": ["front", "front_3q", "side", "rear_3q", "rear"]
   },
+  "interior": {
+    "$comment": [
+      "imaging/interior.py and core/src/interior.rs: the exposure lift and",
+      "white balance every interior photo gets, and the callout scrim.",
+      "The lift fades out between highlightKnee and highlightCeiling of",
+      "the ORIGINAL luminance so blown windows are left alone; white",
+      "balance is estimated from bright near-neutral pixels only, partial",
+      "and capped, so a tan cabin is not neutralised into grey."
+    ],
+    "targetMedian": 0.46,
+    "maxLift": 0.55,
+    "highlightKnee": 0.55,
+    "highlightCeiling": 0.92,
+    "whiteBalanceMinCast": 0.06,
+    "whiteBalanceStrength": 0.6,
+    "whiteBalanceMaxGain": 1.25,
+    "whiteBalanceBrightPercentile": 80,
+    "whiteBalanceMinSample": 200,
+    "scrimFrac": 0.22,
+    "scrimStrength": 0.72,
+    "scrimGamma": 1.6,
+    "calloutTextFrac": 0.04
+  },
   "cutout": {
     "$comment": "imaging/cutout.py",
     "alphaThreshold": 16,

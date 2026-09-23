@@ -156,3 +156,16 @@ export function vehicleGradientColors(exterior, interior, sample) {
     sample ? sample.data : new Uint8Array(0), sample ? sample.width : 0, sample ? sample.height : 0);
   return [[v[0], v[1], v[2]], [v[3], v[4], v[5]]];
 }
+
+/* An interior photo, neutralised and lifted by the core (the CLI's
+ * bundle/interior treatment): a canvas or bitmap in, a canvas of the
+ * same size out. Nothing is cropped or composited. */
+export function enhanceInterior(source) {
+  const w = source.width; const h = source.height;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(source, 0, 0);
+  const out = call({ op: 'enhance_interior', image: { $image: 0 } }, [ctx.getImageData(0, 0, w, h)]);
+  ctx.putImageData(toImageData(out), 0, 0);
+  return c;
+}

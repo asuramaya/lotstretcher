@@ -46,6 +46,8 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
+from .. import core
+from .. import spec as _spec
 from .classify import ClipBackbone, ZeroShotClassifier
 
 FONT_CANDIDATES = [
@@ -233,115 +235,36 @@ class InteriorSubjectClassifier(ZeroShotClassifier):
                           backbone=backbone or (ClipBackbone(**kwargs) if kwargs else None))
 
 
-# Where the exposure lift starts backing off, and where it stops entirely.
-# Measured over 394 real interior photos: 252 of them (64%) already have
-# more than 2% of their pixels clipped at white, median 3.9% and p95 15.7%
-# -- the windows. A lift applied flat across the frame cannot help those
-# pixels (they are already at 1.0) and actively harms the ones just below,
-# pushing near-white into clipping and washing the glass out further. So
-# the lift is faded out over the top end instead: full strength through
-# the shadows and midtones where the cabin actually lives, nothing at all
-# where the glass is.
-HIGHLIGHT_KNEE = 0.55
-HIGHLIGHT_CEILING = 0.92
-
-# White balance is estimated from bright NEAR-NEUTRAL pixels only, not
-# grey-world. Grey-world assumes the average of the scene is grey, which
-# is exactly wrong for a cabin: a King Ranch's saddle leather or a tan
-# interior would be read as a colour cast and neutralised into mud. Bright
-# near-neutral pixels -- daylight through the glass, a light headliner,
-# specular highlights on trim -- are a far safer illuminant estimate for
-# this content.
-WHITE_BALANCE_MIN_CAST = 0.06  # below this, leave it alone
-WHITE_BALANCE_STRENGTH = 0.6   # correct most of the way, never all
-WHITE_BALANCE_MAX_GAIN = 1.25  # hard cap per channel
+# The pixel treatment itself lives in the core (core/src/interior.rs),
+# with its constants in the `interior` block of shared/pipeline-spec.json
+# -- which is where the reasoning behind each number is kept. In short:
+# the lift is faded out over the top end of the ORIGINAL luminance
+# because 64% of real interior photos already clip at the windows, and
+# white balance is estimated from bright near-neutral pixels rather than
+# grey-world because a saddle-leather cabin is not a colour cast.
+# tests/test_interior_parity.py holds the core to the numpy this
+# replaced.
 
 
-def enhance_exposure(img: Image.Image, target_median: float = 0.46,
-                      max_lift: float = 0.55) -> Image.Image:
+def enhance_exposure(img: Image.Image, target_median: float | None = None,
+                      max_lift: float | None = None) -> Image.Image:
     """Lift a dark cabin toward a readable midtone, holding the highlights.
-
-    Gamma rather than a shadow-only curve: a cabin is dark almost
-    everywhere except the windows, so a shadow-targeted lift leaves the
-    mid-dark trim flat. Gamma brightens the low end hardest, which is the
-    shape this content wants.
-
-    The lift is then faded out across HIGHLIGHT_KNEE..HIGHLIGHT_CEILING
-    using the ORIGINAL luminance, so a pixel's treatment is decided by how
-    bright it started rather than by how bright the lift made it -- see the
-    constants above for the measurement that made this necessary.
-
-    Only ever brightens (gamma <= 1). A correctly-exposed interior comes
-    through untouched; darkening a photo the dealer chose is not this
-    function's business.
-    """
-    import numpy as np
-
-    arr = np.asarray(img.convert("RGB"), dtype=np.float32) / 255.0
-    luminance = arr[..., 0] * 0.299 + arr[..., 1] * 0.587 + arr[..., 2] * 0.114
-    median = float(np.median(luminance))
-    if median <= 0.001 or median >= target_median:
-        return img
-
-    gamma = max(max_lift, np.log(target_median) / np.log(median))
-    lifted = np.power(arr, gamma)
-
-    # smoothstep from 0 (apply the lift fully) to 1 (leave the pixel alone)
-    t = np.clip((luminance - HIGHLIGHT_KNEE) / (HIGHLIGHT_CEILING - HIGHLIGHT_KNEE), 0.0, 1.0)
-    protect = (t * t * (3.0 - 2.0 * t))[..., None]
-    blended = lifted * (1.0 - protect) + arr * protect
-    return Image.fromarray((np.clip(blended, 0, 1) * 255).astype("uint8"), mode="RGB")
+    Only ever brightens: a correctly-exposed interior comes through
+    untouched."""
+    return core.call({"op": "enhance_exposure", "image": {"$image": 0},
+                      "target_median": target_median, "max_lift": max_lift}, [img.convert("RGB")])
 
 
 def correct_white_balance(img: Image.Image) -> Image.Image:
     """Take a colour cast off the cabin, estimated from bright near-neutral
-    pixels only. Returns `img` unchanged when there's no meaningful cast,
-    so this is always safe to call.
-
-    Measured on the fleet: 129 of 394 interior photos carry a cast above
-    WHITE_BALANCE_MIN_CAST, 23 of them above 0.20 -- mixed showroom
-    lighting through tinted glass. The correction is deliberately partial
-    and capped: a cabin lit warm is partly a real property of the car, and
-    over-correcting reads as a filter.
-    """
-    import numpy as np
-
-    arr = np.asarray(img.convert("RGB"), dtype=np.float32) / 255.0
-    flat = arr.reshape(-1, 3)
-    brightness = flat.max(axis=1)
-    spread = flat.max(axis=1) - flat.min(axis=1)
-
-    # Bright, but not blown, and not strongly coloured -- coloured pixels
-    # are the ones that would drag a tan interior toward grey.
-    bright_enough = brightness >= np.percentile(brightness, 80)
-    neutralish = spread <= 0.18 * np.maximum(brightness, 1e-6) + 0.06
-    sample = flat[bright_enough & neutralish & (brightness < 0.99)]
-    if len(sample) < 200:
-        return img
-
-    means = sample.mean(axis=0)
-    if means.min() <= 1e-6:
-        return img
-    cast = float((means.max() - means.min()) / means.mean())
-    if cast < WHITE_BALANCE_MIN_CAST:
-        return img
-
-    gains = np.clip(means.mean() / means, 1.0 / WHITE_BALANCE_MAX_GAIN, WHITE_BALANCE_MAX_GAIN)
-    gains = 1.0 + (gains - 1.0) * WHITE_BALANCE_STRENGTH
-    return Image.fromarray(
-        (np.clip(arr * gains, 0, 1) * 255).astype("uint8"), mode="RGB")
+    pixels only. Unchanged when there is no meaningful cast."""
+    return core.call({"op": "white_balance", "image": {"$image": 0}}, [img.convert("RGB")])
 
 
 def enhance_interior(img: Image.Image) -> Image.Image:
     """The whole non-destructive treatment: neutralise, then lift.
-
-    White balance first so the exposure lift measures a neutral image --
-    running it the other way lets a strong cast bias the median the gamma
-    is solved against. Nothing here crops, composites, or adds anything to
-    the frame; the photo that comes out is the photo that went in, exposed
-    and neutralised.
-    """
-    return enhance_exposure(correct_white_balance(img))
+    Nothing here crops, composites, or adds anything to the frame."""
+    return core.call({"op": "enhance_interior", "image": {"$image": 0}}, [img.convert("RGB")])
 
 
 def _font(size: int) -> ImageFont.FreeTypeFont:
@@ -351,25 +274,20 @@ def _font(size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
-def draw_callout(img: Image.Image, text: str, scrim_frac: float = 0.22,
-                  text_frac: float = 0.040) -> Image.Image:
+def draw_callout(img: Image.Image, text: str, scrim_frac: float | None = None,
+                  text_frac: float | None = None) -> Image.Image:
     """One line of text along the bottom, over a gradient scrim.
 
-    The scrim is a gradient rather than a solid bar so it reads as
-    lighting rather than as a UI chrome strip pasted over the photo, and
-    so it stays legible whatever happens to be behind it -- interior
-    shots have no reliable dark region to place text against.
+    The scrim (the core's) is a gradient rather than a solid bar so it
+    reads as lighting rather than as a UI chrome strip pasted over the
+    photo, and so it stays legible whatever happens to be behind it --
+    interior shots have no reliable dark region to place text against.
+    The text is drawn here: fonts are the host's.
     """
-    import numpy as np
-
-    img = img.convert("RGB")
-    w, h = img.size
-    band = max(1, int(h * scrim_frac))
-
-    arr = np.asarray(img, dtype=np.float32)
-    ramp = np.linspace(0.0, 0.72, band, dtype=np.float32) ** 1.6
-    arr[h - band:] *= (1.0 - ramp)[:, None, None]
-    out = Image.fromarray(np.clip(arr, 0, 255).astype("uint8"), mode="RGB")
+    if text_frac is None:
+        text_frac = float(_spec.get("interior", "calloutTextFrac"))
+    out = core.call({"op": "scrim", "image": {"$image": 0}, "band_frac": scrim_frac}, [img.convert("RGB")])
+    w, h = out.size
 
     draw = ImageDraw.Draw(out)
     font = _font(max(12, int(h * text_frac)))
