@@ -806,7 +806,7 @@
           {
             "key": "background",
             "label": "Background",
-            "hint": "Which stock photo",
+            "hint": "",
             "type": "select",
             "presentation": "hidden",
             "default": null,
@@ -817,12 +817,13 @@
               "key": "backdrop",
               "equals": "asset"
             },
-            "emptyNote": "Falls back to the library's default photo"
+            "emptyNote": "Falls back to the library's default photo",
+            "tooltip": "Which stock photo"
           },
           {
             "key": "customBackground",
             "label": "Your image",
-            "hint": "Any photo. It is cover-fitted behind the vehicle and stays on this device",
+            "hint": "",
             "type": "file",
             "presentation": "hidden",
             "default": null,
@@ -833,7 +834,8 @@
               "key": "backdrop",
               "equals": "custom"
             },
-            "cliNote": "On the command line the same thing is --photo-background with a path; the browser has no path, so it takes the file itself."
+            "cliNote": "On the command line the same thing is --photo-background with a path; the browser has no path, so it takes the file itself.",
+            "tooltip": "Any photo. It is cover-fitted behind the vehicle and stays on this device"
           }
         ],
         "tabs": [
@@ -1062,7 +1064,7 @@
           {
             "key": "titleMode",
             "label": "Title",
-            "hint": "A headline on the still, drawn by the core in the studio font",
+            "hint": "",
             "type": "select",
             "default": "none",
             "choices": [
@@ -1079,12 +1081,13 @@
                 "label": "Your words"
               }
             ],
-            "cli": "--title"
+            "cli": "--title",
+            "tooltip": "A headline on the still, drawn by the core in the studio font"
           },
           {
             "key": "titleText",
             "label": "Title text",
-            "hint": "What the title says",
+            "hint": "",
             "type": "text",
             "default": "",
             "placeholder": "Just arrived",
@@ -1092,29 +1095,32 @@
               "key": "titleMode",
               "equals": "custom"
             },
-            "cli": "--title-text"
+            "cli": "--title-text",
+            "tooltip": "What the title says"
           },
           {
             "key": "priceBadge",
             "label": "Price badge",
-            "hint": "The post's own price in a pill: MSRP for new, the listed price for used",
+            "hint": "",
             "type": "toggle",
             "default": false,
-            "cli": "--price-badge"
+            "cli": "--price-badge",
+            "tooltip": "The post's own price in a pill: MSRP for new, the listed price for used"
           },
           {
             "key": "textLine",
             "label": "Line",
-            "hint": "A smaller line: the dealer, who to ask for, a call to action",
+            "hint": "",
             "type": "text",
             "default": "",
             "placeholder": "Ask for Alex",
-            "cli": "--text-line"
+            "cli": "--text-line",
+            "tooltip": "A smaller line: the dealer, who to ask for, a call to action"
           },
           {
             "key": "textPosition",
             "label": "Position",
-            "hint": "Where the text sits; the vehicle keeps clear of it",
+            "hint": "",
             "type": "select",
             "default": "bl",
             "choices": [
@@ -1143,7 +1149,9 @@
                 "label": "Bottom right"
               }
             ],
-            "cli": "--text-position"
+            "cli": "--text-position",
+            "tooltip": "Where the text sits; the vehicle keeps clear of it",
+            "presentation": "place"
           },
           {
             "key": "textColor",
@@ -1173,14 +1181,67 @@
           {
             "key": "textSize",
             "label": "Size",
-            "hint": "The title's height as a share of the canvas",
+            "hint": "",
             "type": "range",
             "default": 0.05,
             "min": 0.03,
             "max": 0.12,
             "step": 0.005,
             "unit": "fraction",
-            "cli": "--text-size"
+            "cli": "--text-size",
+            "tooltip": "The title's height as a share of the canvas"
+          },
+          {
+            "key": "textCase",
+            "label": "Case",
+            "hint": "",
+            "type": "select",
+            "presentation": "segment",
+            "default": "as-is",
+            "choices": [
+              {
+                "value": "as-is",
+                "label": "As typed"
+              },
+              {
+                "value": "upper",
+                "label": "UPPER"
+              }
+            ],
+            "cli": "--text-case"
+          },
+          {
+            "key": "textBoxed",
+            "label": "Boxed",
+            "hint": "",
+            "tooltip": "The title and the line on pills, like the price badge",
+            "type": "toggle",
+            "default": false,
+            "cli": "--text-boxed"
+          },
+          {
+            "key": "textShadow",
+            "label": "Shadow",
+            "hint": "",
+            "tooltip": "A soft shadow under unboxed words",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-text-shadow",
+            "cliInvert": true
+          },
+          {
+            "key": "textLineSize",
+            "label": "Line size",
+            "hint": "",
+            "tooltip": "The line's size as a share of the title's",
+            "type": "range",
+            "default": 0.62,
+            "min": 0.3,
+            "max": 1.2,
+            "step": 0.02,
+            "unit": "fraction",
+            "cli": "--text-line-size",
+            "showWhen": "textLine"
           }
         ]
       },
@@ -1192,20 +1253,22 @@
           {
             "key": "spotlight",
             "label": "Spotlight",
-            "hint": "Dim the backdrop around the vehicle",
+            "hint": "",
             "type": "toggle",
             "default": true,
             "cli": "--no-spotlight",
-            "cliInvert": true
+            "cliInvert": true,
+            "tooltip": "Dim the backdrop around the vehicle"
           },
           {
             "key": "glow",
             "label": "Glow",
-            "hint": "Halo behind the cutout",
+            "hint": "",
             "type": "toggle",
             "default": false,
             "cli": "--no-glow",
-            "cliInvert": true
+            "cliInvert": true,
+            "tooltip": "Halo behind the cutout"
           },
           {
             "key": "glowColor",
@@ -1249,10 +1312,11 @@
           {
             "key": "shadow",
             "label": "Ground shadow",
-            "hint": "A soft shadow under the vehicle, read off its own silhouette",
+            "hint": "",
             "type": "toggle",
             "default": false,
-            "cli": "--shadow"
+            "cli": "--shadow",
+            "tooltip": "A soft shadow under the vehicle, read off its own silhouette"
           },
           {
             "key": "shadowStrength",
@@ -1269,10 +1333,11 @@
           {
             "key": "reflection",
             "label": "Floor reflection",
-            "hint": "The vehicle mirrored below itself and faded out, as a glossy floor gives",
+            "hint": "",
             "type": "toggle",
             "default": false,
-            "cli": "--reflection"
+            "cli": "--reflection",
+            "tooltip": "The vehicle mirrored below itself and faded out, as a glossy floor gives"
           },
           {
             "key": "reflectionStrength",
@@ -1296,14 +1361,15 @@
           {
             "key": "videoDuration",
             "label": "Length",
-            "hint": "How long the clip runs",
+            "hint": "",
             "type": "range",
             "default": 8,
             "min": 3,
             "max": 20,
             "step": 1,
             "unit": "s",
-            "cli": "--video-duration"
+            "cli": "--video-duration",
+            "tooltip": "How long the clip runs"
           },
           {
             "key": "videoFps",
@@ -1330,7 +1396,7 @@
           {
             "key": "videoPush",
             "label": "Push",
-            "hint": "How far each shot scales across its dwell",
+            "hint": "",
             "type": "range",
             "default": 0.06,
             "min": 0.0,
@@ -1340,12 +1406,13 @@
             "surfaces": [
               "browser"
             ],
-            "cliNote": "The CLI's video is beat-synced: shot motion is driven by the audio bar, not by a fixed push. There is no equivalent flag to map to."
+            "cliNote": "The CLI's video is beat-synced: shot motion is driven by the audio bar, not by a fixed push. There is no equivalent flag to map to.",
+            "tooltip": "How far each shot scales across its dwell"
           },
           {
             "key": "videoCrossfade",
             "label": "Crossfade",
-            "hint": "Seconds of blend between shots",
+            "hint": "",
             "type": "range",
             "default": 0.5,
             "min": 0.0,
@@ -1356,12 +1423,13 @@
             "surfaces": [
               "browser"
             ],
-            "cliNote": "The CLI transitions on the bar via the conveyor morph (TRANSITION_FRAC), so a crossfade duration has no meaning there."
+            "cliNote": "The CLI transitions on the bar via the conveyor morph (TRANSITION_FRAC), so a crossfade duration has no meaning there.",
+            "tooltip": "Seconds of blend between shots"
           },
           {
             "key": "videoMusic",
             "label": "Music",
-            "hint": "Beat-synced audio track",
+            "hint": "",
             "type": "toggle",
             "default": false,
             "cli": "--video-music",
@@ -1369,12 +1437,13 @@
               "cli",
               "server"
             ],
-            "requires": "filesystem"
+            "requires": "filesystem",
+            "tooltip": "Beat-synced audio track"
           },
           {
             "key": "nvenc",
             "label": "GPU encode",
-            "hint": "NVENC hardware encoder",
+            "hint": "",
             "type": "toggle",
             "default": false,
             "cli": "--nvenc",
@@ -1382,12 +1451,13 @@
               "cli",
               "server"
             ],
-            "requires": "nvenc"
+            "requires": "nvenc",
+            "tooltip": "NVENC hardware encoder"
           },
           {
             "key": "videoFlagBackground",
             "label": "Flag backdrop",
-            "hint": "Loop the waving-flag video behind the carousel instead of the gradient",
+            "hint": "",
             "type": "toggle",
             "default": false,
             "cli": "--video-flag-background",
@@ -1395,12 +1465,13 @@
               "cli",
               "server"
             ],
-            "requires": "filesystem"
+            "requires": "filesystem",
+            "tooltip": "Loop the waving-flag video behind the carousel instead of the gradient"
           },
           {
             "key": "videoBpm",
             "label": "Tempo",
-            "hint": "Beats per minute the cuts and pulse follow when there is no music",
+            "hint": "",
             "type": "range",
             "default": 100.0,
             "min": 60,
@@ -1411,12 +1482,13 @@
             "surfaces": [
               "cli",
               "server"
-            ]
+            ],
+            "tooltip": "Beats per minute the cuts and pulse follow when there is no music"
           },
           {
             "key": "videoBudgetMb",
             "label": "File size budget",
-            "hint": "Bitrate is chosen to fill this many MB; 0 keeps each format's own budget",
+            "hint": "",
             "type": "range",
             "default": 0,
             "min": 0,
@@ -1427,7 +1499,8 @@
             "surfaces": [
               "cli",
               "server"
-            ]
+            ],
+            "tooltip": "Bitrate is chosen to fill this many MB; 0 keeps each format's own budget"
           }
         ]
       },
@@ -1439,43 +1512,47 @@
           {
             "key": "photoSort",
             "label": "Sort photos",
-            "hint": "Separate exteriors, interiors and detail shots",
+            "hint": "",
             "type": "toggle",
             "default": true,
             "cli": "--no-photo-sort",
-            "cliInvert": true
+            "cliInvert": true,
+            "tooltip": "Separate exteriors, interiors and detail shots"
           },
           {
             "key": "interiors",
             "label": "Include interiors",
-            "hint": "Keep interior shots in the bundle",
+            "hint": "",
             "type": "toggle",
             "default": true,
             "cli": "--no-interiors",
-            "cliInvert": true
+            "cliInvert": true,
+            "tooltip": "Keep interior shots in the bundle"
           },
           {
             "key": "hero",
             "label": "Cut out and compose",
-            "hint": "Off means classify only",
+            "hint": "",
             "type": "toggle",
             "default": true,
             "cli": "--no-hero",
-            "cliInvert": true
+            "cliInvert": true,
+            "tooltip": "Off means classify only"
           },
           {
             "key": "strictCutouts",
             "label": "Strict cutouts",
-            "hint": "Skip a cutout whose edges came out uncertain",
+            "hint": "",
             "type": "toggle",
             "default": true,
             "cli": "--no-strict-cutouts",
-            "cliInvert": true
+            "cliInvert": true,
+            "tooltip": "Skip a cutout whose edges came out uncertain"
           },
           {
             "key": "upscale",
             "label": "Upscale cutouts",
-            "hint": "SwinIR or Real-ESRGAN on a GPU",
+            "hint": "",
             "type": "toggle",
             "default": false,
             "cli": "--upscale",
@@ -1483,7 +1560,8 @@
               "cli",
               "server"
             ],
-            "requires": "upscale"
+            "requires": "upscale",
+            "tooltip": "SwinIR or Real-ESRGAN on a GPU"
           }
         ]
       }

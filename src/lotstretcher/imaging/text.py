@@ -34,6 +34,7 @@ def ensure_font(name: str = DEFAULT_FONT) -> str:
 POSITIONS = ("tl", "tr", "bl", "br", "tc", "bc")
 COLORS = ("white", "black", "paint")
 TITLE_MODES = ("none", "vehicle", "custom")
+TEXT_CASES = ("as-is", "upper")
 
 
 def color_choice(allowed: tuple[str, ...]):
@@ -72,6 +73,14 @@ def add_text_args(parser) -> None:
                              "or your own as #rrggbb (the badge in it).")
     parser.add_argument("--text-size", type=float, default=0.05, metavar="FRACTION",
                         help="Title size as a fraction of the canvas height (default: 0.05).")
+    parser.add_argument("--text-case", default="as-is", choices=TEXT_CASES,
+                        help="The case the words are set in: as-is (default) or upper.")
+    parser.add_argument("--text-boxed", action="store_true",
+                        help="The title and the line on pills too, like the price badge (default: off).")
+    parser.add_argument("--no-text-shadow", action="store_true",
+                        help="No soft shadow under unboxed words.")
+    parser.add_argument("--text-line-size", type=float, default=0.62, metavar="FRACTION",
+                        help="The line's size as a share of the title's (default: 0.62).")
 
 
 FRAME_STYLES = ("none", "line")
@@ -252,6 +261,10 @@ def controls_from_text_args(args) -> dict:
         "textPosition": args.text_position,
         "textColor": args.text_color,
         "textSize": args.text_size,
+        "textCase": args.text_case,
+        "textBoxed": bool(args.text_boxed),
+        "textShadow": not args.no_text_shadow,
+        "textLineSize": args.text_line_size,
     }
 
 
@@ -265,6 +278,10 @@ def text_options(options: dict) -> dict:
         "position": options.get("textPosition") or "bl",
         "color": options.get("textColor") or "white",
         "size": float(options.get("textSize") if options.get("textSize") is not None else 0.05),
+        "case": options.get("textCase") or "as-is",
+        "boxed": bool(options.get("textBoxed", False)),
+        "shadow": bool(options.get("textShadow", True)) if options.get("textShadow") is not None else True,
+        "line_size": float(options.get("textLineSize") if options.get("textLineSize") is not None else 0.62),
     }
 
 

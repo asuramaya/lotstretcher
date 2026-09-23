@@ -268,6 +268,25 @@ function buildSegment(control, values, onChange, disabled, choices) {
   return seg;
 }
 
+/* The six text positions as a 3x2 grid of cells: where the words go,
+ * seen as a place rather than read as a name. */
+function buildPlace(control, value, onChange, disabled) {
+  const grid = el('div', 'place');
+  for (const pos of ['tl', 'tc', 'tr', 'bl', 'bc', 'br']) {
+    const choice = (control.choices || []).find((c) => c.value === pos);
+    const b = el('button', 'place-cell');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(value === pos));
+    b.setAttribute('aria-label', choice?.label || pos);
+    b.title = choice?.label || pos;
+    b.disabled = disabled;
+    b.appendChild(el('i'));
+    b.onclick = () => onChange(pos);
+    grid.appendChild(b);
+  }
+  return grid;
+}
+
 /* A colour lever as a row of dots: the named choices (white, black,
  * the paint) as coloured dots, then the picker dot for a colour of the
  * user's own. `thumbFor` supplies each named dot's colour. */
@@ -689,6 +708,8 @@ export function renderControls(host, values, onChange, opts = {}) {
         : why;
       text.appendChild(el('strong', null, control.label));
       if (hint) text.appendChild(el('span', null, hint));
+      // The longer explanation is a tooltip, not a line under the name.
+      if (control.tooltip) row.title = control.tooltip;
       row.appendChild(text);
 
       const value = values[control.key] ?? control.default;
@@ -696,6 +717,8 @@ export function renderControls(host, values, onChange, opts = {}) {
 
       let widget;
       if (control.presentation === 'dots') widget = buildDots(control, values, (k, v, live) => onChange(k, v, live), !ok, thumbFor);
+      else if (control.presentation === 'place') widget = buildPlace(control, value, change, !ok);
+      else if (control.presentation === 'segment') widget = buildSegment(control, values, onChange, !ok, choicesFor(control));
       else if (control.type === 'toggle') widget = buildToggle(control, value, change, !ok);
       else if (control.type === 'select') widget = buildSelect(control, value, change, !ok);
       else if (control.type === 'range') widget = buildRange(control, value, change, !ok);

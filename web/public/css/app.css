@@ -557,9 +557,10 @@
 .stage-box { --stage-room: fill; width: 100%; height: auto; min-height: 0; display: grid; place-items: center; }
 /* With the card open the stage keeps to the top of the screen, the
    frame and the shape chips above the card's edge. */
-.studio-stage { justify-content: center; }
-.studio.panel-open .studio-stage { justify-content: flex-start; }
-.studio.panel-open .stage-box { --stage-room: fixed; height: 26vh; }
+.studio-stage { justify-content: space-between; }
+/* With the card open the stage is the room above the card's edge: the
+   frame takes what that leaves after the bar, at any screen height. */
+.studio.panel-open .studio-stage { height: 46%; }
 /* On a phone the bar is one row: the segment and the shape chips by
    name alone; the pressed chip says what the stage shows, and the
    pixel sizes are in the Output tool. */
@@ -667,10 +668,11 @@
   }
   .studio-rail { flex-direction: column; overflow-x: hidden; overflow-y: auto; padding: var(--s-3) var(--s-1); border: 0; border-right: 1px solid var(--line); }
   .tool { flex: none; min-width: 0; }
-  .studio-stage { justify-content: center; padding: var(--s-6); overflow: hidden; }
+  /* The stage's bar is anchored at the bottom; the frame takes the room above it. */
+  .studio-stage { justify-content: space-between; padding: var(--s-6); overflow: hidden; }
   /* The panel is a column of its own, always open; the card rules are undone. */
   .studio-panel { position: static; grid-area: panel; transform: none; border-radius: 0; box-shadow: none; border-top: 0; }
-  .studio.panel-open .stage-box { --stage-room: fill; height: auto; }
+  .studio.panel-open .studio-stage { height: auto; }
   .panel-close { display: none; }
   .preview-caption { display: block; }
   .chip.fmt .fmt-text span { display: block; }
@@ -735,7 +737,23 @@
 .swatch-hint { font-size: 10px; color: var(--ink-3); line-height: 1.25; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* A configurator's style row and its colour dots. */
-.seg-wrap { flex-wrap: wrap; }
+/* A configurator's style row: a strip of pills that wraps as pills,
+   never as words inside one pill. */
+.seg-wrap { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; background: transparent; border-radius: 0; }
+.seg-wrap .seg { background: var(--surface-3); min-height: 32px; padding: 0 var(--s-4); }
+.seg-wrap .seg[aria-pressed="true"] { background: var(--ink); color: var(--bg); box-shadow: none; }
+.seg-wrap .seg:hover:not([aria-pressed="true"]) { color: var(--ink); }
+/* A lever row keeps its words: the widget takes what it needs and the
+   label wraps rather than clips; a slider with an Auto button stacks
+   under its label in a narrow panel. */
+.panel-body { container-type: inline-size; container-name: panel; }
+.opt .range-wrap { flex: 0 1 auto; min-width: 0; }
+.opt .range-wrap input[type="range"] { flex: 1 1 90px; min-width: 70px; width: auto; }
+@container panel (max-width: 440px) {
+  .opt:has(.range-wrap) { flex-direction: column; align-items: stretch; gap: var(--s-2); }
+  .opt:has(.range-wrap) .range-wrap { width: 100%; }
+  .opt:has(.range-wrap) .range-wrap input[type="range"] { flex: 1 1 auto; max-width: none; }
+}
 .dots { display: flex; align-items: center; gap: var(--s-2); flex: none; }
 .dot {
   width: 30px; height: 30px; border-radius: var(--r-full); border: 2px solid var(--line-2); padding: 0;
@@ -753,6 +771,13 @@
 .dot-custom.is-auto { background: conic-gradient(#f66, #fc6, #6f6, #6ff, #66f, #f6f, #f66); }
 .dot-custom.is-auto input::-webkit-color-swatch { opacity: 0; }
 .range-wrap.is-auto input[type="range"] { opacity: .45; }
+/* The text's place: a 3x2 grid, the chosen cell filled. */
+.place { display: grid; grid-template-columns: repeat(3, 26px); grid-template-rows: repeat(2, 26px); gap: 3px; flex: none; }
+.place-cell { border: 1.5px solid var(--line-2); border-radius: 6px; background: var(--surface); padding: 0; cursor: pointer; display: grid; place-items: center; }
+.place-cell i { width: 10px; height: 6px; border-radius: 2px; background: var(--line-2); display: block; }
+.place-cell[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-wash); }
+.place-cell[aria-pressed="true"] i { background: var(--accent); }
+.opt .seg-wrap { flex: none; }
 /* A heading across the grid for a category of library tiles. */
 .swatch-group { grid-column: 1 / -1; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-top: var(--s-2); }
 /* A tabbed group's tabs, above its controls. */

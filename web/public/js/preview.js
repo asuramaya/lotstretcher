@@ -144,7 +144,10 @@ export class Preview {
     const w = Math.max(2, Math.floor(fw * k)); const h = Math.max(2, Math.floor(fh * k));
     frame.style.width = `${w}px`;
     frame.style.height = `${h}px`;
-    if (fill) box.style.height = `${h}px`;
+    // The box keeps the whole room and the frame sits centred in it, so
+    // the bar under the stage stays anchored at the bottom and a change
+    // of shape moves the frame, not the bar.
+    if (fill) box.style.height = `${Math.floor(H)}px`;
   }
 
   async load() {

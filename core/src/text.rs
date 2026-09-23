@@ -219,6 +219,14 @@ pub struct PlanRequest {
     pub accent: Option<[u8; 3]>,
     #[serde(default)]
     pub sample: Option<crate::compose::Slice>,
+    #[serde(default = "as_is")]
+    pub case: String,
+    #[serde(default)]
+    pub boxed: bool,
+    #[serde(default = "yes")]
+    pub shadow: bool,
+    #[serde(default = "line_size")]
+    pub line_size: f64,
 }
 
 /// The paint an overlay plan colours itself with: the record's exterior
@@ -252,6 +260,18 @@ pub struct TextRequest {
     pub font: Option<String>,
     #[serde(default)]
     pub accent: Option<[u8; 3]>,
+    /// "as-is" or "upper": the case the words are set in.
+    #[serde(default = "as_is")]
+    pub case: String,
+    /// Title and line on pills too, like the badge.
+    #[serde(default)]
+    pub boxed: bool,
+    /// The soft shadow under unboxed words.
+    #[serde(default = "yes")]
+    pub shadow: bool,
+    /// The line's size as a share of the title's.
+    #[serde(default = "line_size")]
+    pub line_size: f64,
 }
 
 impl TextRequest {
@@ -261,6 +281,7 @@ impl TextRequest {
             custom_title: self.custom_title.clone(), price_badge: self.price_badge, line: self.line.clone(),
             position: self.position.clone(), color: self.color.clone(), size: self.size, font: self.font.clone(),
             window: None, accent: self.accent, sample: None,
+            case: self.case.clone(), boxed: self.boxed, shadow: self.shadow, line_size: self.line_size,
         }
     }
 
@@ -273,6 +294,9 @@ impl TextRequest {
 fn none() -> String { "none".into() }
 fn bl() -> String { "bl".into() }
 fn white() -> String { "white".into() }
+fn as_is() -> String { "as-is".into() }
+fn yes() -> bool { true }
+fn line_size() -> f64 { 0.62 }
 fn size() -> f64 { 0.05 }
 
 /// The vehicle's title line: year make model trim, whichever are set.
@@ -363,15 +387,26 @@ pub fn plan_in(req: &PlanRequest, window: (i64, i64, i64, i64)) -> Result<Vec<Ov
         "none" => String::new(),
         other => return Err(format!("unknown title mode {other:?}; none, vehicle or custom")),
     };
-    if !title.trim().is_empty() { pieces.push((title.trim().to_string(), base, None)); }
+    let set = |s: &str| -> Result<String, String> {
+        match req.case.as_str() {
+            "as-is" => Ok(s.to_string()),
+            "upper" => Ok(s.to_uppercase()),
+            other => Err(format!("unknown text case {other:?}; as-is or upper")),
+        }
+    };
+    let pill_for = |px: f64| Pill { color: pill_color, pad: (px * 0.35).round(), radius: (px * 0.35).round() };
+    if !title.trim().is_empty() {
+        pieces.push((set(title.trim())?, base, if req.boxed { Some(pill_for(base)) } else { None }));
+    }
     if req.price_badge {
         if let Some(p) = badge_price(&req.vehicle) {
             let px = (base * 0.85).round();
-            pieces.push((p, px, Some(Pill { color: pill_color, pad: (px * 0.35).round(), radius: (px * 0.35).round() })));
+            pieces.push((p, px, Some(pill_for(px))));
         }
     }
     if let Some(line) = req.line.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
-        pieces.push((line.to_string(), (base * 0.62).round(), None));
+        let px = (base * req.line_size.max(0.2).min(1.5)).round();
+        pieces.push((set(line)?, px, if req.boxed { Some(pill_for(px)) } else { None }));
     }
     if pieces.is_empty() { return Ok(Vec::new()); }
 
@@ -399,7 +434,7 @@ pub fn plan_in(req: &PlanRequest, window: (i64, i64, i64, i64)) -> Result<Vec<Ov
         let top = if bottom { y - bh } else { y };
         out.push(Overlay {
             text, font: Some(font.clone()), size: px, color, x: x + wl, y: (top + wt).round(),
-            max_width: Some(max_width), shadow: pill.is_none(), pill, box_w: bw, box_h: bh,
+            max_width: Some(max_width), shadow: pill.is_none() && req.shadow, pill, box_w: bw, box_h: bh,
         });
         y = if bottom { top - gap } else { y + bh + gap };
     }

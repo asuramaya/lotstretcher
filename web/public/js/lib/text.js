@@ -48,6 +48,10 @@ export function textOptions(o) {
     position: o.textPosition || 'bl',
     color: o.textColor || 'white',
     size: o.textSize != null ? Number(o.textSize) : 0.05,
+    case: o.textCase || 'as-is',
+    boxed: !!o.textBoxed,
+    shadow: o.textShadow == null ? true : !!o.textShadow,
+    line_size: o.textLineSize != null ? Number(o.textLineSize) : 0.62,
   };
 }
 
