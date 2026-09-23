@@ -16,10 +16,14 @@ web/
 │   ├── js/
 │   │   ├── config.js    model manifest, limits, canvas sizes
 │   │   ├── app.js       state + orchestration (no framework)
-│   │   ├── lib/         imageio, zip
-│   │   └── pipeline/    runtime, classify, matte, palette, compose, copy
+│   │   ├── core.js      loads the Rust core (wasm) and packs images for it
+│   │   ├── lib/         imageio, zip, delegate (what a self-hosted server can add)
+│   │   ├── library/     the listings library: an HTTP or a folder source, one view
+│   │   └── pipeline/    runtime, classify, matte, compose, video, copy, listing, sticker
+│   ├── core/            the Rust core compiled to wasm32 — IN git, see below
 │   ├── models/          NOT in git — see below
 │   └── ort/             NOT in git — see below
+├── build-core.sh        core/ → public/core/ (cargo + wasm-bindgen + wasm-opt)
 ├── dev-server.py        static server that sets the isolation headers
 └── build-icons.py       rasterises icons/icon.svg to PNG
 ```
@@ -91,6 +95,27 @@ the damage is on the activation side.
 u2net quantises cleanly; it is a plain conv encoder/decoder with no
 depthwise or HardSwish blocks.
 
+## The Rust core
+
+Everything that is not a model or IO runs in one Rust crate, `core/`,
+compiled to native for the CLI and to wasm32 for this client: backdrops,
+spotlight, layouts, glow, compositing, both videos' choreography and
+frames, the interior treatment, the sticker parser and the post copy.
+`js/core.js` loads it and hands it JSON requests plus one byte arena;
+`pipeline/compose.js`, `video.js`, `sticker.js` and `copy.js` are thin
+hosts over it. The built `public/core/` is committed (737 KB, 272 KB
+gzipped) so a clone deploys with no Rust toolchain. To rebuild after a
+change in `core/`:
+
+```bash
+bash web/build-core.sh     # needs rustup's wasm32-unknown-unknown target,
+                           # wasm-bindgen-cli matching core/Cargo.lock,
+                           # and wasm-opt (cargo install wasm-opt)
+```
+
+The About pane reports `core: wasm vN`; the parity tests in `tests/`
+hold the wasm build to the native one.
+
 ## Cross-origin isolation
 
 `onnxruntime-web`'s threaded build needs `SharedArrayBuffer`, which needs
@@ -139,26 +164,25 @@ Measured on desktop Chromium, 4 threads (i9-12900H):
 | scene classify | 38 ms |
 | angle classify | 26 ms |
 | matte | 960 ms |
-| compose | 55 ms |
+| compose, 1254² (Rust core) | 135 ms, 227 ms with glow |
+| interior treatment, 900 px wide | 52 ms |
+| video, 720² three-shot conveyor, 9.6 s clip | 5.0 s, 6.8 s with glow |
 
-## What is not built yet
+## What the browser does not do
 
-v1 is Tier 0 only — generated gradient backdrops, no assets, no API keys.
-Deliberately: it front-loads everything with no security surface.
-
-- **v2**: bring-your-own asset library (OPFS). The bookmarklet for VDP
-  metadata is built: `js/pipeline/listing.js`, a port of
-  `scrape.normalize_vehicle` with a field-by-field parity test.
-- **v3**: bring-your-own API keys — post copy first, generated backgrounds second
-
-Also not ported: multi-car layouts (quad/conveyor/corners). Borders and
-stock backdrops are reachable against a self-hosted server through
-`POST /compose`; glow and video run in the browser.
+The core processing is the CLI's, one to one. What the browser lacks is
+what needs a server: scraping a dealer page (the bookmarklet hands the
+listing over instead), stock backdrops and branded frames (reachable
+against a self-hosted server through `POST /compose`), GPU upscaling,
+wheel money shots (CLIPSeg and SAM2 have no browser build), and library
+management beyond reading a folder. The app's capabilities list names
+each one and why. The self-hosted server is never less than this page.
 
 ## The untested risk
 
 Every number here was measured in desktop Chromium. **No iPhone, iPad or
-Safari of any kind has been tested at any point** — tracked as osiris
-obligation `d4902910`. Safari runs JavaScriptCore, not V8, and the WebKit
-per-page memory ceiling against the measured ~466 MB floor is the open
-question. It should fit. That is an inference, not an observation.
+Safari of any kind has been tested at any point.** Safari runs
+JavaScriptCore, not V8, and the WebKit per-page memory ceiling against
+the measured ~466 MB floor is the open question. It should fit. That is
+an inference, not an observation. [`docs/ios-checklist.md`](../docs/ios-checklist.md)
+is the ten-minute test to run on a real device.
