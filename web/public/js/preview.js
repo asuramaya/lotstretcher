@@ -70,22 +70,38 @@ export class Preview {
     this.pending = false;
     // The stage refits when its box changes size: a rotated phone, a
     // resized window, the app's rail opening.
-    const box = this.canvas.closest('.stage-box');
-    if (box && 'ResizeObserver' in window) new ResizeObserver(() => this.update()).observe(box);
+    const stage = this.canvas.closest('.studio-stage');
+    if (stage && 'ResizeObserver' in window) new ResizeObserver(() => this.update()).observe(stage);
   }
 
-  /* The frame takes the format's own shape, as large as its box allows:
-   * a story is a tall frame, a landscape a wide one, so the shape is
-   * judged from the stage and nothing is clipped into a square. */
+  /* The frame takes the format's own shape, as large as its room
+   * allows: a story is a tall frame, a landscape a wide one, so the
+   * shape is judged from the stage and nothing is clipped into a
+   * square. On a phone the room is the box's fixed height; on a wide
+   * pane it is whatever the stage's height leaves after the bar under
+   * the frame, and the box is shrunk to the frame so the bar hugs it. */
   fitStage(fw, fh) {
     const frame = this.canvas.parentElement;
     const box = frame?.parentElement;
-    if (!frame || !box) return;
-    const W = box.clientWidth; const H = box.clientHeight;
-    if (!W || !H) return;
+    const stage = box?.parentElement;
+    if (!frame || !box || !stage) return;
+    const fill = getComputedStyle(box).getPropertyValue('--stage-room').trim() === 'fill';
+    const W = box.clientWidth;
+    let H;
+    if (!fill) { box.style.height = ''; H = box.clientHeight; }
+    else {
+      const cs = getComputedStyle(stage);
+      const gap = parseFloat(cs.rowGap) || 0;
+      let others = 0; let n = 0;
+      for (const c of stage.children) if (c !== box && !c.hidden && c.offsetHeight) { others += c.offsetHeight; n++; }
+      H = stage.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) - others - gap * n;
+    }
+    if (!W || H <= 0) return;
     const k = Math.min(W / fw, H / fh);
-    frame.style.width = `${Math.max(2, Math.floor(fw * k))}px`;
-    frame.style.height = `${Math.max(2, Math.floor(fh * k))}px`;
+    const w = Math.max(2, Math.floor(fw * k)); const h = Math.max(2, Math.floor(fh * k));
+    frame.style.width = `${w}px`;
+    frame.style.height = `${h}px`;
+    if (fill) box.style.height = `${h}px`;
   }
 
   async load() {

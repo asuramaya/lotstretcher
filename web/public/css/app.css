@@ -534,7 +534,7 @@
    phone, whatever the height leaves on a wide pane. The frame inside
    it takes the chosen format's own shape (preview.js fitStage), so a
    story stands tall and a landscape lies wide, each as large as fits. */
-.stage-box { width: 100%; height: 34vh; min-height: 0; display: grid; place-items: center; }
+.stage-box { --stage-room: fixed; width: 100%; height: 34vh; min-height: 0; display: grid; place-items: center; }
 .preview-frame {
   position: relative; border-radius: var(--r-lg); overflow: hidden;
   border: 1px solid var(--line); background: var(--sunken);
@@ -627,7 +627,7 @@
   .tool { flex: none; min-width: 0; }
   .studio-stage { justify-content: center; padding: var(--s-6); overflow: hidden; }
   /* As big as the height leaves, after the bar under it. */
-  .stage-box { flex: 1; height: auto; }
+  .stage-box { --stage-room: fill; flex: none; height: auto; }
   .studio-panel { border-left: 1px solid var(--line); background: var(--surface); }
   .panel-head, .panel-body { padding-left: var(--s-5); padding-right: var(--s-5); }
 }
