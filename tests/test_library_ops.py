@@ -23,7 +23,7 @@ def test_defaults_match_the_recompose_cli():
     r = library_ops.resolve_recompose_options({})
     assert r["background_path"] is None and r["border_path"] is None
     assert r["style"] == {"glow": True, "glow_color": "white", "glow_radius": 24,
-                          "glow_intensity": 0.75, "gradient": True}
+                          "glow_intensity": 0.75, "gradient": True, "border_fit": "fit"}
     assert r["hero_formats"] == ("square",)
 
 

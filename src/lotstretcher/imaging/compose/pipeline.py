@@ -78,7 +78,8 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
                      gradient: bool = False, exterior_color: str | None = None,
                      interior_color: str | None = None,
                      hero_formats: tuple[str, ...] = (DEFAULT_HERO_STILL_FORMAT,),
-                     spotlight: bool = True, margin_frac: float | None = None) -> dict:
+                     spotlight: bool = True, margin_frac: float | None = None,
+                     border_fit: str = "fit") -> dict:
     """Returns {"hero": Path|None, "framed": [Path, ...]}. Produces nothing
     (empty result, no error) if cutout_dir has no usable cutouts -- e.g. a
     used vehicle with no clean exterior shots to cut out at all; callers
@@ -122,7 +123,7 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
                                      spotlight=spotlight,
                                      glow=glow, glow_color=glow_color, margin_frac=hero_margin,
                                      glow_radius=glow_radius, glow_intensity=glow_intensity,
-                                     canvas_size=canvas)
+                                     canvas_size=canvas, border_fit=border_fit)
             hero_path = out_dir / hero_still_name(fmt)
             hero_img.save(hero_path)
             result["heroes"][fmt] = hero_path
@@ -151,7 +152,8 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
         img = compose_hero(bg, border_path, [cutout], layout="single",
                             spotlight=spotlight, margin_frac=single_margin,
                             glow=glow, glow_color=glow_color,
-                            glow_radius=glow_radius, glow_intensity=glow_intensity)
+                            glow_radius=glow_radius, glow_intensity=glow_intensity,
+                            border_fit=border_fit)
         framed_path = framed_dir / cutout.name
         img.save(framed_path)
         result["framed"].append(framed_path)
@@ -175,7 +177,8 @@ def compose_wheel_shots(wheel_cutout_dir: Path, out_dir: Path, background_path, 
                          glow_radius: int = 24, glow_intensity: float = 0.75,
                          gradient: bool = False, exterior_color: str | None = None,
                          interior_color: str | None = None,
-                         spotlight: bool = True, margin_frac: float | None = None) -> list[Path]:
+                         spotlight: bool = True, margin_frac: float | None = None,
+                         border_fit: str = "fit") -> list[Path]:
     """One solo composition per confirmed wheel-money-shot cutout (see
     imaging/wheel.py and photos.py's images/exterior/wheels/), same
     single-layout/background/glow treatment as compose_vehicle()'s framed
@@ -202,7 +205,8 @@ def compose_wheel_shots(wheel_cutout_dir: Path, out_dir: Path, background_path, 
         img = compose_hero(bg, border_path, [cutout], layout="single",
                             spotlight=spotlight, margin_frac=0.06 if margin_frac is None else margin_frac,
                             glow=glow, glow_color=glow_color,
-                            glow_radius=glow_radius, glow_intensity=glow_intensity)
+                            glow_radius=glow_radius, glow_intensity=glow_intensity,
+                            border_fit=border_fit)
         out_path = framed_dir / cutout.name
         img.save(out_path)
         results.append(out_path)

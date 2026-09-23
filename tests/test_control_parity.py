@@ -149,14 +149,16 @@ def test_gated_choices_name_a_real_capability(control, choice):
 @pytest.mark.parametrize("control", [c for c in CONTROLS if isinstance(c.get("showWhen"), dict)],
                          ids=lambda c: c["key"])
 def test_conditional_controls_follow_a_real_choice(control):
-    """`showWhen: {key, equals}` must name an existing select and one of
-    its actual choices, or the control can never appear."""
+    """`showWhen: {key, equals}` or `{key, notEquals}` must name an
+    existing select and one of its actual choices, or the control can
+    never appear (or never hide)."""
     cond = control["showWhen"]
     parent = next((c for c in CONTROLS if c["key"] == cond["key"]), None)
     assert parent is not None, f"{control['key']} follows unknown control {cond['key']!r}"
     values = [ch["value"] for ch in parent.get("choices", [])]
-    assert cond["equals"] in values, (
-        f"{control['key']} follows {cond['key']}={cond['equals']!r}, not among {values}"
+    wanted = cond["notEquals"] if "notEquals" in cond else cond["equals"]
+    assert wanted in values, (
+        f"{control['key']} follows {cond['key']}={wanted!r}, not among {values}"
     )
 
 

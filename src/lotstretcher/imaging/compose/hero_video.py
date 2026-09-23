@@ -352,6 +352,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        bars_per_loop: int = BARS_PER_LOOP,
                        glow: bool = True, glow_color=DEFAULT_GLOW_COLOR,
                        glow_radius: int = 24, glow_intensity: float = 0.75,
+                       border_fit: str = "fit",
                        encoder: str = "libx264",
                        hood_sides: dict[str, str] | None = None,
                        target_duration_s: float | None = None) -> dict:
@@ -376,10 +377,11 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     if background_video is None and gradient_colors is None:
         raise ValueError("need either a background_video or gradient_colors to draw a backdrop")
 
+    # The format decides the canvas; a frame of another shape is fitted
+    # to it (compose::fit_border), and the car window follows the fit.
     border = Image.open(border_path).convert("RGBA") if border_path is not None else None
     if border is not None:
-        canvas_size = border.size
-        window = core.detect_window(border)
+        border, window = core.fit_border(border, canvas_size[0], canvas_size[1], border_fit)
     else:
         window = (0, 0, canvas_size[0], canvas_size[1])
 

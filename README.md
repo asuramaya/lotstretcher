@@ -360,6 +360,13 @@ lotstretcher composites vehicle cutouts onto branded border frames. These assets
    ```
 4. Use `--border "My Dealership Frame"` or set `"default_border_tag": "custom"` in your configuration.
 
+A frame is drawn for one shape, and the still formats have several. The
+format always decides the canvas; `--frame-fit` decides how the frame
+meets it: `fit` (the default) keeps the whole frame centred with the
+backdrop filling the rest, `fill` covers the canvas and crops the frame's
+edges, `stretch` pulls the frame to the canvas shape. The app's Frame
+group has the same lever, previewed live per format.
+
 ---
 
 ## CLI Reference & Usage

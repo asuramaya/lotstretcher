@@ -175,6 +175,11 @@ pub enum Op {
     LinearGradient { width: usize, height: usize, angle: f64, start: [u8; 3], end: [u8; 3] },
     DimStrength { background: Slice, car: Slice },
     DetectWindow { border: Slice },
+    /// A border laid onto a canvas of another shape (see compose::fit_border),
+    /// and that border's car window on that canvas: what a video host
+    /// needs to frame a format the border was not drawn for.
+    FitBorder { border: Slice, width: usize, height: usize, #[serde(default)] fit: Option<String> },
+    FitWindow { border: Slice, width: usize, height: usize, #[serde(default)] fit: Option<String> },
     ResolveCollision { border: Slice, car: Slice, x: i64, y: i64 },
     VehicleGradientColors { exterior: Option<String>, interior: Option<String>, #[serde(default)] sample: Option<Slice> },
     CarouselPlan(crate::carousel::PlanRequest),
@@ -226,6 +231,15 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
         Op::DetectWindow { border } => {
             let b = slice_image(arena, &border)?;
             let (l, t, r, bt) = detect_window(&b)?;
+            OpResult::Json(serde_json::to_string(&Scalar { value: [l, t, r, bt] }).unwrap())
+        }
+        Op::FitBorder { border, width, height, fit } => {
+            let b = slice_image(arena, &border)?;
+            OpResult::Image(crate::compose::fit_border(&b, width, height, fit.as_deref().unwrap_or("fit"))?)
+        }
+        Op::FitWindow { border, width, height, fit } => {
+            let b = slice_image(arena, &border)?;
+            let (l, t, r, bt) = crate::compose::fit_window(&b, width, height, fit.as_deref().unwrap_or("fit"))?;
             OpResult::Json(serde_json::to_string(&Scalar { value: [l, t, r, bt] }).unwrap())
         }
         Op::ResolveCollision { border, car, x, y } => {

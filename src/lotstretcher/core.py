@@ -138,7 +138,8 @@ def _buffer(arena: bytearray):
 def compose_hero(cars, width: int, height: int, background: dict, *, layout: str = "single",
                  spotlight: bool = True, glow: bool = False, glow_color: str | None = None,
                  glow_radius: int | None = None, glow_intensity: float | None = None,
-                 margin_frac: float | None = None, background_image=None, border=None):
+                 margin_frac: float | None = None, background_image=None, border=None,
+                 border_fit: str | None = None):
     """Compose one hero the way the browser does, in the same code.
 
     `cars` are RGBA PIL images, hero first. `background` is one of
@@ -173,6 +174,7 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
         "spotlight": spotlight, "glow": glow, "glow_color": glow_color, "glow_radius": glow_radius,
         "glow_intensity": glow_intensity, "margin_frac": margin_frac,
         "border": slices[border_index] if border_index is not None else None,
+        "border_fit": border_fit,
     }
     buf = _buffer(arena)
     result = lib.ls_compose_hero(json.dumps(req).encode("utf-8"), buf, len(arena))
@@ -252,6 +254,15 @@ def render_frame(cars, width: int, height: int, background: dict, *, border=None
     if spotlight is not None:
         op["spotlight"] = {"cx": spotlight[0], "cy": spotlight[1], "dim": spotlight[2]}
     return call(op, images)
+
+
+def fit_border(border, width: int, height: int, fit: str = "fit"):
+    """`border` (RGBA PIL) laid onto a width x height canvas by `fit`
+    (fit, fill or stretch): the frame a format of another shape gets.
+    Returns (fitted RGBA image, (left, top, right, bottom) car window)."""
+    fitted = call({"op": "fit_border", "border": {"$image": 0}, "width": width, "height": height, "fit": fit}, [border])
+    window = call({"op": "fit_window", "border": {"$image": 0}, "width": width, "height": height, "fit": fit}, [border])
+    return fitted, tuple(window)
 
 
 def retain(image) -> int:

@@ -223,8 +223,9 @@ def test_bordered_compose_keeps_the_frame_on_top_and_the_car_in_the_window():
     from lotstretcher.imaging.compose.layout import compute_placement
     border = Image.open(BORDER).convert("RGBA")
     cut = synthetic_cutout(600, 300)
-    img = core.compose_hero([cut], 10, 10, {"kind": "generic", "seed": "b"}, border=border, spotlight=False)
-    assert img.size == border.size, "the border decides the canvas size"
+    img = core.compose_hero([cut], border.width, border.height, {"kind": "generic", "seed": "b"},
+                            border=border, spotlight=False)
+    assert img.size == border.size, "a border of the canvas's own size is used as is"
     arr = np.asarray(img)
     barr = np.asarray(border)
     # Every fully opaque border pixel shows the border's own colour.
@@ -237,6 +238,80 @@ def test_bordered_compose_keeps_the_frame_on_top_and_the_car_in_the_window():
     cx, cy = x + resized.width // 2, y + resized.height // 2
     r, g, b = arr[cy, cx]
     assert r > g + 40 and r > b + 40, f"no car at ({cx},{cy}): {(r, g, b)}"
+
+
+def test_the_format_decides_the_canvas_and_the_frame_is_fitted_to_it():
+    """A square dealer frame on a 4:5 post: the still is 4:5, never the
+    frame's own square. `fit` keeps the whole frame centred with the
+    backdrop above and below; `fill` covers the canvas; `stretch` pulls
+    it to the shape. The car window follows the fit."""
+    border = Image.open(BORDER).convert("RGBA")
+    cut = synthetic_cutout(600, 300)
+    w, h = 400, 500
+    for fit in ("fit", "fill", "stretch"):
+        img = core.compose_hero([cut], w, h, {"kind": "generic", "seed": "b"}, border=border,
+                                spotlight=False, border_fit=fit)
+        assert img.size == (w, h), f"{fit}: the format decides the canvas"
+        fitted, window = core.fit_border(border, w, h, fit)
+        assert fitted.size == (w, h)
+        farr = np.asarray(fitted)
+        l, t, r, b = window
+        assert 0 <= l < r <= w and 0 <= t < b <= h, f"{fit}: window {window} is off the canvas"
+        # The frame's own opaque art shows through wherever the fitted
+        # frame is opaque, whichever way it was fitted.
+        opaque = farr[..., 3] == 255
+        assert opaque.any()
+        assert np.array_equal(np.asarray(img)[opaque], farr[..., :3][opaque])
+        if fit == "fit":
+            # A square frame in a portrait canvas leaves transparent bands
+            # above and below it, where the backdrop shows.
+            assert not opaque[0].any() and not opaque[-1].any()
+            assert opaque[h // 2].any()
+        if fit in ("fill", "stretch"):
+            # The frame reaches every edge.
+            assert opaque[0].any() and opaque[-1].any()
+            assert opaque[:, 0].any() and opaque[:, -1].any()
+    # An unknown fit is refused, not silently squared.
+    with pytest.raises(RuntimeError):
+        core.compose_hero([cut], w, h, {"kind": "generic", "seed": "b"}, border=border, border_fit="tile")
+
+
+def test_fit_border_matches_between_native_and_wasm():
+    """The same frame fitted to the same canvas gives the same bytes from
+    the native core and the wasm build, so the browser's preview of a
+    fitted frame is the CLI's still."""
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    wasm = REPO / "web" / "public" / "core" / "lotstretcher_core_bg.wasm"
+    if not wasm.exists():
+        pytest.skip("wasm core not built")
+    border = Image.open(BORDER).convert("RGBA")
+    w, h = 300, 375
+    native, window = core.fit_border(border, w, h, "fit")
+    raw = border.tobytes()
+    script = f"""
+      import fs from 'node:fs';
+      import {{ loadCore, call }} from '{(REPO / 'web' / 'public' / 'js' / 'core.js').as_posix()}';
+      await loadCore(fs.readFileSync('{wasm.as_posix()}'));
+      const data = new Uint8ClampedArray(fs.readFileSync('{{RAW}}'));
+      const img = {{ width: {border.width}, height: {border.height}, data }};
+      const fitted = call({{ op: 'fit_border', border: {{ $image: 0 }}, width: {w}, height: {h}, fit: 'fit' }}, [img]);
+      const win = call({{ op: 'fit_window', border: {{ $image: 0 }}, width: {w}, height: {h}, fit: 'fit' }}, [img]);
+      process.stdout.write(JSON.stringify({{ win, w: fitted.width, h: fitted.height, sum: fitted.data.reduce((a, b) => a + b, 0) }}));
+    """
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        rawp = Path(d) / "border.raw"
+        rawp.write_bytes(raw)
+        js = Path(d) / "fit.mjs"
+        js.write_text(script.replace("{RAW}", rawp.as_posix()))
+        out = json.loads(subprocess.run([node, str(js)], capture_output=True, text=True, check=True).stdout)
+    assert tuple(out["win"]) == tuple(window)
+    assert (out["w"], out["h"]) == (w, h)
+    assert out["sum"] == int(np.asarray(native, dtype=np.int64).sum())
 
 
 def test_render_frame_with_placed_car_equals_compose_hero():

@@ -740,6 +740,35 @@
             "cliNote": "On the command line the same thing is --border with a path to the PNG; the browser takes the file itself."
           },
           {
+            "key": "frameFit",
+            "label": "Frame fit",
+            "hint": "How the frame meets a format of another shape. The format always decides the canvas",
+            "type": "select",
+            "default": "fit",
+            "choices": [
+              {
+                "value": "fit",
+                "label": "Fit",
+                "hint": "The whole frame, centred; the backdrop fills the rest"
+              },
+              {
+                "value": "fill",
+                "label": "Fill",
+                "hint": "The frame covers the canvas; its edges are cropped"
+              },
+              {
+                "value": "stretch",
+                "label": "Stretch",
+                "hint": "The frame is pulled to the canvas shape"
+              }
+            ],
+            "showWhen": {
+              "key": "border",
+              "notEquals": "none"
+            },
+            "cli": "--frame-fit"
+          },
+          {
             "key": "margin",
             "label": "Margin",
             "hint": "Breathing room inside the frame",

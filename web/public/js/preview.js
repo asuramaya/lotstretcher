@@ -83,6 +83,8 @@ export class Preview {
     this.scrub = 0.35;        // where in the clip that frame is
     this.clip = null;         // the prepared clip, keyed by what shaped it
     this.clipKey = null;
+    this.format = null;       // which of the selected formats is shown; null = the first
+    this.formatsHost = host.querySelector('#previewFormats');
     this.modesHost = host.querySelector('#previewModes');
     this.scrubInput = host.querySelector('#previewScrub');
     for (const b of this.modesHost?.querySelectorAll('[data-mode]') || []) {
@@ -140,6 +142,48 @@ export class Preview {
     const wantVideo = !!(o?.videoFormats?.length);
     if (this.modesHost) this.modesHost.hidden = !wantVideo;
     if (!wantVideo && this.mode === 'video') this.setMode('still');
+    this.renderFormats();
+  }
+
+  /* Every selected format of the current mode, and which is shown. A
+   * run composes each shape separately, so each is previewed on its own
+   * rather than one cropped into another. */
+  selectedFormats() {
+    const o = this.getOptions() || {};
+    const table = this.mode === 'video' ? OPTS.VIDEO_FORMATS : OPTS.HERO_FORMATS;
+    const keys = (this.mode === 'video' ? o.videoFormats : o.heroFormats) || [];
+    return keys.filter((k) => table[k]).map((k) => ({ key: k, ...table[k] }));
+  }
+
+  currentFormat(fallback) {
+    const list = this.selectedFormats();
+    return list.find((f) => f.key === this.format) || list[0] || fallback;
+  }
+
+  /* Show one format: what the app calls when a format chip is switched
+   * on, so the preview jumps to the shape just chosen. */
+  showFormat(key) {
+    this.format = key;
+    this.renderFormats();
+    this.update();
+  }
+
+  renderFormats() {
+    const host = this.formatsHost;
+    if (!host) return;
+    host.innerHTML = '';
+    const list = this.selectedFormats();
+    host.hidden = list.length < 2;
+    if (list.length < 2) return;
+    const current = this.currentFormat();
+    for (const f of list) {
+      const b = el('button', 'chip');
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(f.key === current?.key));
+      b.append(el('strong', null, f.label || f.key), el('span', null, `${f.size[0]}×${f.size[1]}`));
+      b.onclick = () => this.showFormat(f.key);
+      host.appendChild(b);
+    }
   }
 
   subjectLabel() {
@@ -166,7 +210,10 @@ export class Preview {
    * draw in flight is followed by exactly one more. */
   update() {
     if (this.timer) return;
-    this.timer = requestAnimationFrame(() => { this.timer = null; this.draw(); });
+    // A hidden tab never gets an animation frame, so an edit made from
+    // another window (or a test) would wait for the tab to be looked at.
+    const later = document.hidden ? (fn) => setTimeout(fn, 16) : requestAnimationFrame;
+    this.timer = later(() => { this.timer = null; this.draw(); });
   }
 
   /* The size to draw at: the canvas's displayed width times the device
@@ -191,16 +238,16 @@ export class Preview {
     this.canvas.classList.add('is-busy');
     try {
       if (this.mode === 'video') { this.drawVideoFrame(subject, o); return; }
-      // The first selected still format decides the preview's shape.
-      const fmt = OPTS.HERO_FORMATS[o.heroFormats?.[0]] || OPTS.HERO_FORMATS.square || { size: [1254, 1254] };
+      // The chosen still format decides the preview's shape.
+      const fmt = this.currentFormat(OPTS.HERO_FORMATS.square || { size: [1254, 1254] });
       const [fw, fh] = fmt.size;
       const [width, height] = this.targetSize(fw, fh);
-      if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || o.heroFormats?.[0] || 'still'}`;
+      if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || fmt.key || 'still'}`;
       const t0 = performance.now();
-      // A frame decides the canvas size, so a large one is scaled down
-      // to the preview's size first: the run uses it at full size. A
-      // stock frame or background is the server's, drawn from the
-      // picture it serves for the swatches.
+      // A frame is fitted to the format by the core; a large one is
+      // scaled down to the preview's size first so the fit resamples
+      // less. A stock frame or background is the server's, drawn from
+      // the picture it serves for the swatches.
       const stockBorder = o.border && !['none', 'custom'].includes(o.border) ? o.border : null;
       let border = o.border === 'custom' ? o.customFrame || null
         : (stockBorder && isSelfHosted() ? assetImage('borders', stockBorder, () => this.update()) : null);
@@ -220,7 +267,7 @@ export class Preview {
         exterior: subject.exterior, interior: subject.interior,
         generic: o.backdrop === 'generic',
         background: o.backdrop === 'custom' ? o.customBackground || null : stockBackground,
-        border,
+        border, borderFit: o.frameFit,
         spotlight: o.spotlight,
         marginFrac: o.margin,
         glow: o.glow, glowColor: o.glowColor, glowRadius: o.glowRadius, glowIntensity: o.glowIntensity,
@@ -248,7 +295,7 @@ export class Preview {
    * three samples, or the user's cutouts), the push otherwise. The
    * clip is prepared once per shape and redrawn per scrub. */
   drawVideoFrame(subject, o) {
-    const fmt = OPTS.VIDEO_FORMATS[o.videoFormats?.[0]] || { size: [720, 720] };
+    const fmt = this.currentFormat({ size: [720, 720] });
     const [fw, fh] = fmt.size;
     const [width, height] = this.targetSize(fw, fh);
     let cutouts; let seed;

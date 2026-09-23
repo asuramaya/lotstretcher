@@ -173,6 +173,7 @@ def compose(cutout_png: bytes, options: dict[str, Any],
         glow_intensity=float(options.get("glowIntensity") or 0.75),
         margin_frac=float(options.get("margin") or 0.06),
         canvas_size=(width, height),
+        border_fit=options.get("frameFit") or "fit",
     )
 
     buf = io.BytesIO()

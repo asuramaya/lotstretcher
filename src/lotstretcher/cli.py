@@ -232,6 +232,7 @@ def controls_from_args(args) -> dict:
         "background": args.background,
         "frame": bool(args.frame or args.border),
         "border": args.border,
+        "frameFit": args.frame_fit,
         "videoFormats": [] if args.no_video else list(resolve_video_formats(args.video_format)),
         "heroFormats": list(resolve_hero_formats(args.hero_format)),
         "videoMusic": args.video_music,
@@ -307,6 +308,12 @@ def main():
     parser.add_argument("--frame", action="store_true",
                          help="Composite the dealer frame onto the composed images (frameless is the default -- "
                               "contact info baked into the frame was getting posts shadowbanned).")
+    parser.add_argument("--frame-fit", default="fit", choices=["fit", "fill", "stretch"],
+                         help="How a frame meets a format of another shape (a square dealer frame on a "
+                              "4:5 post). fit: the whole frame, centred, the backdrop fills the rest. "
+                              "fill: the frame covers the canvas and its edges are cropped. "
+                              "stretch: the frame is pulled to the canvas shape. The format always "
+                              "decides the canvas; the frame never does.")
     parser.add_argument("--photo-background", action="store_true",
                          help="Use the shared background photo asset instead of the default per-image gradient "
                               "built from each vehicle's own exterior/interior colors. A single shared backdrop "

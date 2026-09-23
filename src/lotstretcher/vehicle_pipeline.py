@@ -105,6 +105,7 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         glow_color=hero_opts.glow_color,
         glow_radius=hero_opts.glow_radius,
         glow_intensity=hero_opts.glow_intensity,
+        border_fit=hero_opts.border_fit,
         encoder=hero_opts.video_encoder,
         hood_sides=hood_sides,
         target_duration_s=hero_opts.video_duration_s,
@@ -171,6 +172,9 @@ class HeroOptions:
     glow_color: str = "white"
     glow_radius: int = 24
     glow_intensity: float = 0.75
+    # How a frame meets a format of another shape: fit, fill or stretch
+    # (compose/hero.py). The format always decides the canvas.
+    border_fit: str = "fit"
 
 
 def process_vehicle(playwright, session: requests.Session, url: str, out_root: Path,
@@ -310,6 +314,7 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 hero_formats=hero_opts.hero_formats,
                 spotlight=hero_opts.spotlight,
                 margin_frac=hero_opts.margin_frac,
+                border_fit=hero_opts.border_fit,
             )
             if compose_result["hero"]:
                 n_framed = len(compose_result["framed"])
@@ -336,6 +341,7 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                 interior_color=v.interior_color,
                 spotlight=hero_opts.spotlight,
                 margin_frac=hero_opts.margin_frac,
+                border_fit=hero_opts.border_fit,
             )
             if wheel_shots:
                 log(f"    wheel money shot{'s' if len(wheel_shots) != 1 else ''}: "

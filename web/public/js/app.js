@@ -406,8 +406,15 @@ function renderOptions() {
     commitOptions();
   };
 
-  chipRow($('heroFormats'), OPTS.HERO_FORMATS, o.heroFormats, (k) => { toggleIn(o.heroFormats, k, true); preview?.update(); });
-  chipRow($('videoFormats'), OPTS.VIDEO_FORMATS, o.videoFormats, (k) => { toggleIn(o.videoFormats, k); preview?.renderEstimates(); });
+  // Switching a shape on shows it; switching one off shows whatever is left.
+  chipRow($('heroFormats'), OPTS.HERO_FORMATS, o.heroFormats, (k) => {
+    toggleIn(o.heroFormats, k, true);
+    if (o.heroFormats.includes(k) && preview?.mode === 'still') preview.showFormat(k); else preview?.update();
+  });
+  chipRow($('videoFormats'), OPTS.VIDEO_FORMATS, o.videoFormats, (k) => {
+    toggleIn(o.videoFormats, k);
+    if (o.videoFormats.includes(k) && preview?.mode === 'video') preview.showFormat(k); else preview?.update();
+  });
   $('videoNote').textContent = o.videoFormats.length
     ? 'Rendered after the stills, about twice realtime on a laptop: the '
       + 'estimate beside the preview is measured on this device.'
@@ -728,6 +735,7 @@ async function run() {
           // --border: drawn by the core exactly as the CLI's are.
           background: state.options.backdrop === 'custom' ? state.options.customBackground || null : null,
           border: state.options.border === 'custom' ? state.options.customFrame || null : null,
+          borderFit: state.options.frameFit,
           glow: state.options.glow, glowColor: state.options.glowColor,
           glowRadius: state.options.glowRadius, glowIntensity: state.options.glowIntensity,
         });

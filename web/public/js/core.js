@@ -100,6 +100,7 @@ export function releaseAll() { return call({ op: 'release_all' }); }
 export function composeHero(cars, width, height, background, {
   layout = 'single', spotlight = true, glow = false, glowColor = null,
   glowRadius = null, glowIntensity = null, marginFrac = null, backgroundImage = null, border = null,
+  borderFit = null,
 } = {}) {
   if (!mod) throw new Error('core not loaded; await loadCore() first');
   const images = [...cars];
@@ -118,8 +119,8 @@ export function composeHero(cars, width, height, background, {
     width, height, background: bg, cars: slices.slice(0, cars.length), layout, spotlight, glow,
     glow_color: glowColor, glow_radius: glowRadius, glow_intensity: glowIntensity, margin_frac: marginFrac,
     border: borderIndex !== null ? slices[borderIndex] : null,
+    border_fit: borderFit,
   };
-  if (border) { width = border.width; height = border.height; }
   const rgb = mod.compose_hero(JSON.stringify(req), buf);
   const out = new ImageData(width, height);
   for (let i = 0, j = 0; i < rgb.length; i += 3, j += 4) {

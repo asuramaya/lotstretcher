@@ -97,14 +97,16 @@ function choicesFor(control) {
   return [];
 }
 
-/* `showWhen` is either a key (shown while that value is truthy) or
- * { key, equals } (shown while that value matches). The second form is
- * what lets a dependent select follow one choice of another select, as
- * the background picker follows "Stock background". */
+/* `showWhen` is either a key (shown while that value is truthy),
+ * { key, equals } (shown while that value matches) or { key, notEquals }
+ * (shown while it differs). The object forms let a dependent control
+ * follow a select, as the background picker follows "Stock background"
+ * and the frame fit follows any frame at all. */
 export function shownBy(control, values) {
   const cond = control.showWhen;
   if (!cond) return true;
   if (typeof cond === 'string') return !!values[cond];
+  if ('notEquals' in cond) return values[cond.key] !== cond.notEquals;
   return values[cond.key] === cond.equals;
 }
 

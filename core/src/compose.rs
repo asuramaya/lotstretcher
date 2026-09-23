@@ -121,11 +121,65 @@ pub struct ComposeRequest {
     pub glow_intensity: Option<f64>,
     #[serde(default)]
     pub margin_frac: Option<f64>,
-    /// A border frame (RGBA). When given it decides the canvas size,
-    /// defines the window the cars are laid out in, has its art
-    /// collision-checked against every placement, and is the top layer.
+    /// A border frame (RGBA). It defines the window the cars are laid
+    /// out in, has its art collision-checked against every placement,
+    /// and is the top layer. The FORMAT decides the canvas size: a frame
+    /// of another shape is fitted to it by `border_fit`.
     #[serde(default)]
     pub border: Option<Slice>,
+    /// How a frame meets a canvas of another shape: "fit" (whole frame,
+    /// centred, the backdrop fills the rest), "fill" (covers the canvas,
+    /// edges cropped) or "stretch" (pulled to the canvas). Default fit.
+    #[serde(default)]
+    pub border_fit: Option<String>,
+}
+
+/// The transform that places a border of `bw`x`bh` on a `w`x`h` canvas:
+/// (scale_x, scale_y, offset_x, offset_y), original -> canvas.
+pub fn fit_transform(bw: usize, bh: usize, w: usize, h: usize, fit: &str) -> Result<(f64, f64, f64, f64), String> {
+    let (bw, bh, w, h) = (bw as f64, bh as f64, w as f64, h as f64);
+    Ok(match fit {
+        "fit" => { let s = (w / bw).min(h / bh); (s, s, ((w - bw * s) / 2.0).round(), ((h - bh * s) / 2.0).round()) }
+        "fill" => { let s = (w / bw).max(h / bh); (s, s, ((w - bw * s) / 2.0).round(), ((h - bh * s) / 2.0).round()) }
+        "stretch" => (w / bw, h / bh, 0.0, 0.0),
+        other => return Err(format!("unknown border fit {other:?}; fit, fill or stretch")),
+    })
+}
+
+/// A border laid onto a `w`x`h` transparent RGBA canvas by `fit`. A
+/// border already the canvas's size is returned as is, byte for byte.
+pub fn fit_border(b: &Image, w: usize, h: usize, fit: &str) -> Result<Image, String> {
+    if b.channels != 4 { return Err("border must be RGBA".into()); }
+    if b.width == w && b.height == h { return Ok(b.clone()); }
+    let (sx, sy, ox, oy) = fit_transform(b.width, b.height, w, h, fit)?;
+    let rw = ((b.width as f64 * sx).round() as usize).max(1);
+    let rh = ((b.height as f64 * sy).round() as usize).max(1);
+    let resized = resize_lanczos(b, rw, rh);
+    let mut out = Image::new(w, h, 4);
+    let (ox, oy) = (ox as i64, oy as i64);
+    for y in 0..rh {
+        let dy = y as i64 + oy;
+        if dy < 0 || dy >= h as i64 { continue; }
+        for x in 0..rw {
+            let dx = x as i64 + ox;
+            if dx < 0 || dx >= w as i64 { continue; }
+            let s = (y * rw + x) * 4;
+            let d = (dy as usize * w + dx as usize) * 4;
+            out.data[d..d + 4].copy_from_slice(&resized.data[s..s + 4]);
+        }
+    }
+    Ok(out)
+}
+
+/// The border's car window in canvas coordinates after `fit`. The
+/// window is read on the border's own pixels and moved: a fitted border
+/// has transparent bands the detector would otherwise take for window.
+pub fn fit_window(b: &Image, w: usize, h: usize, fit: &str) -> Result<(i64, i64, i64, i64), String> {
+    let (l, t, r, bt) = detect_window(b)?;
+    if b.width == w && b.height == h { return Ok((l, t, r, bt)); }
+    let (sx, sy, ox, oy) = fit_transform(b.width, b.height, w, h, fit)?;
+    let map = |v: i64, s: f64, o: f64| (v as f64 * s + o).round() as i64;
+    Ok((map(l, sx, ox).max(0), map(t, sy, oy).max(0), map(r, sx, ox).min(w as i64), map(bt, sy, oy).min(h as i64)))
 }
 
 fn default_layout() -> String { "single".into() }
@@ -133,21 +187,22 @@ fn default_true() -> bool { true }
 
 /// Returns the composed RGB canvas (width * height * 3 bytes).
 pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String> {
-    let border = match &req.border {
-        Some(s) => {
-            let b = slice_image(arena, s)?;
-            if b.channels != 4 { return Err("border must be RGBA".into()); }
-            Some(b)
-        }
-        None => None,
-    };
-    let (w, h) = match &border {
-        Some(b) => (b.width, b.height),
-        None => (req.width, req.height),
-    };
+    let (w, h) = (req.width, req.height);
     if w == 0 || h == 0 || w > 8192 || h > 8192 {
         return Err("canvas must be within 8192x8192".into());
     }
+    let fit = req.border_fit.as_deref().unwrap_or("fit");
+    // The window comes from the border's own pixels and follows the fit;
+    // the fitted border is what placements collide with and goes on top.
+    let (border, window) = match &req.border {
+        Some(s) => {
+            let b = slice_image(arena, s)?;
+            if b.channels != 4 { return Err("border must be RGBA".into()); }
+            let window = fit_window(&b, w, h, fit)?;
+            (Some(Rc::new(fit_border(&b, w, h, fit)?)), window)
+        }
+        None => (None, (0i64, 0i64, w as i64, h as i64)),
+    };
     let cars: Vec<Rc<Image>> = req.cars.iter().map(|s| slice_image(arena, s)).collect::<Result<_, _>>()?;
     if cars.iter().any(|c| c.channels != 4) {
         return Err("cutouts must be RGBA".into());
@@ -166,10 +221,6 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     };
 
     let margin = req.margin_frac.unwrap_or_else(|| spec::f64_at(&["compose", "marginFrac"]));
-    let window = match &border {
-        Some(b) => detect_window(b)?,
-        None => (0i64, 0i64, w as i64, h as i64),
-    };
     let boxes = layout(&req.layout, window, cars.len().saturating_sub(1))?;
     let mut placements: Vec<(i64, i64, Image)> = cars.iter().zip(boxes.iter()).map(|(car, (bx, anchor))| {
         let p = compute_placement(car.width, car.height, *bx, margin, *anchor);

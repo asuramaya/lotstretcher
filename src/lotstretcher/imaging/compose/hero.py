@@ -41,7 +41,8 @@ def compose_hero(background_path, border_path: Path | None, car_paths: list[Path
                   glow: bool = False, glow_color=DEFAULT_GLOW_COLOR,
                   glow_radius: int = 24, glow_intensity: float = 0.75,
                   margin_frac: float = 0.06,
-                  canvas_size: tuple[int, int] = DEFAULT_CANVAS_SIZE) -> Image.Image:
+                  canvas_size: tuple[int, int] = DEFAULT_CANVAS_SIZE,
+                  border_fit: str = "fit") -> Image.Image:
     """
     car_paths[0] is always the hero (drives the spotlight measurement and
     center). car_paths[1:] fill whatever accent slots `layout` defines --
@@ -54,14 +55,18 @@ def compose_hero(background_path, border_path: Path | None, car_paths: list[Path
     generated gradients (background.py::gradient_background()) are made
     per-image and never hit disk, so there'd be nothing to pass a path to.
 
-    border_path may be None for a FRAMELESS composition. The border
-    normally does three jobs at once: it defines the window the cars are
-    laid out in, it supplies the alpha mask placements are collision-
-    checked against, and it's the top layer. With no border, the window
-    becomes the whole canvas (hence canvas_size, which the border's own
-    dimensions would otherwise have decided) and there is nothing to
-    collide with, so that check is skipped rather than run against an
-    empty mask.
+    border_path may be None for a FRAMELESS composition. The border does
+    three jobs at once: it defines the window the cars are laid out in,
+    it supplies the alpha mask placements are collision-checked against,
+    and it's the top layer. With no border, the window is the whole
+    canvas and there is nothing to collide with, so that check is skipped
+    rather than run against an empty mask.
+
+    canvas_size is the format's and always wins. A border drawn for
+    another shape (a square dealer frame on a 4:5 post) is fitted to it
+    by border_fit: "fit" keeps the whole frame, centred, with the
+    backdrop filling the rest; "fill" covers the canvas and crops the
+    frame's edges; "stretch" pulls it to the canvas shape.
 
     margin_frac is the breathing room left inside each layout box. The
     0.06 default suits layouts that must also look right half-empty; the
@@ -91,4 +96,5 @@ def compose_hero(background_path, border_path: Path | None, car_paths: list[Path
     return core.compose_hero(cars, canvas_size[0], canvas_size[1], background, background_image=bg_image,
                              border=border, layout=layout, spotlight=spotlight, glow=glow,
                              glow_color=str(glow_color), glow_radius=glow_radius,
-                             glow_intensity=glow_intensity, margin_frac=margin_frac)
+                             glow_intensity=glow_intensity, margin_frac=margin_frac,
+                             border_fit=border_fit)
