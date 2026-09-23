@@ -26,6 +26,7 @@ pub mod window;
 pub mod compose;
 pub mod frame;
 pub mod carousel;
+pub mod spin;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod ffi;

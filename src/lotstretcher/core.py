@@ -101,19 +101,35 @@ def path() -> Path | None:
     return _LIB_PATH[0]
 
 
-def _arena(images) -> tuple[bytes, list[dict]]:
-    """Pack PIL images into one byte arena and describe each slice."""
-    parts = []
+def _arena(images) -> tuple[bytearray, list[dict]]:
+    """Pack PIL images into one byte arena and describe each slice. An
+    int in `images` is the id of an image the core already holds (see
+    `retain`), and travels as that id with no bytes. One bytearray,
+    filled in place, so a frame's inputs are copied once on the way in
+    rather than joined and then copied again."""
     slices = []
-    offset = 0
+    total = 0
     for img in images:
+        if isinstance(img, int):
+            slices.append({"retained": img})
+            continue
+        n = img.width * img.height * (4 if img.mode == "RGBA" else 3)
+        slices.append({"offset": total, "len": n, "width": img.width, "height": img.height,
+                       "channels": 4 if img.mode == "RGBA" else 3})
+        total += n
+    arena = bytearray(total)
+    for img, s in zip(images, slices):
+        if isinstance(img, int):
+            continue
         mode = "RGBA" if img.mode == "RGBA" else "RGB"
-        raw = img.convert(mode).tobytes()
-        slices.append({"offset": offset, "len": len(raw), "width": img.width, "height": img.height,
-                       "channels": 4 if mode == "RGBA" else 3})
-        parts.append(raw)
-        offset += len(raw)
-    return b"".join(parts), slices
+        raw = (img if img.mode == mode else img.convert(mode)).tobytes()
+        arena[s["offset"]:s["offset"] + s["len"]] = raw
+    return arena, slices
+
+
+def _buffer(arena: bytearray):
+    """A ctypes view over the arena, no copy."""
+    return (ctypes.c_uint8 * len(arena)).from_buffer(arena) if arena else None
 
 
 def compose_hero(cars, width: int, height: int, background: dict, *, layout: str = "single",
@@ -155,7 +171,7 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
         "glow_intensity": glow_intensity, "margin_frac": margin_frac,
         "border": slices[border_index] if border_index is not None else None,
     }
-    buf = (ctypes.c_uint8 * len(arena)).from_buffer_copy(arena) if arena else None
+    buf = _buffer(arena)
     result = lib.ls_compose_hero(json.dumps(req).encode("utf-8"), buf, len(arena))
     try:
         if not result.ok:
@@ -188,7 +204,7 @@ def call(op: dict, images: list | None = None):
             return [bind(v) for v in node]
         return node
 
-    buf = (ctypes.c_uint8 * len(arena)).from_buffer_copy(arena) if arena else None
+    buf = _buffer(arena)
     result = lib.ls_call(json.dumps(bind(op)).encode("utf-8"), buf, len(arena))
     try:
         if not result.ok:
@@ -198,7 +214,9 @@ def call(op: dict, images: list | None = None):
         if result.channels == 0:
             return json.loads(data.decode("utf-8"))["value"]
         mode = {1: "L", 3: "RGB", 4: "RGBA"}[result.channels]
-        return Image.frombytes(mode, (result.width, result.height), data)
+        # frombuffer shares `data` (already our copy) instead of copying
+        # it a second time; Pillow copies on the first write.
+        return Image.frombuffer(mode, (result.width, result.height), data, "raw", mode, 0, 1)
     finally:
         lib.ls_free(result)
 
@@ -206,13 +224,20 @@ def call(op: dict, images: list | None = None):
 def render_frame(cars, width: int, height: int, background: dict, *, border=None, spotlight=None,
                  glow=False, glow_color=None, glow_radius=None, glow_intensity=None, resample="lanczos",
                  background_image=None):
-    """One video frame. `cars` are (rgba_image, x, y, w, h, alpha) tuples;
-    `spotlight` is (cx, cy, dim) or None. A car already at (w, h) is
-    pasted without resampling, which is how a host caches scaled cars."""
+    """One video frame. `cars` are (rgba_image, x, y, w, h, alpha) tuples,
+    optionally with a seventh element (other_rgba_image, t) to dissolve
+    the car toward `other` by `t` before pasting; `spotlight` is
+    (cx, cy, dim) or None. A car already at (w, h) is pasted without
+    resampling, which is how a host caches scaled cars."""
     images = [c[0] for c in cars]
+    car_ops = [{"image": {"$image": i}, "x": c[1], "y": c[2], "w": c[3], "h": c[4], "alpha": c[5]}
+               for i, c in enumerate(cars)]
+    for c, o in zip(cars, car_ops):
+        if len(c) > 6 and c[6] is not None:
+            o["mix"] = {"image": {"$image": len(images)}, "t": c[6][1]}
+            images.append(c[6][0])
     op = {"op": "render_frame", "width": width, "height": height, "background": dict(background),
-          "cars": [{"image": {"$image": i}, "x": c[1], "y": c[2], "w": c[3], "h": c[4], "alpha": c[5]}
-                   for i, c in enumerate(cars)],
+          "cars": car_ops,
           "glow": glow, "glow_color": glow_color, "glow_radius": glow_radius, "glow_intensity": glow_intensity,
           "resample": resample}
     if background.get("kind") == "image":
@@ -224,6 +249,21 @@ def render_frame(cars, width: int, height: int, background: dict, *, border=None
     if spotlight is not None:
         op["spotlight"] = {"cx": spotlight[0], "cy": spotlight[1], "dim": spotlight[2]}
     return call(op, images)
+
+
+def retain(image) -> int:
+    """Keep `image` (PIL, or an id to re-retain) inside the core and get
+    its id back. Any op then takes the id wherever it takes an image, and
+    no pixels cross the boundary for it again. Pair with `release`."""
+    return int(call({"op": "retain", "image": {"$image": 0}}, [image]))
+
+
+def release(image_id: int) -> bool:
+    return bool(call({"op": "release", "id": int(image_id)}))
+
+
+def release_all() -> int:
+    return int(call({"op": "release_all"}))
 
 
 def resize(image, width: int, height: int, bilinear: bool = False):

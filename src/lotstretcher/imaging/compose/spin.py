@@ -36,22 +36,23 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 from PIL import Image
 
 from ... import core
+from ... import spec as _spec
 
-# front-to-rear geometric order, NOT hero_video.py's CAROUSEL_ANGLE_ORDER
-# (which front-loads front_3q for a dramatic reveal) -- a spin needs to
-# read as continuous rotation, so it has to be monotonic.
-SPIN_ANGLE_ORDER = ["front", "front_3q", "side", "rear_3q", "rear"]
-
-DEFAULT_CANVAS_SIZE = (1254, 1254)
-DEFAULT_FPS = 30.0
-HOLD_SECONDS = 0.9      # how long each REAL anchor frame is held
-TRANSITION_SECONDS = 0.6  # cross-dissolve duration between anchors
-MIN_ANCHORS = 3          # fewer real angles than this isn't a "spin"
+# From shared/pipeline-spec.json (the `spin` block), which core/src/spin.rs
+# embeds: the same numbers drive both surfaces. The angle order is
+# front-to-rear geometric, NOT the carousel's reveal order -- a spin has
+# to read as continuous rotation, so it has to be monotonic.
+SPIN_ANGLE_ORDER: list[str] = list(_spec.get("spin", "angleOrder"))
+DEFAULT_CANVAS_SIZE = (_spec.get("spin", "canvasSize"), _spec.get("spin", "canvasSize"))
+DEFAULT_FPS = float(_spec.get("spin", "fps"))
+MIN_ANCHORS = int(_spec.get("spin", "minAnchors"))
+DEFAULT_BUDGET_MB = float(_spec.get("spin", "budgetMb"))
 
 
 def order_for_spin(cutout_dir: Path) -> list[tuple[Path, str]]:
@@ -75,38 +76,50 @@ def order_for_spin(cutout_dir: Path) -> list[tuple[Path, str]]:
     return [(cutout_dir / best[label][0], label) for label in SPIN_ANGLE_ORDER if label in best]
 
 
-def _fit_and_anchor(cutout: Image.Image, canvas_size: tuple[int, int],
-                     max_height_frac: float = 0.62) -> Image.Image:
-    """Scale `cutout` to a consistent height and anchor it to a fixed
-    ground line, centered horizontally. Without this, cutting between
-    angles at their own native crop sizes makes the car visibly grow/
-    shrink and jump vertically frame to frame -- the single biggest thing
-    that makes a naive angle-to-angle cut read as a slideshow instead of
-    a rotation."""
-    cw, ch = canvas_size
-    target_h = round(ch * max_height_frac)
-    scale = target_h / cutout.height
-    resized = cutout.resize((round(cutout.width * scale), target_h), Image.LANCZOS, reducing_gap=2.0)
-
-    layer = Image.new("RGBA", canvas_size, (0, 0, 0, 0))
-    x = (cw - resized.width) // 2
-    ground_y = round(ch * 0.80)  # fixed "ground" line the car's base sits on
-    y = ground_y - resized.height
-    layer.alpha_composite(resized, (x, y))
-    return layer
+def plan_spin(cutouts: list[Image.Image], canvas_size: tuple[int, int], fps: float | None = None) -> dict:
+    """The core's plan: one rect per anchor (one height, one ground line),
+    the hold and dissolve lengths in frames, and the spotlight."""
+    return core.call({"op": "spin_plan", "width": canvas_size[0], "height": canvas_size[1], "fps": fps,
+                      "anchors": [{"width": c.width, "height": c.height} for c in cutouts]})
 
 
-def _backdrop(canvas_size: tuple[int, int], base_angle: float, start: tuple[int, int, int],
-              end: tuple[int, int, int]) -> Image.Image:
-    grad = core.linear_gradient(canvas_size[0], canvas_size[1], base_angle, start, end)
-    center = (canvas_size[0] / 2, canvas_size[1] * 0.80)
-    return core.render_frame([], canvas_size[0], canvas_size[1], {"kind": "image"}, background_image=grad,
-                             spotlight=(center[0], center[1], 0.55)).convert("RGBA")
+def render_spin_frames(cutouts: list[Image.Image], gradient_colors: tuple, canvas_size: tuple[int, int],
+                       fps: float | None = None) -> Iterator[Image.Image]:
+    """Every frame of the spin, RGB, in order. The core decides the
+    schedule, places each anchor once into a canvas-sized layer, and
+    dissolves between layers; this host only walks the frame count."""
+    plan = plan_spin(cutouts, canvas_size, fps)
+    w, h = canvas_size
+    base_angle, start, end = gradient_colors
+    # The layers and the backdrop stay resident in the core for the
+    # whole clip: a frame is a request naming them by id, and the only
+    # pixels that cross the boundary are the finished frame's. The
+    # backdrop never turns in a spin, so it is rendered once.
+    held: list[int] = []
+    try:
+        layers = []
+        for c, rect in zip(cutouts, plan["rects"]):
+            layer = core.retain(core.call({"op": "place_layer", "image": {"$image": 0}, "width": w, "height": h,
+                                           "rect": rect}, [c.convert("RGBA")]))
+            held.append(layer)
+            layers.append(layer)
+        backdrop = core.retain(core.render_frame([], w, h, {"kind": "linear", "angle": base_angle,
+                                                            "start": list(start), "end": list(end)},
+                                                 spotlight=tuple(plan["spotlight"])))
+        held.append(backdrop)
+        for f in range(plan["total_frames"]):
+            at = core.call({"op": "spin_frame", "plan": plan, "frame": f})
+            mix = None if at["next"] is None else (layers[at["next"]], at["tau"])
+            yield core.render_frame([(layers[at["index"]], 0, 0, w, h, 1.0, mix)], w, h, {"kind": "image"},
+                                    background_image=backdrop)
+    finally:
+        for image_id in held:
+            core.release(image_id)
 
 
 def render_spin_video(cutout_dir: Path, out_path: Path, gradient_colors: tuple,
                        canvas_size: tuple[int, int] = DEFAULT_CANVAS_SIZE,
-                       fps: float = DEFAULT_FPS, budget_mb: float = 50.0,
+                       fps: float = DEFAULT_FPS, budget_mb: float = DEFAULT_BUDGET_MB,
                        encoder: str = "libx264") -> dict | None:
     """Renders the spin and encodes it to `out_path`. Returns a small
     report dict, or None if there aren't enough real angles to make a
@@ -115,46 +128,23 @@ def render_spin_video(cutout_dir: Path, out_path: Path, gradient_colors: tuple,
 
     Mirrors hero_video.py's render_hero_video()'s own encoder-fallback
     contract on purpose (retry once with libx264 if a hardware encoder
-    fails to open under GPU pressure) but is a SEPARATE, self-contained
-    implementation rather than a shared call -- duplicates ~20 lines of
-    subprocess/fallback plumbing in exchange for not touching the
-    already-shipped, already-tested hero_video.py mid-build. Worth
-    unifying later if a third caller needs the same pattern.
+    fails to open under GPU pressure).
     """
     anchors = order_for_spin(cutout_dir)
     if len(anchors) < MIN_ANCHORS:
         return None
 
     cutouts = [Image.open(p).convert("RGBA") for p, _label in anchors]
-    frames_static = [_fit_and_anchor(c, canvas_size) for c in cutouts]
+    plan = plan_spin(cutouts, canvas_size, fps)
+    total_frames, total_seconds = plan["total_frames"], plan["total_seconds"]
+    n = len(cutouts)
 
-    base_angle, start, end = gradient_colors
-    backdrop = _backdrop(canvas_size, base_angle, start, end)
-
-    hold_frames = round(HOLD_SECONDS * fps)
-    trans_frames = round(TRANSITION_SECONDS * fps)
-    n = len(frames_static)
-    total_frames = n * hold_frames + (n - 1) * trans_frames
-    total_seconds = total_frames / fps
-
-    bitrate_kbps = round((budget_mb * 8192) / total_seconds * 0.90)  # 10% container-overhead margin
+    overhead = float(_spec.get("spin", "containerOverheadFrac"))
+    bitrate_kbps = round((budget_mb * 8192) / total_seconds * overhead)
 
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     log_path = out_path.with_suffix(".ffmpeg.log")
-
-    def _frame_at(f: int) -> Image.Image:
-        cycle = hold_frames + trans_frames
-        idx, within = divmod(f, cycle)
-        if idx >= n - 1 or within < hold_frames:
-            idx = min(idx, n - 1)
-            layer = frames_static[idx]
-        else:
-            tau = (within - hold_frames) / trans_frames
-            layer = Image.blend(frames_static[idx], frames_static[idx + 1], tau)
-        canvas = backdrop.copy()
-        canvas.alpha_composite(layer)
-        return canvas.convert("RGB")
 
     def _run_encode(enc: str) -> None:
         cmd = [
@@ -168,9 +158,9 @@ def render_spin_video(cutout_dir: Path, out_path: Path, gradient_colors: tuple,
         with open(log_path, "w") as logf:
             proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=logf)
             try:
-                for f in range(total_frames):
+                for frame in render_spin_frames(cutouts, gradient_colors, canvas_size, fps):
                     try:
-                        proc.stdin.write(_frame_at(f).tobytes())
+                        proc.stdin.write(frame.tobytes())
                     except BrokenPipeError:
                         break
             finally:
@@ -195,6 +185,7 @@ def render_spin_video(cutout_dir: Path, out_path: Path, gradient_colors: tuple,
         "encoder": enc_used,
         "duration_s": round(total_seconds, 2),
         "n_anchors": n,
+        "frames": total_frames,
         "angles": [label for _p, label in anchors],
         "file_size_mb": round(out_path.stat().st_size / (1024 * 1024), 2),
     }

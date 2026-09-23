@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 from lotstretcher.imaging.compose import render_spin_video
-from lotstretcher.imaging.compose.spin import DEFAULT_CANVAS_SIZE, MIN_ANCHORS
+from lotstretcher.imaging.compose.spin import DEFAULT_BUDGET_MB, DEFAULT_CANVAS_SIZE, MIN_ANCHORS
 from lotstretcher.imaging.palette import colors_from_details, vehicle_gradient_colors
 from lotstretcher.vehicle_pipeline import video_output_path
 
@@ -24,7 +24,8 @@ from lotstretcher.vehicle_pipeline import video_output_path
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("vehicle_folder", help="A folder produced by lotstretcher.py (contains images/exterior/cutout/)")
-    parser.add_argument("--budget-mb", type=float, default=50.0, help="Target max file size in MB (default: 50)")
+    parser.add_argument("--budget-mb", type=float, default=DEFAULT_BUDGET_MB,
+                        help=f"Target max file size in MB (default: {DEFAULT_BUDGET_MB:g})")
     parser.add_argument("--nvenc", action="store_true",
                          help="Encode on the GPU (h264_nvenc). Falls back to libx264 automatically if the "
                               "GPU is too busy to open the encoder -- see spin.py's render_spin_video().")

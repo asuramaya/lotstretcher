@@ -35,20 +35,31 @@ export function available() { return mod !== null; }
 export function whyUnavailable() { return failure ? String(failure.message || failure) : null; }
 export function version() { return mod ? mod.version() : null; }
 
-/* Pack RGBA/RGB ImageData objects into one arena and describe each. */
+/* Pack RGBA/RGB ImageData objects into one arena and describe each. A
+ * number is the id of an image the core already holds (see retain) and
+ * travels as that id, with no bytes. */
 function arena(images) {
   let total = 0;
-  for (const img of images) total += img.data.length;
+  for (const img of images) if (typeof img !== 'number') total += img.data.length;
   const buf = new Uint8Array(total);
   const slices = [];
   let offset = 0;
   for (const img of images) {
+    if (typeof img === 'number') { slices.push({ retained: img }); continue; }
     buf.set(img.data, offset);
     slices.push({ offset, len: img.data.length, width: img.width, height: img.height, channels: img.channels || 4 });
     offset += img.data.length;
   }
   return { buf, slices };
 }
+
+/* Keep an image inside the core and get its id: every op then takes the
+ * id wherever it takes an image, and its pixels never cross into wasm
+ * memory again. Pair with release; a clip's worth of scaled cars is a
+ * few tens of MB. */
+export function retain(image) { return call({ op: 'retain', image: { $image: 0 } }, [image]); }
+export function release(id) { return call({ op: 'release', id }); }
+export function releaseAll() { return call({ op: 'release_all' }); }
 
 /* Compose one hero. `cars` are ImageData (RGBA), hero first. Returns
  * an ImageData of the RGB canvas expanded to RGBA for putImageData. */
@@ -115,7 +126,9 @@ export function toImageData(res) {
   return out;
 }
 
-/* One video frame. `cars` are {image: ImageData, x, y, w, h, alpha}. */
+/* One video frame. `cars` are {image: ImageData, x, y, w, h, alpha},
+ * optionally with mix: {image: ImageData, t} to dissolve the car toward
+ * another same-sized image before it is pasted. */
 export function renderFrame(cars, width, height, background, {
   border = null, spotlight = null, glow = false, glowColor = null, glowRadius = null,
   glowIntensity = null, resample = 'lanczos', backgroundImage = null,
@@ -128,6 +141,9 @@ export function renderFrame(cars, width, height, background, {
     glow, glow_color: glowColor, glow_radius: glowRadius, glow_intensity: glowIntensity, resample,
     rgba: true,
   };
+  cars.forEach((c, i) => {
+    if (c.mix) { op.cars[i].mix = { image: { $image: images.length }, t: c.mix.t }; images.push(c.mix.image); }
+  });
   if (bg.kind === 'image') { bg.image = { $image: images.length }; images.push(backgroundImage); }
   if (border) { op.border = { $image: images.length }; images.push(border); }
   if (spotlight) op.spotlight = spotlight;

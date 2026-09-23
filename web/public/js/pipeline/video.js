@@ -104,15 +104,44 @@ function hashAngle(str) {
   return (h % 36000) / 100;
 }
 
+/* Scaled cars, resident in the core and memoized on size, as the CLI's
+ * are (hero_video.py::_scaled): a pan slides one bitmap and the beat
+ * pulse cycles through a handful of integer sizes, so each is resampled
+ * once and then pasted by id with no pixels crossing into wasm memory.
+ * Bounded; an entry is a few MB. */
+const SCALED_MAX = 48;
+class ScaledCache {
+  constructor() { this.map = new Map(); }
+  get(shotId, w, h) {
+    const key = `${shotId}:${w}:${h}`;
+    let id = this.map.get(key);
+    if (id === undefined) {
+      if (this.map.size >= SCALED_MAX) {
+        const oldest = this.map.keys().next().value;
+        core.release(this.map.get(oldest));
+        this.map.delete(oldest);
+      }
+      id = core.retain(core.call({ op: 'resize', image: { $image: 0 }, width: w, height: h, bilinear: true }, [shotId]));
+    } else {
+      this.map.delete(key); // least recently used first: a hit moves to the back
+    }
+    this.map.set(key, id);
+    return id;
+  }
+  clear() { for (const id of this.map.values()) core.release(id); this.map.clear(); }
+}
+
 /* The conveyor: the CLI's edit, from the same core choreography. */
-function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan }) {
+function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan, scaled }) {
   const fo = core.call({ op: 'carousel_frame', plan, t });
   const hero = plan.shots[fo.hero];
   const pal = palette[0];
   const angle = pal.angle + GRADIENT_TURNS * 360 * (t / duration);
-  const cars = fo.cars.map((c) => ({
-    image: shots[c.shot].data, x: c.rect[0], y: c.rect[1], w: c.rect[2], h: c.rect[3], alpha: c.alpha,
-  }));
+  const cars = fo.cars.map((c) => {
+    const w = Math.max(1, Math.round(c.rect[2]));
+    const h = Math.max(1, Math.round(c.rect[3]));
+    return { image: scaled.get(shots[c.shot].id, w, h), x: c.rect[0], y: c.rect[1], w, h, alpha: c.alpha };
+  });
   const frame = core.renderFrame(cars, width, height, { kind: 'linear', angle, start: pal.start, end: pal.end }, {
     spotlight: spotlight ? { cx: hero.center[0], cy: hero.center[1], dim: hero.dim } : null,
     resample: 'bilinear',
@@ -142,7 +171,7 @@ function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight 
     const scale = base * (1 + PUSH_STRENGTH * easeInOut(progress));
     const w = shot.width * scale;
     const h = shot.height * scale;
-    cars.push({ image: shot.data, x: (width - w) / 2, y: (height - h) / 2, w, h, alpha });
+    cars.push({ image: shot.id, x: (width - w) / 2, y: (height - h) / 2, w, h, alpha });
   };
 
   const fadeFrac = Math.min(0.45, CROSSFADE_S / perShot);
@@ -281,10 +310,15 @@ export async function renderHeroVideo(cutouts, {
   const total = Math.round(duration * fps);
   const usPerFrame = 1e6 / fps;
 
+  // The cutouts stay resident in the core for the clip; every frame
+  // names them by id. Released in `finally`, including on cancel.
+  for (const shot of shots) shot.id = core.retain(shot.data);
+  const scaled = new ScaledCache();
+  try {
   for (let f = 0; f < total; f++) {
     if (signal?.aborted) { encoder.close(); throw new Error('cancelled'); }
 
-    if (plan) drawConveyorFrame(ctx, { width, height, shots, t: f / fps, duration, palette, spotlight, plan });
+    if (plan) drawConveyorFrame(ctx, { width, height, shots, t: f / fps, duration, palette, spotlight, plan, scaled });
     else drawFrame(ctx, { width, height, shots, t: f / fps, duration, palette, spotlight });
 
     const frame = new VideoFrame(canvas, {
@@ -300,6 +334,10 @@ export async function renderHeroVideo(cutouts, {
     // which is what pushes a phone into a memory wall.
     await waitForDrain();
     if (onProgress && f % 5 === 0) onProgress(f / total);
+  }
+  } finally {
+    scaled.clear();
+    for (const shot of shots) { if (shot.id !== undefined) { core.release(shot.id); delete shot.id; } }
   }
 
   await encoder.flush();

@@ -6,13 +6,15 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::compose::Slice;
+use crate::compose::{slice_image, Slice};
 use crate::layout::{compute_placement, conveyor_for_window, Anchor, Box_};
 use crate::resize::{crop, resize_lanczos};
 use crate::spec;
 use crate::spotlight::compute_dim_strength;
 use crate::window::{detect_window, resolve_collision};
 use crate::Image;
+#[allow(unused_imports)]
+use std::rc::Rc;
 
 pub type Rect = [f64; 4];
 
@@ -68,12 +70,6 @@ pub struct Plan {
     pub beat_s: f64,
 }
 
-fn slice_image(arena: &[u8], s: &Slice) -> Result<Image, String> {
-    let end = s.offset.checked_add(s.len).ok_or("slice overflow")?;
-    if end > arena.len() { return Err("slice outside arena".into()); }
-    Image::from_vec(s.width, s.height, s.channels, arena[s.offset..end].to_vec())
-}
-
 /// (dwell, transition_s, beat_s) from the loop's own length.
 pub fn timing(audio_loop_s: f64, bars_per_loop: u32) -> (f64, f64, f64) {
     let beats_per_bar = spec::f64_at(&["video", "beatsPerBar"]);
@@ -96,6 +92,7 @@ pub fn plan(req: &PlanRequest, arena: &[u8]) -> Result<Plan, String> {
     let border = match &req.border { Some(s) => Some(slice_image(arena, s)?), None => None };
     let (w, h) = match &border { Some(b) => (b.width, b.height), None => (req.width, req.height) };
     let window = match &border { Some(b) => detect_window(b)?, None => (0, 0, w as i64, h as i64) };
+    let border = border.as_deref();
     let boxes = conveyor_for_window(window, 2);
     let (hero_box, hero_anchor) = boxes[0];
     let (left_box, left_anchor) = boxes[1];
@@ -109,9 +106,9 @@ pub fn plan(req: &PlanRequest, arena: &[u8]) -> Result<Plan, String> {
     let mut shots = Vec::with_capacity(req.shots.len());
     for s in &req.shots {
         let car = slice_image(arena, &s.image)?;
-        let (_, left_rect) = place(&car, left_box, left_anchor, border.as_ref(), accent_margin);
-        let (_, right_rect) = place(&car, right_box, right_anchor, border.as_ref(), accent_margin);
-        let (hero_fit, hero_fit_rect) = place(&car, hero_box, hero_anchor, border.as_ref(), hero_margin);
+        let (_, left_rect) = place(&car, left_box, left_anchor, border, accent_margin);
+        let (_, right_rect) = place(&car, right_box, right_anchor, border, accent_margin);
+        let (hero_fit, hero_fit_rect) = place(&car, hero_box, hero_anchor, border, hero_margin);
 
         let (bl, bt, br, bb) = hero_box;
         let avail_w = (br - bl) as f64 * (1.0 - 2.0 * hero_margin);

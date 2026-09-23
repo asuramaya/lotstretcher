@@ -116,6 +116,26 @@
     "defaultBpm": 100.0,
     "sizeSafetyFrac": 0.1
   },
+  "spin": {
+    "$comment": [
+      "compose/spin.py and core/src/spin.rs: the half-turn spin made by",
+      "cross-dissolving a vehicle's real angle cutouts. angleOrder is",
+      "geometric (front to rear) on purpose, not the carousel's reveal",
+      "order; heightFrac and groundFrac hold every anchor at one size on",
+      "one ground line so the cut reads as rotation, not a slideshow."
+    ],
+    "canvasSize": 1254,
+    "fps": 30.0,
+    "holdSeconds": 0.9,
+    "transitionSeconds": 0.6,
+    "minAnchors": 3,
+    "heightFrac": 0.62,
+    "groundFrac": 0.8,
+    "spotlightDim": 0.55,
+    "budgetMb": 50.0,
+    "containerOverheadFrac": 0.9,
+    "angleOrder": ["front", "front_3q", "side", "rear_3q", "rear"]
+  },
   "cutout": {
     "$comment": "imaging/cutout.py",
     "alphaThreshold": 16,

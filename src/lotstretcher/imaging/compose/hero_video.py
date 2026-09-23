@@ -327,23 +327,33 @@ _SCALED_CACHE: dict = {}
 _SCALED_CACHE_MAX = 48
 
 
-def _scaled(car: Image.Image, w: int, h: int) -> Image.Image:
-    """The shot's car at (w, h), resampled by the core and memoized on
-    size, not position: a pan slides the same bitmap and the beat pulse
-    cycles through the same handful of integer sizes, so the core is
-    asked once per size and then pastes a car that is already the
-    rectangle's size without resampling it again. Bounded because a
-    hero-sized entry is a few MB."""
-    key = (id(car), w, h)
-    img = _SCALED_CACHE.get(key)
-    if img is None:
+def _scaled(car: int, w: int, h: int) -> int:
+    """The shot's car at (w, h), resampled by the core, kept resident in
+    the core, and memoized on size, not position: a pan slides the same
+    bitmap and the beat pulse cycles through the same handful of integer
+    sizes, so the core resamples once per size and then pastes a car it
+    already holds at the rectangle's size, with no pixels crossing the
+    boundary for it. Bounded because a hero-sized entry is a few MB."""
+    key = (car, w, h)
+    held = _SCALED_CACHE.pop(key, None)
+    if held is None:
         if len(_SCALED_CACHE) >= _SCALED_CACHE_MAX:
-            _SCALED_CACHE.pop(next(iter(_SCALED_CACHE)))
-        img = _SCALED_CACHE[key] = core.resize(car, w, h)
-    return img
+            core.release(_SCALED_CACHE.pop(next(iter(_SCALED_CACHE))))
+        held = core.retain(core.resize(car, w, h))
+    # Least recently USED goes first: a hit moves to the back, so the
+    # cars a frame has already looked up can never be the ones evicted
+    # to make room for the rest of that same frame.
+    _SCALED_CACHE[key] = held
+    return held
 
 
-def _car_at(car: Image.Image, draw_rect, alpha: float) -> tuple:
+def _clear_scaled() -> None:
+    for held in _SCALED_CACHE.values():
+        core.release(held)
+    _SCALED_CACHE.clear()
+
+
+def _car_at(car: int, draw_rect, alpha: float) -> tuple:
     """A render_frame car entry for `car` drawn at draw_rect."""
     dx, dy, dw, dh = draw_rect
     w, h = max(1, round(dw)), max(1, round(dh))
@@ -414,13 +424,10 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     # what sits behind the car, not the animation.
     representative_bg = (bg_frames[0] if bg_frames is not None
                           else core.linear_gradient(canvas_size[0], canvas_size[1], *gradient_colors))
-    # Fresh per call: the scaled-car cache is keyed by id(PIL Image), and those
-    # ids get reused by CPython once a prior call's `shots` list (and the
-    # Images it held) is garbage collected -- letting entries survive
-    # across calls risks a stale-id false hit on a totally different
-    # vehicle's cutout, and would otherwise grow unbounded (one GPU tensor
-    # per cutout ever rendered) across a long multi-vehicle sync.
-    _SCALED_CACHE.clear()
+    # Fresh per call: the cache is keyed by the core's id for each cutout,
+    # which a later call re-retains under a new id, so nothing can hit a
+    # stale entry; clearing also gives the core the memory back.
+    _clear_scaled()
 
     dwell, transition_s, beat_s = compute_carousel_timing(audio_loop_s, bars_per_loop)
     n = len(carousel_paths)
@@ -428,6 +435,10 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     # pan geometry, spotlight measurement, all of it. This host supplies
     # the cutouts, which way each nose faces, and the clock.
     cars_rgba = [Image.open(p).convert("RGBA") for p in carousel_paths]
+    # Everything a frame draws from stays resident in the core for the
+    # clip: the cutouts (scaled copies come off them), the border, and
+    # every flag frame. A frame request then carries ids, not pixels.
+    held: list[int] = []
     sides = []
     for i, p in enumerate(carousel_paths):
         side = hood_sides.get(p.name) if hood_sides else None
@@ -452,6 +463,14 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     }, images)
     shots = plan["shots"]
     schedule, carousel_period = [tuple(x) for x in plan["schedule"]], plan["period"]
+    cars_held = [core.retain(c) for c in cars_rgba]
+    held += cars_held
+    border_held = core.retain(border) if border is not None else None
+    if border_held is not None:
+        held.append(border_held)
+    if bg_frames is not None:
+        bg_frames = [core.retain(f) for f in bg_frames]
+        held += bg_frames
 
     # Default length is ONE full pass of the shot library: the conveyor
     # has nothing new to show after that, and a run that stops there
@@ -523,10 +542,10 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                             "angle": gradient_colors[0] + GRADIENT_TURNS * 360.0 * (f / max(1, total_frames)),
                             "start": list(gradient_colors[1]), "end": list(gradient_colors[2]),
                         }, None
-                    cars = [_car_at(cars_rgba[c["shot"]], c["rect"], c["alpha"]) for c in fo["cars"]]
+                    cars = [_car_at(cars_held[c["shot"]], c["rect"], c["alpha"]) for c in fo["cars"]]
                     canvas = core.render_frame(
                         cars, canvas_size[0], canvas_size[1], background, background_image=bg_frame,
-                        border=border, spotlight=(hero["center"][0], hero["center"][1], hero["dim"]),
+                        border=border_held, spotlight=(hero["center"][0], hero["center"][1], hero["dim"]),
                         glow=glow, glow_color=str(glow_color), glow_radius=glow_radius,
                         glow_intensity=glow_intensity)
                     try:
@@ -539,7 +558,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
             finally:
                 proc.stdin.close()
                 ret = proc.wait()
-                _SCALED_CACHE.clear()
+                _clear_scaled()
 
         if ret != 0:
             raise RuntimeError(f"ffmpeg failed (exit {ret}) -- see {log_path}")
@@ -554,12 +573,16 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     # every call, independent of how busy the GPU is when it runs.
     enc_used = encoder
     try:
-        _run_encode(encoder)
-    except RuntimeError:
-        if encoder == "libx264":
-            raise
-        enc_used = "libx264"
-        _run_encode("libx264")
+        try:
+            _run_encode(encoder)
+        except RuntimeError:
+            if encoder == "libx264":
+                raise
+            enc_used = "libx264"
+            _run_encode("libx264")
+    finally:
+        for image_id in held:
+            core.release(image_id)
 
     log_path.unlink(missing_ok=True)
 

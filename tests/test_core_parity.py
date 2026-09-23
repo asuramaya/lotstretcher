@@ -300,3 +300,23 @@ def test_carousel_plan_and_frames_hold_the_documented_contract():
     assert mid["cars"][0]["alpha"] + mid["cars"][1]["alpha"] == pytest.approx(1.0)
     later = core.call({"op": "carousel_frame", "plan": plan, "t": 2 * dwell + 0.1})
     assert later["hero"] == 1
+
+
+def test_retained_images_render_identically_and_release():
+    """A host may keep an image inside the core and name it by id: the
+    result is byte-identical to passing the bytes, and a released id
+    is refused rather than silently wrong."""
+    car = synthetic_cutout()
+    by_bytes = core.render_frame([(car, 40, 30, 300, 170, 1.0)], 400, 300, {"kind": "generic", "seed": "r"})
+    held = core.retain(car)
+    by_id = core.render_frame([(held, 40, 30, 300, 170, 1.0)], 400, 300, {"kind": "generic", "seed": "r"})
+    assert by_id.tobytes() == by_bytes.tobytes()
+    # A retained result of an op works too (a scaled car kept for a clip).
+    scaled = core.retain(core.resize(held, 300, 170))
+    by_scaled = core.render_frame([(scaled, 40, 30, 300, 170, 1.0)], 400, 300, {"kind": "generic", "seed": "r"})
+    assert by_scaled.tobytes() == by_bytes.tobytes()
+    assert core.release(held) and core.release(scaled)
+    assert not core.release(held)
+    with pytest.raises(RuntimeError, match="no retained image"):
+        core.render_frame([(held, 40, 30, 300, 170, 1.0)], 400, 300, {"kind": "generic", "seed": "r"})
+    assert core.release_all() == 0

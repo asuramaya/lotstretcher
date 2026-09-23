@@ -6,6 +6,9 @@
 //! which is what makes adding a feature here a change in one place.
 
 use serde::Deserialize;
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::glow::{glow_color, paste_alpha, paste_with_glow};
 use crate::gradient::{generic_gradient, vehicle_gradient};
@@ -16,8 +19,72 @@ use crate::spotlight::{apply_spotlight, compute_dim_strength};
 use crate::window::{detect_window, resolve_collision};
 use crate::Image;
 
-#[derive(Deserialize)]
-pub struct Slice { pub offset: usize, pub len: usize, pub width: usize, pub height: usize, pub channels: usize }
+/// Where an image comes from: a run of the request's byte arena, or an
+/// image the core is already holding (`retained`, from a `retain` op),
+/// in which case no bytes travel with the request at all. A video host
+/// retains its scaled cars, layers and backdrop frames once and then
+/// refers to them by id on every frame.
+#[derive(Deserialize, Clone)]
+pub struct Slice {
+    #[serde(default)] pub offset: usize,
+    #[serde(default)] pub len: usize,
+    #[serde(default)] pub width: usize,
+    #[serde(default)] pub height: usize,
+    #[serde(default)] pub channels: usize,
+    #[serde(default)] pub retained: Option<u64>,
+}
+
+pub type GlowKey = (u64, [u8; 3], usize, u64);
+
+thread_local! {
+    static STORE: RefCell<HashMap<u64, Rc<Image>>> = RefCell::new(HashMap::new());
+    static NEXT_ID: Cell<u64> = const { Cell::new(1) };
+    /// Glow halos of retained cars, by (id, colour, radius, intensity
+    /// bits): a clip draws the same scaled car with the same glow on
+    /// every frame, so the blur is paid once per car, not per frame.
+    static GLOW_CACHE: RefCell<HashMap<GlowKey, (Rc<Image>, usize)>> = RefCell::new(HashMap::new());
+}
+
+/// The halo for retained image `id`, built by `make` on the first ask.
+pub fn glow_cached(key: GlowKey, make: impl FnOnce() -> (Image, usize)) -> (Rc<Image>, usize) {
+    if let Some(hit) = GLOW_CACHE.with(|c| c.borrow().get(&key).cloned()) { return hit; }
+    let (img, pad) = make();
+    let entry = (Rc::new(img), pad);
+    GLOW_CACHE.with(|c| c.borrow_mut().insert(key, entry.clone()));
+    entry
+}
+
+/// Keep `img` in the core and hand back its id.
+pub fn retain(img: Image) -> u64 {
+    let id = NEXT_ID.with(|n| { let id = n.get(); n.set(id + 1); id });
+    STORE.with(|s| s.borrow_mut().insert(id, Rc::new(img)));
+    id
+}
+
+/// Drop a retained image. False when the id was not held.
+pub fn release(id: u64) -> bool {
+    GLOW_CACHE.with(|c| c.borrow_mut().retain(|k, _| k.0 != id));
+    STORE.with(|s| s.borrow_mut().remove(&id).is_some())
+}
+
+/// Drop every retained image; returns how many there were.
+pub fn release_all() -> usize {
+    GLOW_CACHE.with(|c| c.borrow_mut().clear());
+    STORE.with(|s| { let mut s = s.borrow_mut(); let n = s.len(); s.clear(); n })
+}
+
+/// The image a slice names: a copy out of the arena, or a shared handle
+/// to a retained one.
+pub fn slice_image(arena: &[u8], s: &Slice) -> Result<Rc<Image>, String> {
+    if let Some(id) = s.retained {
+        return STORE.with(|st| st.borrow().get(&id).cloned()).ok_or_else(|| format!("no retained image {id}"));
+    }
+    let end = s.offset.checked_add(s.len).ok_or("slice overflow")?;
+    if end > arena.len() {
+        return Err(format!("slice {}..{} is outside the {}-byte arena", s.offset, end, arena.len()));
+    }
+    Ok(Rc::new(Image::from_vec(s.width, s.height, s.channels, arena[s.offset..end].to_vec())?))
+}
 
 #[derive(Deserialize)]
 #[serde(tag = "kind", rename_all = "lowercase")]
@@ -64,14 +131,6 @@ pub struct ComposeRequest {
 fn default_layout() -> String { "single".into() }
 fn default_true() -> bool { true }
 
-fn slice_image(arena: &[u8], s: &Slice) -> Result<Image, String> {
-    let end = s.offset.checked_add(s.len).ok_or("slice overflow")?;
-    if end > arena.len() {
-        return Err(format!("slice {}..{} is outside the {}-byte arena", s.offset, end, arena.len()));
-    }
-    Image::from_vec(s.width, s.height, s.channels, arena[s.offset..end].to_vec())
-}
-
 /// Returns the composed RGB canvas (width * height * 3 bytes).
 pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String> {
     let border = match &req.border {
@@ -89,19 +148,19 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     if w == 0 || h == 0 || w > 8192 || h > 8192 {
         return Err("canvas must be within 8192x8192".into());
     }
-    let cars: Vec<Image> = req.cars.iter().map(|s| slice_image(arena, s)).collect::<Result<_, _>>()?;
+    let cars: Vec<Rc<Image>> = req.cars.iter().map(|s| slice_image(arena, s)).collect::<Result<_, _>>()?;
     if cars.iter().any(|c| c.channels != 4) {
         return Err("cutouts must be RGBA".into());
     }
 
     let mut canvas = match &req.background {
         Background::Vehicle { seed, exterior, interior } =>
-            vehicle_gradient(w, h, seed, exterior.as_deref(), interior.as_deref(), cars.first()),
+            vehicle_gradient(w, h, seed, exterior.as_deref(), interior.as_deref(), cars.first().map(|c| &**c)),
         Background::Generic { seed } => generic_gradient(w, h, seed),
         Background::Linear { angle, start, end } => crate::gradient::linear_gradient(w, h, *angle, *start, *end),
         Background::Image { image } => {
             let img = slice_image(arena, image)?;
-            let rgb = if img.channels == 3 { img } else { drop_alpha(&img) };
+            let rgb = if img.channels == 3 { (*img).clone() } else { drop_alpha(&img) };
             cover_fit(&rgb, w, h)
         }
     };
@@ -114,7 +173,7 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     let boxes = layout(&req.layout, window, cars.len().saturating_sub(1))?;
     let mut placements: Vec<(i64, i64, Image)> = cars.iter().zip(boxes.iter()).map(|(car, (bx, anchor))| {
         let p = compute_placement(car.width, car.height, *bx, margin, *anchor);
-        let resized = if p.w == car.width && p.h == car.height { car.clone() } else { resize_lanczos(car, p.w, p.h) };
+        let resized = if p.w == car.width && p.h == car.height { (**car).clone() } else { resize_lanczos(car, p.w, p.h) };
         (p.x, p.y, resized)
     }).collect();
     // Layout boxes approximate one rectangle; real border art is not

@@ -154,14 +154,26 @@ Sharing the *algorithms* themselves, not just their constants, is done with a Ru
 `web/build-core.sh` into `web/public/core/`, which is committed so the static site needs no toolchain).
 The spec is embedded in the crate at build time, so a constant changed there changes in the core.
 
-**What is in it now:** the whole still compositing. Gradient backdrops from the vehicle's colours (the
-palette logic included), the adaptive spotlight, placement and all five layouts, glow, alpha compositing,
-and the bordered path: window detection in the frame's alpha, collision of every placement against the
-border art, and the frame as the top layer. On both surfaces `compose_hero` is a call into the core with a
-JSON request and one byte arena, and the same seed produces the same bytes natively and in the browser.
-What remains outside it for now: the video, spin, interiors and wheel shots, each of which moves in turn,
-deleting its Python and JavaScript copy in the same commit its parity test passes. Models stay in ONNX
-Runtime on both sides.
+**What is in it now:** the whole still compositing and the whole of both videos. Gradient backdrops
+from the vehicle's colours (the palette logic included), the adaptive spotlight, placement and all five
+layouts, glow, alpha compositing, and the bordered path: window detection in the frame's alpha, collision
+of every placement against the border art, and the frame as the top layer. On both surfaces `compose_hero`
+is a call into the core with a JSON request and one byte arena, and the same seed produces the same bytes
+natively and in the browser. Every video frame comes from the core too (`render_frame`: backdrop,
+spotlight, cars at rectangles with alphas, glow, border), and so does the choreography: the conveyor's
+bar-locked schedule, pan geometry, beat pulse and transitions (`carousel_plan` / `carousel_frame`), and
+the spin's placement, hold and cross-dissolve schedule (`spin_plan` / `spin_frame`). The CLI's
+`hero_video.py` and `spin.py` and the browser's `video.js` supply only cutouts, labels and a clock, so the
+browser's conveyor is the CLI's edit.
+
+A host can also keep images *resident* in the core (`retain` / `release`) and name them by id: the video
+hosts retain their cutouts, scaled cars, layers and flag frames once, so a frame request carries no
+pixels in, only the finished frame out, and a retained car's glow halo is blurred once per clip rather
+than once per frame. Measured on a real five-shot vehicle at 1254²: a glowing conveyor frame 108 ms to
+21 ms, byte-identical; the whole 26 s clip's frames 84 s to 42 s. In the browser a 720² three-shot conveyor
+renders in about 4 s for a 9.6 s clip. What remains outside the core: interiors, wheel shots and the
+sticker parser, each of which moves in turn, deleting its Python and JavaScript copy in the same commit
+its parity test passes. Models stay in ONNX Runtime on both sides.
 
 [`tests/test_core_parity.py`](tests/test_core_parity.py) holds the core to the Python it replaced, and is
 skipped with a message when the core has not been built (`cargo build --release` in `core/`).

@@ -13,7 +13,10 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::compose::{Background, Slice};
+use std::borrow::Cow;
+use std::rc::Rc;
+
+use crate::compose::{slice_image, Background, Slice};
 use crate::glow::{glow_color, make_glow_layer, paste_alpha};
 use crate::gradient::{generic_gradient, linear_gradient, vehicle_gradient};
 use crate::resize::{cover_fit, crop, resize_bilinear, resize_lanczos};
@@ -31,8 +34,16 @@ pub struct FrameCar {
     pub h: f64,
     #[serde(default = "one")]
     pub alpha: f64,
+    /// A dissolve: the car is Image.blend(image, mix.image, mix.t)
+    /// before it is pasted. The spin's cross-fade, without a round
+    /// trip through the host for the blended layer.
+    #[serde(default)]
+    pub mix: Option<Mix>,
 }
 fn one() -> f64 { 1.0 }
+
+#[derive(Deserialize)]
+pub struct Mix { pub image: Slice, pub t: f64 }
 
 #[derive(Deserialize)]
 pub struct Spotlight { pub cx: f64, pub cy: f64, pub dim: f64 }
@@ -64,21 +75,15 @@ pub struct FrameRequest {
     pub rgba: bool,
 }
 
-fn slice_image(arena: &[u8], s: &Slice) -> Result<Image, String> {
-    let end = s.offset.checked_add(s.len).ok_or("slice overflow")?;
-    if end > arena.len() {
-        return Err(format!("slice {}..{} is outside the {}-byte arena", s.offset, end, arena.len()));
-    }
-    Image::from_vec(s.width, s.height, s.channels, arena[s.offset..end].to_vec())
-}
-
-fn faded(img: &Image, alpha: f64) -> Image {
-    if alpha >= 1.0 { return img.clone(); }
+/// The car with its alpha scaled; borrowed as is at full opacity, so
+/// a retained car is pasted straight from the store with no copy.
+fn faded(img: &Image, alpha: f64) -> Cow<'_, Image> {
+    if alpha >= 1.0 { return Cow::Borrowed(img); }
     let mut out = img.clone();
     for i in (3..out.data.len()).step_by(4) {
         out.data[i] = (out.data[i] as f64 * alpha.clamp(0.0, 1.0)).round() as u8;
     }
-    out
+    Cow::Owned(out)
 }
 
 pub fn render_frame(req: &FrameRequest, arena: &[u8]) -> Result<Image, String> {
@@ -96,7 +101,7 @@ pub fn render_frame(req: &FrameRequest, arena: &[u8]) -> Result<Image, String> {
         Background::Linear { angle, start, end } => linear_gradient(w, h, *angle, *start, *end),
         Background::Image { image } => {
             let img = slice_image(arena, image)?;
-            let rgb = if img.channels == 3 { img } else { drop_alpha(&img) };
+            let rgb = if img.channels == 3 { (*img).clone() } else { drop_alpha(&img) };
             if rgb.width == w && rgb.height == h { rgb } else { cover_fit(&rgb, w, h) }
         }
     };
@@ -110,14 +115,28 @@ pub fn render_frame(req: &FrameRequest, arena: &[u8]) -> Result<Image, String> {
 
     for car in &req.cars {
         if car.alpha <= 0.0 { continue; }
-        let src = slice_image(arena, &car.image)?;
+        let mut src = slice_image(arena, &car.image)?;
         if src.channels != 4 { return Err("cars must be RGBA".into()); }
+        // The halo can be memoized only for a car drawn exactly as the
+        // core holds it: retained, unmixed, already the rectangle's size.
+        let mut as_held = car.image.retained;
+        if let Some(m) = &car.mix {
+            let other = slice_image(arena, &m.image)?;
+            src = Rc::new(crate::spin::blend(&src, &other, m.t)?);
+            as_held = None;
+        }
         let (cw, ch) = ((car.w.round() as usize).max(1), (car.h.round() as usize).max(1));
-        let scaled = if cw == src.width && ch == src.height { src }
-            else if bilinear { resize_bilinear(&src, cw, ch) } else { resize_lanczos(&src, cw, ch) };
+        let scaled: Rc<Image> = if cw == src.width && ch == src.height { src } else {
+            as_held = None;
+            if bilinear { Rc::new(resize_bilinear(&src, cw, ch)) } else { Rc::new(resize_lanczos(&src, cw, ch)) }
+        };
         let (x, y) = (car.x.round() as i64, car.y.round() as i64);
         if req.glow {
-            let (halo, pad) = make_glow_layer(&scaled, color, radius, intensity);
+            let (halo, pad) = match as_held {
+                Some(id) => crate::compose::glow_cached((id, color, radius, intensity.to_bits()),
+                                                        || make_glow_layer(&scaled, color, radius, intensity)),
+                None => { let (g, p) = make_glow_layer(&scaled, color, radius, intensity); (Rc::new(g), p) }
+            };
             paste_alpha(&mut canvas, &faded(&halo, car.alpha), x - pad as i64, y - pad as i64);
         }
         paste_alpha(&mut canvas, &faded(&scaled, car.alpha), x, y);
@@ -160,6 +179,14 @@ pub enum Op {
     VehicleGradientColors { exterior: Option<String>, interior: Option<String>, #[serde(default)] sample: Option<Slice> },
     CarouselPlan(crate::carousel::PlanRequest),
     CarouselFrame { plan: crate::carousel::Plan, t: f64 },
+    /// Keep an image in the core; later requests name it as {"retained": id}.
+    Retain { image: Slice },
+    Release { id: u64 },
+    ReleaseAll,
+    SpinPlan(crate::spin::SpinPlanRequest),
+    SpinFrame { plan: crate::spin::SpinPlan, frame: usize },
+    PlaceLayer { image: Slice, width: usize, height: usize, rect: [i64; 4] },
+    Blend { a: Slice, b: Slice, t: f64 },
 }
 
 pub enum OpResult { Image(Image), Json(String) }
@@ -194,9 +221,26 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
         }
         Op::CarouselPlan(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::carousel::plan(&req, arena)? }).unwrap()),
         Op::CarouselFrame { plan, t } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::carousel::frame(&plan, t) }).unwrap()),
+        Op::Retain { image } => {
+            let img = slice_image(arena, &image)?;
+            let owned = Rc::try_unwrap(img).unwrap_or_else(|rc| (*rc).clone());
+            OpResult::Json(serde_json::to_string(&Scalar { value: crate::compose::retain(owned) }).unwrap())
+        }
+        Op::Release { id } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::compose::release(id) }).unwrap()),
+        Op::ReleaseAll => OpResult::Json(serde_json::to_string(&Scalar { value: crate::compose::release_all() }).unwrap()),
+        Op::SpinPlan(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::spin::plan(&req)? }).unwrap()),
+        Op::SpinFrame { plan, frame } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::spin::frame(&plan, frame) }).unwrap()),
+        Op::PlaceLayer { image, width, height, rect } => {
+            let car = slice_image(arena, &image)?;
+            OpResult::Image(crate::spin::place_layer(&car, width, height, rect)?)
+        }
+        Op::Blend { a, b, t } => {
+            let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
+            OpResult::Image(crate::spin::blend(&a, &b, t)?)
+        }
         Op::VehicleGradientColors { exterior, interior, sample } => {
             let s = match sample { Some(s) => Some(slice_image(arena, &s)?), None => None };
-            let (a, b) = crate::palette::vehicle_gradient_colors(exterior.as_deref(), interior.as_deref(), s.as_ref());
+            let (a, b) = crate::palette::vehicle_gradient_colors(exterior.as_deref(), interior.as_deref(), s.as_deref());
             OpResult::Json(serde_json::to_string(&Scalar { value: [a, b] }).unwrap())
         }
     })
