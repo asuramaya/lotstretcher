@@ -152,13 +152,13 @@ function drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, p
     const h = Math.max(1, Math.round(c.rect[3]));
     return { image: scaled.get(shots[c.shot].id, w, h), x: c.rect[0], y: c.rect[1], w, h, alpha: c.alpha };
   });
-  const frame = core.renderFrame(cars, width, height, background, {
-    backgroundImage,
+  const out = core.renderFrame(cars, width, height, background, {
+    backgroundImage, border: prepared.frameId ?? null,
     spotlight: spotlight ? { cx: hero.center[0], cy: hero.center[1], dim: hero.dim } : null,
     resample: 'bilinear', overlays,
     ...glow,
   });
-  ctx.putImageData(frame, 0, 0);
+  ctx.putImageData(out, 0, 0);
 }
 
 /* Fewer than three shots cannot fill a conveyor (the CLI renders no clip
@@ -200,13 +200,13 @@ function drawFrame(ctx, prepared, { width, height, shots, t, duration, palette, 
     place(shots[index], 1, local);
   }
 
-  const frame = core.renderFrame(cars, width, height, background, {
-    backgroundImage,
+  const out = core.renderFrame(cars, width, height, background, {
+    backgroundImage, border: prepared.frameId ?? null,
     spotlight: spotlight ? { cx: wl + ww / 2, cy: wt + wh / 2, dim: shots[index].dim } : null,
     resample: 'bilinear', overlays,
     ...glow,
   });
-  ctx.putImageData(frame, 0, 0);
+  ctx.putImageData(out, 0, 0);
 }
 
 /* Everything a clip needs before its first frame: each shot's pixels
@@ -218,6 +218,8 @@ export function prepareClip(cutouts, {
   exterior = null, interior = null, generic = false, spotlight = true, duration = null,
   text = null,                // lib/text.js::textRequest; the still's text on every frame
   background = null,          // a canvas: a stock or the user's photo behind the clip, cover-fitted
+  frameStyle = null,          // lib/text.js::frameStyle: a frame the core draws at the clip's size
+  vehicle = null,             // the record, for the frame's "paint" colour name
 } = {}) {
   const explicitDuration = duration !== null;
   if (duration === null) duration = DEFAULT_DURATION_S;
@@ -236,10 +238,14 @@ export function prepareClip(cutouts, {
   // The text is planned once inside the canvas (its paint colour read
   // off the first shot), and the cars are laid out in the window left
   // beside its band, as the CLI's clip does.
-  const overlays = text ? core.overlayPlan(width, height, text.vehicle, { ...text, window: [0, 0, width, height] }, shots[0]?.data || null) : [];
+  // A drawn frame is the clip's border: held for the clip, its window
+  // is what the shots are laid out in, and it goes on top of every frame.
+  const frame = frameStyle ? core.drawFrame(width, height, frameStyle, vehicle, shots[0]?.data || null) : null;
+  const frameWindow = frame ? core.call({ op: 'detect_window', border: { $image: 0 } }, [frame]) : [0, 0, width, height];
+  const overlays = text ? core.overlayPlan(width, height, text.vehicle, { ...text, window: frameWindow }, shots[0]?.data || null) : [];
   const window = overlays.length
-    ? core.call({ op: 'text_window', window: [0, 0, width, height], height, overlays })
-    : [0, 0, width, height];
+    ? core.call({ op: 'text_window', window: frameWindow, height, overlays })
+    : frameWindow;
   const palette = cutouts.map((cut, i) => {
     const s = `${seed}:v${i}`;
     let start; let end;
@@ -286,7 +292,7 @@ export function prepareClip(cutouts, {
     if (!explicitDuration) duration = plan.period;
   }
 
-  return { shots, palette, plan, duration, width, height, overlays, window, background: bgData };
+  return { shots, palette, plan, duration, width, height, overlays, window, background: bgData, frame };
 }
 
 /* The backdrop a frame draws: the held photo, or the turning gradient. */
@@ -306,6 +312,8 @@ export function drawClipFrame(ctx, prepared, t, { spotlight = true, glow = false
   const held = own ? shots.map((sh) => { const had = sh.id; if (had === undefined) sh.id = core.retain(sh.data); return had === undefined; }) : null;
   const heldBg = own && prepared.background && prepared.bgId === undefined;
   if (heldBg) prepared.bgId = core.retain(prepared.background);
+  const heldFrame = own && prepared.frame && prepared.frameId === undefined;
+  if (heldFrame) prepared.frameId = core.retain(prepared.frame);
   try {
     if (plan) drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, palette, spotlight, plan, scaled: cache, glow: halo, overlays });
     else drawFrame(ctx, prepared, { width, height, shots, t, duration, palette, spotlight, glow: halo, overlays, window });
@@ -314,6 +322,7 @@ export function drawClipFrame(ctx, prepared, t, { spotlight = true, glow = false
       cache.clear();
       shots.forEach((sh, i) => { if (held[i]) { core.release(sh.id); delete sh.id; } });
       if (heldBg) { core.release(prepared.bgId); delete prepared.bgId; }
+      if (heldFrame) { core.release(prepared.frameId); delete prepared.frameId; }
     }
   }
 }
@@ -370,6 +379,8 @@ export async function renderHeroVideoHere(cutouts, {
   glowIntensity = null,
   text = null,                // lib/text.js::textRequest: the still's title, badge and line on the clip
   background = null,          // a canvas behind the clip (a stock or the user's photo); the gradient otherwise
+  frameStyle = null,          // a frame the core draws at the clip's size, when there is no frame art
+  vehicle = null,
   onProgress = null,
   signal = null,
 } = {}) {
@@ -421,7 +432,7 @@ export async function renderHeroVideoHere(cutouts, {
       : new Promise((resolve) => { drained = resolve; })
   );
 
-  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, spotlight, duration: explicitDuration ? duration : null, text, background });
+  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, spotlight, duration: explicitDuration ? duration : null, text, background, frameStyle, vehicle });
   const { shots, palette, plan } = prepared;
   duration = prepared.duration;
 
@@ -435,6 +446,7 @@ export async function renderHeroVideoHere(cutouts, {
   // names them by id. Released in `finally`, including on cancel.
   for (const shot of shots) shot.id = core.retain(shot.data);
   if (prepared.background) prepared.bgId = core.retain(prepared.background);
+  if (prepared.frame) prepared.frameId = core.retain(prepared.frame);
   const scaled = new ScaledCache();
   try {
   for (let f = 0; f < total; f++) {
@@ -460,6 +472,7 @@ export async function renderHeroVideoHere(cutouts, {
     scaled.clear();
     for (const shot of shots) { if (shot.id !== undefined) { core.release(shot.id); delete shot.id; } }
     if (prepared.bgId !== undefined) { core.release(prepared.bgId); delete prepared.bgId; }
+    if (prepared.frameId !== undefined) { core.release(prepared.frameId); delete prepared.frameId; }
   }
 
   await encoder.flush();

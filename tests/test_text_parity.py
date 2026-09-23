@@ -158,6 +158,37 @@ def test_paint_colour_takes_the_vehicles_own():
     assert img.size == (400, 400)
 
 
+def test_the_drawn_frame_fits_every_shape_and_keeps_the_car_inside():
+    """The core's own line frame is drawn at the canvas's size, so a
+    portrait and a story get the same line inset from their own edges;
+    the car is laid out inside it and never crosses it; "paint" takes
+    the vehicle's colour."""
+    from lotstretcher.imaging.text import frame_style
+    style = frame_style({"border": "line", "frameColor": "white", "frameWeight": 0.01})
+    assert style == {"kind": "line", "color": "white", "weight": 0.01}
+    assert frame_style({"border": "none"}) is None
+    assert frame_style({"frameStyle": "line", "frameColor": "paint"})["color"] == "paint"
+    for (w, h) in ((800, 800), (720, 900), (540, 960)):
+        frame = core.draw_frame(w, h, style)
+        assert frame.size == (w, h) and frame.mode == "RGBA"
+        a = np.asarray(frame)[..., 3]
+        inset = round(0.035 * min(w, h))
+        # The line sits at the inset, and the interior and the margin are clear.
+        assert a[h // 2, inset - 1:inset + 3].max() > 200 and a[inset - 1:inset + 3, w // 2].max() > 200
+        assert a[h // 2, w // 2] == 0 and a[2, 2] == 0
+        img = core.compose_hero([cutout()], w, h, {"kind": "generic", "seed": "f"}, spotlight=False, border_style=style)
+        arr = np.asarray(img)
+        # Red car pixels stay inside the line on every row.
+        car = (arr[:, :, 0] > 150) & (arr[:, :, 1] < 80)
+        ys, xs = np.where(car)
+        assert xs.min() > inset + 4 and xs.max() < w - inset - 4 and ys.min() > inset + 4 and ys.max() < h - inset - 4
+    # Paint: a red vehicle name gives a red line.
+    painted = core.draw_frame(400, 400, {"kind": "line", "color": "paint"}, {"exterior_color_factory": "Rapid Red"})
+    row = np.asarray(painted)[200]
+    r, g, b, a = row[row[:, 3].argmax()]
+    assert a > 200 and r > g + 60 and r > b + 60
+
+
 def test_unknown_values_are_refused():
     ensure_font()
     with pytest.raises(RuntimeError):

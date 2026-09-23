@@ -24,7 +24,8 @@ from lotstretcher.imaging.compose import render_hero_video
 from lotstretcher.imaging.compose.hero_video import (BARS_PER_LOOP, DEFAULT_BPM, DEFAULT_VIDEO_FORMAT,
                                           VIDEO_FORMATS)
 from lotstretcher.imaging.select import order_for_conveyor_start, pick_all_for_carousel
-from lotstretcher.imaging.text import add_text_args, controls_from_text_args, text_options
+from lotstretcher.imaging.text import (add_frame_style_args, add_text_args, controls_from_frame_style_args,
+                                       controls_from_text_args, frame_style, text_options)
 from lotstretcher.library_ops import vehicle_record
 
 
@@ -90,6 +91,7 @@ def main():
                               "instead of the rotating gradient. --flag-background wins when both are given.")
     parser.add_argument("--background", help="Background name or tag for --photo-background (default: the library's).")
     add_text_args(parser)
+    add_frame_style_args(parser)
     parser.add_argument("--music", action="store_true",
                          help="Score the video. Silent is the default; timing comes from --bpm either way, so "
                               "the cut/pump cadence is identical.")
@@ -170,6 +172,7 @@ def render_one(fmt, args, vehicle_folder, border_path, background_video, gradien
         text=text_options(controls_from_text_args(args)),
         vehicle=vehicle_record(vehicle_folder),
         background_image=background_image,
+        border_style=frame_style(controls_from_frame_style_args(args)),
         encoder="h264_nvenc" if args.nvenc else "libx264",
     )
 

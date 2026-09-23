@@ -217,6 +217,11 @@ pub enum Op {
     /// A layout window with the overlays' band taken off it, so cars
     /// keep clear of the text (the same rule compose_hero applies).
     TextWindow { window: [i64; 4], height: usize, overlays: Vec<crate::text::Overlay> },
+    /// A frame the core draws at a size (frame_style::draw), as RGBA; a
+    /// video host holds it as its border. "paint" reads `sample`'s paint
+    /// unless `vehicle` names a colour.
+    DrawFrame { width: usize, height: usize, style: crate::frame_style::FrameStyle,
+                #[serde(default)] vehicle: serde_json::Value, #[serde(default)] sample: Option<Slice> },
 }
 
 fn mask_threshold(t: Option<u8>) -> u8 {
@@ -260,6 +265,14 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
                 req.accent = crate::text::accent_for(&req.vehicle, sample.as_deref());
             }
             OpResult::Json(serde_json::to_string(&Scalar { value: crate::text::plan(&req)? }).unwrap())
+        }
+        Op::DrawFrame { width, height, style, vehicle, sample } => {
+            let mut style = style;
+            if style.color == "paint" && style.rgb.is_none() {
+                let s = match &sample { Some(s) => Some(slice_image(arena, s)?), None => None };
+                style.rgb = crate::text::accent_for(&vehicle, s.as_deref());
+            }
+            OpResult::Image(crate::frame_style::draw(width, height, &style)?)
         }
         Op::TextWindow { window, height, overlays } => {
             let (l, t, r, b) = crate::text::shrink_window((window[0], window[1], window[2], window[3]), &overlays, height);

@@ -139,6 +139,11 @@ pub struct ComposeRequest {
     pub text: Option<crate::text::TextRequest>,
     #[serde(default)]
     pub overlays: Vec<crate::text::Overlay>,
+    /// A frame the core draws at the canvas's own size (frame_style),
+    /// used when no border image is given. Its "paint" colour is read
+    /// from the vehicle in `text`, else off car 0.
+    #[serde(default)]
+    pub border_style: Option<crate::frame_style::FrameStyle>,
 }
 
 /// The transform that places a border of `bw`x`bh` on a `w`x`h` canvas:
@@ -201,14 +206,25 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     let fit = req.border_fit.as_deref().unwrap_or("fit");
     // The window comes from the border's own pixels and follows the fit;
     // the fitted border is what placements collide with and goes on top.
-    let (border, mut window) = match &req.border {
-        Some(s) => {
+    let (border, mut window) = match (&req.border, &req.border_style) {
+        (Some(s), _) => {
             let b = slice_image(arena, s)?;
             if b.channels != 4 { return Err("border must be RGBA".into()); }
             let window = fit_window(&b, w, h, fit)?;
             (Some(Rc::new(fit_border(&b, w, h, fit)?)), window)
         }
-        None => (None, (0i64, 0i64, w as i64, h as i64)),
+        (None, Some(style)) => {
+            let mut style = style.clone();
+            if style.color == "paint" && style.rgb.is_none() {
+                let hero = match req.cars.first() { Some(s) => Some(slice_image(arena, s)?), None => None };
+                let vehicle = req.text.as_ref().map(|t| t.vehicle.clone()).unwrap_or(serde_json::Value::Null);
+                style.rgb = crate::text::accent_for(&vehicle, hero.as_deref());
+            }
+            let b = crate::frame_style::draw(w, h, &style)?;
+            let window = detect_window(&b)?;
+            (Some(Rc::new(b)), window)
+        }
+        (None, None) => (None, (0i64, 0i64, w as i64, h as i64)),
     };
     // Text takes a band at the top or the bottom; the cars are laid out
     // in what is left, so a title never sits across a bumper.

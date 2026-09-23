@@ -33,6 +33,7 @@ pub mod mask;
 pub mod sticker;
 pub mod copy;
 pub mod text;
+pub mod frame_style;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod ffi;

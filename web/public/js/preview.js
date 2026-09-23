@@ -16,7 +16,7 @@ import { prepareClip, drawClipFrame } from './pipeline/video.js';
 import { get as specGet } from './spec.js';
 import * as OPTS from './options.js';
 import { imageNow } from './lib/library.js';
-import { textOptions, textRequestNow } from './lib/text.js';
+import { textOptions, textRequestNow, frameStyle } from './lib/text.js';
 
 /* A stock asset as a canvas: the site's own file, or the server's
  * picture of one only it holds. A fetch in flight redraws the preview
@@ -230,7 +230,7 @@ export class Preview {
       // scaled down to the preview's size first so the fit resamples
       // less. A stock frame or background is the server's, drawn from
       // the picture it serves for the swatches.
-      const stockBorder = o.border && !['none', 'custom'].includes(o.border) ? o.border : null;
+      const stockBorder = o.border && !['none', 'custom', 'line'].includes(o.border) ? o.border : null;
       let border = o.border === 'custom' ? o.customFrame || null
         : (stockBorder ? assetImage('borders', stockBorder, () => this.update()) : null);
       const stockBackground = o.backdrop === 'asset' && o.background
@@ -252,7 +252,7 @@ export class Preview {
         exterior: subject.exterior, interior: subject.interior,
         generic: o.backdrop === 'generic',
         background: o.backdrop === 'custom' ? o.customBackground || null : stockBackground,
-        border, borderFit: o.frameFit,
+        border, borderFit: o.frameFit, borderStyle: frameStyle(o),
         spotlight: o.spotlight,
         marginFrac: o.margin,
         glow: o.glow, glowColor: o.glowColor, glowRadius: o.glowRadius, glowIntensity: o.glowIntensity,
@@ -296,12 +296,14 @@ export class Preview {
     // else the gradient.
     const background = o.backdrop === 'custom' ? o.customBackground || null
       : o.backdrop === 'asset' && o.background ? assetImage('backgrounds', o.background, () => this.update()) : null;
+    const style = frameStyle(o);
     const key = JSON.stringify([width, height, seed, o.backdrop === 'generic', o.spotlight, subject.exterior, subject.interior, cutouts.length, text,
-      background ? `${o.backdrop}:${o.background || o.customBackground?.name || ''}` : null]);
+      background ? `${o.backdrop}:${o.background || o.customBackground?.name || ''}` : null, style]);
     if (key !== this.clipKey) {
       this.clip = prepareClip(cutouts, {
         width, height, seed: `${seed}:video`, exterior: subject.exterior, interior: subject.interior,
-        generic: o.backdrop === 'generic', spotlight: o.spotlight, text, background,
+        generic: o.backdrop === 'generic', spotlight: o.spotlight, text, background, frameStyle: style,
+        vehicle: subject.vehicle,
       });
       this.clipKey = key;
     }

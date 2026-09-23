@@ -385,6 +385,17 @@ backdrop filling the rest, `fill` covers the canvas and crops the frame's
 edges, `stretch` pulls the frame to the canvas shape. The app's Frame
 group has the same lever, previewed live per format.
 
+### A frame the core draws
+
+Frame art is drawn for one shape. `--frame-style line` draws a rounded
+line inset from the edge at whatever size the canvas is, so it fits a
+square, a portrait and a story exactly, on the stills and on the clip.
+`--frame-color` is white, black or `paint` (the vehicle's own colour,
+from the listing's name or sampled off the cutout); `--frame-weight`
+is the line's weight as a share of the shorter side. In the app it is
+the "Studio line" tile of the Frame picker, with the colour and weight
+levers beside it. Frame art, when given, wins.
+
 ### Text on the still
 
 The core draws text (core/src/text.rs, the studio's Lato Bold, OFL) so

@@ -355,6 +355,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        border_fit: str = "fit",
                        text: dict | None = None, vehicle: dict | None = None,
                        background_image: Path | None = None,
+                       border_style: dict | None = None,
                        encoder: str = "libx264",
                        hood_sides: dict[str, str] | None = None,
                        target_duration_s: float | None = None) -> dict:
@@ -384,6 +385,12 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     border = Image.open(border_path).convert("RGBA") if border_path is not None else None
     if border is not None:
         border, window = core.fit_border(border, canvas_size[0], canvas_size[1], border_fit)
+    elif border_style is not None:
+        # The core's own frame, drawn at this format's size; its "paint"
+        # colour comes off the first shot when the record names none.
+        border = core.draw_frame(canvas_size[0], canvas_size[1], border_style, vehicle,
+                                 sample=Image.open(carousel_paths[0]).convert("RGBA"))
+        window = tuple(core.detect_window(border))
     else:
         window = (0, 0, canvas_size[0], canvas_size[1])
     # The still's text on every frame: planned once inside the window,

@@ -18,7 +18,7 @@ from pathlib import Path
 
 from lotstretcher.imaging import assets
 from lotstretcher.imaging.compose import compose_interiors, compose_vehicle, compose_wheel_shots
-from lotstretcher.imaging.text import text_options
+from lotstretcher.imaging.text import frame_style, text_options
 
 
 def find_vehicle_folders(root: Path) -> list[Path]:
@@ -53,7 +53,7 @@ def stock_border(options: dict) -> str | None:
     "none" and "custom" values are the app's own (no frame; the user's
     own PNG, which never reaches a server), not library names."""
     name = options.get("border")
-    if name in (None, "", "none", "custom"):
+    if name in (None, "", "none", "custom", "line"):
         return None
     return str(name)
 
@@ -95,6 +95,7 @@ def resolve_recompose_options(options: dict) -> dict:
             "gradient": not wants_photo,
             "border_fit": options.get("frameFit") or "fit",
             "text": text_options(options),
+            "border_style": frame_style(options),
         },
         "interiors": bool(options.get("interiors", False)),
         "interior_captions": bool(options.get("interiorCaptions", False)),
@@ -144,6 +145,7 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
         margin_frac=float(options.get("margin") if options.get("margin") is not None else 0.06),
         border_fit=options.get("frameFit") or "fit",
         text=text_options(options),
+        border_style=frame_style(options),
         gradient=not wants_photo,
         video=video_on,
         video_encoder="h264_nvenc" if options.get("nvenc") else "libx264",

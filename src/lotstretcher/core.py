@@ -139,7 +139,8 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
                  spotlight: bool = True, glow: bool = False, glow_color: str | None = None,
                  glow_radius: int | None = None, glow_intensity: float | None = None,
                  margin_frac: float | None = None, background_image=None, border=None,
-                 border_fit: str | None = None, overlays: list | None = None, text: dict | None = None):
+                 border_fit: str | None = None, overlays: list | None = None, text: dict | None = None,
+                 border_style: dict | None = None):
     """Compose one hero the way the browser does, in the same code.
 
     `cars` are RGBA PIL images, hero first. `background` is one of
@@ -179,6 +180,9 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
         # The Text controls with the vehicle (imaging/text.py::text_request):
         # the core plans them inside the frame's window once it knows it.
         "text": text,
+        # A frame the core draws to the canvas (frame_style.rs) when no
+        # border image is given: {"kind": "line", "weight", "color"}.
+        "border_style": border_style,
     }
     buf = _buffer(arena)
     result = lib.ls_compose_hero(json.dumps(req).encode("utf-8"), buf, len(arena))
@@ -274,6 +278,16 @@ def overlay_plan(width: int, height: int, vehicle: dict | None, **text) -> list[
     ("none" | "vehicle" | "custom"), custom_title, price_badge, line,
     position, color, size (fraction of height), font."""
     return call({"op": "overlay_plan", "width": width, "height": height, "vehicle": vehicle or {}, **text})
+
+
+def draw_frame(width: int, height: int, style: dict, vehicle: dict | None = None, sample=None):
+    """The core's own frame (a line inset from the edge) at width x height
+    as an RGBA PIL image; "paint" takes the vehicle's colour name, else
+    the paint sampled off `sample` (the hero cutout)."""
+    op = {"op": "draw_frame", "width": width, "height": height, "style": dict(style), "vehicle": vehicle or {}}
+    if sample is not None:
+        op["sample"] = {"$image": 0}
+    return call(op, [sample] if sample is not None else [])
 
 
 def fit_border(border, width: int, height: int, fit: str = "fit"):

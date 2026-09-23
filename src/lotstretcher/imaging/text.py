@@ -58,6 +58,36 @@ def add_text_args(parser) -> None:
                         help="Title size as a fraction of the canvas height (default: 0.05).")
 
 
+FRAME_STYLES = ("none", "line")
+FRAME_COLORS = ("white", "black", "paint")
+
+
+def add_frame_style_args(parser) -> None:
+    """The core-drawn frame's flags, shared by the CLIs."""
+    parser.add_argument("--frame-style", default="none", choices=FRAME_STYLES,
+                        help="A frame the core draws to fit every shape: 'line', a rounded line inset from "
+                             "the edge (default: none). Ignored when --frame/--border gives frame art.")
+    parser.add_argument("--frame-color", default="white", choices=FRAME_COLORS,
+                        help="The drawn frame's colour: white, black, or paint (the vehicle's own).")
+    parser.add_argument("--frame-weight", type=float, default=0.008, metavar="FRACTION",
+                        help="The drawn frame's line weight as a fraction of the shorter side (default: 0.008).")
+
+
+def controls_from_frame_style_args(args) -> dict:
+    return {"frameStyle": args.frame_style, "frameColor": args.frame_color, "frameWeight": args.frame_weight}
+
+
+def frame_style(options: dict) -> dict | None:
+    """The app's frame controls as the core's border_style, or None when
+    no drawn frame is asked for. The app's Frame picker says "line" in
+    its `border` value; the CLI says --frame-style line."""
+    wanted = options.get("border") == "line" or options.get("frameStyle") == "line"
+    if not wanted:
+        return None
+    return {"kind": "line", "color": options.get("frameColor") or "white",
+            "weight": float(options.get("frameWeight") if options.get("frameWeight") is not None else 0.008)}
+
+
 def controls_from_text_args(args) -> dict:
     """argparse values -> the app's Text control keys."""
     return {

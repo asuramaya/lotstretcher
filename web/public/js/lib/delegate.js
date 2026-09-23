@@ -43,7 +43,7 @@ export function needsServer(options, specGet) {
   // A stock frame or backdrop the site ships composes here; one only
   // the server's library holds goes to the server. The Frame picker's
   // own values are "none" and "custom"; anything else names a frame.
-  if (options.border && !['none', 'custom'].includes(options.border) && !isLocal('borders', options.border)) return true;
+  if (options.border && !['none', 'custom', 'line'].includes(options.border) && !isLocal('borders', options.border)) return true;
   if (options.backdrop === 'asset' && !isLocal('backgrounds', options.background)) return true;
   /* A browser-capable select can still hold one choice the browser
    * cannot honour, and picking it is what sends the run to the server. */

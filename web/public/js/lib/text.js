@@ -51,6 +51,13 @@ export function textOptions(o) {
   };
 }
 
+/* The app's frame controls as the core's border_style, or null: the
+ * same mapping as imaging/text.py::frame_style. */
+export function frameStyle(o) {
+  if (o.border !== 'line') return null;
+  return { kind: 'line', color: o.frameColor || 'white', weight: o.frameWeight != null ? Number(o.frameWeight) : 0.008 };
+}
+
 export function wantsText(text) {
   return text.title !== 'none' || !!text.price_badge || !!text.line;
 }

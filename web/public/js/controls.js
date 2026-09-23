@@ -482,7 +482,8 @@ export function controlsToFlags(values) {
         const choice = choicesFor(control).find((c) => String(c.value) === String(value)
           && (!c.sets || Object.entries(c.sets).every(([k, v]) => String(values[k]) === String(v))));
         if (choice?.file) continue;
-        if (choice?.cli) flags.push(choice.cli);
+        // A choice's flag may carry its value (--frame-style line).
+        if (choice?.cli) flags.push(choice.cliValue ? `${choice.cli} ${choice.cliValue}` : choice.cli);
         if (choice?.asset && choice.cliNamed) flags.push(`${choice.cliNamed} "${choice.asset}"`);
       } else if (control.type === 'file') {
         // A chosen image has no path here; the echo names the file so

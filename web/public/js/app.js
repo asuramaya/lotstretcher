@@ -28,14 +28,14 @@ import {
 } from './options.js';
 import { store, blobToCanvas } from './lib/store.js';
 import { loadSpec, get as specGet } from './spec.js';
-import { loadCore, version as coreVersion, threadCount as coreThreads, enhanceInterior, renderFrame as coreRenderFrame } from './core.js';
+import { loadCore, version as coreVersion, threadCount as coreThreads, enhanceInterior, renderFrame as coreRenderFrame, drawFrame as coreDrawFrame } from './core.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { Preview } from './preview.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlDefaults, controlsToFlags, affectsPreview } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
-import { textOptions, textRequest } from './lib/text.js';
+import { textOptions, textRequest, frameStyle } from './lib/text.js';
 import { normalizeListing, takeListingFromHash, bookmarkletSource, recordFromHtml } from './pipeline/listing.js';
 import { LibraryView } from './library/view.js';
 import { HttpSource, DirectorySource } from './library/source.js';
@@ -482,6 +482,25 @@ function swatchArt(control, choice, values, image) {
   if (choice.asset) {
     return libraryEntry(choice.expand || 'backgrounds', choice.asset)?.thumb || null;
   }
+  if (control.key === 'border' && choice.value === 'line') {
+    // The core draws the tile as it draws the frame, in the chosen colour.
+    const key = JSON.stringify(['line', values.frameColor, values.frameWeight]);
+    if (!artCache.has(key)) {
+      try {
+        const subject = preview?.subject?.();
+        const rgba = coreDrawFrame(96, 96, { kind: 'line', color: values.frameColor || 'white', weight: Math.max(0.02, Number(values.frameWeight) || 0.008) * 2.5 },
+          subject?.vehicle || {}, subject ? ctxOf(subject.cutout, { willReadFrequently: true }).getImageData(0, 0, subject.cutout.width, subject.cutout.height) : null);
+        const c = tileCanvas();
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#2a2d33'; ctx.fillRect(0, 0, 96, 96);
+        ctx.putImageData(new ImageData(new Uint8ClampedArray(rgba.data), 96, 96), 0, 0);
+        artCache.set(key, c);
+      } catch (e) { console.warn('frame tile failed', e); artCache.set(key, null); }
+    }
+    const c = artCache.get(key);
+    if (!c) return null;
+    const copy = tileCanvas(); copy.getContext('2d').drawImage(c, 0, 0); return copy;
+  }
   if (control.key === 'backdrop' && (choice.value === 'vehicle' || choice.value === 'generic')) {
     const subject = preview?.subject?.();
     const key = JSON.stringify([choice.value, subject?.exterior, subject?.interior, subject?.seed]);
@@ -702,7 +721,7 @@ async function run() {
     // its own file; the core fits the frame to each format.
     const stockBackground = !delegating && state.options.backdrop === 'asset'
       ? await libraryImage('backgrounds', state.options.background) : null;
-    const stockBorder = !delegating && state.options.border && !['none', 'custom'].includes(state.options.border)
+    const stockBorder = !delegating && state.options.border && !['none', 'custom', 'line'].includes(state.options.border)
       ? await libraryImage('borders', state.options.border) : null;
     // A name remembered from another host (a server's private frame,
     // opened later on the site) is not in this library: say so rather
@@ -710,7 +729,7 @@ async function run() {
     if (!delegating && state.options.backdrop === 'asset' && !stockBackground) {
       state.errors.push(`background "${state.options.background || ''}" is not in this library; the stills use the gradient`);
     }
-    if (!delegating && state.options.border && !['none', 'custom'].includes(state.options.border) && !stockBorder) {
+    if (!delegating && state.options.border && !['none', 'custom', 'line'].includes(state.options.border) && !stockBorder) {
       state.errors.push(`frame "${state.options.border}" is not in this library; the stills are frameless`);
     }
 
@@ -770,6 +789,7 @@ async function run() {
           background: state.options.backdrop === 'custom' ? state.options.customBackground || null : stockBackground,
           border: state.options.border === 'custom' ? state.options.customFrame || null : stockBorder,
           borderFit: state.options.frameFit,
+          borderStyle: frameStyle(state.options),
           text: await textRequest(state.vehicle, textOptions(state.options)),
           glow: state.options.glow, glowColor: state.options.glowColor,
           glowRadius: state.options.glowRadius, glowIntensity: state.options.glowIntensity,
@@ -825,6 +845,8 @@ async function run() {
             glowIntensity: state.options.glowIntensity,
             text: await textRequest(state.vehicle, textOptions(state.options)),
             background: videoBackground,
+            frameStyle: frameStyle(state.options),
+            vehicle: state.vehicle,
             onProgress: (f) => setProgress(0.85 + 0.15 * f),
           };
           const shots = cut.map((p) => p.cutout);

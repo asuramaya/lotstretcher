@@ -105,6 +105,14 @@ export function overlayPlan(width, height, vehicle, text, sample = null) {
   return call(op, sample ? [sample] : []);
 }
 
+/* A frame the core draws at a size (core/src/frame_style.rs), as RGBA.
+ * "paint" reads the vehicle's colour name, else `sample`'s paint. */
+export function drawFrame(width, height, style, vehicle = null, sample = null) {
+  const op = { op: 'draw_frame', width, height, style, vehicle: vehicle || {} };
+  if (sample) op.sample = { $image: 0 };
+  return call(op, sample ? [sample] : []);
+}
+
 export function retain(image) { return call({ op: 'retain', image: { $image: 0 } }, [image]); }
 export function release(id) { return call({ op: 'release', id }); }
 export function releaseAll() { return call({ op: 'release_all' }); }
@@ -114,7 +122,7 @@ export function releaseAll() { return call({ op: 'release_all' }); }
 export function composeHero(cars, width, height, background, {
   layout = 'single', spotlight = true, glow = false, glowColor = null,
   glowRadius = null, glowIntensity = null, marginFrac = null, backgroundImage = null, border = null,
-  borderFit = null, overlays = [], text = null,
+  borderFit = null, overlays = [], text = null, borderStyle = null,
 } = {}) {
   if (!mod) throw new Error('core not loaded; await loadCore() first');
   const images = [...cars];
@@ -133,7 +141,7 @@ export function composeHero(cars, width, height, background, {
     width, height, background: bg, cars: slices.slice(0, cars.length), layout, spotlight, glow,
     glow_color: glowColor, glow_radius: glowRadius, glow_intensity: glowIntensity, margin_frac: marginFrac,
     border: borderIndex !== null ? slices[borderIndex] : null,
-    border_fit: borderFit, overlays, text,
+    border_fit: borderFit, overlays, text, border_style: borderStyle,
   };
   const rgb = mod.compose_hero(JSON.stringify(req), buf);
   const out = new ImageData(width, height);
