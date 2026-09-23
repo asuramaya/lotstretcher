@@ -23,6 +23,7 @@ export function composeHero(cutout, {
   marginFrac = null,
   generic = false,
   backdrop = null,            // the generated backdrop's kind: vehicle (default), generic or sweep
+  backdropColor = null,       // #rrggbb: hue bands or the sweep in this colour rather than the paint's
   glow = false,
   glowColor = null,
   glowRadius = null,
@@ -48,9 +49,9 @@ export function composeHero(cutout, {
     backgroundImage = ctxOf(fitted, { willReadFrequently: true }).getImageData(0, 0, width, height);
     bg = { kind: 'image' };
   } else if (backdrop === 'sweep') {
-    bg = { kind: 'sweep', seed: String(seed), exterior: exterior || null, interior: interior || null };
+    bg = { kind: 'sweep', seed: String(seed), exterior: exterior || null, interior: interior || null, color: backdropColor || null };
   } else if (generic || backdrop === 'generic') {
-    bg = { kind: 'generic', seed: String(seed) };
+    bg = { kind: 'generic', seed: String(seed), color: backdropColor || null };
   } else {
     bg = { kind: 'vehicle', seed: String(seed), exterior: exterior || null, interior: interior || null };
   }

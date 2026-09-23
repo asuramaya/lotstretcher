@@ -234,6 +234,7 @@ def controls_from_args(args) -> dict:
         "spotlight": not args.no_spotlight,
         "margin": args.margin_frac,
         "backdrop": "asset" if (args.photo_background or args.background) else args.backdrop,
+        "backdropColor": args.backdrop_color,
         "background": args.background,
         "frame": bool(args.frame or args.border),
         "border": args.border,

@@ -721,6 +721,22 @@
             "cliNote": "Vehicle paint is the default and has no flag. Hue bands and Sweep are --backdrop generic / --backdrop sweep. Stock is --photo-background with --background NAME; your own image goes to --photo-background as a path, which the file control echoes."
           },
           {
+            "key": "backdropColor",
+            "label": "Colour",
+            "hint": "Your own, or the vehicle's paint",
+            "type": "color",
+            "default": null,
+            "cli": "--backdrop-color",
+            "showWhen": {
+              "key": "backdrop",
+              "in": [
+                "generic",
+                "sweep"
+              ]
+            },
+            "cliNote": "--backdrop-color #rrggbb; the vehicle backdrop is computed from the paint and ignores it."
+          },
+          {
             "key": "background",
             "label": "Background",
             "hint": "Which stock photo",

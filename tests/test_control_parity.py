@@ -59,7 +59,7 @@ def test_controls_block_is_well_formed():
         )
         assert c["key"] not in seen, f"duplicate control key {c['key']!r}"
         seen.add(c["key"])
-        assert c["type"] in ("toggle", "select", "range", "chips", "file", "text"), c["type"]
+        assert c["type"] in ("toggle", "select", "range", "chips", "file", "text", "color"), c["type"]
 
 
 @pytest.mark.parametrize("control", [c for c in CONTROLS if "cli" in surfaces(c)],
@@ -152,17 +152,18 @@ def test_gated_choices_name_a_real_capability(control, choice):
 @pytest.mark.parametrize("control", [c for c in CONTROLS if isinstance(c.get("showWhen"), dict)],
                          ids=lambda c: c["key"])
 def test_conditional_controls_follow_a_real_choice(control):
-    """`showWhen: {key, equals}` or `{key, notEquals}` must name an
-    existing select and one of its actual choices, or the control can
-    never appear (or never hide)."""
+    """`showWhen: {key, equals}`, `{key, notEquals}` or `{key, in: [...]}`
+    must name an existing select and actual choices of it, or the
+    control can never appear (or never hide)."""
     cond = control["showWhen"]
     parent = next((c for c in CONTROLS if c["key"] == cond["key"]), None)
     assert parent is not None, f"{control['key']} follows unknown control {cond['key']!r}"
     values = [ch["value"] for ch in parent.get("choices", [])]
-    wanted = cond["notEquals"] if "notEquals" in cond else cond["equals"]
-    assert wanted in values, (
-        f"{control['key']} follows {cond['key']}={wanted!r}, not among {values}"
-    )
+    wanted = cond["in"] if "in" in cond else [cond["notEquals"] if "notEquals" in cond else cond["equals"]]
+    for w in wanted:
+        assert w in values, (
+            f"{control['key']} follows {cond['key']}={w!r}, not among {values}"
+        )
 
 
 def test_browser_only_controls_are_not_gpu_dependent():

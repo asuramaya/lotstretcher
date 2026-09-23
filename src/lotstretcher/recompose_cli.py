@@ -206,7 +206,7 @@ def main():
                       border_style=frame_style(controls_from_frame_style_args(args)),
                       shadow=shadow_style(controls_from_shadow_args(args)),
                       reflection=reflection_style(controls_from_reflection_args(args)),
-                      backdrop=args.backdrop),
+                      backdrop=args.backdrop, backdrop_color=args.backdrop_color),
         "interiors": args.interiors,
         "interior_captions": args.interior_captions,
     }

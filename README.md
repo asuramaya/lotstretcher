@@ -414,6 +414,14 @@ them. The clip holds one sweep frame behind the conveyor, as it holds
 a photo. In the app it is the Backdrop picker's Sweep tile, drawn by
 the core on the preview's subject.
 
+`--backdrop-color "#rrggbb"` puts the hue bands or the sweep in a
+colour of your own instead of the paint's (a colour word works too);
+the vehicle backdrop is computed from the paint and ignores it. The
+colour goes through the same backdrop-safe treatment the paint does,
+so a loud hex lands as the deeper tone a car can sit on. In the app
+it is the Colour picker under the Backdrop tiles, shown for those two
+tiles only, with a Paint button back to the computed colour.
+
 ### Looks: one tap, several levers
 
 The Studio is laid out as an editor: the stage in the middle, in the

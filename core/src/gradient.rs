@@ -79,7 +79,19 @@ pub fn linear_gradient(w: usize, h: usize, angle: f64, start: [u8; 3], end: [u8;
     out
 }
 
-pub fn generic_gradient(w: usize, h: usize, seed: &str) -> Image {
+/// Seeded hue bands; with a chosen colour ("#rrggbb" or a colour
+/// word), the bands are that hue: its backdrop-safe dark and light
+/// stops (the same pair the paint would give) at the seeded angle.
+pub fn generic_gradient(w: usize, h: usize, seed: &str, color: Option<&str>) -> Image {
+    if let Some(c) = color.filter(|c| crate::palette::parse_color_name(Some(c)).is_some()) {
+        let (mut start, mut end) = vehicle_gradient_colors(Some(c), Some(c), None);
+        let mut rng = Rng::from_seed(seed);
+        let angle = rng.uniform(0.0, 360.0);
+        if rng.random() < 0.5 {
+            std::mem::swap(&mut start, &mut end);
+        }
+        return linear_gradient(w, h, angle, start, end);
+    }
     let g = gradient_spec(seed);
     linear_gradient(w, h, g.angle, g.start, g.end)
 }
@@ -101,8 +113,13 @@ pub fn vehicle_gradient(w: usize, h: usize, seed: &str, exterior: Option<&str>, 
 /// falls off below it, with a pool of light about the middle of the
 /// line where the car stands. Only the horizon's height and the pool's
 /// centre are seeded, so a rerun reproduces the file.
-pub fn sweep(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>) -> Image {
-    let (a, b) = vehicle_gradient_colors(exterior, interior, sample);
+/// `color` ("#rrggbb" or a colour word) puts the sweep in that colour
+/// instead of the paint's.
+pub fn sweep(w: usize, h: usize, seed: &str, exterior: Option<&str>, interior: Option<&str>, sample: Option<&Image>, color: Option<&str>) -> Image {
+    let (a, b) = match color.filter(|c| crate::palette::parse_color_name(Some(c)).is_some()) {
+        Some(c) => vehicle_gradient_colors(Some(c), Some(c), None),
+        None => vehicle_gradient_colors(exterior, interior, sample),
+    };
     let lum = |c: [u8; 3]| 0.299 * c[0] as f64 + 0.587 * c[1] as f64 + 0.114 * c[2] as f64;
     let (dark, light) = if lum(a) <= lum(b) { (a, b) } else { (b, a) };
     let mut rng = Rng::from_seed(seed);

@@ -100,14 +100,16 @@ function choicesFor(control) {
 }
 
 /* `showWhen` is either a key (shown while that value is truthy),
- * { key, equals } (shown while that value matches) or { key, notEquals }
- * (shown while it differs). The object forms let a dependent control
- * follow a select, as the background picker follows "Stock background"
- * and the frame fit follows any frame at all. */
+ * { key, equals } (shown while that value matches), { key, notEquals }
+ * (shown while it differs) or { key, in: [...] } (shown while it is one
+ * of those). The object forms let a dependent control follow a select,
+ * as the background picker follows "Stock background", the frame fit
+ * follows any frame at all and the colour follows hue bands or sweep. */
 export function shownBy(control, values) {
   const cond = control.showWhen;
   if (!cond) return true;
   if (typeof cond === 'string') return !!values[cond];
+  if ('in' in cond) return cond.in.includes(values[cond.key]);
   if ('notEquals' in cond) return values[cond.key] !== cond.notEquals;
   return values[cond.key] === cond.equals;
 }
@@ -182,6 +184,31 @@ function buildText(control, value, onChange, disabled, placeholder = null) {
   input.oninput = () => onChange(input.value, true);
   input.onchange = () => onChange(input.value);
   return input;
+}
+
+/* A colour of the user's own, or none: the picker is the platform's,
+ * and "Paint" hands the choice back to the vehicle (null). Dragging in
+ * the picker is live, closing it commits, as a slider does. */
+function buildColor(control, value, onChange, disabled) {
+  const wrap = el('div', 'color-wrap');
+  const input = document.createElement('input');
+  input.type = 'color';
+  input.className = 'color-input';
+  input.value = value || '#4a6fa5';
+  input.disabled = disabled;
+  input.setAttribute('aria-label', control.label);
+  if (!value) wrap.classList.add('is-auto');
+  input.oninput = () => { wrap.classList.remove('is-auto'); onChange(input.value, true); };
+  input.onchange = () => onChange(input.value);
+  const word = el('span', 'color-word', value ? value.toUpperCase() : 'Paint');
+  const clear = el('button', 'btn btn-ghost btn-sm', 'Paint');
+  clear.type = 'button';
+  clear.title = "Back to the vehicle's own paint";
+  clear.hidden = !value;
+  clear.disabled = disabled;
+  clear.onclick = () => onChange(null);
+  wrap.append(input, word, clear);
+  return wrap;
 }
 
 /* A slider reports every movement as a LIVE change (the preview follows
@@ -503,6 +530,7 @@ export function renderControls(host, values, onChange, opts = {}) {
       else if (control.type === 'range') widget = buildRange(control, value, change, !ok);
       else if (control.type === 'file') widget = buildFile(control, value, change, !ok);
       else if (control.type === 'text') widget = buildText(control, value, change, !ok, placeholders[control.key]);
+      else if (control.type === 'color') widget = buildColor(control, value, change, !ok);
       else widget = el('span', 'dim xs', control.type);
 
       row.appendChild(widget);
@@ -614,9 +642,10 @@ export function controlsToFlags(values) {
         else if (!control.cliInvert && value) flags.push(control.cli);
       } else if (!isDefault && control.cli) {
         // Quote anything with a space, or the echo is not pasteable:
-        // --border Generic Dealer Frame reads as three arguments.
+        // --border Generic Dealer Frame reads as three arguments. A
+        // colour's # would start a shell comment, so it is quoted too.
         const text = String(value);
-        flags.push(`${control.cli} ${/\s/.test(text) ? `"${text}"` : text}`);
+        flags.push(`${control.cli} ${/[\s#]/.test(text) ? `"${text}"` : text}`);
       }
     }
   }

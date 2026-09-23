@@ -740,12 +740,14 @@ function swatchArt(control, choice, values, image) {
   }
   if (control.key === 'backdrop' && ['vehicle', 'generic', 'sweep'].includes(choice.value)) {
     const subject = preview?.subject?.();
-    const key = JSON.stringify([choice.value, subject?.exterior, subject?.interior, subject?.seed]);
+    // Hue bands and the sweep show the chosen colour once it is theirs.
+    const color = choice.value !== 'vehicle' && values.backdrop === choice.value ? values.backdropColor || null : null;
+    const key = JSON.stringify([choice.value, subject?.exterior, subject?.interior, subject?.seed, color]);
     if (!artCache.has(key)) {
       try {
         const bg = choice.value === 'generic'
-          ? { kind: 'generic', seed: `${subject?.seed || 'sample'}:preview` }
-          : { kind: choice.value, seed: `${subject?.seed || 'sample'}:preview`, exterior: subject?.exterior || null, interior: subject?.interior || null };
+          ? { kind: 'generic', seed: `${subject?.seed || 'sample'}:preview`, color }
+          : { kind: choice.value, seed: `${subject?.seed || 'sample'}:preview`, exterior: subject?.exterior || null, interior: subject?.interior || null, color };
         // The sweep reads the paint off the subject when the names give none.
         const sample = subject?.cutout ? ctxOf(subject.cutout, { willReadFrequently: true }).getImageData(0, 0, subject.cutout.width, subject.cutout.height) : null;
         if (choice.value === 'sweep' && sample) bg.sample = { $image: 0 };
@@ -775,7 +777,7 @@ function lookArt(lk, values) {
   const subject = preview?.subject?.();
   if (!subject) return null;
   const v = { ...values, ...lk.values };
-  const key = JSON.stringify([lk.id, subject.seed, v.backdrop, v.spotlight, v.glow, v.glowColor, v.glowRadius, v.glowIntensity,
+  const key = JSON.stringify([lk.id, subject.seed, v.backdrop, v.backdropColor, v.spotlight, v.glow, v.glowColor, v.glowRadius, v.glowIntensity,
     v.shadow, v.shadowStrength, v.reflection, v.reflectionStrength, v.border, v.frameColor, v.frameWeight]);
   if (!lookArtCache.has(key)) {
     try {
@@ -783,6 +785,7 @@ function lookArt(lk, values) {
       const composed = composeHero(subject.cutout, {
         width: size, height: size, seed: `${subject.seed}:look`,
         exterior: subject.exterior, interior: subject.interior, generic: v.backdrop === 'generic', backdrop: v.backdrop,
+        backdropColor: v.backdropColor || null,
         spotlight: v.spotlight, marginFrac: 0.08,
         glow: v.glow, glowColor: v.glowColor, glowRadius: Math.max(2, Math.round((v.glowRadius || 24) / 6)), glowIntensity: v.glowIntensity,
         border: null, borderStyle: v.border === 'line' ? { kind: 'line', color: v.frameColor || 'white', weight: Math.max(0.02, Number(v.frameWeight) || 0.008) * 2 } : null,
@@ -1160,6 +1163,7 @@ async function run() {
           spotlight: state.options.spotlight,
           marginFrac: state.options.margin,
           generic: state.options.backdrop === 'generic', backdrop: state.options.backdrop,
+          backdropColor: state.options.backdropColor || null,
           // The user's own images, the browser's --photo-background and
           // --border: drawn by the core exactly as the CLI's are.
           background: state.options.backdrop === 'custom' ? state.options.customBackground || null : stockBackground,
@@ -1215,6 +1219,7 @@ async function run() {
             exterior: state.vehicle.exterior_color,
             interior: state.vehicle.interior_color,
             generic: state.options.backdrop === 'generic', backdrop: state.options.backdrop,
+            backdropColor: state.options.backdropColor || null,
             spotlight: state.options.spotlight,
             glow: state.options.glow,
             glowColor: state.options.glowColor,

@@ -269,7 +269,7 @@ export class Preview {
         seed: `${subject.seed}:preview`,
         exterior: subject.exterior, interior: subject.interior,
         generic: o.backdrop === 'generic',
-        backdrop: o.backdrop,
+        backdrop: o.backdrop, backdropColor: o.backdropColor || null,
         background: o.backdrop === 'custom' ? o.customBackground || null : stockBackground,
         border, borderFit: o.frameFit, borderStyle: frameStyle(o), shadow: shadowStyle(o), reflection: reflectionStyle(o),
         spotlight: o.spotlight,
@@ -312,12 +312,12 @@ export class Preview {
     const background = o.backdrop === 'custom' ? o.customBackground || null
       : o.backdrop === 'asset' && o.background ? assetImage('backgrounds', o.background, () => this.update()) : null;
     const style = frameStyle(o);
-    const key = JSON.stringify([width, height, seed, o.backdrop, o.spotlight, subject.exterior, subject.interior, cutouts.length, text,
+    const key = JSON.stringify([width, height, seed, o.backdrop, o.backdropColor, o.spotlight, subject.exterior, subject.interior, cutouts.length, text,
       background ? `${o.backdrop}:${o.background || o.customBackground?.name || ''}` : null, style]);
     if (key !== this.clipKey) {
       this.clip = prepareClip(cutouts, {
         width, height, seed: `${seed}:video`, exterior: subject.exterior, interior: subject.interior,
-        generic: o.backdrop === 'generic', backdrop: o.backdrop, spotlight: o.spotlight, text, background, frameStyle: style,
+        generic: o.backdrop === 'generic', backdrop: o.backdrop, backdropColor: o.backdropColor || null, spotlight: o.spotlight, text, background, frameStyle: style,
         vehicle: subject.vehicle,
       });
       this.clipKey = key;

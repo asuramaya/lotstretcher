@@ -293,6 +293,10 @@ def test_the_sweep_is_a_lit_floor_line_in_the_vehicles_colours():
     assert backdrop_spec("generic", "s", "x", "y") == {"kind": "generic", "seed": "s"}
     with pytest.raises(ValueError):
         backdrop_spec("neon", "s", None, None)
+    # A colour of the user's rides the spec; the vehicle backdrop ignores it.
+    assert backdrop_spec("generic", "s", None, None, "#ff8800") == {"kind": "generic", "seed": "s", "color": "#ff8800"}
+    assert backdrop_spec("sweep", "s", "Rapid Red", None, "#ff8800")["color"] == "#ff8800"
+    assert "color" not in backdrop_spec("vehicle", "s", "Rapid Red", None, "#ff8800")
     bg = {"kind": "sweep", "seed": "s", "exterior": "Rapid Red", "interior": None}
     img = np.asarray(core.render_frame([], 600, 600, bg)).astype(int)
     lum = img.sum(axis=2)
@@ -312,3 +316,42 @@ def test_the_sweep_is_a_lit_floor_line_in_the_vehicles_colours():
                          "cars": []}, [cutout()])
     row = np.asarray(sampled).astype(int)[int(np.argmax(np.asarray(sampled).astype(int).sum(axis=2)[:, 100])), 100]
     assert row[0] > row[1] + 20
+
+
+def test_a_chosen_colour_puts_the_bands_and_the_sweep_in_that_hue():
+    """--backdrop-color: hue bands and the sweep take the colour, on
+    both builds; the Python parser reads the same hex the core does."""
+    from lotstretcher.imaging.palette import parse_color_name
+    from lotstretcher.imaging.text import backdrop_color, gradient_color_names
+    assert parse_color_name("#ff8800") == (255, 136, 0)
+    assert parse_color_name("#F80") == (255, 136, 0)
+    assert parse_color_name("Rapid Red") == parse_color_name("rapid red")
+    assert backdrop_color({"backdrop": "sweep", "backdropColor": "#ff8800"}) == "#ff8800"
+    assert backdrop_color({"backdrop": "vehicle", "backdropColor": "#ff8800"}) is None
+    assert gradient_color_names("Blue", None, "generic", "#ff8800") == ("#ff8800", "#ff8800")
+    assert gradient_color_names("Blue", None, "vehicle", "#ff8800") == ("Blue", None)
+    for kind in ("generic", "sweep"):
+        orange = np.asarray(core.render_frame([], 120, 120, {"kind": kind, "seed": "s", "exterior": None, "interior": None, "color": "#ff8800"})).astype(int)
+        plain = np.asarray(core.render_frame([], 120, 120, {"kind": kind, "seed": "s", "exterior": "Deep Blue", "interior": None})).astype(int)
+        r, g, b = orange.reshape(-1, 3).mean(axis=0)
+        assert r > g > b, (kind, r, g, b)
+        assert not np.array_equal(orange, plain)
+    # The wasm build draws the same pixels as the native one.
+    node = shutil.which("node")
+    wasm = REPO / "web" / "public" / "core" / "lotstretcher_core_bg.wasm"
+    if not node or not wasm.exists():
+        return
+    bg = {"kind": "sweep", "seed": "s", "exterior": None, "interior": None, "color": "#ff8800"}
+    script = f"""
+      import fs from 'node:fs';
+      import {{ loadCore, call }} from '{(REPO / 'web' / 'public' / 'js' / 'core.js').as_posix()}';
+      await loadCore(fs.readFileSync('{wasm.as_posix()}'));
+      const out = call({{ op: 'render_frame', width: 120, height: 120, background: {json.dumps(bg)}, cars: [] }}, []);
+      process.stdout.write(JSON.stringify(Array.from(out.data.slice(0, 30))));
+    """
+    with tempfile.TemporaryDirectory() as d:
+        js = Path(d) / "sweep.mjs"
+        js.write_text(script)
+        out = json.loads(subprocess.run([node, str(js)], capture_output=True, text=True, check=True).stdout)
+    native = np.asarray(core.render_frame([], 120, 120, bg)).reshape(-1)[:30]
+    assert list(int(v) for v in native) == out

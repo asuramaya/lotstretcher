@@ -17,13 +17,43 @@ fn word(name: &str) -> [u8; 3] {
 }
 
 /// RGB for the first base colour word in a marketing name, or None when
-/// the name is pure branding ("Avalanche", "Iconic").
+/// the name is pure branding ("Avalanche", "Iconic"). A "#rrggbb" is
+/// taken as itself, so a chosen colour travels the same field a name does.
 pub fn parse_color_name(name: Option<&str>) -> Option<[u8; 3]> {
-    let lowered = name?.to_lowercase();
+    let lowered = name?.trim().to_lowercase();
     if lowered.is_empty() {
         return None;
     }
+    if let Some(rgb) = parse_hex(&lowered) {
+        return Some(rgb);
+    }
     color_words().into_iter().find(|(w, _)| lowered.contains(w.as_str())).map(|(_, c)| c)
+}
+
+/// "#rrggbb" (or "#rgb") as RGB; None for anything else.
+pub fn parse_hex(text: &str) -> Option<[u8; 3]> {
+    let hex = text.strip_prefix('#')?;
+    let digit = |c: char| c.to_digit(16).map(|d| d as u8);
+    match hex.len() {
+        6 => {
+            let mut out = [0u8; 3];
+            for (i, pair) in hex.as_bytes().chunks(2).enumerate() {
+                let hi = digit(pair[0] as char)?;
+                let lo = digit(pair[1] as char)?;
+                out[i] = hi * 16 + lo;
+            }
+            Some(out)
+        }
+        3 => {
+            let mut out = [0u8; 3];
+            for (i, c) in hex.chars().enumerate() {
+                let d = digit(c)?;
+                out[i] = d * 17;
+            }
+            Some(out)
+        }
+        _ => None,
+    }
 }
 
 /// The paint colour measured off a cutout: the median of the brighter

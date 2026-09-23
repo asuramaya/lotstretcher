@@ -91,8 +91,9 @@ pub fn slice_image(arena: &[u8], s: &Slice) -> Result<Rc<Image>, String> {
 pub enum Background {
     /// A gradient from the vehicle's colours (or the cutout's paint).
     Vehicle { seed: String, exterior: Option<String>, interior: Option<String> },
-    /// Seeded hue bands, no vehicle input.
-    Generic { seed: String },
+    /// Seeded hue bands, no vehicle input; or, with `color` ("#rrggbb"),
+    /// the same bands in that one hue.
+    Generic { seed: String, #[serde(default)] color: Option<String> },
     /// A supplied image, cover-fitted.
     Image { image: Slice },
     /// An explicit linear gradient: what a video host asks for per
@@ -101,7 +102,8 @@ pub enum Background {
     /// A studio sweep in the vehicle's colours (gradient::sweep). The
     /// paint is read off `sample` when the names give none; compose_hero
     /// uses car 0 for that.
-    Sweep { seed: String, exterior: Option<String>, interior: Option<String>, #[serde(default)] sample: Option<Slice> },
+    /// With `color` the sweep is in that colour instead of the paint's.
+    Sweep { seed: String, exterior: Option<String>, interior: Option<String>, #[serde(default)] sample: Option<Slice>, #[serde(default)] color: Option<String> },
 }
 
 #[derive(Deserialize)]
@@ -256,10 +258,10 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     let mut canvas = match &req.background {
         Background::Vehicle { seed, exterior, interior } =>
             vehicle_gradient(w, h, seed, exterior.as_deref(), interior.as_deref(), cars.first().map(|c| &**c)),
-        Background::Generic { seed } => generic_gradient(w, h, seed),
+        Background::Generic { seed, color } => generic_gradient(w, h, seed, color.as_deref()),
         Background::Linear { angle, start, end } => crate::gradient::linear_gradient(w, h, *angle, *start, *end),
-        Background::Sweep { seed, exterior, interior, .. } =>
-            crate::gradient::sweep(w, h, seed, exterior.as_deref(), interior.as_deref(), cars.first().map(|c| &**c)),
+        Background::Sweep { seed, exterior, interior, color, .. } =>
+            crate::gradient::sweep(w, h, seed, exterior.as_deref(), interior.as_deref(), cars.first().map(|c| &**c), color.as_deref()),
         Background::Image { image } => {
             let img = slice_image(arena, image)?;
             let rgb = if img.channels == 3 { (*img).clone() } else { drop_alpha(&img) };

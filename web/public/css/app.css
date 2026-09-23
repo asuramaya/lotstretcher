@@ -710,6 +710,19 @@
 }
 
 .file-wrap { display: flex; align-items: center; gap: var(--s-2); flex: none; }
+/* The colour picker: a round swatch (the platform's picker behind it),
+   the hex beside it, and the way back to the paint. */
+.color-wrap { display: flex; align-items: center; gap: var(--s-2); flex: none; }
+.color-input {
+  appearance: none; -webkit-appearance: none; width: 36px; height: 36px; padding: 0;
+  border: 1.5px solid var(--line-2); border-radius: var(--r-full); background: transparent; cursor: pointer;
+}
+.color-input::-webkit-color-swatch-wrapper { padding: 3px; }
+.color-input::-webkit-color-swatch { border: 0; border-radius: var(--r-full); }
+.color-input::-moz-color-swatch { border: 0; border-radius: var(--r-full); }
+.color-wrap.is-auto .color-input { background: repeating-conic-gradient(var(--surface-3) 0 25%, var(--surface) 0 50%) 0 0 / 12px 12px; }
+.color-wrap.is-auto .color-input::-webkit-color-swatch { opacity: 0; }
+.color-word { font-size: var(--t-xs); font-family: var(--mono, ui-monospace, monospace); color: var(--ink-3); min-width: 5.5ch; }
 .file-thumb { width: auto; height: 40px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--sunken); }
 
 .range-wrap { display: flex; align-items: center; gap: var(--s-3); flex: none; }

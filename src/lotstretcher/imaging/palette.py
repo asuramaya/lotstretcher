@@ -63,12 +63,33 @@ NEUTRAL_TINT_SATURATION = 0.30
 BACKDROP_SATURATION_RANGE = (0.28, 0.78)
 
 
+def parse_hex(text: str) -> tuple[int, int, int] | None:
+    """"#rrggbb" (or "#rgb") as RGB; None for anything else. Mirrors
+    core/src/palette.rs::parse_hex."""
+    if not text.startswith("#"):
+        return None
+    hex_part = text[1:]
+    try:
+        if len(hex_part) == 6:
+            return tuple(int(hex_part[i:i + 2], 16) for i in (0, 2, 4))
+        if len(hex_part) == 3:
+            return tuple(int(c, 16) * 17 for c in hex_part)
+    except ValueError:
+        return None
+    return None
+
+
 def parse_color_name(name: str | None) -> tuple[int, int, int] | None:
     """RGB for the first base color word found in a marketing name, or
-    None if the name is pure branding ("Avalanche", "Iconic")."""
+    None if the name is pure branding ("Avalanche", "Iconic"). A
+    "#rrggbb" is taken as itself, so a chosen colour travels the same
+    field a name does (core/src/palette.rs does the same)."""
     if not name:
         return None
-    lowered = name.lower()
+    lowered = name.strip().lower()
+    hex_rgb = parse_hex(lowered)
+    if hex_rgb is not None:
+        return hex_rgb
     for word in sorted(COLOR_WORDS, key=len, reverse=True):
         if word in lowered:
             return COLOR_WORDS[word]

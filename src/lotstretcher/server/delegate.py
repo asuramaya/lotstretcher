@@ -26,7 +26,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ..imaging.text import backdrop_spec, frame_style, reflection_style, shadow_style, text_options, text_request
+from ..imaging.text import backdrop_color, backdrop_spec, frame_style, reflection_style, shadow_style, text_options, text_request
 
 MAX_CUTOUT_BYTES = 24 * 1024 * 1024
 MAX_CANVAS = 4096
@@ -155,7 +155,8 @@ def compose(cutout_png: bytes, options: dict[str, Any],
         # browser would have drawn for this seed, since it is the same code.
         from ..library_ops import generated_backdrop
         background = backdrop_spec(generated_backdrop(options), str(options.get("seed", "")),
-                                   options.get("exteriorColor"), options.get("interiorColor"))
+                                   options.get("exteriorColor"), options.get("interiorColor"),
+                                   backdrop_color(options))
 
     from ..library_ops import stock_border
     wants_border = bool(options.get("frame")) or stock_border(options) is not None

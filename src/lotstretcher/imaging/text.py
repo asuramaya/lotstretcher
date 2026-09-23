@@ -117,21 +117,48 @@ BACKDROPS = ("vehicle", "generic", "sweep")
 
 
 def add_backdrop_arg(parser) -> None:
-    """The generated backdrop's kind, shared by the CLIs. A photo
-    (--photo-background) wins over it."""
+    """The generated backdrop's kind and colour, shared by the CLIs. A
+    photo (--photo-background) wins over both."""
     parser.add_argument("--backdrop", default="vehicle", choices=BACKDROPS,
                         help="The generated backdrop: 'vehicle', a gradient from the vehicle's own colours "
                              "(default); 'generic', seeded hue bands; 'sweep', a studio cyclorama in the "
                              "vehicle's colours with a lit floor line. Ignored when --photo-background is given.")
+    parser.add_argument("--backdrop-color", default=None, metavar="HEX",
+                        help="A colour of your own for the hue bands or the sweep, as #rrggbb (or a colour "
+                             "word). Without it they take the vehicle's paint. The vehicle backdrop is "
+                             "always the paint's, so it ignores this.")
 
 
-def backdrop_spec(kind: str, seed: str, exterior: str | None, interior: str | None) -> dict:
-    """The core's background field for a generated backdrop of `kind`."""
+def backdrop_color(options: dict) -> str | None:
+    """The app's chosen backdrop colour, or None: only the hue bands and
+    the sweep take one; the vehicle backdrop is computed from the paint."""
+    if options.get("backdrop") not in ("generic", "sweep"):
+        return None
+    color = (options.get("backdropColor") or "").strip()
+    return color or None
+
+
+def backdrop_spec(kind: str, seed: str, exterior: str | None, interior: str | None,
+                  color: str | None = None) -> dict:
+    """The core's background field for a generated backdrop of `kind`.
+    `color` (#rrggbb or a colour word) puts hue bands or a sweep in that
+    colour; the vehicle backdrop ignores it."""
     if kind == "generic":
-        return {"kind": "generic", "seed": seed}
+        return {"kind": "generic", "seed": seed, **({"color": color} if color else {})}
     if kind not in BACKDROPS:
         raise ValueError(f"unknown backdrop {kind!r}; one of {', '.join(BACKDROPS)}")
-    return {"kind": kind, "seed": seed, "exterior": exterior, "interior": interior}
+    out = {"kind": kind, "seed": seed, "exterior": exterior, "interior": interior}
+    if kind == "sweep" and color:
+        out["color"] = color
+    return out
+
+
+def gradient_color_names(exterior: str | None, interior: str | None, kind: str, color: str | None) -> tuple[str | None, str | None]:
+    """The names a turning video gradient reads its stops from: the chosen
+    colour for both when hue bands or a sweep have one, else the paint's."""
+    if color and kind in ("generic", "sweep"):
+        return color, color
+    return exterior, interior
 
 
 REFLECTION_STRENGTH = 0.35

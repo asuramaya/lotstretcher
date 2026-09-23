@@ -45,7 +45,8 @@ DEFAULT_HERO_STILL_FORMAT = _spec.get("heroStillFormats", "default", default="sq
 
 def _backdrop(background_path, out_dir: Path, image_key: str, gradient: bool,
                exterior: str | None, interior: str | None, sample_path: Path | None,
-               canvas: tuple[int, int] | None = None, backdrop: str = "vehicle"):
+               canvas: tuple[int, int] | None = None, backdrop: str = "vehicle",
+               backdrop_color: str | None = None):
     """Either the shared background asset, or a per-image gradient built
     from this vehicle's own colors.
 
@@ -62,7 +63,7 @@ def _backdrop(background_path, out_dir: Path, image_key: str, gradient: bool,
     # needed here. `canvas` is decided by the caller of compose_hero.
     del canvas, sample_path
     from ..text import backdrop_spec
-    return backdrop_spec(backdrop, f"{out_dir.parent.name}/{image_key}", exterior, interior)
+    return backdrop_spec(backdrop, f"{out_dir.parent.name}/{image_key}", exterior, interior, backdrop_color)
 
 
 def hero_still_name(fmt: str) -> str:
@@ -80,7 +81,7 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
                      border_fit: str = "fit", text: dict | None = None,
                      vehicle: dict | None = None, border_style: dict | None = None,
                      shadow: dict | None = None, reflection: dict | None = None,
-                     backdrop: str = "vehicle") -> dict:
+                     backdrop: str = "vehicle", backdrop_color: str | None = None) -> dict:
     """Returns {"hero": Path|None, "framed": [Path, ...]}. Produces nothing
     (empty result, no error) if cutout_dir has no usable cutouts -- e.g. a
     used vehicle with no clean exterior shots to cut out at all; callers
@@ -119,7 +120,8 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
             # same hero sharing one gradient would be the same near-
             # duplicate backdrop the per-image seeding exists to avoid.
             hero_bg = _backdrop(background_path, out_dir, f"hero/{fmt}", gradient,
-                                 exterior_color, interior_color, hero_cutouts[0], canvas, backdrop=backdrop)
+                                 exterior_color, interior_color, hero_cutouts[0], canvas, backdrop=backdrop,
+                                 backdrop_color=backdrop_color)
             hero_img = compose_hero(hero_bg, border_path, hero_cutouts, layout=layout,
                                      spotlight=spotlight,
                                      glow=glow, glow_color=glow_color, margin_frac=hero_margin,
@@ -151,7 +153,7 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
     framed_dir.mkdir(parents=True, exist_ok=True)
     for cutout in cutout_files:
         bg = _backdrop(background_path, out_dir, f"framed/{cutout.name}", gradient,
-                        exterior_color, interior_color, cutout, backdrop=backdrop)
+                        exterior_color, interior_color, cutout, backdrop=backdrop, backdrop_color=backdrop_color)
         img = compose_hero(bg, border_path, [cutout], layout="single",
                             spotlight=spotlight, margin_frac=single_margin,
                             glow=glow, glow_color=glow_color,
@@ -186,7 +188,7 @@ def compose_wheel_shots(wheel_cutout_dir: Path, out_dir: Path, background_path, 
                          border_fit: str = "fit", text: dict | None = None,
                          vehicle: dict | None = None, border_style: dict | None = None,
                          shadow: dict | None = None, reflection: dict | None = None,
-                         backdrop: str = "vehicle") -> list[Path]:
+                         backdrop: str = "vehicle", backdrop_color: str | None = None) -> list[Path]:
     """One solo composition per confirmed wheel-money-shot cutout (see
     imaging/wheel.py and photos.py's images/exterior/wheels/), same
     single-layout/background/glow treatment as compose_vehicle()'s framed
@@ -209,7 +211,7 @@ def compose_wheel_shots(wheel_cutout_dir: Path, out_dir: Path, background_path, 
     results = []
     for cutout in wheel_files:
         bg = _backdrop(background_path, out_dir, f"framed/{cutout.name}", gradient,
-                        exterior_color, interior_color, cutout, backdrop=backdrop)
+                        exterior_color, interior_color, cutout, backdrop=backdrop, backdrop_color=backdrop_color)
         img = compose_hero(bg, border_path, [cutout], layout="single",
                             spotlight=spotlight, margin_frac=0.06 if margin_frac is None else margin_frac,
                             glow=glow, glow_color=glow_color,

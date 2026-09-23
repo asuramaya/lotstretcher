@@ -129,13 +129,14 @@ def main():
         # the run, so only the seeded starting angle is decided here.
         import random as _random
         from lotstretcher.imaging.palette import colors_from_details, vehicle_gradient_colors
+        from lotstretcher.imaging.text import gradient_color_names
         ext, inr = colors_from_details(vehicle_folder)
         sample = next(iter(sorted(cutout_dir.glob("*.png"))), None)
-        start, end = vehicle_gradient_colors(ext, inr, sample)
+        start, end = vehicle_gradient_colors(*gradient_color_names(ext, inr, args.backdrop, args.backdrop_color), sample)
         gradient_colors = (_random.Random(vehicle_folder.name).uniform(0, 360), start, end)
         if args.backdrop != "vehicle" and background_image is None:
             from lotstretcher.imaging.text import backdrop_spec
-            args.backdrop_spec = backdrop_spec(args.backdrop, vehicle_folder.name, ext, inr)
+            args.backdrop_spec = backdrop_spec(args.backdrop, vehicle_folder.name, ext, inr, args.backdrop_color)
 
     if args.music or args.audio:
         audio_path, bars_per_loop = resolve_audio(args.audio)
