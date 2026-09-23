@@ -626,6 +626,7 @@ async function run() {
         const [w, h] = OPTS.VIDEO_FORMATS[fmt].size;
         try {
           state.videos[fmt] = await renderHeroVideo(cut.map((p) => p.cutout), {
+            angles: cut.map((p) => p.angle || null),
             width: w, height: h,
             seed: `${vid}:video:${fmt}`,
             exterior: state.vehicle.exterior_color,

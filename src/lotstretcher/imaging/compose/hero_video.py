@@ -107,7 +107,7 @@ from PIL import Image
 from .effects import DEFAULT_GLOW_COLOR
 from ... import spec as _spec
 from ... import core
-from .layout import LAYOUTS, conveyor_for_window, compute_placement
+from .layout import LAYOUTS, conveyor_for_window
 from ..classify import detect_hood_side
 
 AUDIO_BITRATE_KBPS = 128
@@ -201,15 +201,6 @@ HERO_MARGIN_FRAC = _spec.get("video", "heroMarginFrac")
 ACCENT_MARGIN_FRAC = _spec.get("video", "accentMarginFrac")
 
 
-def _ease_out(t: float) -> float:
-    return 1.0 - (1.0 - t) ** 2
-
-
-def _lerp_rect(rect_from: tuple[float, float, float, float], rect_to: tuple[float, float, float, float],
-                t: float) -> tuple[float, float, float, float]:
-    return tuple(a + (b - a) * t for a, b in zip(rect_from, rect_to))
-
-
 def probe_duration_s(path: Path) -> float:
     out = subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
@@ -242,15 +233,6 @@ def compute_carousel_timing(audio_loop_s: float, bars_per_loop: int = BARS_PER_L
     transition_s = min(MAX_TRANSITION_S, max(MIN_TRANSITION_S, dwell * TRANSITION_FRAC))
     transition_s = min(transition_s, dwell * 0.9)
     return dwell, transition_s, beat_s
-
-
-def _pulse_scale(t: float, beat_s: float) -> float:
-    """Snap-and-decay envelope, period beat_s: 1.0+PULSE_STRENGTH right on
-    the beat, decaying back toward 1.0 before the next one."""
-    if beat_s <= 0:
-        return 1.0
-    phase = (t % beat_s) / beat_s
-    return 1.0 + PULSE_STRENGTH * math.exp(-phase / PULSE_DECAY)
 
 
 # How far under the stated cap to actually aim. The 3% container
@@ -341,214 +323,31 @@ def _read_bg_frames(video_path: Path, canvas_size: tuple[int, int]) -> list[Imag
     return [_cover_fit(Image.fromarray(rgb), canvas_size) for rgb in raw]
 
 
-class _Shot:
-    __slots__ = ("path", "car", "hero_rect", "hero_fit_rect", "left_rect", "right_rect", "center",
-                 "dim_strength", "is_pan", "pan_draw_w", "pan_draw_h", "pan_x_start", "pan_x_end",
-                 "hood_side", "bars")
-    # EVERY on-screen appearance of a shot is a (draw_rect, clip_rect)
-    # pair -- see _hero_state()/_render(). draw_rect is where the WHOLE
-    # image is drawn (always its own aspect, never distorted); clip_rect
-    # is the window you see it through. For the accent slots and a
-    # non-pan hero the two are identical (image exactly fills its box, so
-    # clipping is a no-op). For a PAN hero they differ: the image is drawn
-    # much wider than the box (pan_draw_w) and slid horizontally behind a
-    # fixed window (hero_rect). That single representation is what makes
-    # the morph work -- see the module docstring's PAN section.
-    #
-    # hero_rect: the hero window -- for a pan shot the edge-to-edge crop
-    #   box (avail_w x avail_h); for a static shot the aspect fit.
-    # hero_fit_rect: the plain aspect-preserving fit in the hero box.
-    #   Static shots use it as their hero draw+clip; pan shots don't use
-    #   it at all (their draw rect comes from the pan geometry below).
-    # left_rect/right_rect: aspect-preserving fits in the accent boxes.
-    # pan_draw_w/pan_draw_h: the size the whole image is drawn at while
-    #   panning (fills the window's height, overflows its width).
-    # pan_x_start/pan_x_end: draw-x at pan progress 0 and 1 -- the pan is
-    #   a plain lerp between them, no direction flag needed at render
-    #   time (the direction is already baked into which is which).
-    # hood_side: 'left'/'right' from detect_hood_side(), the thing that
-    #   decides those two endpoints; kept for the run report.
-    # bars: how many bars this shot holds the hero slot (PAN_BARS for a
-    #   pan, 1 otherwise).
-
-
-def _place(car: Image.Image, box, anchor: str, border,
-            margin_frac: float = 0.06) -> tuple[Image.Image, float, float, float, float]:
-    """(resized, x, y, w, h) -- collision-resolved resting placement."""
-    x, y, resized = compute_placement(car, box, anchor=anchor, margin_frac=margin_frac)
-    if border is not None:
-        y = core.resolve_collision(border, resized, x, y)
-    return resized, float(x), float(y), float(resized.width), float(resized.height)
-
-
-def _build_shot(path: Path, hero_box, hero_anchor, left_box, left_anchor, right_box, right_anchor,
-                 border, representative_bg: Image.Image, margin_frac: float = HERO_MARGIN_FRAC,
-                 pannable: bool = True, precomputed_hood_side: str | None = None) -> _Shot:
-    shot = _Shot()
-    shot.path = path
-    shot.car = Image.open(path).convert("RGBA")
-
-    _, *shot.left_rect = _place(shot.car, left_box, left_anchor, border, ACCENT_MARGIN_FRAC)
-    _, *shot.right_rect = _place(shot.car, right_box, right_anchor, border, ACCENT_MARGIN_FRAC)
-
-    hero_fit_resized, *hero_fit_rect = _place(shot.car, hero_box, hero_anchor, border, margin_frac)
-    shot.hero_fit_rect = tuple(hero_fit_rect)
-
-    # is_pan needs the hero BOX's own available space, not a shot's
-    # already-letterboxed fit result -- computing fill_scale from a
-    # width-constrained shot's fit height (which is SMALLER than the box's
-    # real avail_h) silently made every wide shot look non-pan-eligible.
-    bl, bt, br, bb = hero_box
-    avail_w = (br - bl) * (1 - 2 * margin_frac)
-    avail_h = (bb - bt) * (1 - 2 * margin_frac)
-    width_constrained = (avail_w / shot.car.width) < (avail_h / shot.car.height)
-    fill_scale = avail_h / shot.car.height
-    filled_w = shot.car.width * fill_scale
-    overflow_frac = filled_w / avail_w - 1
-    # Aspect alone is not enough to earn a pan: a 3/4 shot of a long
-    # vehicle is wide too, and panning one looks like a mistake because
-    # the vehicle is receding in perspective rather than lying flat
-    # across the frame. Only a dead-on side profile reads as "drives
-    # past", so the classifier's label is the gate and the aspect check
-    # only decides whether there's room to move.
-    shot.is_pan = pannable and width_constrained and overflow_frac >= MIN_PAN_OVERFLOW_FRAC
-
-    if shot.is_pan:
-        # The window spans the hero box's FULL width -- no side margin.
-        # Every other shot/slot insets by margin_frac for breathing room,
-        # but on a pan that inset just reads as the vehicle being sliced
-        # off with a strip of background beside it, since the image
-        # continues past the cut. Height keeps the margin (the vehicle
-        # still wants headroom); only the horizontal inset is dropped.
-        win_w = float(br - bl)
-        x0 = float(bl)
-        y0 = (bb - (bb - bt) * margin_frac - avail_h) if hero_anchor == "bottom" else (bt + ((bb - bt) - avail_h) / 2)
-        shot.hero_rect = (x0, y0, win_w, avail_h)
-
-        shot.pan_draw_w, shot.pan_draw_h = filled_w, avail_h
-        hero_content_for_dim = core.resize(
-            shot.car, max(1, round(filled_w)), max(1, round(avail_h))
-        ).crop((0, 0, max(1, round(win_w)), max(1, round(avail_h))))
-
-        # Endpoints: the nose sits flush against one frame edge to start,
-        # the tail flush against the other to finish (see PAN_BARS). Which
-        # image edge is the nose decides both, and with it the slide
-        # direction -- the cutout is a sprite over a STATIC flag, so
-        # whichever way the image translates is the way the vehicle reads
-        # as driving; it is the moving object, not a camera panning past a
-        # parked truck. A right-facing vehicle must therefore slide RIGHT
-        # to look like it's driving forward (front leading, like a truck
-        # driving past you), which falls out of "start with the nose
-        # against the right edge."
-        if precomputed_hood_side is not None:
-            # The normal path -- photos.py's download_photos() already ran
-            # this CLIP call once, at cutout time, and stashed the answer in
-            # angles.json. Falling back to a live call below only matters
-            # for a caller that never had that chance (hero_video_cli.py
-            # re-rendering a folder scraped before this field existed).
-            shot.hood_side = precomputed_hood_side
-        else:
-            import io as _io
-            buf = _io.BytesIO()
-            shot.car.save(buf, format="PNG")
-            shot.hood_side = detect_hood_side(buf.getvalue())
-        xc = x0 + win_w / 2
-        if shot.hood_side == "right":
-            shot.pan_x_start, shot.pan_x_end = xc - filled_w, xc
-        else:
-            shot.pan_x_start, shot.pan_x_end = xc, xc - filled_w
-    else:
-        shot.hero_rect = shot.hero_fit_rect
-        shot.pan_draw_w = shot.pan_draw_h = shot.pan_x_start = shot.pan_x_end = 0.0
-        shot.hood_side = None
-        hero_content_for_dim = hero_fit_resized
-
-    shot.bars = PAN_BARS if shot.is_pan else 1
-
-    x, y, w, h = shot.hero_rect
-    car_box = (round(x), round(y), round(x + w), round(y + h))
-    bg_region = representative_bg.crop(car_box)
-    shot.dim_strength = core.dim_strength(bg_region, hero_content_for_dim)
-    shot.center = ((car_box[0] + car_box[2]) / 2, (car_box[1] + car_box[3]) / 2)
-    return shot
-
-
-def _hero_state(shot: _Shot, progress: float) -> tuple:
-    """The draw rect for this shot as the hero at pan-progress `progress`
-    (0..1 across its steady hold; ignored for a non-pan shot).
-
-    For a pan shot the image is drawn oversized and slid sideways -- so a
-    pan is a change in X only, at constant scale, which is what makes it
-    interpolate cleanly against the accent rects (also whole-image
-    draws). Whatever leaves the frame is simply covered by the border art
-    composited on top, so the vehicle stays WHOLE and drives off screen
-    rather than being sliced by a window edge. The slide direction always
-    matches the way the vehicle faces, so it reads as driving forward --
-    see _build_shot()'s direction note and detect_hood_side().
-    """
-    if not shot.is_pan:
-        return shot.hero_fit_rect
-    p = min(1.0, max(0.0, progress))
-    x = shot.pan_x_start + (shot.pan_x_end - shot.pan_x_start) * p
-    return (x, shot.hero_rect[1], shot.pan_draw_w, shot.pan_draw_h)
-
-
-def _build_schedule(shots: list, dwell: float) -> tuple[list[tuple[float, float]], float]:
-    """[(start, duration), ...] per shot plus the total period. Durations
-    are whole bars (shot.bars), so a pan shot can hold the hero slot
-    longer without any cut drifting off a downbeat."""
-    schedule, t = [], 0.0
-    for shot in shots:
-        d = dwell * shot.bars
-        schedule.append((t, d))
-        t += d
-    return schedule, t
-
-
-def _slot_at(pos: float, schedule: list[tuple[float, float]]) -> tuple[int, float, float]:
-    """(index, start, duration) of the slot containing `pos`."""
-    for i, (start, duration) in enumerate(schedule):
-        if pos < start + duration:
-            return i, start, duration
-    i = len(schedule) - 1
-    return i, schedule[i][0], schedule[i][1]
-
-
-def _scaled_about(rect: tuple, center: tuple[float, float], scale: float) -> tuple:
-    """Scale a rect about an arbitrary canvas point (not its own center) --
-    the beat pulse scales a pan hero's draw rect and its window about the
-    SAME point, so the content zooms in place instead of the two sliding
-    apart."""
-    x, y, w, h = rect
-    cx, cy = center
-    return (cx + (x - cx) * scale, cy + (y - cy) * scale, w * scale, h * scale)
-
-
 _SCALED_CACHE: dict = {}
 _SCALED_CACHE_MAX = 48
 
 
-def _scaled(shot: "_Shot", w: int, h: int) -> Image.Image:
+def _scaled(car: Image.Image, w: int, h: int) -> Image.Image:
     """The shot's car at (w, h), resampled by the core and memoized on
     size, not position: a pan slides the same bitmap and the beat pulse
     cycles through the same handful of integer sizes, so the core is
     asked once per size and then pastes a car that is already the
     rectangle's size without resampling it again. Bounded because a
     hero-sized entry is a few MB."""
-    key = (id(shot.car), w, h)
+    key = (id(car), w, h)
     img = _SCALED_CACHE.get(key)
     if img is None:
         if len(_SCALED_CACHE) >= _SCALED_CACHE_MAX:
             _SCALED_CACHE.pop(next(iter(_SCALED_CACHE)))
-        img = _SCALED_CACHE[key] = core.resize(shot.car, w, h)
+        img = _SCALED_CACHE[key] = core.resize(car, w, h)
     return img
 
 
-def _car_at(shot: "_Shot", draw_rect: tuple, alpha: float) -> tuple:
-    """A render_frame car entry for `shot` drawn at draw_rect."""
+def _car_at(car: Image.Image, draw_rect, alpha: float) -> tuple:
+    """A render_frame car entry for `car` drawn at draw_rect."""
     dx, dy, dw, dh = draw_rect
     w, h = max(1, round(dw)), max(1, round(dh))
-    return (_scaled(shot, w, h), round(dx), round(dy), w, h, alpha)
+    return (_scaled(car, w, h), round(dx), round(dy), w, h, alpha)
 
 
 def render_hero_video(background_video: Path | None, border_path: Path | None, carousel_paths: list[Path],
@@ -625,14 +424,34 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
 
     dwell, transition_s, beat_s = compute_carousel_timing(audio_loop_s, bars_per_loop)
     n = len(carousel_paths)
-    shots = [
-        _build_shot(p, hero_box, hero_anchor, left_box, left_anchor, right_box, right_anchor,
-                    border, representative_bg,
-                    pannable=(carousel_labels[i] == PAN_ANGLE_LABEL) if carousel_labels else True,
-                    precomputed_hood_side=(hood_sides.get(p.name) if hood_sides else None))
-        for i, p in enumerate(carousel_paths)
-    ]
-    schedule, carousel_period = _build_schedule(shots, dwell)
+    # The choreography is the core's (core/src/carousel.rs): schedule,
+    # pan geometry, spotlight measurement, all of it. This host supplies
+    # the cutouts, which way each nose faces, and the clock.
+    cars_rgba = [Image.open(p).convert("RGBA") for p in carousel_paths]
+    sides = []
+    for i, p in enumerate(carousel_paths):
+        side = hood_sides.get(p.name) if hood_sides else None
+        pannable = (carousel_labels[i] == PAN_ANGLE_LABEL) if carousel_labels else True
+        if side is None and pannable:
+            # A gallery scraped before angles.json carried hood_side:
+            # one live CLIP call, the same one photos.py makes at cutout
+            # time for every newer gallery.
+            import io as _io
+            buf = _io.BytesIO()
+            cars_rgba[i].save(buf, format="PNG")
+            side = detect_hood_side(buf.getvalue())
+        sides.append((pannable, side))
+    images = [representative_bg] + ([border] if border is not None else []) + cars_rgba
+    first_car = 2 if border is not None else 1
+    plan = core.call({
+        "op": "carousel_plan", "width": canvas_size[0], "height": canvas_size[1],
+        "backdrop": {"$image": 0}, **({"border": {"$image": 1}} if border is not None else {}),
+        "shots": [{"image": {"$image": first_car + i}, "pannable": pannable, "hood_side": side}
+                  for i, (pannable, side) in enumerate(sides)],
+        "audio_loop_s": audio_loop_s, "bars_per_loop": bars_per_loop,
+    }, images)
+    shots = plan["shots"]
+    schedule, carousel_period = [tuple(x) for x in plan["schedule"]], plan["period"]
 
     # Default length is ONE full pass of the shot library: the conveyor
     # has nothing new to show after that, and a run that stops there
@@ -691,11 +510,8 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
             try:
                 for f in range(total_frames):
                     t = f / fps
-                    pos = t % carousel_period
-                    idx, slot_start, slot_duration = _slot_at(pos, schedule)
-                    within = pos - slot_start
-                    hold = slot_duration - transition_s
-                    hero = shots[idx]
+                    fo = core.call({"op": "carousel_frame", "plan": plan, "t": t})
+                    hero = shots[fo["hero"]]
                     if bg_frames is not None:
                         background, bg_frame = {"kind": "image"}, bg_frames[f % len(bg_frames)]
                     else:
@@ -707,52 +523,10 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                             "angle": gradient_colors[0] + GRADIENT_TURNS * 360.0 * (f / max(1, total_frames)),
                             "start": list(gradient_colors[1]), "end": list(gradient_colors[2]),
                         }, None
-
-                    # Which cars go where this frame. The choreography is
-                    # decided here; every pixel is the core's.
-                    if within < hold:
-                        # Steady: left=shots[idx-1], hero=shots[idx] (panning
-                        # and/or pulsing), right=shots[idx+1].
-                        left_i, right_i = (idx - 1) % n, (idx + 1) % n
-                        lb, rb = shots[left_i], shots[right_i]
-                        draw = _hero_state(hero, within / hold if hold > 0 else 1.0)
-                        pulse = _pulse_scale(t, beat_s)
-                        if pulse != 1.0:
-                            # Pulse about the FRAME's center, not the drawn
-                            # image's own center: a panning image is mostly
-                            # off-frame, so scaling about its own center would
-                            # swing the visible part sideways instead of
-                            # zooming what the viewer is actually looking at.
-                            pivot = (hero.hero_rect[0] + hero.hero_rect[2] / 2,
-                                     hero.hero_rect[1] + hero.hero_rect[3] / 2)
-                            draw = _scaled_about(draw, pivot, pulse)
-                        cars = [_car_at(lb, lb.left_rect, 1.0), _car_at(rb, rb.right_rect, 1.0),
-                                _car_at(hero, draw, 1.0)]
-                    else:
-                        # Transition: A(idx) hero->left, B(idx-1) left fades out,
-                        # C(idx+1) right->hero, D(idx+2) fades in at right.
-                        #
-                        # A and C interpolate from the exact state steady
-                        # playback left off at (pan progress 1) to the exact
-                        # state it will resume at (pan progress 0), so a pan
-                        # shot's hand-off is continuous by construction -- no
-                        # cut, no dissolve, no pop. The vehicle stays whole
-                        # throughout; it shrinks toward the accent slot rather
-                        # than being progressively cut down to it.
-                        tau = min(1.0, (within - hold) / transition_s)
-                        ease = _ease_out(tau)
-                        prev_i, next_i, next2_i = (idx - 1) % n, (idx + 1) % n, (idx + 2) % n
-                        a, b, c, d = shots[idx], shots[prev_i], shots[next_i], shots[next2_i]
-                        cars = [
-                            _car_at(b, b.left_rect, 1.0 - tau),
-                            _car_at(d, d.right_rect, tau),
-                            _car_at(a, _lerp_rect(_hero_state(a, 1.0), a.left_rect, ease), 1.0),
-                            _car_at(c, _lerp_rect(c.right_rect, _hero_state(c, 0.0), ease), 1.0),
-                        ]
-
+                    cars = [_car_at(cars_rgba[c["shot"]], c["rect"], c["alpha"]) for c in fo["cars"]]
                     canvas = core.render_frame(
                         cars, canvas_size[0], canvas_size[1], background, background_image=bg_frame,
-                        border=border, spotlight=(hero.center[0], hero.center[1], hero.dim_strength),
+                        border=border, spotlight=(hero["center"][0], hero["center"][1], hero["dim"]),
                         glow=glow, glow_color=str(glow_color), glow_radius=glow_radius,
                         glow_intensity=glow_intensity)
                     try:
@@ -797,9 +571,9 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
         "total_frames": total_frames,
         "n_shots": n,
         "shot_order": [p.name for p in carousel_paths],
-        "pan_shots": {s.path.name: f"hood {s.hood_side} -> slides "
-                                    f"{'right' if s.pan_x_end > s.pan_x_start else 'left'}, {s.bars} bars"
-                       for s in shots if s.is_pan},
+        "pan_shots": {carousel_paths[i].name: f"hood {sides[i][1]} -> slides "
+                                              f"{'right' if s['pan_x_end'] > s['pan_x_start'] else 'left'}, {s['bars']} bars"
+                       for i, s in enumerate(shots) if s["is_pan"]},
         "carousel_period_s": round(carousel_period, 2),
         # Frame-rounding can leave total_seconds a hair under the
         # period; only flag a pass that is really cut short.

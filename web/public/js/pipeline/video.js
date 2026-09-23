@@ -24,6 +24,7 @@
 
 import { makeCanvas, ctxOf } from '../lib/imageio.js';
 import * as core from '../core.js';
+import { get as specGet } from '../spec.js';
 
 const MUXER_URL = '../../vendor/mp4/mp4-muxer.mjs';
 
@@ -103,6 +104,24 @@ function hashAngle(str) {
   return (h % 36000) / 100;
 }
 
+/* The conveyor: the CLI's edit, from the same core choreography. */
+function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan }) {
+  const fo = core.call({ op: 'carousel_frame', plan, t });
+  const hero = plan.shots[fo.hero];
+  const pal = palette[0];
+  const angle = pal.angle + GRADIENT_TURNS * 360 * (t / duration);
+  const cars = fo.cars.map((c) => ({
+    image: shots[c.shot].data, x: c.rect[0], y: c.rect[1], w: c.rect[2], h: c.rect[3], alpha: c.alpha,
+  }));
+  const frame = core.renderFrame(cars, width, height, { kind: 'linear', angle, start: pal.start, end: pal.end }, {
+    spotlight: spotlight ? { cx: hero.center[0], cy: hero.center[1], dim: hero.dim } : null,
+    resample: 'bilinear',
+  });
+  ctx.putImageData(frame, 0, 0);
+}
+
+/* Fewer than three shots cannot fill a conveyor (the CLI renders no clip
+ * then); the browser keeps a plain push with crossfades for those. */
 function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight }) {
   const perShot = duration / shots.length;
   const index = Math.min(shots.length - 1, Math.floor(t / perShot));
@@ -151,8 +170,9 @@ export async function renderHeroVideo(cutouts, {
   width = 1254,
   height = 1254,
   fps = DEFAULT_FPS,
-  duration = DEFAULT_DURATION_S,
+  duration = null,
   seed = 'lotstretcher',
+  angles = null,              // per-cutout angle labels; only the spec's pan angle pans
   exterior = null,
   interior = null,
   generic = false,
@@ -160,6 +180,8 @@ export async function renderHeroVideo(cutouts, {
   onProgress = null,
   signal = null,
 } = {}) {
+  const explicitDuration = duration !== null;
+  if (duration === null) duration = DEFAULT_DURATION_S;
   if (!cutouts.length) throw new Error('no cutouts to animate');
 
   const config = await pickCodec(width, height, fps);
@@ -237,6 +259,22 @@ export async function renderHeroVideo(cutouts, {
     }
   }
 
+  // Three or more shots: the conveyor, planned by the core exactly as
+  // the CLI's is. The clock is the spec's default tempo, since the
+  // browser has no music to sync to.
+  let plan = null;
+  if (shots.length >= 3) {
+    const v = specGet('video');
+    const loopS = v.barsPerLoop * v.beatsPerBar * 60 / v.defaultBpm;
+    const bg = core.call({ op: 'linear_gradient', width, height, angle: palette[0].angle, start: palette[0].start, end: palette[0].end });
+    plan = core.call({
+      op: 'carousel_plan', width, height, backdrop: { $image: 0 },
+      shots: shots.map((sh, i) => ({ image: { $image: i + 1 }, pannable: (angles?.[i] || null) === v.panAngleLabel, hood_side: null })),
+      audio_loop_s: loopS,
+    }, [{ width, height, channels: 3, data: bg.data }, ...shots.map((sh) => sh.data)]);
+    if (!explicitDuration) duration = plan.period;
+  }
+
   const canvas = makeCanvas(width, height);
   const ctx = ctxOf(canvas);
 
@@ -246,9 +284,8 @@ export async function renderHeroVideo(cutouts, {
   for (let f = 0; f < total; f++) {
     if (signal?.aborted) { encoder.close(); throw new Error('cancelled'); }
 
-    drawFrame(ctx, {
-      width, height, shots, t: f / fps, duration, palette, spotlight,
-    });
+    if (plan) drawConveyorFrame(ctx, { width, height, shots, t: f / fps, duration, palette, spotlight, plan });
+    else drawFrame(ctx, { width, height, shots, t: f / fps, duration, palette, spotlight });
 
     const frame = new VideoFrame(canvas, {
       timestamp: Math.round(f * usPerFrame),

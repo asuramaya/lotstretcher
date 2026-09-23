@@ -264,3 +264,39 @@ def test_render_frame_alpha_and_helpers():
     g = core.linear_gradient(200, 100, 30.0, (10, 20, 30), (200, 210, 220))
     assert g.size == (200, 100) and g.getpixel((0, 99)) != g.getpixel((199, 0))
     assert 0.35 <= core.dim_strength(none.crop((10, 10, 110, 110)), cut.resize((100, 100))) <= 1.0
+
+
+def test_carousel_plan_and_frames_hold_the_documented_contract():
+    """The conveyor choreography lives only in the core now. Its contract,
+    as hero_video.py's docstrings state it: cuts on whole bars, a pan shot
+    holds two bars and slides the full overflow, accents sit inside
+    their boxes, transitions cross-fade the outgoing and incoming accents
+    with alphas summing to one, and the hero is always drawn last."""
+    W = H = 600
+    backdrop = core.linear_gradient(W, H, 20.0, (30, 30, 40), (90, 90, 120))
+    cuts = [synthetic_cutout(500, 200), synthetic_cutout(300, 200), synthetic_cutout(420, 180)]
+    plan = core.call({"op": "carousel_plan", "width": W, "height": H, "backdrop": {"$image": 0},
+                      "shots": [{"image": {"$image": i + 1}, "pannable": i == 0, "hood_side": "right"} for i in range(3)],
+                      "audio_loop_s": 9.6}, [backdrop, *cuts])
+    dwell = 9.6 / SPEC["video"]["barsPerLoop"]
+    assert abs(plan["dwell"] - dwell) < 1e-9
+    assert plan["beat_s"] == pytest.approx(dwell / SPEC["video"]["beatsPerBar"])
+    assert plan["shots"][0]["is_pan"] and plan["shots"][0]["bars"] == SPEC["video"]["panBars"]
+    assert not plan["shots"][1]["is_pan"] and plan["shots"][1]["bars"] == 1
+    s0 = plan["shots"][0]
+    assert s0["pan_x_end"] > s0["pan_x_start"], "hood right slides right"
+    assert abs((s0["pan_x_end"] - s0["pan_x_start"]) - s0["pan_draw_w"]) < 1e-6, "slides its whole overflow"
+    assert [tuple(x) for x in plan["schedule"]] == [(0.0, 2 * dwell), (2 * dwell, dwell), (3 * dwell, dwell)]
+    assert plan["period"] == pytest.approx(4 * dwell)
+    for sp in plan["shots"]:
+        for r in (sp["left_rect"], sp["right_rect"], sp["hero_fit_rect"]):
+            assert 0 <= r[0] and r[0] + r[2] <= W + 1e-6 and 0 <= r[1] and r[1] + r[3] <= H + 1e-6
+        assert 0.35 <= sp["dim"] <= 1.0
+    steady = core.call({"op": "carousel_frame", "plan": plan, "t": 0.2})
+    assert steady["hero"] == 0 and [c["shot"] for c in steady["cars"]] == [2, 1, 0]
+    assert all(c["alpha"] == 1.0 for c in steady["cars"])
+    mid = core.call({"op": "carousel_frame", "plan": plan, "t": 2 * dwell - plan["transition_s"] * 0.5})
+    assert mid["hero"] == 0 and len(mid["cars"]) == 4
+    assert mid["cars"][0]["alpha"] + mid["cars"][1]["alpha"] == pytest.approx(1.0)
+    later = core.call({"op": "carousel_frame", "plan": plan, "t": 2 * dwell + 0.1})
+    assert later["hero"] == 1

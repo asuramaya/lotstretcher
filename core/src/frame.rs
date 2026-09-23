@@ -158,6 +158,8 @@ pub enum Op {
     DetectWindow { border: Slice },
     ResolveCollision { border: Slice, car: Slice, x: i64, y: i64 },
     VehicleGradientColors { exterior: Option<String>, interior: Option<String>, #[serde(default)] sample: Option<Slice> },
+    CarouselPlan(crate::carousel::PlanRequest),
+    CarouselFrame { plan: crate::carousel::Plan, t: f64 },
 }
 
 pub enum OpResult { Image(Image), Json(String) }
@@ -190,6 +192,8 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
             let c = slice_image(arena, &car)?;
             OpResult::Json(serde_json::to_string(&Scalar { value: resolve_collision(&b, &c, x, y) }).unwrap())
         }
+        Op::CarouselPlan(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::carousel::plan(&req, arena)? }).unwrap()),
+        Op::CarouselFrame { plan, t } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::carousel::frame(&plan, t) }).unwrap()),
         Op::VehicleGradientColors { exterior, interior, sample } => {
             let s = match sample { Some(s) => Some(slice_image(arena, &s)?), None => None };
             let (a, b) = crate::palette::vehicle_gradient_colors(exterior.as_deref(), interior.as_deref(), s.as_ref());
