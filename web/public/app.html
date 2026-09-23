@@ -77,8 +77,6 @@
         <div class="pane-head">
           <span class="eyebrow">Step 1 of 3</span>
           <h1>The booth</h1>
-          <p class="lede">The photos and what the vehicle is, together. A listing address, a VIN
-            or a window sticker fills the fields in; the rest is yours to add or correct.</p>
         </div>
         <div id="isolationWarn" class="banner banner-err hidden" style="margin-bottom:var(--s-5)">
           <div>
@@ -95,9 +93,6 @@
           </svg>
           <div>
             <h2 style="font-size:var(--t-md)">Add vehicle photos</h2>
-            <p class="small muted" style="margin-top:4px">
-              They never leave this device.
-            </p>
           </div>
           <div class="source-actions">
             <button class="btn btn-primary" id="pickBtn">Add photos</button>
@@ -119,7 +114,7 @@
           <div class="section-head">
             <h2>Photos</h2>
             <span class="pill" id="photoCount">0</span>
-            <button class="btn btn-ghost btn-sm" id="gridToggle" aria-pressed="false">Grid</button>
+            <span class="head-status" id="photosStatus"></span>
             <button class="btn btn-ghost btn-sm" id="clearBtn">Clear</button>
           </div>
           <div id="warnBox"></div>
@@ -127,16 +122,18 @@
         </div>
 
         <div class="section">
-          <div class="section-head"><h2>Vehicle</h2></div>
+          <div class="section-head"><h2>Vehicle</h2><span class="head-status" id="vehicleStatus"></span></div>
           <div id="detailsNote"></div>
 
-          <div class="importer">
-            <div class="row wrap" style="gap:var(--s-3)">
+          <div class="importer" id="stickerRow">
+            <div class="row wrap" style="gap:var(--s-3);align-items:center">
               <button class="btn btn-sm" id="stickerFileBtn">Window sticker PDF</button>
               <button class="btn btn-sm btn-ghost" id="stickerUrlBtn">Sticker link</button>
-              <span class="small dim" id="stickerNote">A listing's sticker is read on its own; a PDF fills these fields too.</span>
+              <button class="btn btn-sm btn-ghost" id="scanVinBtn">Scan VIN</button>
+              <span class="small dim" id="stickerNote"></span>
             </div>
             <input type="file" id="stickerInput" accept="application/pdf,.pdf" class="sr-only">
+            <input type="file" id="scanInput" accept="image/*" capture="environment" class="sr-only">
           </div>
 
           <div class="form-grid">
@@ -364,6 +361,29 @@
     </div>
     <div class="sheet-foot">
       <button class="btn btn-primary" data-close="listingSheet">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo">
+  <button class="lightbox-x" id="lightboxClose" aria-label="Close">×</button>
+  <button class="lightbox-nav prev" id="lightboxPrev" aria-label="Previous">‹</button>
+  <img id="lightboxImg" alt="">
+  <button class="lightbox-nav next" id="lightboxNext" aria-label="Next">›</button>
+  <div class="lightbox-cap" id="lightboxCap"></div>
+</div>
+
+<div class="sheet" id="scanSheet" hidden>
+  <div class="sheet-body" role="dialog" aria-modal="true" aria-label="Scan the VIN">
+    <div class="sheet-grip"></div>
+    <div class="sheet-head"><h3 style="flex:1">Scan the VIN</h3></div>
+    <div class="sheet-content">
+      <video class="scan-video" id="scanVideo" playsinline muted></video>
+      <p class="small dim" id="scanStatus" style="margin-top:var(--s-3)"></p>
+      <button class="btn btn-ghost btn-sm" id="scanPhotoBtn" style="margin-top:var(--s-2)">A photo of the barcode instead</button>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn" data-close="scanSheet" id="scanCancel">Cancel</button>
     </div>
   </div>
 </div>

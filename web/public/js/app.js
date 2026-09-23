@@ -202,10 +202,9 @@ function renderPhotos() {
   const n = state.photos.length;
   $('photosSection').hidden = n === 0;
   $('photoCount').textContent = n;
-  // A strip by default, so the vehicle fields stay a glance below.
-  $('photoGrid').classList.toggle('is-strip', !state.gridOpen);
-  $('gridToggle').setAttribute('aria-pressed', String(!!state.gridOpen));
-  $('gridToggle').textContent = state.gridOpen ? 'Strip' : 'Grid';
+  // A strip, so the vehicle fields stay a glance below; a tile opens
+  // the lightbox.
+  $('photoGrid').classList.add('is-strip');
   setRunEnabled(n > 0 && !state.running);
   renderSteps();
 
@@ -242,6 +241,7 @@ function renderPhotos() {
 
     if (p.rejected) tile.appendChild(tagOf('skipped'));
     else if (p.scene) tile.appendChild(tagOf(p.angle ? `${p.scene} · ${p.angle}` : p.scene));
+    tile.onclick = () => openLightbox(state.photos.indexOf(p));
 
     if (!state.running) {
       const x = el('button', 'tile-x', '×');
@@ -1098,6 +1098,7 @@ async function downloadBundle() {
  * unless someone actually uses it. */
 async function importSticker(source, label) {
   const note = $('stickerNote');
+  $('stickerRow').classList.remove('is-ok');
   note.textContent = 'Reading the PDF...';
   try {
     const { parseSticker, stickerToVehicle } = await import('./pipeline/sticker.js');
@@ -1132,12 +1133,15 @@ async function importSticker(source, label) {
     const standard = Object.values(parsed.equipment || {}).reduce((n, a) => n + a.length, 0);
     if (optional) extras.push(`${optional} option${optional === 1 ? '' : 's'}`);
     if (standard) extras.push(`${standard} standard features`);
+    const readWhat = extras.join(', ');
 
-    note.textContent = [
-      filled ? `Filled ${filled} field${filled === 1 ? '' : 's'}` : 'Fields were already filled',
-      extras.length ? `, read ${extras.join(' and ')} for the post copy` : '',
-      '.',
-    ].join('');
+    // Said in the Vehicle head, after whatever the listing said; the
+    // sticker row itself goes green.
+    note.textContent = '';
+    $('stickerRow').classList.add('is-ok');
+    const said = $('vehicleStatus').textContent;
+    const mine = [filled ? `${filled} field${filled === 1 ? '' : 's'}` : '', readWhat].filter(Boolean).join(', ');
+    setStatus('vehicleStatus', `${said ? `${said} · sticker: ` : 'Sticker: '}${mine || 'read'}`, 'ok');
   } catch (e) {
     // A CORS refusal is the common case and deserves a plain explanation
     // rather than the browser's own wording.
@@ -1190,12 +1194,7 @@ function readPastedText(text) {
 }
 
 let readListingHtmlRef = null;
-function showSourceNote(text) {
-  const box = $('warnBox');
-  box.innerHTML = '';
-  box.appendChild(el('div', 'banner', text));
-  $('photosSection').hidden = false;
-}
+function showSourceNote(text) { setStatus('vehicleStatus', text); }
 
 /* ---------- listing import --------------------------------------------
  * Fill the app from a scrape.Vehicle-shaped record, whichever route it
@@ -1223,28 +1222,50 @@ function applyVehicle(v) {
   v.photo_urls = v.photo_urls || []; v.warnings = v.warnings || [];
   if (v.photo_urls.length) addUrls(v.photo_urls.join('\n'));
 
-  const bits = [`Read ${v.title || 'a vehicle'} from ${v.url ? 'the listing' : 'the VIN'}`];
-  if (filled) bits.push(`${filled} field${filled === 1 ? '' : 's'}`);
-  if (v.photo_urls.length) bits.push(`${v.photo_urls.length} photo link${v.photo_urls.length === 1 ? '' : 's'}`);
-  // With photo links the Photos step is where the work continues; a
-  // bare record (an address or a VIN) shows its fields on the Vehicle
-  // step, so the note goes where the person will be looking.
-  const toPhotos = v.photo_urls.length > 0;
-  const box = $(toPhotos ? 'warnBox' : 'detailsNote');
-  $('warnBox').innerHTML = ''; $('detailsNote').innerHTML = '';
-  const banner = el('div', 'banner', bits.join(' · ') + '.');
-  box.appendChild(banner);
-  for (const w of v.warnings) box.appendChild(el('div', 'banner banner-warn', w));
+  // What was read is said in the heads of the sections it filled, not
+  // in a box: the photo count beside Photos, the vehicle beside Vehicle.
+  const from = v.url ? 'from the listing' : 'from the VIN';
+  if (v.photo_urls.length) setStatus('photosStatus', `${v.photo_urls.length} ${from}`, 'ok');
+  setStatus('vehicleStatus', `${v.title || 'a vehicle'} ${from}${filled ? ` (${filled} field${filled === 1 ? '' : 's'})` : ''}`, 'ok');
+  $('detailsNote').innerHTML = '';
+  for (const w of v.warnings) $('detailsNote').appendChild(el('p', 'status-warn', w));
 
   /* A sticker link is read straight away: it carries the option list
    * and MSRP the analytics blob does not, and typed fields are never
    * overwritten by it. */
-  if (v.window_sticker_url) {
-    banner.append(' Reading its window sticker.');
-    importSticker(v.window_sticker_url, 'the sticker');
-  }
+  if (v.window_sticker_url) importSticker(v.window_sticker_url, 'the sticker');
   go('booth');
 }
+
+/* A section head's status line. */
+function setStatus(id, text, tone = '') {
+  const s = $(id);
+  s.textContent = text;
+  s.className = `head-status${tone ? ` is-${tone}` : ''}`;
+}
+
+/* ---------- lightbox: a photo at full size, and the next ---------- */
+let lightboxAt = -1;
+function openLightbox(i) {
+  if (!state.photos.length) return;
+  lightboxAt = Math.max(0, Math.min(i, state.photos.length - 1));
+  $('lightbox').hidden = false;
+  showLightbox();
+}
+function showLightbox() {
+  const p = state.photos[lightboxAt];
+  if (!p) { closeLightbox(); return; }
+  const img = $('lightboxImg');
+  if (p.url) img.crossOrigin = 'anonymous'; else img.removeAttribute('crossorigin');
+  img.src = p.thumb;
+  img.alt = p.name;
+  const tag = p.rejected ? 'skipped' : p.scene ? (p.angle ? `${p.scene} · ${p.angle}` : p.scene) : '';
+  $('lightboxCap').textContent = `${lightboxAt + 1} of ${state.photos.length} · ${p.name}${tag ? ` · ${tag}` : ''}`;
+  $('lightboxPrev').disabled = lightboxAt === 0;
+  $('lightboxNext').disabled = lightboxAt === state.photos.length - 1;
+}
+function stepLightbox(d) { if ($('lightbox').hidden) return; lightboxAt = Math.max(0, Math.min(lightboxAt + d, state.photos.length - 1)); showLightbox(); }
+function closeLightbox() { $('lightbox').hidden = true; $('lightboxImg').removeAttribute('src'); }
 
 /* ---------- wiring --------------------------------------------------- */
 async function init() {
@@ -1423,7 +1444,61 @@ async function init() {
   preview.load().then(() => renderOptions());
 
   $('clearBtn').onclick = clearPhotos;
-  $('gridToggle').onclick = () => { state.gridOpen = !state.gridOpen; renderPhotos(); };
+  $('lightboxClose').onclick = closeLightbox;
+  $('lightboxPrev').onclick = (e) => { e.stopPropagation(); stepLightbox(-1); };
+  $('lightboxNext').onclick = (e) => { e.stopPropagation(); stepLightbox(1); };
+  $('lightbox').onclick = (e) => { if (e.target === $('lightbox')) closeLightbox(); };
+  window.addEventListener('keydown', (e) => {
+    if ($('lightbox').hidden) return;
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') stepLightbox(-1);
+    else if (e.key === 'ArrowRight') stepLightbox(1);
+  });
+  // A swipe on the photo steps it.
+  let touchX = null;
+  $('lightbox').addEventListener('touchstart', (e) => { touchX = e.touches[0]?.clientX ?? null; }, { passive: true });
+  $('lightbox').addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const dx = (e.changedTouches[0]?.clientX ?? touchX) - touchX;
+    touchX = null;
+    if (Math.abs(dx) > 40) stepLightbox(dx < 0 ? 1 : -1);
+  });
+
+  // The VIN barcode, through the camera; a photo of it where there is
+  // no camera stream. Either way the VIN takes the listing route, so
+  // the year and make fill with it.
+  let scanAbort = null;
+  const tookVin = (vin) => {
+    closeSheet('scanSheet');
+    if (!vin) return;
+    importListingText(vin, (m) => setStatus('vehicleStatus', m));
+    setStatus('vehicleStatus', `${$('vehicleStatus').textContent} (scanned)`, 'ok');
+  };
+  $('scanVinBtn').onclick = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) { $('scanInput').click(); return; }
+    openSheet('scanSheet');
+    $('scanStatus').textContent = 'Starting the camera…';
+    scanAbort = new AbortController();
+    try {
+      const { scanVin } = await import('./pipeline/scan.js');
+      const vin = await scanVin($('scanVideo'), { onStatus: (m) => { $('scanStatus').textContent = m; }, signal: scanAbort.signal });
+      if (vin) tookVin(vin);
+    } catch (e) {
+      $('scanStatus').textContent = /NotAllowed|Permission/i.test(String(e)) ? 'The camera was refused. A photo of the barcode works too.' : String(e.message || e);
+    }
+  };
+  $('scanCancel').onclick = () => { scanAbort?.abort(); closeSheet('scanSheet'); };
+  $('scanPhotoBtn').onclick = () => { scanAbort?.abort(); $('scanInput').click(); };
+  $('scanInput').onchange = async (e) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    const { scanVinFromFile } = await import('./pipeline/scan.js');
+    try {
+      const vin = await scanVinFromFile(f);
+      if (vin) tookVin(vin); else setStatus('vehicleStatus', 'No VIN barcode found in that photo.', 'err');
+    } catch (err) { setStatus('vehicleStatus', String(err.message || err), 'err'); }
+  };
   $('runBtn').onclick = run;
   $('downloadBtn').onclick = downloadBundle;
 

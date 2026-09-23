@@ -60,7 +60,12 @@ Safari. For each step, note pass, fail, or the message shown.
 
 ## 5. The vehicle fields and a listing
 
-- Import a window sticker PDF from Files. Report whether fields fill.
+- Import a window sticker PDF from Files. Report whether fields fill
+  and the sticker row turns green.
+- Tap **Scan VIN** on the Vehicle section and point the camera at a
+  door-jamb VIN barcode. Report whether the VIN, year and make fill in;
+  if the camera is refused, try **A photo of the barcode instead**.
+- Tap a photo in the strip: it opens full size; swipe for the next.
 - In the booth, paste a dealer vehicle page address from the clipboard
   with nothing focused. Report whether the vehicle fields fill in. Then tap **A listing or VIN**, paste the address (or type
   a VIN) and tap **Read it**. Report whether the year, make and model

@@ -129,8 +129,10 @@ its check digit, model year and manufacturer. `lotstretcher/vin.py` and
 [`tests/test_vin_parity.py`](tests/test_vin_parity.py) holds them to the same answers, including
 every address in the local listings library when one is present. Model and trim are encoded per
 manufacturer and need NHTSA's database, which is why the slug carries them here and the price,
-mileage and photos stay yours to add. Against a self-hosted server the same field reads the whole
-page. The sheet also takes a saved copy of the page (Ctrl+S, "Webpage, HTML only") or its pasted
+mileage and photos stay yours to add. **Scan VIN** reads the door-jamb barcode through the camera on
+the device (the browser's own barcode detector where it exists, else the vendored ZXing reader in
+`web/public/vendor/zxing`, MIT) and takes the same route. Against a self-hosted server the same field
+reads the whole page. The sheet also takes a saved copy of the page (Ctrl+S, "Webpage, HTML only") or its pasted
 source, for the dealer's own photos and price without a server: `listing.js` is a port of
 `normalize_vehicle()`, and [`tests/test_listing_parity.py`](tests/test_listing_parity.py) runs both
 on one fixture under node and compares every field.
