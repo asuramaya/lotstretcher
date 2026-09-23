@@ -251,8 +251,15 @@ function renderPhotos() {
     img.onerror = () => { tile.classList.add('is-pending'); tile.append(tagOf('unreachable')); };
     tile.appendChild(img);
 
-    if (p.rejected) tile.appendChild(tagOf('skipped'));
-    else if (p.scene) tile.appendChild(tagOf(p.angle ? `${p.scene} · ${p.angle}` : p.scene));
+    // The sort is a suggestion: the tag is a button that corrects it.
+    const tag = p.rejected ? tagOf('skipped') : p.scene ? tagOf(p.angle ? `${p.scene} · ${p.angle}` : p.scene) : null;
+    if (tag) {
+      tag.classList.add('tile-tag-btn');
+      if (p.userScene) tag.classList.add('is-user');
+      tag.title = 'Wrong? Tap to change';
+      tag.onclick = (e) => { e.stopPropagation(); if (!state.running) pickScene(p, tag); };
+      tile.appendChild(tag);
+    }
     tile.onclick = () => openLightbox(boothItems(), state.photos.indexOf(p));
 
     if (!state.running) {
@@ -687,10 +694,12 @@ async function sortAndCut(stages) {
       try {
         const bitmap = await decode(p.blob || p.url);
         p.bitmap = bitmap;
+        if (p.userScene) { /* the person said what it is; the model does not argue */ } else {
         const scene = await classifyScene(bitmap);
         p.sceneConf = scene.confidence;
         // Too weak to route on. Keep the photo, do not act on the guess.
         p.scene = scene.confidence >= MIN_SCENE_CONFIDENCE ? scene.label : 'unsure';
+        }
       } catch (e) {
         p.status = 'failed';
         p.error = String(e.message || e);
@@ -719,7 +728,7 @@ async function sortAndCut(stages) {
     // photos, compose nothing.
     const exteriors = state.options.cutType === 'none'
       ? []
-      : state.photos.filter((p) => p.scene === 'exterior');
+      : state.photos.filter((p) => p.scene === 'exterior' && !p.rejected);
     stages[1].detail = `${exteriors.length} exterior, ${total - exteriors.length} other`;
     stages[2].state = 'active';
     renderStages(stages);
@@ -779,7 +788,7 @@ async function sortAndCut(stages) {
 /* What the photos and the options that shape a cut amount to; a
  * preparation is only reused for the same. */
 function photoKey() {
-  return JSON.stringify([state.photos.map((p) => p.id), state.options.interiors, state.options.cutType]);
+  return JSON.stringify([state.photos.map((p) => [p.id, p.userScene ? (p.rejected ? 'skip' : p.scene) : null]), state.options.interiors, state.options.cutType]);
 }
 
 /* The sort-and-cut for the current photos: the preload's, awaited, when
@@ -1327,6 +1336,32 @@ function applyVehicle(v) {
    * overwritten by it. */
   if (v.window_sticker_url) importSticker(v.window_sticker_url, 'the sticker');
   go('booth');
+}
+
+/* A small menu on a tile's tag: what this photo really is. The choice
+ * is kept as the person's own (userScene), survives the next sort, and
+ * an exterior that was not cut out yet gets cut on the next run. */
+function pickScene(p, anchor) {
+  document.querySelector('.scene-menu')?.remove();
+  const menu = el('div', 'scene-menu');
+  for (const [value, label] of [['exterior', 'Exterior'], ['interior', 'Interior'], ['detail', 'Detail'], ['skip', 'Skip this one']]) {
+    const b = el('button', 'scene-choice', label);
+    b.type = 'button';
+    if ((value === 'skip' && p.rejected) || (value !== 'skip' && !p.rejected && p.scene === value)) b.setAttribute('aria-pressed', 'true');
+    b.onclick = (e) => {
+      e.stopPropagation();
+      menu.remove();
+      if (value === 'skip') { p.rejected = true; p.userScene = true; }
+      else { p.rejected = false; p.scene = value; p.userScene = true; p.sceneConf = 1; if (value !== 'exterior') { p.cutout = null; p.angle = null; } }
+      // A corrected sort is a different preparation.
+      state.prepared = null;
+      renderPhotos();
+    };
+    menu.appendChild(b);
+  }
+  anchor.parentElement.appendChild(menu);
+  const away = (e) => { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('pointerdown', away, true); } };
+  setTimeout(() => document.addEventListener('pointerdown', away, true), 0);
 }
 
 /* A section head's status line. */

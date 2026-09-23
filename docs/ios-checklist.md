@@ -66,6 +66,9 @@ Safari. For each step, note pass, fail, or the message shown.
   door-jamb VIN barcode. Report whether the VIN, year and make fill in;
   if the camera is refused, try **A photo of the barcode instead**.
 - Tap a photo in the strip: it opens full size; swipe for the next.
+- After Next, tap a photo's sort tag in the strip ("interior", "detail"):
+  a menu offers Exterior / Interior / Detail / Skip. Correct one and
+  report whether the run honours it.
 - In the booth, paste a dealer vehicle page address from the clipboard
   with nothing focused. Report whether the vehicle fields fill in. Then tap **A listing or VIN**, paste the address (or type
   a VIN): it reads on paste. Report whether the year, make and model
