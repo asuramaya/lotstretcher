@@ -564,7 +564,9 @@
   display: grid; place-items: center;
   width: 34vh; height: 34vh; max-width: 100%; max-height: 100%;
 }
-.preview-canvas { width: 100%; height: 100%; display: block; }
+.preview-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+.preview-canvas.has-text { cursor: grab; }
+.preview-canvas.is-dragging { cursor: grabbing; }
 .preview-canvas.is-busy { opacity: .8; }
 .stage-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--s-2) var(--s-3); width: 100%; }
 /* Under the stage, not on it: a badge over the picture sat on top of

@@ -482,7 +482,9 @@ lotstretcher URL --title vehicle --price-badge --text-line "Ask for Alex" \
 own resolved price in a pill (MSRP for new, the listed price for used).
 `--text-color paint` puts the vehicle's own colour on the badge, from
 the listing's colour name or sampled off the cutout. The app's Text
-group is the same seven levers, previewed live as you type. `recompose` takes them too. The clip carries the same text on
+tool is the same seven levers, previewed live as you type, and the
+text can be dragged on the stage: it snaps to the six positions
+`--text-position` knows, so the lever and the flag still say the same. `recompose` takes them too. The clip carries the same text on
 every frame, with the conveyor laid out in the room beside it, and sits
 on the same backdrop as the stills: `--photo-background` puts the photo
 behind the clip too, unless `--video-flag-background` asks for the

@@ -82,6 +82,10 @@ Safari. For each step, note pass, fail, or the message shown.
   reload; tap its corner × to drop it. Tap **Hue bands**, then the
   **Colour** swatch that appears: iOS's colour picker should open and
   the stage follow it as you drag; tap **Paint** to go back.
+- Text tool: set **Title** to the vehicle, then drag the words on the
+  stage with a finger to another corner. They should follow as you
+  drag and the Text tool's Position should read the corner you let go
+  in; the stage must not scroll while dragging.
 - Frame tool: tap **Studio line**, then the **Your own** tile under
   Line colour. Report whether the picker opens and the line takes the
   colour on the stage.

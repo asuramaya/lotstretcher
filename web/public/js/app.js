@@ -252,6 +252,8 @@ function go(pane) {
   if (pane === 'results') $('resultsDot').classList.add('hidden');
   if (pane === 'options') {
     state.lookVisited = true;
+    // The stage draws the vehicle's own record: its title, its paint.
+    readVehicle();
     // The preview is drawn only while it can be seen.
     preview?.renderSamples();
     preview?.update();
@@ -1858,6 +1860,13 @@ async function init() {
     getPhotoCount: () => state.photos.length,
     onToggleFormat: toggleFormat,
   });
+  // Dragging the text on the stage moves the Text tool's position lever.
+  preview.onTextPosition = (pos, live) => {
+    state.options.textPosition = pos;
+    if (live) { preview.update(); return; }
+    commitOptions();
+    preview.update();
+  };
   preview.load().then(() => renderOptions());
 
   // Settings: the dealer and this host. Dealer edits are kept as typed
@@ -1973,7 +1982,9 @@ async function init() {
   window.addEventListener('beforeunload', (e) => {
     if (state.running) { e.preventDefault(); e.returnValue = ''; }
   });
-  for (const id of FORM_IDS) $(id).addEventListener('input', saveSessionSoon);
+  // Typing in the vehicle form is read as it happens, so a title or a
+  // paint colour on the stage follows the words.
+  for (const id of FORM_IDS) $(id).addEventListener('input', () => { saveSessionSoon(); readVehicle(); if (state.pane === 'options') preview?.update(); });
   state.restoring = true;   // until offerResume has looked
   offerResume();
 

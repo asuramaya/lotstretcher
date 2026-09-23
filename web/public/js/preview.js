@@ -68,10 +68,53 @@ export class Preview {
     this.lastMs = null;       // how long the last preview compose took
     this.busy = false;
     this.pending = false;
+    // The text is placed by dragging it on the stage: the pointer's
+    // third across and half down is one of the six positions the Text
+    // tool (and --text-position) knows, so the drag sets the same lever.
+    // Moving is live; letting go commits.
+    this.onTextPosition = null;
+    this.dragPos = null;
+    this.canvas.addEventListener('pointerdown', (e) => {
+      if (!this.hasText()) return;
+      this.canvas.setPointerCapture(e.pointerId);
+      this.dragPos = this.positionAt(e);
+      this.canvas.classList.add('is-dragging');
+      e.preventDefault();
+    });
+    this.canvas.addEventListener('pointermove', (e) => {
+      if (this.dragPos === null) return;
+      const pos = this.positionAt(e);
+      if (pos !== this.dragPos) { this.dragPos = pos; this.onTextPosition?.(pos, true); }
+    });
+    const drop = (e) => {
+      if (this.dragPos === null) return;
+      const pos = this.positionAt(e);
+      this.dragPos = null;
+      this.canvas.classList.remove('is-dragging');
+      this.onTextPosition?.(pos, false);
+    };
+    this.canvas.addEventListener('pointerup', drop);
+    this.canvas.addEventListener('pointercancel', drop);
     // The stage refits when its box changes size: a rotated phone, a
     // resized window, the app's rail opening.
     const stage = this.canvas.closest('.studio-stage');
     if (stage && 'ResizeObserver' in window) new ResizeObserver(() => this.update()).observe(stage);
+  }
+
+  /* Whether the still carries any text, so the stage is draggable. */
+  hasText() {
+    const o = this.getOptions() || {};
+    return (o.titleMode && o.titleMode !== 'none') || !!o.priceBadge || !!(o.textLine && o.textLine.trim());
+  }
+
+  /* The six text positions, from where the pointer is on the stage:
+   * left, centre or right third, top or bottom half. */
+  positionAt(e) {
+    const r = this.canvas.getBoundingClientRect();
+    const fx = (e.clientX - r.left) / Math.max(1, r.width);
+    const fy = (e.clientY - r.top) / Math.max(1, r.height);
+    const col = fx < 1 / 3 ? 'l' : fx > 2 / 3 ? 'r' : 'c';
+    return `${fy < 0.5 ? 't' : 'b'}${col}`;
   }
 
   /* The frame takes the format's own shape, as large as its room
@@ -242,7 +285,8 @@ export class Preview {
       const [fw, fh] = fmt.size;
       this.fitStage(fw, fh);
       const [width, height] = this.targetSize(fw, fh);
-      if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || fmt.key || 'still'}`;
+      if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || fmt.key || 'still'}${this.hasText() ? ' \u00b7 drag the text to place it' : ''}`;
+      this.canvas.classList.toggle('has-text', this.hasText());
       const t0 = performance.now();
       // A frame is fitted to the format by the core; a large one is
       // scaled down to the preview's size first so the fit resamples
