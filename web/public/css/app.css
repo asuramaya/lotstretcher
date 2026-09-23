@@ -479,8 +479,10 @@
 /* ---------- rendered clips ---------- */
 .clipgrid { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 .clip { margin: 0; }
+/* A clip at its own shape, never taller than most of the screen: a
+   vertical clip at full width was the whole phone. */
 .clip video {
-  width: 100%; border-radius: var(--r-md);
+  display: block; width: auto; max-width: 100%; max-height: 62vh; margin: 0 auto; border-radius: var(--r-md);
   border: 1px solid var(--line); background: var(--sunken);
 }
 .clip figcaption { margin-top: var(--s-2); }

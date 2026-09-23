@@ -54,7 +54,7 @@ export class Preview {
     this.scrub = 0.35;        // where in the clip that frame is
     this.clip = null;         // the prepared clip, keyed by what shaped it
     this.clipKey = null;
-    this.format = null;       // which of the selected formats is shown; null = the first
+    this.formatFor = { still: null, video: null }; // the shape shown in each mode; null = the first ticked
     this.formatsHost = host.querySelector('#previewFormats');
     this.modesHost = host.querySelector('#previewModes');
     this.scrubInput = host.querySelector('#previewScrub');
@@ -150,13 +150,13 @@ export class Preview {
   /* The shown format: the one tapped, else the first ticked, else the first. */
   currentFormat(fallback) {
     const list = this.allFormats();
-    return list.find((f) => f.key === this.format) || list.find((f) => f.on) || list[0] || fallback;
+    return list.find((f) => f.key === this.formatFor[this.mode]) || list.find((f) => f.on) || list[0] || fallback;
   }
 
   /* Show one format: what the app calls when a format chip is switched
    * on, so the preview jumps to the shape just chosen. */
   showFormat(key) {
-    this.format = key;
+    this.formatFor[this.mode] = key;
     this.renderFormats();
     this.update();
   }
@@ -179,7 +179,7 @@ export class Preview {
       tick.setAttribute('aria-checked', String(f.on));
       tick.setAttribute('aria-label', `Make the ${f.label || f.key}`);
       tick.title = f.on ? 'In the run; tap to leave it out' : 'Not made; tap to make it';
-      tick.onclick = (e) => { e.stopPropagation(); this.format = f.key; this.onToggleFormat?.(this.mode, f.key); };
+      tick.onclick = (e) => { e.stopPropagation(); this.formatFor[this.mode] = f.key; this.onToggleFormat?.(this.mode, f.key); };
       const text = el('span', 'fmt-text');
       text.append(el('strong', null, f.label || f.key), el('span', null, `${f.size[0]}×${f.size[1]}`));
       b.append(tick, text);

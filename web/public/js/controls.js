@@ -420,6 +420,16 @@ export function renderControls(host, values, onChange, opts = {}) {
     b.onclick = () => { activeTab = t.id; if (opts.onOpen) opts.onOpen(t.id); else renderControls(host, values, onChange, opts); };
     strip.appendChild(b);
   }
+  // A tab list walks with the arrow keys.
+  strip.onkeydown = (e) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!step) return;
+    const i = tools.findIndex((t) => t.id === activeTab);
+    const next = tools[(i + step + tools.length) % tools.length];
+    e.preventDefault();
+    strip.children[tools.indexOf(next)]?.click();
+    strip.querySelector('[aria-selected="true"]')?.focus();
+  };
   if (!rail) host.appendChild(strip);
   const current = tools.find((t) => t.id === activeTab);
   if (!current) return null;

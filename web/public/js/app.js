@@ -381,7 +381,7 @@ function renderPhotos() {
     tile.appendChild(img);
 
     // The sort is a suggestion: the tag is a button that corrects it.
-    const tag = p.rejected ? tagOf('skipped') : p.scene ? tagOf(p.angle ? `${p.scene} · ${p.angle}` : p.scene) : null;
+    const tag = p.rejected ? tagOf('skipped') : p.scene ? tagOf(p.angle ? `${p.scene} · ${angleLabel(p.angle)}` : p.scene) : null;
     if (tag) {
       tag.classList.add('tile-tag-btn');
       if (p.userScene) tag.classList.add('is-user');
@@ -402,6 +402,10 @@ function renderPhotos() {
 }
 
 function tagOf(text) { return el('span', 'tile-tag', text); }
+
+/* The angle the classifier gives, as words. */
+const ANGLE_WORDS = { front: 'Front', front_3q: 'Front \u00be', side: 'Side', rear_3q: 'Rear \u00be', rear: 'Rear', hero: 'Hero' };
+function angleLabel(angle) { return ANGLE_WORDS[angle] || angle || 'Hero'; }
 
 function renderStages(stages) {
   const list = $('stageList');
@@ -439,6 +443,20 @@ function renderResults() {
   const heroes = state.photos.filter((p) => p.hero);
   const interiors = state.photos.filter((p) => p.interior);
 
+  // Working: the stages open. Done: one line of what was made, folded.
+  const prog = $('progressSection');
+  if (state.running) { prog.open = true; $('progHead').textContent = 'Working'; }
+  else if (state.done) {
+    prog.open = false;
+    const stills = heroes.reduce((n, p) => n + Object.keys(p.heroes || { square: p.hero }).length, 0);
+    const clips = Object.keys(state.videos || {}).length;
+    const parts = [`${stills} image${stills === 1 ? '' : 's'}`];
+    if (interiors.length) parts.push(`${interiors.length} interior${interiors.length === 1 ? '' : 's'}`);
+    if (clips) parts.push(`${clips} clip${clips === 1 ? '' : 's'}`);
+    $('progHead').textContent = `Made ${parts.join(', ')} from ${state.photos.length} photo${state.photos.length === 1 ? '' : 's'}`;
+    if (state.runMs) $('progPct').textContent = state.runMs < 90000 ? `${Math.round(state.runMs / 1000)} s` : `${Math.round(state.runMs / 60000)} min`;
+  }
+
   const tab = document.querySelector('.nav-btn[data-go="results"]');
   tab.disabled = !state.running && heroes.length === 0 && interiors.length === 0;
   // A badge only while the user is looking at something else.
@@ -470,7 +488,6 @@ function renderResults() {
   // crop of a portrait would hide what the format is for.
   const grid = $('resultGrid');
   grid.innerHTML = '';
-  $('progHead').textContent = state.running ? 'Working' : 'Done';
   const stillItems = [];
   for (const p of heroes) {
     for (const [fmt, canvas] of Object.entries(p.heroes || { square: p.hero })) {
@@ -483,8 +500,8 @@ function renderResults() {
       canvasToBlob(c, 'image/jpeg', 0.85).then((b) => { img.src = URL.createObjectURL(b); });
       const label = OPTS.HERO_FORMATS[fmt]?.label || fmt;
       img.alt = `${label} still from ${p.name}`;
-      tile.append(img, tagOf(`${p.angle || 'hero'} \u00b7 ${label}`));
-      stillItems.push(canvasItem(canvas, `${p.name} \u00b7 ${label}`, p.angle || 'hero', () => saveOne(p, fmt)));
+      tile.append(img, tagOf(`${angleLabel(p.angle)} \u00b7 ${label}`));
+      stillItems.push(canvasItem(canvas, `${p.name} \u00b7 ${label}`, angleLabel(p.angle), () => saveOne(p, fmt)));
       const at = stillItems.length - 1;
       tile.onclick = () => openLightbox(stillItems, at);
       grid.appendChild(tile);
@@ -1005,6 +1022,7 @@ async function run() {
   if (state.running || !state.photos.length) return;
   state.running = true;
   state.done = false;
+  state.runStart = performance.now();
   let cw = null;   // the run's core worker, ended in `finally`
   if (state.prepared?.key !== photoKey()) state.errors = [];
   setRunEnabled(false);
@@ -1199,6 +1217,7 @@ async function run() {
     stages[3].detail = `${cut.length} image${cut.length === 1 ? '' : 's'}`;
     renderStages(stages);
     setProgress(1);
+    state.runMs = performance.now() - state.runStart;
     state.done = true;
 
     if (state.errors.length) {
@@ -1542,7 +1561,7 @@ const made = new Set();   // object URLs this box made, revoked on close
 function boothItems() {
   return state.photos.map((p) => ({
     src: p.thumb, name: p.name, cors: !!p.url,
-    tag: p.rejected ? 'skipped' : p.scene ? (p.angle ? `${p.scene} · ${p.angle}` : p.scene) : '',
+    tag: p.rejected ? 'skipped' : p.scene ? (p.angle ? `${p.scene} · ${angleLabel(p.angle)}` : p.scene) : '',
   }));
 }
 function canvasItem(canvas, name, tag, save, quality = 0.92) {

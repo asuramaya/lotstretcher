@@ -241,11 +241,15 @@
         <div class="pane-head">
           <h1>Results</h1>
         </div>
-        <div class="section" id="progressSection" hidden>
-          <div class="section-head"><h2 id="progHead">Working</h2><span class="pill" id="progPct">0%</span></div>
-          <div class="bar" style="margin-bottom:var(--s-5)"><i id="progBar"></i></div>
-          <div class="stage-list" id="stageList"></div>
-        </div>
+        <!-- Open while a run works; once done it folds to one line
+             saying what was made, with the stages behind it. -->
+        <details class="ctrl-group section" id="progressSection" hidden open>
+          <summary><span class="ctrl-group-head" id="progHead">Working</span><span class="pill" id="progPct">0%</span></summary>
+          <div class="ctrl-group-body">
+            <div class="bar" style="margin:var(--s-3) 0 var(--s-5)"><i id="progBar"></i></div>
+            <div class="stage-list" id="stageList"></div>
+          </div>
+        </details>
 
         <div class="section" id="heroSection" hidden>
           <div class="section-head">
