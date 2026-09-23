@@ -702,6 +702,24 @@
 .opt.opt-block .opt-text span:only-child { font-size: var(--t-sm); color: var(--ink-2); }
 .swatch-hint { font-size: 10px; color: var(--ink-3); line-height: 1.25; text-align: center;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The Your-own tile: the platform picker fills the thumb. */
+.swatch-custom .swatch-thumb { padding: 0; }
+.swatch-color {
+  appearance: none; -webkit-appearance: none; width: 100%; height: 100%; padding: 0; border: 0;
+  background: transparent; cursor: pointer; display: block;
+}
+.swatch-color::-webkit-color-swatch-wrapper { padding: 0; }
+.swatch-color::-webkit-color-swatch { border: 0; }
+.swatch-color::-moz-color-swatch { border: 0; }
+.swatch-custom .swatch-thumb.is-plain .swatch-color { opacity: 0; }
+.swatch-custom .swatch-thumb.is-plain::before {
+  content: ''; position: absolute; inset: 0;
+  background: conic-gradient(#f66, #fc6, #6f6, #6ff, #66f, #f6f, #f66);
+  mask: radial-gradient(circle at center, transparent 35%, #000 36%);
+  -webkit-mask: radial-gradient(circle at center, transparent 35%, #000 36%);
+  opacity: .8;
+}
+.swatch-custom .swatch-thumb { position: relative; }
 /* An upload's remove button, in its corner. */
 .swatch-x {
   position: absolute; top: 10px; right: 10px; width: 22px; height: 22px;

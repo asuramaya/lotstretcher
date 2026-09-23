@@ -422,6 +422,13 @@ so a loud hex lands as the deeper tone a car can sit on. In the app
 it is the Colour picker under the Backdrop tiles, shown for those two
 tiles only, with a Paint button back to the computed colour.
 
+The frame's colour, the text's colour and the glow's colour take a
+`#rrggbb` of your own too (`--frame-color`, `--text-color`,
+`--glow-color`), beside their names: a hex frame is drawn in it, a hex
+text colour puts the badge in it with the words white or black over
+it, a hex glow is that halo. In the app each of those pickers ends in
+a "Your own" tile holding the platform's colour picker.
+
 ### Looks: one tap, several levers
 
 The Studio is laid out as an editor: the stage in the middle, in the

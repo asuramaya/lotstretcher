@@ -355,3 +355,33 @@ def test_a_chosen_colour_puts_the_bands_and_the_sweep_in_that_hue():
         out = json.loads(subprocess.run([node, str(js)], capture_output=True, text=True, check=True).stdout)
     native = np.asarray(core.render_frame([], 120, 120, bg)).reshape(-1)[:30]
     assert list(int(v) for v in native) == out
+
+
+def test_a_hex_is_taken_wherever_a_named_colour_goes():
+    """The app's colour picker gives #rrggbb; the frame, the text badge
+    and the glow take it on the core, and the CLIs accept it."""
+    import argparse
+    from lotstretcher.imaging.compose.effects import resolve_glow_color
+    from lotstretcher.imaging.text import color_choice
+    ensure_font()
+    assert resolve_glow_color("#ff8800") == (255, 136, 0)
+    assert color_choice(COLORS_TUPLE)("#FF8800") == "#ff8800"
+    assert color_choice(COLORS_TUPLE)("paint") == "paint"
+    with pytest.raises(argparse.ArgumentTypeError):
+        color_choice(COLORS_TUPLE)("red")
+    # The badge takes the colour; the words go dark over a bright one.
+    plan = core.overlay_plan(400, 400, VEHICLE, font="Lato Bold", title="vehicle", price_badge=True, color="#ffee88")
+    badge = next(o for o in plan if o.get("pill"))
+    assert list(badge["pill"]["color"][:3]) == [255, 238, 136]
+    assert list(badge["color"]) == [16, 16, 16]
+    # A frame and a glow in it draw without complaint.
+    cut = Image.new("RGBA", (60, 40), (200, 30, 30, 255))
+    img = core.compose_hero([cut], 200, 200, {"kind": "generic", "seed": "s"},
+                            border_style={"kind": "line", "color": "#ff8800", "weight": 0.02},
+                            glow=True, glow_color="#00ff00")
+    assert img.size == (200, 200)
+    with pytest.raises(RuntimeError):
+        core.compose_hero([cut], 200, 200, {"kind": "generic", "seed": "s"}, border_style={"kind": "line", "color": "orange", "weight": 0.02})
+
+
+COLORS_TUPLE = ("white", "black", "paint")

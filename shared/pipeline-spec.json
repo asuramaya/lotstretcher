@@ -850,7 +850,10 @@
               "key": "border",
               "equals": "line"
             },
-            "cli": "--frame-color"
+            "cli": "--frame-color",
+            "presentation": "swatches",
+            "custom": true,
+            "cliNote": "--frame-color takes a name or your own #rrggbb."
           },
           {
             "key": "frameWeight",
@@ -1022,7 +1025,10 @@
                 "label": "Paint"
               }
             ],
-            "cli": "--text-color"
+            "cli": "--text-color",
+            "presentation": "swatches",
+            "custom": true,
+            "cliNote": "--text-color takes a name or your own #rrggbb."
           },
           {
             "key": "textSize",
@@ -1071,7 +1077,9 @@
             "choices": [],
             "dynamic": "glowColors",
             "cli": "--glow-color",
-            "showWhen": "glow"
+            "showWhen": "glow",
+            "custom": true,
+            "cliNote": "--glow-color takes a name or your own #rrggbb."
           },
           {
             "key": "glowRadius",

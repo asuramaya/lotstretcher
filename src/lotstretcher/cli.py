@@ -76,7 +76,7 @@ from lotstretcher.imaging.dedupe import DEFAULT_TEMPLATES_DIR, JunkFilter
 from lotstretcher.listing import expand_listing_url, is_vdp_url
 from lotstretcher.local_source import is_local_source, load_local_vehicle, local_vehicle_key
 from lotstretcher.scrape import USER_AGENT, vin_from_url
-from lotstretcher.imaging.text import (add_backdrop_arg, add_frame_style_args, add_reflection_args, add_shadow_args, add_text_args,
+from lotstretcher.imaging.text import (add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_text_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args)
 from lotstretcher.library_ops import hero_options_from_controls
@@ -373,7 +373,8 @@ def main():
                          help="Bitrate is chosen to fill this file size. Default: each format's own budget "
                               "from the spec.")
     parser.add_argument("--no-glow", action="store_true", help="Disable the glow behind composed car cutouts")
-    parser.add_argument("--glow-color", default="white", choices=["white", "blue", "gold", "red"])
+    parser.add_argument("--glow-color", default="white", type=color_choice(("white", "blue", "gold", "red")), metavar="COLOR",
+                         help="The glow's colour: white, blue, gold, red, or your own as #rrggbb (default: white).")
     parser.add_argument("--glow-radius", type=int, default=24,
                          help="Glow blur radius in pixels (default: 24)")
     parser.add_argument("--glow-intensity", type=float, default=0.75,

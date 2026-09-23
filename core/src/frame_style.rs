@@ -40,7 +40,8 @@ impl FrameStyle {
             "white" => [255, 255, 255],
             "black" => [16, 16, 16],
             "paint" => self.rgb.unwrap_or([160, 160, 170]),
-            other => return Err(format!("unknown frame colour {other:?}; white, black or paint")),
+            other => crate::palette::parse_hex(other)
+                .ok_or_else(|| format!("unknown frame colour {other:?}; white, black, paint or #rrggbb"))?,
         })
     }
 }

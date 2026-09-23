@@ -36,6 +36,21 @@ COLORS = ("white", "black", "paint")
 TITLE_MODES = ("none", "vehicle", "custom")
 
 
+def color_choice(allowed: tuple[str, ...]):
+    """An argparse type: one of `allowed`, or a colour of the user's own
+    as #rrggbb (what the app's colour picker gives), which the core
+    reads wherever a named colour goes."""
+    import argparse
+    from lotstretcher.imaging.palette import parse_hex
+
+    def check(text: str) -> str:
+        low = text.strip().lower()
+        if low in allowed or parse_hex(low) is not None:
+            return low
+        raise argparse.ArgumentTypeError(f"{text!r} is not one of {', '.join(allowed)} or #rrggbb")
+    return check
+
+
 def add_text_args(parser) -> None:
     """The Text controls as command-line flags, shared by lotstretcher
     and recompose so the two never drift."""
@@ -51,9 +66,10 @@ def add_text_args(parser) -> None:
                         help="A smaller line under the title: the dealer, a salesperson, a call to action.")
     parser.add_argument("--text-position", default="bl", choices=POSITIONS,
                         help="Where the text stack sits: tl, tr, bl, br, tc or bc (default: bl).")
-    parser.add_argument("--text-color", default="white", choices=COLORS,
-                        help="Text colour: white (default, with a soft shadow; the badge inverted), black, or paint "
-                             "(the badge in the vehicle's own colour, from its colour name or sampled off the cutout).")
+    parser.add_argument("--text-color", default="white", type=color_choice(COLORS), metavar="COLOR",
+                        help="Text colour: white (default, with a soft shadow; the badge inverted), black, paint "
+                             "(the badge in the vehicle's own colour, from its colour name or sampled off the cutout), "
+                             "or your own as #rrggbb (the badge in it).")
     parser.add_argument("--text-size", type=float, default=0.05, metavar="FRACTION",
                         help="Title size as a fraction of the canvas height (default: 0.05).")
 
@@ -67,8 +83,8 @@ def add_frame_style_args(parser) -> None:
     parser.add_argument("--frame-style", default="none", choices=FRAME_STYLES,
                         help="A frame the core draws to fit every shape: 'line', a rounded line inset from "
                              "the edge (default: none). Ignored when --frame/--border gives frame art.")
-    parser.add_argument("--frame-color", default="white", choices=FRAME_COLORS,
-                        help="The drawn frame's colour: white, black, or paint (the vehicle's own).")
+    parser.add_argument("--frame-color", default="white", type=color_choice(FRAME_COLORS), metavar="COLOR",
+                        help="The drawn frame's colour: white, black, paint (the vehicle's own), or your own as #rrggbb.")
     parser.add_argument("--frame-weight", type=float, default=0.008, metavar="FRACTION",
                         help="The drawn frame's line weight as a fraction of the shorter side (default: 0.008).")
 

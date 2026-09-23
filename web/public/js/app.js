@@ -28,7 +28,7 @@ import {
 } from './options.js';
 import { store, blobToCanvas } from './lib/store.js';
 import { loadSpec, get as specGet } from './spec.js';
-import { loadCore, version as coreVersion, threadCount as coreThreads, enhanceInterior, renderFrame as coreRenderFrame, drawFrame as coreDrawFrame, call as coreCall, toImageData as coreToImageData } from './core.js';
+import { loadCore, version as coreVersion, threadCount as coreThreads, enhanceInterior, renderFrame as coreRenderFrame, drawFrame as coreDrawFrame, call as coreCall, toImageData as coreToImageData, vehicleGradientColors as coreVehicleGradientColors } from './core.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { Preview } from './preview.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
@@ -715,6 +715,20 @@ function swatchArt(control, choice, values, image) {
   if (control.key === 'glowColor') {
     const rgb = specGet('glow', 'colors')[choice.value];
     return rgb ? { color: `rgb(${rgb.join(',')})` } : null;
+  }
+  if (control.key === 'frameColor' || control.key === 'textColor') {
+    // White, black, or the paint as the core would read it off the subject.
+    if (choice.value === 'white') return { color: '#ffffff' };
+    if (choice.value === 'black') return { color: '#101010' };
+    if (choice.value === 'paint') {
+      const subject = preview?.subject?.();
+      try {
+        const sample = subject?.cutout ? ctxOf(subject.cutout, { willReadFrequently: true }).getImageData(0, 0, subject.cutout.width, subject.cutout.height) : null;
+        const [start] = coreVehicleGradientColors(subject?.exterior || null, null, sample);
+        return { color: `rgb(${start.join(',')})` };
+      } catch { return { color: '#a0a0aa' }; }
+    }
+    return null;
   }
   if (choice.asset) {
     return libraryEntry(choice.expand || 'backgrounds', choice.asset)?.thumb || null;

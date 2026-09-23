@@ -88,7 +88,7 @@ function expanded(control) {
 function choicesFor(control) {
   if (!control.dynamic) return expanded(control);
   if (control.dynamic === 'glowColors') {
-    return Object.keys(get('glow', 'colors')).map((v) => ({ value: v, label: v }));
+    return Object.keys(get('glow', 'colors')).map((v) => ({ value: v, label: v[0].toUpperCase() + v.slice(1) }));
   }
   // Asset lists come from the host. A browser has none, so these are
   // empty on lotstretcher.org and real against a server.
@@ -367,6 +367,31 @@ function buildSwatches(control, values, onChange, disabled, thumbFor, allControl
       && (!choice.sets || Object.entries(choice.sets).every(([k, v]) => String(values[k]) === String(v)));
     const tile = tileFor(choice, { pressed, locked, why });
     tile.onclick = () => choose(choice);
+    grid.appendChild(tile);
+  }
+  if (control.custom) {
+    /* A colour of the user's own, after the named ones: the tile holds
+     * the platform's picker, is pressed while the value is a hex, and
+     * says which. Dragging in the picker is live; closing it commits. */
+    const isHex = typeof current === 'string' && /^#[0-9a-f]{3,6}$/i.test(current);
+    const tile = el('button', 'swatch swatch-custom');
+    tile.type = 'button';
+    tile.setAttribute('aria-pressed', String(isHex));
+    if (disabled) { tile.classList.add('is-locked'); tile.disabled = true; }
+    const thumb = el('span', 'swatch-thumb');
+    const input = document.createElement('input');
+    input.type = 'color';
+    input.className = 'swatch-color';
+    input.value = isHex && current.length === 7 ? current : '#4a6fa5';
+    input.disabled = disabled;
+    input.setAttribute('aria-label', `${control.label}: your own`);
+    input.oninput = () => onChange(control.key, input.value, true);
+    input.onchange = () => onChange(control.key, input.value);
+    thumb.appendChild(input);
+    if (!isHex) thumb.classList.add('is-plain');
+    tile.append(thumb, el('span', 'swatch-label', isHex ? current.toUpperCase() : 'Your own'));
+    tile.title = 'Any colour, as #rrggbb on the command line';
+    tile.onclick = (e) => { if (e.target !== input) input.click(); };
     grid.appendChild(tile);
   }
   return grid;

@@ -4,9 +4,11 @@ use crate::resize::resize_bilinear;
 use crate::spec;
 use crate::Image;
 
+/// One of the spec's glow colours by name, or a "#rrggbb" of the user's.
 pub fn glow_color(name: &str) -> Result<[u8; 3], String> {
     spec::rgb_map(&["glow", "colors"]).into_iter().find(|(k, _)| k == &name.to_lowercase())
         .map(|(_, c)| c)
+        .or_else(|| crate::palette::parse_hex(&name.to_lowercase()))
         .ok_or_else(|| format!("unknown glow colour {name:?}"))
 }
 

@@ -340,7 +340,15 @@ pub fn plan_in(req: &PlanRequest, window: (i64, i64, i64, i64)) -> Result<Vec<Ov
         "black" => ([16, 16, 16], [255, 255, 255, 220]),
         "white" => ([255, 255, 255], [16, 18, 22, 210]),
         "paint" => (if pale { [16, 16, 16] } else { [255, 255, 255] }, [accent[0], accent[1], accent[2], 235]),
-        other => return Err(format!("unknown text colour {other:?}; white, black or paint")),
+        // A colour of the user's own is treated as a paint would be: the
+        // badge in it, the words white or black over it.
+        other => match crate::palette::parse_hex(other) {
+            Some(c) => {
+                let bright = 0.299 * c[0] as f64 + 0.587 * c[1] as f64 + 0.114 * c[2] as f64 > 170.0;
+                (if bright { [16, 16, 16] } else { [255, 255, 255] }, [c[0], c[1], c[2], 235])
+            }
+            None => return Err(format!("unknown text colour {other:?}; white, black, paint or #rrggbb")),
+        },
     };
     let base = (req.size * ch).max(8.0);
     let inset = (w.min(h) * 0.045).round();

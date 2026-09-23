@@ -24,7 +24,7 @@ from lotstretcher.imaging.compose import render_hero_video
 from lotstretcher.imaging.compose.hero_video import (BARS_PER_LOOP, DEFAULT_BPM, DEFAULT_VIDEO_FORMAT,
                                           VIDEO_FORMATS)
 from lotstretcher.imaging.select import order_for_conveyor_start, pick_all_for_carousel
-from lotstretcher.imaging.text import (add_backdrop_arg, add_frame_style_args, add_reflection_args, add_shadow_args, add_text_args,
+from lotstretcher.imaging.text import (add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_text_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args, frame_style,
                                        reflection_style, shadow_style, text_options)
@@ -80,7 +80,8 @@ def main():
                               "(square 50, the others 66 -- the 50MB cap is Marketplace's and "
                               "does not apply to Reels/Shorts/TikTok).")
     parser.add_argument("--no-glow", action="store_true")
-    parser.add_argument("--glow-color", default="white", choices=["white", "blue", "gold", "red"])
+    parser.add_argument("--glow-color", default="white", type=color_choice(("white", "blue", "gold", "red")), metavar="COLOR",
+                         help="The glow's colour: white, blue, gold, red, or your own as #rrggbb (default: white).")
     parser.add_argument("--glow-radius", type=int, default=24)
     parser.add_argument("--glow-intensity", type=float, default=0.75)
     parser.add_argument("--flag-background", action="store_true",
