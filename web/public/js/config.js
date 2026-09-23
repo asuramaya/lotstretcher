@@ -16,7 +16,7 @@ export const MODELS = {
    * activation side. 6.1MB each is well under Cloudflare's 25MiB
    * per-file static-asset cap, so this costs us nothing structural. */
   angle: { url: 'models/angle.onnx', bytes: 6101537, size: 224 },
-  scene: { url: 'models/scene.onnx', bytes: 6097437, size: 224 },
+  scene: { url: 'models/scene.onnx', bytes: 6093335, size: 224 },
 
   /* u2net int8 at a FIXED 256x256. Fixed because ORT-web handles dynamic
    * axes badly, and 256 because it measured 0/150 catastrophic failures
@@ -79,6 +79,7 @@ export let MIN_ANGLE_CONFIDENCE = 0;
 /* Below this the scene label is too weak to route on, so the photo is
  * kept but not composed. */
 export let MIN_SCENE_CONFIDENCE = 0;
+export let INTERIOR_LEAN = 1;
 
 export const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'bmp', 'tiff', 'avif'];
 
@@ -101,4 +102,5 @@ export function initConfigFromSpec(get) {
   MAX_COVERAGE = get('cutout', 'maxCoverage');
   MIN_ANGLE_CONFIDENCE = get('confidence', 'minAngle');
   MIN_SCENE_CONFIDENCE = get('confidence', 'minScene');
+  INTERIOR_LEAN = get('confidence', 'interiorLean');
 }

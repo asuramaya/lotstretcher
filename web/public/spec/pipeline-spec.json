@@ -232,10 +232,16 @@
       "Browser-side routing floors. No CLI counterpart yet: the CLI has a",
       "richer cascade (tiebreak and wheel-detail classifiers) that the",
       "distilled students do not reproduce, so the browser leans on",
-      "confidence where the CLI leans on a second opinion."
+      "confidence where the CLI leans on a second opinion.",
+      "interiorLean: the scene model's 'detail' class holds close-ups of both kinds (the CLI files",
+      "interior close-ups under exterior/ without a cutout, so they trained as 'detail'), and a wide cabin",
+      "shot can land there at low margin; when 'detail' wins but interior scores at least this much, the",
+      "photo is treated as interior, since a shipped-and-lifted cabin shot beats a dropped one (F-150 check:",
+      "the two cabin shots called detail had interior at 0.49 and 0.37; the banner had 0.24)."
     ],
     "minAngle": 0.45,
-    "minScene": 0.4
+    "minScene": 0.4,
+    "interiorLean": 0.35
   },
   "glow": {
     "$comment": "compose/effects.py::GLOW_COLORS",

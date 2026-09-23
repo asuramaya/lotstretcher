@@ -11,7 +11,7 @@
 
 import {
   initConfigFromSpec, LIMITS, IMAGE_EXTS,
-  MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE,
+  MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE, INTERIOR_LEAN,
 } from './config.js';
 import { initRuntime, runtime, loadModel, totalBytes } from './pipeline/runtime.js';
 import { classifyScene, classifyAngle, loadLabels } from './pipeline/classify.js';
@@ -699,6 +699,8 @@ async function sortAndCut(stages) {
         p.sceneConf = scene.confidence;
         // Too weak to route on. Keep the photo, do not act on the guess.
         p.scene = scene.confidence >= MIN_SCENE_CONFIDENCE ? scene.label : 'unsure';
+        // A wide cabin shot can land in 'detail' by a hair (spec confidence.interiorLean).
+        if (p.scene === 'detail' && (scene.scores.interior || 0) >= INTERIOR_LEAN) { p.scene = 'interior'; p.sceneConf = scene.scores.interior; }
         }
       } catch (e) {
         p.status = 'failed';

@@ -48,7 +48,7 @@ async function run(key, bitmap, onProgress) {
   };
 }
 
-/* Which of {interior, exterior, detail, marketing} this photo is.
+/* Which of {interior, exterior, detail} this photo is (models/labels.json).
  * Runs on EVERY photo, so it is the hot path -- ~29 of a typical 37. */
 export const classifyScene = (bitmap, onProgress) => run('scene', bitmap, onProgress);
 

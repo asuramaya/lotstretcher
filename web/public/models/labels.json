@@ -2,8 +2,7 @@
   "scene": [
     "interior",
     "exterior",
-    "detail",
-    "marketing"
+    "detail"
   ],
   "angle": [
     "front",

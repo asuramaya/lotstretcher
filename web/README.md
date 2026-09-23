@@ -63,7 +63,7 @@ WebGPU is not dependable, and not every laptop has a usable GPU).
 | file | what | size |
 |---|---|---|
 | `angle.onnx` | 5-class angle student (fp32) | 6.1 MB |
-| `scene.onnx` | 4-class scene student (fp32) | 6.1 MB |
+| `scene.onnx` | 3-class scene classifier (fp32), trained on the library's own filing | 6.1 MB |
 | `matte.onnx` | u2net int8, fixed 256×256 | 44.2 MB |
 | `labels.json` | class index order — **in git** | <1 KB |
 
@@ -72,9 +72,25 @@ class order is baked into each trained head, is not recoverable from the
 model file, and produces confident nonsense rather than an error if it is
 wrong.
 
-The classifiers are produced by `web/tools/export-models.py` from the
-distillation checkpoints. The matting model is `u2net` exported at a
-fixed 256×256 and dynamically quantised.
+The angle classifier is produced by `web/tools/export-models.py` from
+its distillation checkpoint. The scene classifier is trained by
+`web/tools/train-scene.py` on the listings library's own filing (a body
+shot has a cutout beside it, a close-up does not, interiors sit in their
+own folder): the first scene student was distilled from raw CLIP labels
+and inherited CLIP's cabin-versus-close-up confusion (measured at 72% on
+the library's exteriors), while the command line's full cascade files
+every photo it keeps, so the library is the better teacher. It has no
+"marketing" class, since the CLI drops those photos and none are on
+disk; a banner lands in detail and the cutout gates keep it out of the
+stills either way. Held out by vehicle, not by photo. Re-run it as the
+library grows:
+
+```bash
+.venv/bin/python web/tools/train-scene.py --epochs 8
+```
+
+The matting model is `u2net` exported at a fixed 256×256 and dynamically
+quantised.
 
 ### Why the classifiers are fp32
 
