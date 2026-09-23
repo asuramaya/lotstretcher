@@ -29,7 +29,7 @@ Safari. For each step, note pass, fail, or the message shown.
   open Safari's console (Settings > Safari > Advanced > Web Inspector)
   and copy any line starting "core worker" or "video worker".
 
-## 2. Add photos
+## 2. The booth: photos and the vehicle
 
 - **Add photos**: the photo picker opens and the chosen images appear
   as tiles. HEIC photos are the case to watch: report whether they show
@@ -58,14 +58,13 @@ Safari. For each step, note pass, fail, or the message shown.
 - If video was on: report whether a clip rendered, or the message that
   says video is unavailable. WebCodecs on iOS is the open question.
 
-## 5. Details and listing
+## 5. The vehicle fields and a listing
 
 - Import a window sticker PDF from Files. Report whether fields fill.
-- On the Photos step, paste a dealer vehicle page address from the
-  clipboard with nothing focused. Report whether the Vehicle step opens
-  filled in. Then tap **A listing or VIN**, paste the address (or type
+- In the booth, paste a dealer vehicle page address from the clipboard
+  with nothing focused. Report whether the vehicle fields fill in. Then tap **A listing or VIN**, paste the address (or type
   a VIN) and tap **Read it**. Report whether the year, make and model
-  fill in on the Vehicle step, with no network activity.
+  fill in, with no network activity.
 
 ## 6. Library
 

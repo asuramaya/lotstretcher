@@ -50,7 +50,7 @@ const el = (tag, cls, text) => {
 };
 
 const state = {
-  pane: 'source',
+  pane: 'booth',
   photos: [],            // { id, name, blob|url, thumb, status, scene, angle, cutout, hero }
   vehicle: {},
   dealer: {},
@@ -79,8 +79,7 @@ function setRunEnabled(on) {
  * Called from every render that can change that. */
 function renderSteps() {
   const done = {
-    source: state.photos.length > 0,
-    details: !!(state.vehicle.make || state.vehicle.model || state.vehicle.exterior_color),
+    booth: state.photos.length > 0 || !!(state.vehicle.make || state.vehicle.model || state.vehicle.exterior_color),
     options: state.lookVisited,
     results: state.done,
   };
@@ -91,7 +90,7 @@ function renderSteps() {
   const note = $('sourceFootNote');
   if (note) note.textContent = n ? `${n} photo${n === 1 ? '' : 's'} added.` : 'Add photos to continue.';
   const onote = $('optionsFootNote');
-  if (onote) onote.textContent = n ? `Ready to process ${n} photo${n === 1 ? '' : 's'}.` : 'Add photos in step 1 first.';
+  if (onote) onote.textContent = n ? `Ready to process ${n} photo${n === 1 ? '' : 's'}.` : 'Add photos in the booth first.';
 }
 
 /* ---------- persistence -------------------------------------------
@@ -115,7 +114,7 @@ function saveDealer() {
 /* ---------- navigation --------------------------------------------- */
 function go(pane) {
   state.pane = pane;
-  for (const p of ['source', 'details', 'options', 'results', 'library']) {
+  for (const p of ['booth', 'options', 'results', 'library']) {
     $(`pane-${p}`).hidden = p !== pane;
   }
   for (const btn of document.querySelectorAll('.nav-btn')) {
@@ -224,6 +223,10 @@ function renderPhotos() {
     tile.classList.toggle('is-pending', p.status === 'ready' && state.running);
 
     const img = el('img');
+    // The app is cross-origin isolated (COEP require-corp), which blocks
+    // a plain cross-origin image; asking for CORS lets one the CDN
+    // allows (the dealer's does) through, and the decode uses CORS too.
+    if (p.url) img.crossOrigin = 'anonymous';
     img.src = p.thumb;
     img.alt = p.name;
     img.loading = 'lazy';
@@ -1226,14 +1229,14 @@ function applyVehicle(v) {
   box.appendChild(banner);
   for (const w of v.warnings) box.appendChild(el('div', 'banner banner-warn', w));
 
-  /* A sticker link is the one thing worth acting on straight away: it
-   * carries the option list and MSRP the analytics blob does not. */
+  /* A sticker link is read straight away: it carries the option list
+   * and MSRP the analytics blob does not, and typed fields are never
+   * overwritten by it. */
   if (v.window_sticker_url) {
-    const b = el('button', 'btn btn-sm', 'Read its window sticker too');
-    b.onclick = () => { b.disabled = true; importSticker(v.window_sticker_url, 'the sticker'); };
-    banner.append(' ', b);
+    banner.append(' Reading its window sticker.');
+    importSticker(v.window_sticker_url, 'the sticker');
   }
-  go(toPhotos ? 'source' : 'details');
+  go('booth');
 }
 
 /* ---------- wiring --------------------------------------------------- */
@@ -1395,7 +1398,6 @@ async function init() {
 
   // The walkthrough's own buttons: next at the foot of each step, back
   // where there is somewhere to go back to.
-  $('toDetailsBtn').onclick = () => go('details');
   $('toOptionsBtn').onclick = () => go('options');
   for (const b of document.querySelectorAll('[data-back]')) b.onclick = () => go(b.dataset.back);
   $('runBtn2').onclick = run;
@@ -1436,7 +1438,7 @@ async function init() {
   // Paste on the Photos step, outside a field: photos from the
   // clipboard, or text routed by what it is.
   window.addEventListener('paste', (e) => {
-    if (state.pane !== 'source') return;
+    if (state.pane !== 'booth') return;
     const t = e.target;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
     const files = [...(e.clipboardData?.files || [])];
@@ -1478,7 +1480,7 @@ async function init() {
       clearPhotos();
       addFiles(files);
       if (details && Object.keys(details).length) applyVehicle(details);
-      else go('source');
+      else go('booth');
     },
   });
   libraryView.onPick = async () => {

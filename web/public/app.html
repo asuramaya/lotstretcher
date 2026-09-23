@@ -26,30 +26,25 @@
   <!-- Nav is declared before main so the tab order is nav -> content.
        On desktop CSS grid places it as a left rail; on a phone it is the
        bottom bar. Same markup either way. -->
-  <!-- The four steps of the pipeline, in order, plus the library. On
+  <!-- The three steps of the pipeline, in order, plus the library. On
        desktop the rail numbers them and ticks them off; on a phone the
        same buttons are the bottom bar. -->
   <nav class="nav" aria-label="Steps">
     <div class="nav-rail-head">
-      <p class="xs dim">Four steps. Nothing leaves this device.</p>
+      <p class="xs dim">Three steps. Nothing leaves this device.</p>
     </div>
-    <button class="nav-btn" data-go="source" aria-current="page">
+    <button class="nav-btn" data-go="booth" aria-current="page">
       <span class="step-n"><span>1</span></span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-      <span>Photos</span>
-    </button>
-    <button class="nav-btn" data-go="details">
-      <span class="step-n"><span>2</span></span>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
-      <span>Vehicle</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
+      <span>Booth</span>
     </button>
     <button class="nav-btn" data-go="options">
-      <span class="step-n"><span>3</span></span>
+      <span class="step-n"><span>2</span></span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
       <span>Look</span>
     </button>
     <button class="nav-btn" data-go="results" disabled>
-      <span class="step-n"><span>4</span></span>
+      <span class="step-n"><span>3</span></span>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
       <span>Results</span>
       <span class="dot hidden" id="resultsDot"></span>
@@ -76,14 +71,14 @@
 
   <main class="main">
 
-    <!-- ---------- photos ---------- -->
-    <section class="pane" id="pane-source" aria-label="Photos">
+    <!-- ---------- the booth: photos and the vehicle, one step ---------- -->
+    <section class="pane" id="pane-booth" aria-label="Booth">
       <div class="pane-inner">
         <div class="pane-head">
-          <span class="eyebrow">Step 1 of 4</span>
-          <h1>Add the vehicle's photos</h1>
-          <p class="lede">Five to ten shots of one vehicle, walking around it. Interiors are
-            welcome: they are sorted out and corrected, never cut out.</p>
+          <span class="eyebrow">Step 1 of 3</span>
+          <h1>The booth</h1>
+          <p class="lede">The photos and what the vehicle is, together. A listing address, a VIN
+            or a window sticker fills the fields in; the rest is yours to add or correct.</p>
         </div>
         <div id="isolationWarn" class="banner banner-err hidden" style="margin-bottom:var(--s-5)">
           <div>
@@ -130,32 +125,15 @@
           <div class="grid" id="photoGrid"></div>
         </div>
 
-        <div class="pane-foot">
-          <span class="small dim grow" id="sourceFootNote">Add photos to continue.</span>
-          <button class="btn" id="toDetailsBtn">Next: the vehicle</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ---------- details ---------- -->
-    <section class="pane" id="pane-details" hidden aria-label="Vehicle details">
-      <div class="pane-inner">
-        <div class="pane-head">
-          <span class="eyebrow">Step 2 of 4</span>
-          <h1>Say what it is</h1>
-          <p class="lede">All optional. The colours decide the backdrop, which is generated
-            from the vehicle's own paint; the rest writes the posts. A window sticker or a
-            listing fills it in for you.</p>
-        </div>
         <div class="section">
           <div class="section-head"><h2>Vehicle</h2></div>
           <div id="detailsNote"></div>
 
           <div class="importer">
             <div class="row wrap" style="gap:var(--s-3)">
-              <button class="btn btn-sm" id="stickerFileBtn">Import window sticker</button>
-              <button class="btn btn-sm btn-ghost" id="stickerUrlBtn">Paste sticker URL</button>
-              <span class="small dim" id="stickerNote">Fills these fields from the PDF.</span>
+              <button class="btn btn-sm" id="stickerFileBtn">Window sticker PDF</button>
+              <button class="btn btn-sm btn-ghost" id="stickerUrlBtn">Sticker link</button>
+              <span class="small dim" id="stickerNote">A listing's sticker is read on its own; a PDF fills these fields too.</span>
             </div>
             <input type="file" id="stickerInput" accept="application/pdf,.pdf" class="sr-only">
           </div>
@@ -199,8 +177,7 @@
         </div>
 
         <div class="pane-foot">
-          <button class="btn btn-ghost" data-back="source">Back</button>
-          <span class="grow"></span>
+          <span class="small dim grow" id="sourceFootNote">Add photos to continue.</span>
           <button class="btn" id="toOptionsBtn">Next: the look</button>
         </div>
       </div>
@@ -224,7 +201,7 @@
     <section class="pane" id="pane-options" hidden aria-label="Look">
       <div class="pane-inner wide">
         <div class="pane-head">
-          <span class="eyebrow">Step 3 of 4</span>
+          <span class="eyebrow">Step 2 of 3</span>
           <h1>Choose the look</h1>
           <p class="lede">Every lever redraws the preview as you move it, on a sample
             vehicle or on your own once one is cut out. What you cannot see, such as
@@ -294,7 +271,7 @@
         </div>
 
         <div class="pane-foot">
-          <button class="btn btn-ghost" data-back="details">Back</button>
+          <button class="btn btn-ghost" data-back="booth">Back</button>
           <span class="small dim grow" id="optionsFootNote"></span>
           <button class="btn btn-primary" id="runBtn2" disabled>Process</button>
         </div>
@@ -305,7 +282,7 @@
     <section class="pane" id="pane-results" hidden aria-label="Results">
       <div class="pane-inner">
         <div class="pane-head">
-          <span class="eyebrow">Step 4 of 4</span>
+          <span class="eyebrow">Step 3 of 3</span>
           <h1>Results</h1>
         </div>
         <div class="section" id="progressSection" hidden>
@@ -340,7 +317,7 @@
 
         <div class="empty" id="resultsEmpty">
           <p>Nothing yet. Add photos and press Process.</p>
-          <p style="margin-top:var(--s-3)"><button class="btn" data-back="source">Go to step 1</button></p>
+          <p style="margin-top:var(--s-3)"><button class="btn" data-back="booth">Go to the booth</button></p>
         </div>
       </div>
     </section>
