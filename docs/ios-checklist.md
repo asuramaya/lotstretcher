@@ -71,12 +71,20 @@ Safari. For each step, note pass, fail, or the message shown.
   whether the photos and fields return, and whether the Studio opens
   at once (a finished sort and cut comes back with the car; the header
   should not sort again); try **Discard** once too.
-- In the Studio, tap the **Story** chip under the stage: the stage should
-  turn tall, the whole story in view, nothing clipped. Tick its circle
-  and report whether it joins the run (the Output tool's count). Switch
-  the segment to **Video** and tap **Vertical**: a frame of the clip
-  should show, with a scrub slider under the chips. Turn the phone sideways and report whether
-  the stage refits.
+- In the Studio, tap the **Portrait** chip under the stage: the stage
+  should turn tall, the whole portrait in view, nothing clipped. Tick
+  its circle and report whether it joins the run (the Output tool's
+  count). Switch the segment to **Video** and tap **Portrait**: a frame
+  of the clip should show, with a scrub slider under the chips. Turn
+  the phone sideways and report whether the stage refits.
+- Backdrop tool: tap **Your image** and pick a photo from the camera
+  roll. It should appear as its own tile, chosen, and stay after a
+  reload; tap its corner × to drop it. Tap **Hue bands**, then the
+  **Colour** swatch that appears: iOS's colour picker should open and
+  the stage follow it as you drag; tap **Paint** to go back.
+- Frame tool: tap **Studio line**, then the **Your own** tile under
+  Line colour. Report whether the picker opens and the line takes the
+  colour on the stage.
 - Once the header's progress line has finished, tap a photo's sort tag in the strip ("interior", "detail"):
   a menu offers Exterior / Interior / Detail / Skip. Correct one and
   report whether the run honours it.
