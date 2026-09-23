@@ -109,6 +109,9 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         border_fit=hero_opts.border_fit,
         text=hero_opts.text,
         vehicle=vehicle_record(folder),
+        # --photo-background / --background NAME: the same photo the
+        # stills sit on, unless a flag video was asked for instead.
+        background_image=hero_opts.background_path if not hero_opts.gradient else None,
         encoder=hero_opts.video_encoder,
         hood_sides=hood_sides,
         target_duration_s=hero_opts.video_duration_s,

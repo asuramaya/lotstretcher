@@ -22,7 +22,7 @@
  * Encoding is WebCodecs, measured at 3-4x realtime during the research
  * loop, with software encode only 16% slower than hardware. */
 
-import { makeCanvas, ctxOf } from '../lib/imageio.js';
+import { makeCanvas, ctxOf, coverFit } from '../lib/imageio.js';
 import * as core from '../core.js';
 import { get as specGet } from '../spec.js';
 
@@ -90,6 +90,15 @@ function bitrateFor(width, height) {
 
 const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2);
 
+/* An RGBA core image as RGB, for the ops that measure a backdrop. */
+function rgbOf(img) {
+  if (img.channels === 3) return img;
+  const n = img.width * img.height;
+  const data = new Uint8ClampedArray(n * 3);
+  for (let i = 0, j = 0; i < n; i++, j += 4) { data[i * 3] = img.data[j]; data[i * 3 + 1] = img.data[j + 1]; data[i * 3 + 2] = img.data[j + 2]; }
+  return { width: img.width, height: img.height, channels: 3, data };
+}
+
 /* Draw one frame.
  *
  * Shots crossfade, and the backdrop rotates independently of them, so
@@ -132,17 +141,19 @@ class ScaledCache {
 }
 
 /* The conveyor: the CLI's edit, from the same core choreography. */
-function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan, scaled, glow, overlays }) {
+function drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, palette, spotlight, plan, scaled, glow, overlays }) {
   const fo = core.call({ op: 'carousel_frame', plan, t });
   const hero = plan.shots[fo.hero];
   const pal = palette[0];
   const angle = pal.angle + GRADIENT_TURNS * 360 * (t / duration);
+  const [background, backgroundImage] = backdropFor(prepared, angle, pal);
   const cars = fo.cars.map((c) => {
     const w = Math.max(1, Math.round(c.rect[2]));
     const h = Math.max(1, Math.round(c.rect[3]));
     return { image: scaled.get(shots[c.shot].id, w, h), x: c.rect[0], y: c.rect[1], w, h, alpha: c.alpha };
   });
-  const frame = core.renderFrame(cars, width, height, { kind: 'linear', angle, start: pal.start, end: pal.end }, {
+  const frame = core.renderFrame(cars, width, height, background, {
+    backgroundImage,
     spotlight: spotlight ? { cx: hero.center[0], cy: hero.center[1], dim: hero.dim } : null,
     resample: 'bilinear', overlays,
     ...glow,
@@ -152,7 +163,7 @@ function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, sp
 
 /* Fewer than three shots cannot fill a conveyor (the CLI renders no clip
  * then); the browser keeps a plain push with crossfades for those. */
-function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight, glow, overlays, window: win }) {
+function drawFrame(ctx, prepared, { width, height, shots, t, duration, palette, spotlight, glow, overlays, window: win }) {
   const perShot = duration / shots.length;
   const index = Math.min(shots.length - 1, Math.floor(t / perShot));
   const local = (t - index * perShot) / perShot;
@@ -161,6 +172,7 @@ function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight,
   // hide, so it can just keep turning, as the CLI's does.
   const pal = palette[index % palette.length];
   const angle = pal.angle + GRADIENT_TURNS * 360 * (t / duration);
+  const [background, backgroundImage] = backdropFor(prepared, angle, pal);
 
   // The push fills the window (the canvas, less the text's band).
   const [wl, wt, wr, wb] = win || [0, 0, width, height];
@@ -188,7 +200,8 @@ function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight,
     place(shots[index], 1, local);
   }
 
-  const frame = core.renderFrame(cars, width, height, { kind: 'linear', angle, start: pal.start, end: pal.end }, {
+  const frame = core.renderFrame(cars, width, height, background, {
+    backgroundImage,
     spotlight: spotlight ? { cx: wl + ww / 2, cy: wt + wh / 2, dim: shots[index].dim } : null,
     resample: 'bilinear', overlays,
     ...glow,
@@ -204,9 +217,15 @@ export function prepareClip(cutouts, {
   width = 1254, height = 1254, seed = 'lotstretcher', angles = null,
   exterior = null, interior = null, generic = false, spotlight = true, duration = null,
   text = null,                // lib/text.js::textRequest; the still's text on every frame
+  background = null,          // a canvas: a stock or the user's photo behind the clip, cover-fitted
 } = {}) {
   const explicitDuration = duration !== null;
   if (duration === null) duration = DEFAULT_DURATION_S;
+  // A photo backdrop is fitted once and held for the clip; the gradient
+  // is the fallback, rebuilt per frame because it rotates.
+  const bgData = background
+    ? ctxOf(coverFit(background, width, height), { willReadFrequently: true }).getImageData(0, 0, width, height)
+    : null;
   // One palette per shot (the CLI seeds per image too), and each shot's
   // pixels and spotlight dim measured once. The gradient itself is
   // rebuilt by the core per frame because it rotates.
@@ -239,7 +258,11 @@ export function prepareClip(cutouts, {
       const w = Math.max(1, Math.round(shot.width * scale));
       const h = Math.max(1, Math.round(shot.height * scale));
       const scaled = core.call({ op: 'resize', image: { $image: 0 }, width: w, height: h }, [shot.data]);
-      const bg = core.call({ op: 'linear_gradient', width: w, height: h, angle: palette[0].angle, start: palette[0].start, end: palette[0].end });
+      // The dim is measured against what sits behind the car: the photo
+      // where there is one, the gradient otherwise.
+      const bg = bgData
+        ? rgbOf(core.call({ op: 'resize', image: { $image: 0 }, width: w, height: h, bilinear: true }, [{ width, height, channels: 4, data: bgData.data }]))
+        : core.call({ op: 'linear_gradient', width: w, height: h, angle: palette[0].angle, start: palette[0].start, end: palette[0].end });
       shot.dim = core.call({ op: 'dim_strength', background: { $image: 0 }, car: { $image: 1 } },
         [{ width: w, height: h, channels: 3, data: bg.data }, { width: w, height: h, channels: 4, data: scaled.data }]);
     }
@@ -252,7 +275,9 @@ export function prepareClip(cutouts, {
   if (shots.length >= 3) {
     const v = specGet('video');
     const loopS = v.barsPerLoop * v.beatsPerBar * 60 / v.defaultBpm;
-    const bg = core.call({ op: 'linear_gradient', width, height, angle: palette[0].angle, start: palette[0].start, end: palette[0].end });
+    const bg = bgData
+      ? rgbOf({ width, height, channels: 4, data: bgData.data })
+      : core.call({ op: 'linear_gradient', width, height, angle: palette[0].angle, start: palette[0].start, end: palette[0].end });
     plan = core.call({
       op: 'carousel_plan', width, height, backdrop: { $image: 0 },
       shots: shots.map((sh, i) => ({ image: { $image: i + 1 }, pannable: (angles?.[i] || null) === v.panAngleLabel, hood_side: null })),
@@ -261,7 +286,13 @@ export function prepareClip(cutouts, {
     if (!explicitDuration) duration = plan.period;
   }
 
-  return { shots, palette, plan, duration, width, height, overlays, window };
+  return { shots, palette, plan, duration, width, height, overlays, window, background: bgData };
+}
+
+/* The backdrop a frame draws: the held photo, or the turning gradient. */
+function backdropFor(prepared, angle, pal) {
+  if (prepared.bgId !== undefined) return [{ kind: 'image' }, prepared.bgId];
+  return [{ kind: 'linear', angle, start: pal.start, end: pal.end }, null];
 }
 
 /* One frame at time `t` of a prepared clip. `scaled` is a ScaledCache
@@ -273,13 +304,16 @@ export function drawClipFrame(ctx, prepared, t, { spotlight = true, glow = false
   const own = !scaled;
   const cache = scaled || new ScaledCache();
   const held = own ? shots.map((sh) => { const had = sh.id; if (had === undefined) sh.id = core.retain(sh.data); return had === undefined; }) : null;
+  const heldBg = own && prepared.background && prepared.bgId === undefined;
+  if (heldBg) prepared.bgId = core.retain(prepared.background);
   try {
-    if (plan) drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan, scaled: cache, glow: halo, overlays });
-    else drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight, glow: halo, overlays, window });
+    if (plan) drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, palette, spotlight, plan, scaled: cache, glow: halo, overlays });
+    else drawFrame(ctx, prepared, { width, height, shots, t, duration, palette, spotlight, glow: halo, overlays, window });
   } finally {
     if (own) {
       cache.clear();
       shots.forEach((sh, i) => { if (held[i]) { core.release(sh.id); delete sh.id; } });
+      if (heldBg) { core.release(prepared.bgId); delete prepared.bgId; }
     }
   }
 }
@@ -308,6 +342,7 @@ export async function renderHeroVideo(cutouts, {
   glowRadius = null,
   glowIntensity = null,
   text = null,                // lib/text.js::textRequest: the still's title, badge and line on the clip
+  background = null,          // a canvas behind the clip (a stock or the user's photo); the gradient otherwise
   onProgress = null,
   signal = null,
 } = {}) {
@@ -359,7 +394,7 @@ export async function renderHeroVideo(cutouts, {
       : new Promise((resolve) => { drained = resolve; })
   );
 
-  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, spotlight, duration: explicitDuration ? duration : null, text });
+  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, spotlight, duration: explicitDuration ? duration : null, text, background });
   const { shots, palette, plan } = prepared;
   duration = prepared.duration;
 
@@ -372,6 +407,7 @@ export async function renderHeroVideo(cutouts, {
   // The cutouts stay resident in the core for the clip; every frame
   // names them by id. Released in `finally`, including on cancel.
   for (const shot of shots) shot.id = core.retain(shot.data);
+  if (prepared.background) prepared.bgId = core.retain(prepared.background);
   const scaled = new ScaledCache();
   try {
   for (let f = 0; f < total; f++) {
@@ -396,6 +432,7 @@ export async function renderHeroVideo(cutouts, {
   } finally {
     scaled.clear();
     for (const shot of shots) { if (shot.id !== undefined) { core.release(shot.id); delete shot.id; } }
+    if (prepared.bgId !== undefined) { core.release(prepared.bgId); delete prepared.bgId; }
   }
 
   await encoder.flush();

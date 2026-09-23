@@ -774,10 +774,14 @@ async function run() {
      * and stay usable while this runs. */
     const wantVideo = state.options.videoFormats.filter((f) => OPTS.VIDEO_FORMATS[f]);
     if (wantVideo.length && cut.length && videoSupported()) {
-      // Video is always rendered here, and a stock photo is a server
-      // asset. Saying so beats a clip that quietly ignores the choice.
-      if (state.options.backdrop === 'asset') {
-        state.errors.push('video: stock backgrounds apply to stills only; the clip uses the gradient');
+      // The clip sits on the same backdrop as the stills: a stock photo
+      // from the studio, the user's own, or the turning gradient. A
+      // server-only photo is composed by the server for stills; the clip
+      // is rendered here, so it falls back to the gradient and says so.
+      const videoBackground = state.options.backdrop === 'custom' ? state.options.customBackground || null
+        : state.options.backdrop === 'asset' ? (stockBackground || await libraryImage('backgrounds', state.options.background)) : null;
+      if (state.options.backdrop === 'asset' && !videoBackground) {
+        state.errors.push('video: that background lives on your server; the clip uses the gradient');
       }
       stages.push({ n: 5, label: 'Rendering video', state: 'active' });
       renderStages(stages);
@@ -798,6 +802,7 @@ async function run() {
             glowRadius: state.options.glowRadius,
             glowIntensity: state.options.glowIntensity,
             text: await textRequest(state.vehicle, textOptions(state.options)),
+            background: videoBackground,
             onProgress: (f) => setProgress(0.85 + 0.15 * f),
           });
         } catch (e) {

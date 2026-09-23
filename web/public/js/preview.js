@@ -292,11 +292,16 @@ export class Preview {
       seed = subject.seed;
     }
     const text = textRequestNow(subject.vehicle, textOptions(o), () => this.update());
-    const key = JSON.stringify([width, height, seed, o.backdrop === 'generic', o.spotlight, subject.exterior, subject.interior, cutouts.length, text]);
+    // The clip's backdrop is the still's: a stock or the user's photo,
+    // else the gradient.
+    const background = o.backdrop === 'custom' ? o.customBackground || null
+      : o.backdrop === 'asset' && o.background ? assetImage('backgrounds', o.background, () => this.update()) : null;
+    const key = JSON.stringify([width, height, seed, o.backdrop === 'generic', o.spotlight, subject.exterior, subject.interior, cutouts.length, text,
+      background ? `${o.backdrop}:${o.background || o.customBackground?.name || ''}` : null]);
     if (key !== this.clipKey) {
       this.clip = prepareClip(cutouts, {
         width, height, seed: `${seed}:video`, exterior: subject.exterior, interior: subject.interior,
-        generic: o.backdrop === 'generic', spotlight: o.spotlight, text,
+        generic: o.backdrop === 'generic', spotlight: o.spotlight, text, background,
       });
       this.clipKey = key;
     }

@@ -354,6 +354,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        glow_radius: int = 24, glow_intensity: float = 0.75,
                        border_fit: str = "fit",
                        text: dict | None = None, vehicle: dict | None = None,
+                       background_image: Path | None = None,
                        encoder: str = "libx264",
                        hood_sides: dict[str, str] | None = None,
                        target_duration_s: float | None = None) -> dict:
@@ -375,8 +376,8 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     if len(carousel_paths) < 3:
         raise ValueError("need at least 3 shots for a left/hero/right conveyor")
 
-    if background_video is None and gradient_colors is None:
-        raise ValueError("need either a background_video or gradient_colors to draw a backdrop")
+    if background_video is None and background_image is None and gradient_colors is None:
+        raise ValueError("need a background_video, a background_image or gradient_colors to draw a backdrop")
 
     # The format decides the canvas; a frame of another shape is fitted
     # to it (compose::fit_border), and the car window follows the fit.
@@ -411,7 +412,11 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     if background_video is not None:
         fps = probe_fps(background_video)
 
-    bg_frames = _read_bg_frames(background_video, canvas_size) if background_video is not None else None
+    # A still photo behind the clip is one backdrop frame held for the
+    # whole clip; the core cover-fits it to the canvas as it draws.
+    bg_frames = (_read_bg_frames(background_video, canvas_size) if background_video is not None
+                 else [Image.open(background_image).convert("RGB")] if background_image is not None
+                 else None)
     # One representative backdrop frame for the spotlight's contrast
     # measurement (compute_dim_strength) -- it only needs a sample of
     # what sits behind the car, not the animation.
@@ -599,7 +604,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
         "audio_loop_s": round(audio_loop_s, 3),
         "bars_per_loop": bars_per_loop,
         "clock": "audio" if audio_path is not None else f"{bpm:g} bpm",
-        "backdrop": "video" if background_video is not None else "gradient",
+        "backdrop": "video" if background_video is not None else "photo" if background_image is not None else "gradient",
         "framed": border is not None,
         "bar_dwell_s": round(dwell, 3),
         "beat_s": round(beat_s, 3),
