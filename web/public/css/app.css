@@ -553,6 +553,7 @@
 
 /* ---------- library ------------------------------------------------ */
 .lib-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.lib-more { display: block; margin: var(--s-4) auto 0; }
 @media (min-width: 640px) { .lib-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }
 .lib-card { cursor: pointer; }
 .lib-card:hover .tile { border-color: var(--accent); }

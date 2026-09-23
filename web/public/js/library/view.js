@@ -13,6 +13,9 @@
 import { get } from '../spec.js';
 import { DirectorySource } from './source.js';
 
+/* Cards per page of the library grid. */
+const PAGE = 24;
+
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -320,7 +323,7 @@ export class LibraryView {
       chip.setAttribute('aria-pressed', this.bucket === b ? 'true' : 'false');
       chip.append(el('strong', null, b === 'all' ? 'All' : b[0].toUpperCase() + b.slice(1)),
         el('span', null, String(counts[b] || 0)));
-      chip.onclick = () => { this.bucket = b; this.render(); };
+      chip.onclick = () => { this.bucket = b; this.shown = 0; this.render(); };
       bar.appendChild(chip);
     }
     const search = el('input', 'field');
@@ -328,7 +331,7 @@ export class LibraryView {
     search.placeholder = 'Search title, VIN, stock, colour';
     search.value = this.query;
     search.style.flex = '1 1 180px';
-    search.oninput = () => { this.query = search.value; this.renderGrid(); };
+    search.oninput = () => { this.query = search.value; this.shown = 0; this.renderGrid(); };
     bar.appendChild(search);
     h.appendChild(bar);
 
@@ -346,7 +349,18 @@ export class LibraryView {
       grid.appendChild(el('p', 'small muted', 'Nothing matches.'));
       return;
     }
-    for (const v of list) {
+    // A lot is a few hundred vehicles; a phone gets a page of cards and
+    // a button for the next, not a mile of tiles decoding at once.
+    this.shown = Math.max(this.shown || 0, PAGE);
+    const page = list.slice(0, this.shown);
+    if (this.more) { this.more.remove(); this.more = null; }
+    if (list.length > page.length) {
+      const more = el('button', 'btn btn-sm lib-more', `Show ${Math.min(PAGE, list.length - page.length)} more of ${list.length}`);
+      more.onclick = () => { this.shown += PAGE; this.renderGrid(); };
+      this.more = more;
+      grid.after(more);
+    }
+    for (const v of page) {
       const card = el('div', 'lib-card');
       const tile = el('div', 'tile');
       const heroRel = `${layout.bundle.dir}/${layout.bundle.hero}`;
@@ -378,10 +392,14 @@ export class LibraryView {
     const h = this.host;
     const src = this.source;
 
-    const head = el('div', 'section-head');
+    // The way back sits above the title: beside it, a long title on a
+    // phone wrapped around the button and the pill.
     const back = el('button', 'btn btn-ghost btn-sm', '← Library');
     back.onclick = () => { this.open = null; this.render(); };
-    head.append(back, el('h2', null, titleOf(v.card, v.folder)), el('span', 'pill', v.bucket));
+    back.style.marginBottom = 'var(--s-2)';
+    h.appendChild(back);
+    const head = el('div', 'section-head');
+    head.append(el('h2', null, titleOf(v.card, v.folder)), el('span', 'pill', v.bucket));
     h.appendChild(head);
 
     const meta = [money(v.card.display_price), miles(v.card.mileage), v.card.exterior_color_factory,
