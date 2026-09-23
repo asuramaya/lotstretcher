@@ -116,12 +116,12 @@ AUDIO_BITRATE_KBPS = 128
 # constants, they're the definition of "a bar" and "a beat" given a clean
 # N-bar loop, so changing them means "the input has a different bar/beat
 # count," not "make the pacing faster/slower."
-BARS_PER_LOOP = 4
-BEATS_PER_BAR = 4
+BARS_PER_LOOP = int(_spec.get("video", "barsPerLoop"))
+BEATS_PER_BAR = int(_spec.get("video", "beatsPerBar"))
 
-MIN_TRANSITION_S = 0.3
-MAX_TRANSITION_S = 0.9
-TRANSITION_FRAC = 0.35  # fraction of a bar spent on the 4-way conveyor morph
+MIN_TRANSITION_S = _spec.get("video", "minTransitionS")
+MAX_TRANSITION_S = _spec.get("video", "maxTransitionS")
+TRANSITION_FRAC = _spec.get("video", "transitionFrac")  # fraction of a bar spent on the 4-way conveyor morph
 
 
 # The beat "pump": a quick scale-up on the beat that snaps back down --
@@ -141,17 +141,17 @@ PULSE_DECAY = _spec.get("video", "pulseDecay")
 # to width, lots of dead space above/below). Past this much extra width
 # (at fill-to-height scale) it instead fills the box's full height and
 # pans edge-to-edge across during its STEADY (non-transitioning) hold.
-MIN_PAN_OVERFLOW_FRAC = 0.20
+MIN_PAN_OVERFLOW_FRAC = _spec.get("video", "minPanOverflowFrac")
 
-# Only this angle pans -- see _build_shot()'s note.
-PAN_ANGLE_LABEL = "side"
+# Only this angle pans -- see core/src/carousel.rs.
+PAN_ANGLE_LABEL = _spec.get("video", "panAngleLabel")
 
 # Fallbacks for the pieces that are now optional. DEFAULT_BPM is not an
 # arbitrary pick: the original 4-bar loop measures 9.606s, i.e. 2.4015s a
 # bar and 0.6s a beat -- exactly 100 BPM. So a music-less render at the
 # default keeps the identical cut and pump cadence the scored one had.
-DEFAULT_BPM = 100.0
-DEFAULT_FPS = 25.0
+DEFAULT_BPM = float(_spec.get("video", "defaultBpm"))
+DEFAULT_FPS = float(_spec.get("video", "fps"))
 DEFAULT_CANVAS_SIZE = (1254, 1254)
 
 # One edit, three frames. The choreography is identical in all of them --
@@ -190,7 +190,7 @@ GRADIENT_TURNS = _spec.get("video", "gradientTurns")
 # version clipped the hero to a window rect that shrank toward the accent
 # slot during the transition, which dragged exactly such an edge across
 # the truck's body -- see _render(), which no longer clips at all.
-PAN_BARS = 2
+PAN_BARS = int(_spec.get("video", "panBars"))
 
 # How much of each layout box is left as breathing room. Much tighter
 # than compute_placement()'s 0.06 still-image default: a still is looked
@@ -219,22 +219,6 @@ def probe_fps(path: Path) -> float:
     return float(num) / float(den or 1)
 
 
-def compute_carousel_timing(audio_loop_s: float, bars_per_loop: int = BARS_PER_LOOP) -> tuple[float, float, float]:
-    """(dwell, transition_s, beat_s) derived from the audio loop's own
-    measured length. dwell (1 bar) is how long each shot spends as hero
-    before the conveyor advances; transition_s is how much of that bar is
-    spent on the 4-way morph into the next arrangement.
-
-    bars_per_loop is a property of the specific recording, so it comes
-    from that asset's manifest entry rather than being assumed -- see
-    assets/manifest.json's audio `bars`."""
-    dwell = audio_loop_s / bars_per_loop
-    beat_s = dwell / BEATS_PER_BAR
-    transition_s = min(MAX_TRANSITION_S, max(MIN_TRANSITION_S, dwell * TRANSITION_FRAC))
-    transition_s = min(transition_s, dwell * 0.9)
-    return dwell, transition_s, beat_s
-
-
 # How far under the stated cap to actually aim. The 3% container
 # allowance below is an ESTIMATE of muxing overhead, not a safety margin,
 # and treating it as one left almost none: measured across the fleet's 40
@@ -244,7 +228,7 @@ def compute_carousel_timing(audio_loop_s: float, bars_per_loop: int = BARS_PER_L
 # than estimated, or a platform that measures the limit differently than
 # we do. 10% costs about 0.5dB of bitrate, which is invisible on this
 # content, and buys a margin that is actually a margin.
-SIZE_SAFETY_FRAC = 0.10
+SIZE_SAFETY_FRAC = _spec.get("video", "sizeSafetyFrac")
 
 
 def compute_video_bitrate_kbps(total_seconds: float, budget_mb: float = 50.0,
@@ -429,7 +413,6 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     # stale entry; clearing also gives the core the memory back.
     _clear_scaled()
 
-    dwell, transition_s, beat_s = compute_carousel_timing(audio_loop_s, bars_per_loop)
     n = len(carousel_paths)
     # The choreography is the core's (core/src/carousel.rs): schedule,
     # pan geometry, spotlight measurement, all of it. This host supplies
@@ -463,6 +446,9 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     }, images)
     shots = plan["shots"]
     schedule, carousel_period = [tuple(x) for x in plan["schedule"]], plan["period"]
+    # The timing is the plan's: dwell (one bar), the morph's length and
+    # the beat, all from the loop's own measured length.
+    dwell, transition_s, beat_s = plan["dwell"], plan["transition_s"], plan["beat_s"]
     cars_held = [core.retain(c) for c in cars_rgba]
     held += cars_held
     border_held = core.retain(border) if border is not None else None

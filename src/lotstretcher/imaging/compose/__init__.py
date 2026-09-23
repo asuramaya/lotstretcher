@@ -14,7 +14,7 @@ the submodule split is an implementation detail, not part of the public API.
 """
 from .effects import GLOW_COLORS, resolve_glow_color
 from .hero import compose_hero
-from .hero_video import compute_carousel_timing, compute_video_bitrate_kbps, render_hero_video
+from .hero_video import compute_video_bitrate_kbps, render_hero_video
 from .layout import LAYOUTS, compute_placement, corners_layout, quad_layout, single_layout
 from .pipeline import compose_interiors, compose_vehicle, compose_wheel_shots
 from .spin import order_for_spin, render_spin_video
@@ -25,6 +25,6 @@ __all__ = [
     "compose_interiors",
     "compose_wheel_shots",
     "compute_placement", "LAYOUTS", "single_layout", "corners_layout", "quad_layout", "resolve_glow_color", "GLOW_COLORS",
-    "render_hero_video", "compute_carousel_timing", "compute_video_bitrate_kbps",
+    "render_hero_video", "compute_video_bitrate_kbps",
     "render_spin_video", "order_for_spin",
 ]

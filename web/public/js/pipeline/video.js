@@ -132,7 +132,7 @@ class ScaledCache {
 }
 
 /* The conveyor: the CLI's edit, from the same core choreography. */
-function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan, scaled }) {
+function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan, scaled, glow }) {
   const fo = core.call({ op: 'carousel_frame', plan, t });
   const hero = plan.shots[fo.hero];
   const pal = palette[0];
@@ -145,13 +145,14 @@ function drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, sp
   const frame = core.renderFrame(cars, width, height, { kind: 'linear', angle, start: pal.start, end: pal.end }, {
     spotlight: spotlight ? { cx: hero.center[0], cy: hero.center[1], dim: hero.dim } : null,
     resample: 'bilinear',
+    ...glow,
   });
   ctx.putImageData(frame, 0, 0);
 }
 
 /* Fewer than three shots cannot fill a conveyor (the CLI renders no clip
  * then); the browser keeps a plain push with crossfades for those. */
-function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight }) {
+function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight, glow }) {
   const perShot = duration / shots.length;
   const index = Math.min(shots.length - 1, Math.floor(t / perShot));
   const local = (t - index * perShot) / perShot;
@@ -186,6 +187,7 @@ function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight 
   const frame = core.renderFrame(cars, width, height, { kind: 'linear', angle, start: pal.start, end: pal.end }, {
     spotlight: spotlight ? { cx: width / 2, cy: height / 2, dim: shots[index].dim } : null,
     resample: 'bilinear',
+    ...glow,
   });
   ctx.putImageData(frame, 0, 0);
 }
@@ -206,6 +208,13 @@ export async function renderHeroVideo(cutouts, {
   interior = null,
   generic = false,
   spotlight = true,
+  // The glow halo behind each car, as the CLI's --glow-* flags set it.
+  // Memoized per scaled car inside the core, so it costs one blur per
+  // car per clip rather than per frame.
+  glow = false,
+  glowColor = null,
+  glowRadius = null,
+  glowIntensity = null,
   onProgress = null,
   signal = null,
 } = {}) {
@@ -318,8 +327,9 @@ export async function renderHeroVideo(cutouts, {
   for (let f = 0; f < total; f++) {
     if (signal?.aborted) { encoder.close(); throw new Error('cancelled'); }
 
-    if (plan) drawConveyorFrame(ctx, { width, height, shots, t: f / fps, duration, palette, spotlight, plan, scaled });
-    else drawFrame(ctx, { width, height, shots, t: f / fps, duration, palette, spotlight });
+    const halo = { glow, glowColor, glowRadius, glowIntensity };
+    if (plan) drawConveyorFrame(ctx, { width, height, shots, t: f / fps, duration, palette, spotlight, plan, scaled, glow: halo });
+    else drawFrame(ctx, { width, height, shots, t: f / fps, duration, palette, spotlight, glow: halo });
 
     const frame = new VideoFrame(canvas, {
       timestamp: Math.round(f * usPerFrame),

@@ -663,6 +663,11 @@ async function run() {
             exterior: state.vehicle.exterior_color,
             interior: state.vehicle.interior_color,
             generic: state.options.backdrop === 'generic',
+            spotlight: state.options.spotlight,
+            glow: state.options.glow,
+            glowColor: state.options.glowColor,
+            glowRadius: state.options.glowRadius,
+            glowIntensity: state.options.glowIntensity,
             onProgress: (f) => setProgress(0.85 + 0.15 * f),
           });
         } catch (e) {
