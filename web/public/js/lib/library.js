@@ -41,9 +41,12 @@ export async function loadLibrary() {
       }
       for (const kind of ['backgrounds', 'borders']) {
         for (const e of studio[kind] || []) {
+          // A hosted entry names where it lives (a CDN with CORS open
+          // to the site); it composes here all the same.
+          const src = e.url || `studio/${e.file}`;
           lib[kind].push({
-            value: e.name, label: e.name, tags: e.tags || [], local: true,
-            src: `studio/${e.file}`, thumb: `studio/${e.file}`, width: e.width, height: e.height,
+            value: e.name, label: e.name, tags: e.tags || [], local: true, category: e.category || null,
+            src, thumb: src, width: e.width, height: e.height,
           });
         }
       }

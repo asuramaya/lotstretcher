@@ -10,7 +10,8 @@
         "americana",
         "waving-fabric"
       ],
-      "studio": true
+      "studio": true,
+      "category": "patriotic"
     },
     {
       "file": "backgrounds/futuristic-showroom.png",
@@ -22,7 +23,8 @@
         "ai-generated"
       ],
       "prompt": "a sleek futuristic car showroom interior, empty, wide reflective floor, dramatic spotlights, moody atmosphere, no vehicles, no text, no logos",
-      "studio": true
+      "studio": true,
+      "category": "showroom"
     }
   ],
   "videos": [

@@ -7,3 +7,4 @@ public/ort/*.mjs
 # Sample photos used while developing. These are real dealer inventory
 # images and have no business in the repository.
 public/testdata/
+public/studio-hosted/

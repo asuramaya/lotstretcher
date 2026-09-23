@@ -12,7 +12,8 @@
       ],
       "width": 2048,
       "height": 1365,
-      "bytes": 90546
+      "bytes": 90546,
+      "category": "patriotic"
     },
     {
       "name": "Futuristic Showroom",
@@ -25,7 +26,8 @@
       ],
       "width": 1024,
       "height": 1024,
-      "bytes": 51304
+      "bytes": 51304,
+      "category": "showroom"
     }
   ],
   "borders": [

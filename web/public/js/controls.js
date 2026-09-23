@@ -76,7 +76,7 @@ function expanded(control) {
       out.push({
         // The tile says where the asset lives: the site's own studio
         // composes here, a server-only asset is composed by the server.
-        ...c, label: a.label, hint: a.local ? 'Studio' : 'Your server', asset: a.value,
+        ...c, label: a.label, hint: a.local ? 'Studio' : 'Your server', asset: a.value, category: a.category || null,
         value: c.into === control.key ? a.value : c.value,
         sets: c.into && c.into !== control.key ? { [c.into]: a.value } : null,
       });
@@ -330,8 +330,17 @@ function buildSwatches(control, values, onChange, disabled, thumbFor, allControl
     tile.disabled = !!locked;
     return tile;
   };
-  for (const choice of choicesFor(control)) {
-    if (tab && choice.tab && choice.tab !== tab) continue;
+  // Library tiles with a category are shown under a heading per
+  // category, in the manifest's order; the rest come first, unheaded.
+  const choices = choicesFor(control).filter((c) => !(tab && c.tab && c.tab !== tab));
+  const ordered = [...choices.filter((c) => !c.category), ...choices.filter((c) => c.category)
+    .sort((a, b) => (a.category < b.category ? -1 : a.category > b.category ? 1 : 0))];
+  let lastCategory = null;
+  for (const choice of ordered) {
+    if (choice.category && choice.category !== lastCategory) {
+      lastCategory = choice.category;
+      grid.appendChild(el('div', 'swatch-group', choice.category[0].toUpperCase() + choice.category.slice(1)));
+    }
     const locked = disabled || (choice.requires && !can(choice.requires)) || choice.empty;
     const why = locked
       ? (choice.empty ? (isSelfHosted() ? 'Library is empty' : 'Your server only') : (isSelfHosted() ? 'Host lacks it' : 'Your server only'))

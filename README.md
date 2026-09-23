@@ -366,6 +366,27 @@ lotstretcher composites vehicle cutouts onto branded border frames. These assets
    ```
 4. Use `--border "My Dealership Frame"` or set `"default_border_tag": "custom"` in your configuration.
 
+### Generated backgrounds, by category
+
+`generate-assets set` asks an image model for a categorised set of
+backgrounds (showroom, lot, road, studio, abstract, seasonal; `--count`
+per category) and registers each in `assets/manifest.json` with its
+category, as a studio asset. The default provider is OpenRouter
+(`OPENROUTER_API_KEY` in `.env`, read and never printed, like the
+Recraft key); `--provider recraft` is the older route. `--dry-run`
+prints the plan and calls nothing; every image is a paid call. A
+single `generate-assets background ... --category showroom --studio`
+adds one.
+
+Generated files are marked `hosted`: `web/build-studio.py --hosted-base
+https://cdn.example.com/studio` leaves their bytes out of the site and
+writes an absolute `url` into the studio manifest instead, exporting
+the files under `web/public/studio-hosted/` with the `wrangler r2
+object put` lines to upload them. The bucket needs a public domain and
+a CORS policy allowing GET from the site. The app's Image tab groups
+the tiles under their categories; the command line finds them by name
+as before.
+
 ### The studio library (what the app ships)
 
 The app's "Stock" tiles on lotstretcher.org come from the same
