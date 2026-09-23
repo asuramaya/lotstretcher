@@ -382,9 +382,12 @@
         <div class="row" style="margin-top:var(--s-2)"><button class="btn btn-sm" id="listingHtmlGo">Read the pasted page</button></div>
       </div>
       <p class="small muted">
-        <strong>Or a bookmarklet.</strong> A browser cannot read another site's page, so the
-        hand-off runs the other way: a bookmarklet clicked on the listing itself collects the
-        vehicle record and photo links and opens this app with them filled in.
+        <strong>Or a bookmarklet.</strong> A browser cannot read another site's page, and
+        neither can lotstretcher.org: dealer sites sit behind a bot challenge that only a real
+        browser passes (a plain fetch of a listing gets "Just a moment", not the page), which
+        is why the self-hosted server drives one. So the hand-off runs the other way: a
+        bookmarklet clicked on the listing itself collects the vehicle record and photo links
+        and opens this app with them filled in.
       </p>
       <p class="small muted" style="margin-top:var(--s-3)">
         Drag this to your bookmarks bar, then click it while viewing a

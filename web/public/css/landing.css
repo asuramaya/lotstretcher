@@ -7,8 +7,6 @@
 .shell { max-width: 1140px; margin: 0 auto; padding: 0 max(var(--gutter), var(--safe-l)) 0 max(var(--gutter), var(--safe-r)); }
 .shell.narrow { max-width: 760px; }
 
-.hide-sm { display: none; }
-@media (min-width: 620px) { .hide-sm { display: inline-flex; } }
 
 /* ---------- hero ---------- */
 .hero { padding: clamp(var(--s-6), 5vw, var(--s-8)) 0 clamp(var(--s-7), 6vw, var(--s-9)); }

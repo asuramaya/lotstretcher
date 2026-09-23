@@ -251,6 +251,10 @@ hr.rule { border: 0; border-top: 1px solid var(--line); margin: var(--s-5) 0; }
 .appbar .brand { font-weight: 700; font-size: var(--t-base); }
 .appbar-actions { display: flex; align-items: center; gap: var(--s-2); margin-left: auto; }
 
+/* Hidden on a phone: an action the bar has no room for there. */
+.hide-sm { display: none; }
+@media (min-width: 620px) { .hide-sm { display: inline-flex; } }
+
 /* A small uppercase label above a heading: "Step 2 of 4", a section's
    name. Shared because both pages count steps. */
 .eyebrow {
