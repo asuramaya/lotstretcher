@@ -12,6 +12,7 @@
  * time the preview itself just took. */
 
 import { composeHero } from './pipeline/compose.js';
+import { prepareClip, drawClipFrame } from './pipeline/video.js';
 import { get as specGet } from './spec.js';
 import * as OPTS from './options.js';
 
@@ -40,7 +41,7 @@ export class Preview {
    * `getOptions()` returns the live options; `getVehicle()` the form's
    * vehicle (for its colours); `getUserCutout()` a cutout canvas from
    * the last run, or null. */
-  constructor(host, { getOptions, getVehicle, getUserCutout, getPhotoCount }) {
+  constructor(host, { getOptions, getVehicle, getUserCutout, getUserCutouts = null, getPhotoCount }) {
     this.host = host;
     this.canvas = host.querySelector('#previewCanvas');
     this.samplesHost = host.querySelector('#previewSamples');
@@ -48,9 +49,22 @@ export class Preview {
     this.getOptions = getOptions;
     this.getVehicle = getVehicle;
     this.getUserCutout = getUserCutout;
+    this.getUserCutouts = getUserCutouts;
     this.getPhotoCount = getPhotoCount;
     this.samples = [];
     this.current = null;      // the chosen sample's key, or 'yours'
+    this.mode = 'still';      // or 'video': one frame of the clip a run would render
+    this.scrub = 0.35;        // where in the clip that frame is
+    this.clip = null;         // the prepared clip, keyed by what shaped it
+    this.clipKey = null;
+    this.modesHost = host.querySelector('#previewModes');
+    this.scrubInput = host.querySelector('#previewScrub');
+    for (const b of this.modesHost?.querySelectorAll('[data-mode]') || []) {
+      b.onclick = () => this.setMode(b.dataset.mode);
+    }
+    if (this.scrubInput) {
+      this.scrubInput.oninput = () => { this.scrub = Number(this.scrubInput.value) / 1000; this.update(); };
+    }
     this.timer = null;
     this.lastMs = null;       // how long the last preview compose took
     this.busy = false;
@@ -87,6 +101,21 @@ export class Preview {
     }
   }
 
+  setMode(mode) {
+    this.mode = mode;
+    for (const b of this.modesHost.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+    this.scrubInput.hidden = mode !== 'video';
+    this.update();
+  }
+
+  /* The video mode is offered only while a clip is going to be made. */
+  syncModes() {
+    const o = this.getOptions();
+    const wantVideo = !!(o?.videoFormats?.length);
+    if (this.modesHost) this.modesHost.hidden = !wantVideo;
+    if (!wantVideo && this.mode === 'video') this.setMode('still');
+  }
+
   /* The cutout and colours the preview draws: the user's own vehicle
    * takes the form's colours, a sample takes its real ones. */
   subject() {
@@ -116,6 +145,7 @@ export class Preview {
     this.busy = true;
     this.canvas.classList.add('is-busy');
     try {
+      if (this.mode === 'video') { this.drawVideoFrame(subject, o); return; }
       // The first selected still format decides the preview's shape.
       const fmt = OPTS.HERO_FORMATS[o.heroFormats?.[0]] || OPTS.HERO_FORMATS.square || { size: [1254, 1254] };
       const [fw, fh] = fmt.size;
@@ -163,10 +193,46 @@ export class Preview {
     }
   }
 
+  /* One frame of the clip a run would render, at the chosen video
+   * format's shape: the conveyor when three shots are on hand (the
+   * three samples, or the user's cutouts), the push otherwise. The
+   * clip is prepared once per shape and redrawn per scrub. */
+  drawVideoFrame(subject, o) {
+    const fmt = OPTS.VIDEO_FORMATS[o.videoFormats?.[0]] || { size: [720, 720] };
+    const [fw, fh] = fmt.size;
+    const scale = 600 / Math.max(fw, fh);
+    const width = Math.max(2, Math.round(fw * scale / 2) * 2);
+    const height = Math.max(2, Math.round(fh * scale / 2) * 2);
+    let cutouts; let seed;
+    if (this.current === 'yours') {
+      cutouts = (this.getUserCutouts?.() || [subject.cutout]).slice(0, 5);
+      seed = 'yours';
+    } else {
+      cutouts = this.samples.map((s) => s.cutout);
+      seed = subject.seed;
+    }
+    const key = JSON.stringify([width, height, seed, o.backdrop === 'generic', o.spotlight, subject.exterior, subject.interior, cutouts.length]);
+    if (key !== this.clipKey) {
+      this.clip = prepareClip(cutouts, {
+        width, height, seed: `${seed}:video`, exterior: subject.exterior, interior: subject.interior,
+        generic: o.backdrop === 'generic', spotlight: o.spotlight,
+      });
+      this.clipKey = key;
+    }
+    const t0 = performance.now();
+    this.canvas.width = width; this.canvas.height = height;
+    drawClipFrame(this.canvas.getContext('2d'), this.clip, this.scrub * this.clip.duration, {
+      spotlight: o.spotlight, glow: o.glow, glowColor: o.glowColor, glowRadius: o.glowRadius, glowIntensity: o.glowIntensity,
+    });
+    this.lastMs = performance.now() - t0;
+    this.lastPixels = width * height;
+  }
+
   /* What the run will produce, and roughly what it costs. Times scale
    * from the preview's own measured compose, so they track this device
    * rather than a laptop the numbers were once measured on. */
   renderEstimates() {
+    this.syncModes();
     const host = this.estimatesHost;
     host.innerHTML = '';
     const o = this.getOptions();

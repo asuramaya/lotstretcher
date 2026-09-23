@@ -1182,6 +1182,7 @@ async function init() {
     getOptions: () => state.options,
     getVehicle: () => state.vehicle,
     getUserCutout: () => state.photos.find((p) => p.cutout)?.cutout || null,
+    getUserCutouts: () => state.photos.filter((p) => p.cutout).map((p) => p.cutout),
     getPhotoCount: () => state.photos.length,
   });
   preview.load();

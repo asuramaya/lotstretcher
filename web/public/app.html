@@ -228,6 +228,11 @@
         <div class="look">
           <aside class="look-preview" id="lookPreview" aria-label="Live preview">
             <canvas class="preview-canvas" id="previewCanvas" width="600" height="600"></canvas>
+            <div class="preview-modes" id="previewModes" hidden>
+              <button type="button" class="chip" data-mode="still" aria-pressed="true"><strong>Still</strong></button>
+              <button type="button" class="chip" data-mode="video" aria-pressed="false"><strong>Video frame</strong></button>
+              <input type="range" id="previewScrub" min="0" max="1000" value="350" aria-label="Position in the clip" hidden>
+            </div>
             <div class="preview-samples" id="previewSamples"></div>
             <div class="estimates" id="estimates"></div>
           </aside>

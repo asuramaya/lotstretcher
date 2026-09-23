@@ -438,6 +438,9 @@
   display: block;
 }
 .preview-canvas.is-busy { opacity: .7; }
+.preview-modes { display: flex; align-items: center; gap: var(--s-2); }
+.preview-modes .chip { min-height: 32px; padding: var(--s-1) var(--s-3); }
+.preview-modes input[type="range"] { flex: 1; min-width: 80px; accent-color: var(--accent); }
 .preview-samples { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .preview-samples .chip { min-height: 34px; padding: var(--s-1) var(--s-3); }
 .estimates { display: flex; flex-direction: column; gap: var(--s-2); font-size: var(--t-sm); }

@@ -192,6 +192,86 @@ function drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight,
   ctx.putImageData(frame, 0, 0);
 }
 
+/* Everything a clip needs before its first frame: each shot's pixels
+ * and spotlight dim, one palette per shot, and, for three or more
+ * shots, the conveyor plan from the core. Split out so the Look pane's
+ * preview can draw one frame of the very clip a run would render. */
+export function prepareClip(cutouts, {
+  width = 1254, height = 1254, seed = 'lotstretcher', angles = null,
+  exterior = null, interior = null, generic = false, spotlight = true, duration = null,
+} = {}) {
+  const explicitDuration = duration !== null;
+  if (duration === null) duration = DEFAULT_DURATION_S;
+  // One palette per shot (the CLI seeds per image too), and each shot's
+  // pixels and spotlight dim measured once. The gradient itself is
+  // rebuilt by the core per frame because it rotates.
+  const shots = cutouts.map((cut, i) => {
+    const data = ctxOf(cut, { willReadFrequently: true }).getImageData(0, 0, cut.width, cut.height);
+    return { width: cut.width, height: cut.height, data, dim: 1.0 };
+  });
+  const palette = cutouts.map((cut, i) => {
+    const s = `${seed}:v${i}`;
+    let start; let end;
+    // Generic means no colour names: the palette is measured off the
+    // cutout's own paint, which is what the core does with no names.
+    [start, end] = core.vehicleGradientColors(generic ? null : exterior, generic ? null : interior, shots[i].data);
+    // The angle is the seed's, as the still's would be.
+    const angle = (hashAngle(s));
+    return { start, end, angle };
+  });
+  if (spotlight) {
+    for (const shot of shots) {
+      const availW = width * (1 - 2 * HERO_MARGIN_FRAC);
+      const availH = height * (1 - 2 * HERO_MARGIN_FRAC);
+      const scale = Math.min(availW / shot.width, availH / shot.height);
+      const w = Math.max(1, Math.round(shot.width * scale));
+      const h = Math.max(1, Math.round(shot.height * scale));
+      const scaled = core.call({ op: 'resize', image: { $image: 0 }, width: w, height: h }, [shot.data]);
+      const bg = core.call({ op: 'linear_gradient', width: w, height: h, angle: palette[0].angle, start: palette[0].start, end: palette[0].end });
+      shot.dim = core.call({ op: 'dim_strength', background: { $image: 0 }, car: { $image: 1 } },
+        [{ width: w, height: h, channels: 3, data: bg.data }, { width: w, height: h, channels: 4, data: scaled.data }]);
+    }
+  }
+
+  // Three or more shots: the conveyor, planned by the core exactly as
+  // the CLI's is. The clock is the spec's default tempo, since the
+  // browser has no music to sync to.
+  let plan = null;
+  if (shots.length >= 3) {
+    const v = specGet('video');
+    const loopS = v.barsPerLoop * v.beatsPerBar * 60 / v.defaultBpm;
+    const bg = core.call({ op: 'linear_gradient', width, height, angle: palette[0].angle, start: palette[0].start, end: palette[0].end });
+    plan = core.call({
+      op: 'carousel_plan', width, height, backdrop: { $image: 0 },
+      shots: shots.map((sh, i) => ({ image: { $image: i + 1 }, pannable: (angles?.[i] || null) === v.panAngleLabel, hood_side: null })),
+      audio_loop_s: loopS,
+    }, [{ width, height, channels: 3, data: bg.data }, ...shots.map((sh) => sh.data)]);
+    if (!explicitDuration) duration = plan.period;
+  }
+
+  return { shots, palette, plan, duration, width, height };
+}
+
+/* One frame at time `t` of a prepared clip. `scaled` is a ScaledCache
+ * when the caller draws many frames; a one-off frame passes none and
+ * pays for its resampling once. */
+export function drawClipFrame(ctx, prepared, t, { spotlight = true, glow = false, glowColor = null, glowRadius = null, glowIntensity = null, scaled = null } = {}) {
+  const { shots, palette, plan, duration, width, height } = prepared;
+  const halo = { glow, glowColor, glowRadius, glowIntensity };
+  const own = !scaled;
+  const cache = scaled || new ScaledCache();
+  const held = own ? shots.map((sh) => { const had = sh.id; if (had === undefined) sh.id = core.retain(sh.data); return had === undefined; }) : null;
+  try {
+    if (plan) drawConveyorFrame(ctx, { width, height, shots, t, duration, palette, spotlight, plan, scaled: cache, glow: halo });
+    else drawFrame(ctx, { width, height, shots, t, duration, palette, spotlight, glow: halo });
+  } finally {
+    if (own) {
+      cache.clear();
+      shots.forEach((sh, i) => { if (held[i]) { core.release(sh.id); delete sh.id; } });
+    }
+  }
+}
+
 /* Render and encode a hero video.
  *
  * `cutouts` are cropped RGBA canvases, best shot first. Returns a Blob.
@@ -266,52 +346,9 @@ export async function renderHeroVideo(cutouts, {
       : new Promise((resolve) => { drained = resolve; })
   );
 
-  // One palette per shot (the CLI seeds per image too), and each shot's
-  // pixels and spotlight dim measured once. The gradient itself is
-  // rebuilt by the core per frame because it rotates.
-  const shots = cutouts.map((cut, i) => {
-    const data = ctxOf(cut, { willReadFrequently: true }).getImageData(0, 0, cut.width, cut.height);
-    return { width: cut.width, height: cut.height, data, dim: 1.0 };
-  });
-  const palette = cutouts.map((cut, i) => {
-    const s = `${seed}:v${i}`;
-    let start; let end;
-    // Generic means no colour names: the palette is measured off the
-    // cutout's own paint, which is what the core does with no names.
-    [start, end] = core.vehicleGradientColors(generic ? null : exterior, generic ? null : interior, shots[i].data);
-    // The angle is the seed's, as the still's would be.
-    const angle = (hashAngle(s));
-    return { start, end, angle };
-  });
-  if (spotlight) {
-    for (const shot of shots) {
-      const availW = width * (1 - 2 * HERO_MARGIN_FRAC);
-      const availH = height * (1 - 2 * HERO_MARGIN_FRAC);
-      const scale = Math.min(availW / shot.width, availH / shot.height);
-      const w = Math.max(1, Math.round(shot.width * scale));
-      const h = Math.max(1, Math.round(shot.height * scale));
-      const scaled = core.call({ op: 'resize', image: { $image: 0 }, width: w, height: h }, [shot.data]);
-      const bg = core.call({ op: 'linear_gradient', width: w, height: h, angle: palette[0].angle, start: palette[0].start, end: palette[0].end });
-      shot.dim = core.call({ op: 'dim_strength', background: { $image: 0 }, car: { $image: 1 } },
-        [{ width: w, height: h, channels: 3, data: bg.data }, { width: w, height: h, channels: 4, data: scaled.data }]);
-    }
-  }
-
-  // Three or more shots: the conveyor, planned by the core exactly as
-  // the CLI's is. The clock is the spec's default tempo, since the
-  // browser has no music to sync to.
-  let plan = null;
-  if (shots.length >= 3) {
-    const v = specGet('video');
-    const loopS = v.barsPerLoop * v.beatsPerBar * 60 / v.defaultBpm;
-    const bg = core.call({ op: 'linear_gradient', width, height, angle: palette[0].angle, start: palette[0].start, end: palette[0].end });
-    plan = core.call({
-      op: 'carousel_plan', width, height, backdrop: { $image: 0 },
-      shots: shots.map((sh, i) => ({ image: { $image: i + 1 }, pannable: (angles?.[i] || null) === v.panAngleLabel, hood_side: null })),
-      audio_loop_s: loopS,
-    }, [{ width, height, channels: 3, data: bg.data }, ...shots.map((sh) => sh.data)]);
-    if (!explicitDuration) duration = plan.period;
-  }
+  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, spotlight, duration: explicitDuration ? duration : null });
+  const { shots, palette, plan } = prepared;
+  duration = prepared.duration;
 
   const canvas = makeCanvas(width, height);
   const ctx = ctxOf(canvas);
@@ -327,9 +364,7 @@ export async function renderHeroVideo(cutouts, {
   for (let f = 0; f < total; f++) {
     if (signal?.aborted) { encoder.close(); throw new Error('cancelled'); }
 
-    const halo = { glow, glowColor, glowRadius, glowIntensity };
-    if (plan) drawConveyorFrame(ctx, { width, height, shots, t: f / fps, duration, palette, spotlight, plan, scaled, glow: halo });
-    else drawFrame(ctx, { width, height, shots, t: f / fps, duration, palette, spotlight, glow: halo });
+    drawClipFrame(ctx, prepared, f / fps, { spotlight, glow, glowColor, glowRadius, glowIntensity, scaled });
 
     const frame = new VideoFrame(canvas, {
       timestamp: Math.round(f * usPerFrame),
