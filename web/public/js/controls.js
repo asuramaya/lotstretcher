@@ -378,6 +378,7 @@ export function renderControls(host, values, onChange, { thumbFor = null } = {})
     section.appendChild(summary);
     const body = el('div', 'ctrl-group-body');
     section.appendChild(body);
+    const elsewhere = [];
 
     for (const control of visible) {
       const { ok, why, onServer } = availability(control);
@@ -393,7 +394,11 @@ export function renderControls(host, values, onChange, { thumbFor = null } = {})
         body.appendChild(block);
         continue;
       }
-      const row = el('div', `opt${ok ? '' : ' is-locked'}`);
+      // A control this host cannot honour is not a dead widget in the
+      // list; the group ends with one line naming what else the command
+      // line offers, so a phone is not scrolling past greyed switches.
+      if (!ok) { elsewhere.push({ label: control.label, why }); continue; }
+      const row = el('div', `opt${control.type === 'text' ? ' opt-stack' : ''}`);
 
       const text = el('div', 'opt-text');
       const hint = ok
@@ -414,6 +419,19 @@ export function renderControls(host, values, onChange, { thumbFor = null } = {})
       else widget = el('span', 'dim xs', control.type);
 
       row.appendChild(widget);
+      body.appendChild(row);
+    }
+    if (elsewhere.length) {
+      const row = el('div', 'opt opt-more');
+      const text = el('div', 'opt-text');
+      const whys = new Set(elsewhere.map((e) => e.why));
+      const names = whys.size === 1
+        ? elsewhere.map((e) => e.label).join(' \u00b7 ')
+        : elsewhere.map((e) => `${e.label} (${e.why.replace(/\.$/, '')})`).join(' \u00b7 ');
+      const heading = whys.size === 1 && /command line/i.test(elsewhere[0].why) ? 'Also on the command line'
+        : whys.size === 1 ? 'Not on this host' : 'Elsewhere';
+      text.append(el('strong', null, heading), el('span', null, whys.size === 1 && /command line/i.test(elsewhere[0].why) ? names : `${names}`));
+      row.appendChild(text);
       body.appendChild(row);
     }
     host.appendChild(section);

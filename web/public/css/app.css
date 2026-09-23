@@ -482,6 +482,14 @@
 
 .opt.is-locked .opt-text strong { color: var(--ink-3); }
 .opt.is-locked { opacity: .72; }
+/* The group's closing line for what this host cannot do. */
+.opt.opt-more { min-height: 0; padding-top: var(--s-3); }
+.opt.opt-more .opt-text strong { font-size: var(--t-sm); color: var(--ink-3); }
+.opt.opt-more .opt-text span { line-height: 1.5; }
+/* A line of text stacks under its label: side by side, the box either
+   squeezes the hint to a word a line or is too short to type in. */
+.opt.opt-stack { flex-direction: column; align-items: stretch; gap: var(--s-2); }
+.opt.opt-stack input.field { width: 100%; max-width: none; }
 
 /* Swatches: the studio's own pickers. A tile is a picture of the choice
    (a gradient from the vehicle's paint, a stock photo, a frame, a
