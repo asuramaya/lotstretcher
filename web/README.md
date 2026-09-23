@@ -103,7 +103,7 @@ spotlight, layouts, glow, compositing, both videos' choreography and
 frames, the text layer, the interior treatment, the sticker parser and the post copy.
 `js/core.js` loads it and hands it JSON requests plus one byte arena;
 `pipeline/compose.js`, `video.js`, `sticker.js` and `copy.js` are thin
-hosts over it. The built `public/core/` is committed (737 KB, 272 KB
+hosts over it. The built `public/core/` is committed (925 KB, 336 KB
 gzipped) so a clone deploys with no Rust toolchain. To rebuild after a
 change in `core/`:
 
