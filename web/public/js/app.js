@@ -1141,6 +1141,52 @@ async function importSticker(source, label) {
   }
 }
 
+/* A listing address or a VIN, from the sheet or a paste. Decoded here
+ * on every host; a server that can scrape reads the page, and if it
+ * cannot, what the address says still fills the form. Resolves true
+ * when something was applied. */
+async function importListingText(text, note = () => {}) {
+  const isUrl = /^https?:\/\//i.test(text);
+  const local = recordFromText(text);
+  if (!isUrl || !can('scrape')) {
+    if (!local.vin && !local.year && !local.make) { note(local.warnings.join(' ') || 'That is neither an address nor a VIN.'); return false; }
+    applyVehicle(local);
+    return true;
+  }
+  note('Your server is reading the page. A Cloudflare challenge can take a few seconds.');
+  try {
+    applyVehicle(await scrapeOnServer(text));
+  } catch (e) {
+    note(`${String(e.message || e)}. Filled what the address says instead.`);
+    local.warnings.push(`Your server could not read the page (${String(e.message || e)}); only the address was read.`);
+    applyVehicle(local);
+  }
+  return true;
+}
+
+/* Pasted or dropped text on the Photos step, routed by what it is:
+ * image links become photos, an address or a VIN is a listing. */
+const IMAGE_LINK = /\.(jpe?g|png|webp|gif|avif|heic)(\?|$)|\/resize\/\d+x\d+\//i;
+function readPastedText(text) {
+  const tokens = String(text || '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+  if (!tokens.length) return false;
+  const links = tokens.filter((t) => /^https?:\/\//i.test(t) && IMAGE_LINK.test(t));
+  if (links.length) { addUrls(links.join('\n')); return true; }
+  const one = tokens.length === 1 ? tokens[0] : null;
+  if (one && (/^https?:\/\//i.test(one) || one.replace(/[^A-Za-z0-9]/g, '').length === 17)) {
+    importListingText(one, (m) => showSourceNote(m));
+    return true;
+  }
+  return false;
+}
+
+function showSourceNote(text) {
+  const box = $('warnBox');
+  box.innerHTML = '';
+  box.appendChild(el('div', 'banner', text));
+  $('photosSection').hidden = false;
+}
+
 /* ---------- listing import --------------------------------------------
  * Fill the app from a scrape.Vehicle-shaped record, whichever route it
  * came in by: the address or VIN decoded here, a saved page read here,
@@ -1300,31 +1346,13 @@ async function init() {
   $('listingUrlGo').onclick = async () => {
     const text = $('listingUrlInput').value.trim();
     if (!text) return;
-    const note = $('listingUrlNote');
     const btn = $('listingUrlGo');
-    const isUrl = /^https?:\/\//i.test(text);
-    // Decoded here, on every host: the address's slug and the VIN.
-    const local = recordFromText(text);
-    if (!isUrl || !can('scrape')) {
-      if (!local.vin && !local.year && !local.make) { note.textContent = local.warnings.join(' ') || 'That is neither an address nor a VIN.'; return; }
-      closeSheet('listingSheet');
-      applyVehicle(local);
-      $('listingUrlInput').value = '';
-      return;
-    }
     btn.disabled = true;
-    note.textContent = 'Your server is reading the page. A Cloudflare challenge can take a few seconds.';
     try {
-      const v = await scrapeOnServer(text);
-      closeSheet('listingSheet');
-      applyVehicle(v);
-      $('listingUrlInput').value = '';
-    } catch (e) {
-      // The server could not read the page: what the address itself says still fills the form.
-      note.textContent = `${String(e.message || e)}. Filled what the address says instead.`;
-      local.warnings.push(`Your server could not read the page (${String(e.message || e)}); only the address was read.`);
-      closeSheet('listingSheet');
-      applyVehicle(local);
+      if (await importListingText(text, (m) => { $('listingUrlNote').textContent = m; })) {
+        closeSheet('listingSheet');
+        $('listingUrlInput').value = '';
+      }
     } finally {
       btn.disabled = false;
     }
@@ -1399,7 +1427,23 @@ async function init() {
   for (const ev of ['dragleave', 'drop']) {
     dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('is-over'); });
   }
-  dz.addEventListener('drop', (e) => { if (e.dataTransfer?.files) addFiles(e.dataTransfer.files); });
+  dz.addEventListener('drop', (e) => {
+    if (e.dataTransfer?.files?.length) { addFiles(e.dataTransfer.files); return; }
+    // A link dragged from another tab: an image, or the listing itself.
+    const text = e.dataTransfer?.getData('text/uri-list') || e.dataTransfer?.getData('text/plain');
+    if (text) readPastedText(text);
+  });
+  // Paste on the Photos step, outside a field: photos from the
+  // clipboard, or text routed by what it is.
+  window.addEventListener('paste', (e) => {
+    if (state.pane !== 'source') return;
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    const files = [...(e.clipboardData?.files || [])];
+    if (files.length) { e.preventDefault(); addFiles(files); return; }
+    const text = e.clipboardData?.getData('text/plain');
+    if (text && readPastedText(text)) e.preventDefault();
+  });
   // Dropping anywhere but the zone should not navigate the tab to the file.
   window.addEventListener('dragover', (e) => e.preventDefault());
   window.addEventListener('drop', (e) => e.preventDefault());

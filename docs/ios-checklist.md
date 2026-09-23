@@ -31,7 +31,7 @@ Safari. For each step, note pass, fail, or the message shown.
 
 ## 2. Add photos
 
-- **Choose photos**: the photo picker opens and the chosen images appear
+- **Add photos**: the photo picker opens and the chosen images appear
   as tiles. HEIC photos are the case to watch: report whether they show
   a thumbnail or a blank tile.
 - **Take photo**: the camera opens (the button only shows on a phone).
@@ -61,7 +61,9 @@ Safari. For each step, note pass, fail, or the message shown.
 ## 5. Details and listing
 
 - Import a window sticker PDF from Files. Report whether fields fill.
-- Open **From a listing**, paste a dealer vehicle page address (or type
+- On the Photos step, paste a dealer vehicle page address from the
+  clipboard with nothing focused. Report whether the Vehicle step opens
+  filled in. Then tap **A listing or VIN**, paste the address (or type
   a VIN) and tap **Read it**. Report whether the year, make and model
   fill in on the Vehicle step, with no network activity.
 

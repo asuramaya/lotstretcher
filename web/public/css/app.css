@@ -149,6 +149,8 @@
 
 .source-actions { display: grid; gap: var(--s-3); grid-template-columns: 1fr; width: 100%; max-width: 330px; }
 @media (min-width: 560px) { .source-actions { grid-template-columns: 1fr 1fr; max-width: 460px; } }
+.source-actions:has(> .hidden:only-of-type), .source-actions:has(> :nth-child(2).hidden) { grid-template-columns: 1fr; max-width: 330px; }
+.source-more { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-2); }
 
 /* ---------- photo grid -------------------------------------------- */
 .grid {

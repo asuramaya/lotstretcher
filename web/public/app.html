@@ -105,13 +105,15 @@
             </p>
           </div>
           <div class="source-actions">
-            <button class="btn btn-primary" id="pickBtn">Choose photos</button>
-            <button class="btn" id="folderBtn">Choose folder</button>
+            <button class="btn btn-primary" id="pickBtn">Add photos</button>
             <button class="btn hidden" id="cameraBtn">Take photo</button>
-            <button class="btn" id="urlBtn">Paste image URLs</button>
-            <button class="btn" id="listingBtn">From a listing</button>
           </div>
-          <p class="xs dim">or drop files here</p>
+          <div class="source-more">
+            <button class="btn btn-ghost btn-sm" id="folderBtn">A folder</button>
+            <button class="btn btn-ghost btn-sm" id="urlBtn">Image links</button>
+            <button class="btn btn-ghost btn-sm" id="listingBtn">A listing or VIN</button>
+          </div>
+          <p class="xs dim">Or drop files here, or paste: photos, image links, a listing address or a VIN all land in the right place.</p>
         </div>
 
         <input type="file" id="fileInput" multiple accept="image/*" class="sr-only">

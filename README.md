@@ -79,7 +79,7 @@ server when, and only when, you switch on a control that needs one:
 | `GET /capabilities` | what this host can do, so the app unlocks accordingly |
 | `GET /assets` | the background and border library, filling those selects |
 | `POST /compose` | composes one cutout with the server's assets and GPU |
-| `POST /scrape` | reads one vehicle page with the server's headless browser and returns the record `lotstretcher <url>` would build; the *From a listing* sheet offers a URL field against a host that reports `scrape` |
+| `POST /scrape` | reads one vehicle page with the server's headless browser and returns the record `lotstretcher <url>` would build; the *A listing or VIN* sheet reads the page through it on a host that reports `scrape` |
 | `GET /library`, `GET /library/{bucket}/{folder}/{file}` | the listings library (`--library`, default `~/Documents/listings`, the CLI's default `--out`), for the app's Library pane |
 | `GET /library/status` | the last run, recent run history, fetched and delisted counts, running jobs |
 | `POST /library/{bucket}/{folder}/recompose` | rebuild one vehicle's bundle in place with the app's current options; the same path as the `recompose` CLI (`library_ops.py`), returned as a job to poll at `GET /jobs/{id}` |
@@ -119,7 +119,7 @@ pass either: measured, not assumed. But that only blocks *discovering* photo URL
 Dealer image CDNs serve cross-origin fine, so anything you hand the browser it can process. Scraping
 lives on the self-hosted surface because that's the surface that can actually do it.
 
-The website's *From a listing* is one field that takes the vehicle page address or a VIN, and
+The website's *A listing or VIN* sheet is one field that takes the vehicle page address or a VIN, and
 fetches nothing: a dealer page sits behind a bot challenge that only a real browser passes (a plain
 fetch of one gets a 403, which is why the self-hosted server drives a headless browser). What the
 address and the VIN say on their own is decoded on the device from tables in the spec
