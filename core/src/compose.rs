@@ -170,7 +170,7 @@ pub fn fit_transform(bw: usize, bh: usize, w: usize, h: usize, fit: &str) -> Res
         "fit" => { let s = (w / bw).min(h / bh); (s, s, ((w - bw * s) / 2.0).round(), ((h - bh * s) / 2.0).round()) }
         "fill" => { let s = (w / bw).max(h / bh); (s, s, ((w - bw * s) / 2.0).round(), ((h - bh * s) / 2.0).round()) }
         "stretch" => (w / bw, h / bh, 0.0, 0.0),
-        other => return Err(format!("unknown border fit {other:?}; fit, fill or stretch")),
+        other => return Err(format!("unknown border fit {other:?}; fit, fill, stretch or slice")),
     })
 }
 
@@ -179,6 +179,7 @@ pub fn fit_transform(bw: usize, bh: usize, w: usize, h: usize, fit: &str) -> Res
 pub fn fit_border(b: &Image, w: usize, h: usize, fit: &str) -> Result<Image, String> {
     if b.channels != 4 { return Err("border must be RGBA".into()); }
     if b.width == w && b.height == h { return Ok(b.clone()); }
+    if fit == "slice" { return slice_border(b, w, h); }
     let (sx, sy, ox, oy) = fit_transform(b.width, b.height, w, h, fit)?;
     let rw = ((b.width as f64 * sx).round() as usize).max(1);
     let rh = ((b.height as f64 * sy).round() as usize).max(1);
@@ -199,12 +200,73 @@ pub fn fit_border(b: &Image, w: usize, h: usize, fit: &str) -> Result<Image, Str
     Ok(out)
 }
 
+/// The nine-slice guides for `slice`: the border's window edges split
+/// it into corners, edges and a middle; corners keep their size (scaled
+/// by the smaller of the two ratios, so a frame drawn for a square is
+/// no thicker on a wide canvas), edges stretch along their length, the
+/// middle stretches both ways. The window's own bands are what stretch,
+/// so a frame made for one shape fits every other shape without its
+/// corners deforming, which "stretch" would do.
+fn slice_guides(b: &Image, w: usize, h: usize) -> Result<([f64; 4], [f64; 4], [f64; 4], [f64; 4]), String> {
+    let (l, t, r, bt) = detect_window(b)?;
+    let (bw, bh) = (b.width as f64, b.height as f64);
+    let k = (w as f64 / bw).min(h as f64 / bh);
+    // The window's right and bottom are inclusive; the guides want the
+    // first pixel past it.
+    let (l, t, r, bt) = (l as f64, t as f64, (r + 1) as f64, (bt + 1) as f64);
+    let right = bw - r;
+    let bottom = bh - bt;
+    let sx = [0.0, l, r, bw];
+    let sy = [0.0, t, bt, bh];
+    let dx = [0.0, l * k, w as f64 - right * k, w as f64];
+    let dy = [0.0, t * k, h as f64 - bottom * k, h as f64];
+    Ok((sx, sy, dx, dy))
+}
+
+fn slice_map(v: f64, src: &[f64; 4], dst: &[f64; 4]) -> f64 {
+    let i = if v < dst[1] { 0 } else if v < dst[2] { 1 } else { 2 };
+    let span = dst[i + 1] - dst[i];
+    let t = if span <= 0.0 { 0.0 } else { (v - dst[i]) / span };
+    src[i] + (src[i + 1] - src[i]) * t
+}
+
+fn slice_border(b: &Image, w: usize, h: usize) -> Result<Image, String> {
+    let (sx, sy, dx, dy) = slice_guides(b, w, h)?;
+    let mut out = Image::new(w, h, 4);
+    let (bw, bh) = (b.width as i64, b.height as i64);
+    let sample = |x: f64, y: f64, out_px: &mut [u8]| {
+        // Bilinear, at the source point the guides map this pixel to.
+        let x = x.max(0.0).min(bw as f64 - 1.0);
+        let y = y.max(0.0).min(bh as f64 - 1.0);
+        let (x0, y0) = (x.floor() as i64, y.floor() as i64);
+        let (x1, y1) = ((x0 + 1).min(bw - 1), (y0 + 1).min(bh - 1));
+        let (fx, fy) = (x - x0 as f64, y - y0 as f64);
+        for c in 0..4 {
+            let p = |xx: i64, yy: i64| b.data[((yy * bw + xx) * 4) as usize + c] as f64;
+            let v = p(x0, y0) * (1.0 - fx) * (1.0 - fy) + p(x1, y0) * fx * (1.0 - fy) + p(x0, y1) * (1.0 - fx) * fy + p(x1, y1) * fx * fy;
+            out_px[c] = v.round().clamp(0.0, 255.0) as u8;
+        }
+    };
+    crate::par::rows_mut(&mut out.data, w * 4, |y, row| {
+        let syv = slice_map(y as f64 + 0.5, &sy, &dy) - 0.5;
+        for x in 0..w {
+            let sxv = slice_map(x as f64 + 0.5, &sx, &dx) - 0.5;
+            sample(sxv, syv, &mut row[x * 4..x * 4 + 4]);
+        }
+    });
+    Ok(out)
+}
+
 /// The border's car window in canvas coordinates after `fit`. The
 /// window is read on the border's own pixels and moved: a fitted border
 /// has transparent bands the detector would otherwise take for window.
 pub fn fit_window(b: &Image, w: usize, h: usize, fit: &str) -> Result<(i64, i64, i64, i64), String> {
     let (l, t, r, bt) = detect_window(b)?;
     if b.width == w && b.height == h { return Ok((l, t, r, bt)); }
+    if fit == "slice" {
+        let (_, _, dx, dy) = slice_guides(b, w, h)?;
+        return Ok((dx[1].round() as i64, dy[1].round() as i64, dx[2].round() as i64, dy[2].round() as i64));
+    }
     let (sx, sy, ox, oy) = fit_transform(b.width, b.height, w, h, fit)?;
     let map = |v: i64, s: f64, o: f64| (v as f64 * s + o).round() as i64;
     Ok((map(l, sx, ox).max(0), map(t, sy, oy).max(0), map(r, sx, ox).min(w as i64), map(bt, sy, oy).min(h as i64)))

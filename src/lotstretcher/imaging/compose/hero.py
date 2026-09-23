@@ -42,7 +42,7 @@ def compose_hero(background_path, border_path: Path | None, car_paths: list[Path
                   glow_radius: int = 24, glow_intensity: float = 0.75,
                   margin_frac: float = 0.06,
                   canvas_size: tuple[int, int] = DEFAULT_CANVAS_SIZE,
-                  border_fit: str = "fit", overlays: list | None = None,
+                  border_fit: str = "slice", overlays: list | None = None,
                   text: dict | None = None, border_style: dict | None = None,
                   shadow: dict | None = None, reflection: dict | None = None) -> Image.Image:
     """

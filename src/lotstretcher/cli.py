@@ -328,9 +328,10 @@ def main():
     add_reflection_args(parser)
     add_backdrop_arg(parser)
     add_look_arg(parser)
-    parser.add_argument("--frame-fit", default="fit", choices=["fit", "fill", "stretch"],
+    parser.add_argument("--frame-fit", default="slice", choices=["fit", "fill", "stretch", "slice"],
                          help="How a frame meets a format of another shape (a square dealer frame on a "
-                              "portrait post). fit: the whole frame, centred, the backdrop fills the rest. "
+                              "portrait post). slice (default): corners kept, edges stretched (nine-slice), so a frame "
+                              "drawn for one shape fits every other. fit: the whole frame, centred, the backdrop fills the rest. "
                               "fill: the frame covers the canvas and its edges are cropped. "
                               "stretch: the frame is pulled to the canvas shape. The format always "
                               "decides the canvas; the frame never does.")

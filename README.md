@@ -417,7 +417,11 @@ group has the same lever, previewed live per format.
 Frame art is drawn for one shape. `--frame-style line` draws a rounded
 line inset from the edge at whatever size the canvas is, so it fits a
 square, a portrait and a horizontal exactly, on the stills and on the clip.
-`--frame-inset` and `--frame-radius` set how far in from the edge the
+`--frame-fit slice` is the way frame art crosses shapes: the frame's
+own window edges split it into corners, edges and a middle, the
+corners keep their size, the edges stretch along their length, so a
+frame drawn for a square fits a portrait or a horizontal without its
+corners deforming (in the app, Fit: Stretch edges). `--frame-inset` and `--frame-radius` set how far in from the edge the
 line sits and how round its corners are, as fractions of the shorter
 side; the app's Frame tool has a Drawn tab with those dials and an
 Image tab for frame art. `--frame-color` is white, black or `paint` (the vehicle's own colour,

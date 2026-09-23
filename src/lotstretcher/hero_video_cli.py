@@ -88,8 +88,8 @@ def main():
                          help="Use the backdrop video clip instead of the default rotating vehicle-color gradient.")
     parser.add_argument("--frame", action="store_true",
                          help="Composite the dealer frame back on (frameless is the default).")
-    parser.add_argument("--frame-fit", default="fit", choices=["fit", "fill", "stretch"],
-                         help="How the frame meets a format of another shape (default: fit).")
+    parser.add_argument("--frame-fit", default="slice", choices=["fit", "fill", "stretch", "slice"],
+                         help="How the frame meets a format of another shape: slice (default; corners kept, edges stretched), fit, fill or stretch.")
     parser.add_argument("--photo-background", action="store_true",
                          help="A still photo from the asset library behind the clip (the stills' backdrop), "
                               "instead of the rotating gradient. --flag-background wins when both are given.")

@@ -187,7 +187,7 @@ class HeroOptions:
     glow_intensity: float = 0.75
     # How a frame meets a format of another shape: fit, fill or stretch
     # (compose/hero.py). The format always decides the canvas.
-    border_fit: str = "fit"
+    border_fit: str = "slice"
     # The Text controls in the core's plan form (imaging/text.py); None
     # or an all-off dict means no text.
     text: dict | None = None

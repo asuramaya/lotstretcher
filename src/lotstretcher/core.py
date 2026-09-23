@@ -298,7 +298,7 @@ def draw_frame(width: int, height: int, style: dict, vehicle: dict | None = None
 
 def fit_border(border, width: int, height: int, fit: str = "fit"):
     """`border` (RGBA PIL) laid onto a width x height canvas by `fit`
-    (fit, fill or stretch): the frame a format of another shape gets.
+    (fit, fill, stretch or slice): the frame a format of another shape gets.
     Returns (fitted RGBA image, (left, top, right, bottom) car window)."""
     fitted = call({"op": "fit_border", "border": {"$image": 0}, "width": width, "height": height, "fit": fit}, [border])
     window = call({"op": "fit_window", "border": {"$image": 0}, "width": width, "height": height, "fit": fit}, [border])

@@ -996,8 +996,13 @@
             "label": "Fit",
             "hint": "",
             "type": "select",
-            "default": "fit",
+            "default": "slice",
             "choices": [
+              {
+                "value": "slice",
+                "label": "Stretch edges",
+                "hint": "Corners kept, edges stretched: a frame drawn for one shape fits every other"
+              },
               {
                 "value": "fit",
                 "label": "Fit",
@@ -1019,7 +1024,8 @@
               "notEquals": "none"
             },
             "cli": "--frame-fit",
-            "tab": "image"
+            "tab": "image",
+            "cliNote": "--frame-fit fit | fill | stretch | slice."
           },
           {
             "key": "margin",

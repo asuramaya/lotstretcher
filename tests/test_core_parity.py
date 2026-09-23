@@ -395,3 +395,28 @@ def test_retained_images_render_identically_and_release():
     with pytest.raises(RuntimeError, match="no retained image"):
         core.render_frame([(held, 40, 30, 300, 170, 1.0)], 400, 300, {"kind": "generic", "seed": "r"})
     assert core.release_all() == 0
+
+
+def test_slice_fit_keeps_the_corners_and_stretches_the_edges():
+    """--frame-fit slice: a frame drawn for a square, fitted to a wide
+    canvas, keeps its corner blocks the same thickness on every side,
+    its edges stretch to reach them, and the window is what is left."""
+    from PIL import Image as _I
+    import numpy as np
+    b = np.zeros((200, 200, 4), dtype=np.uint8)
+    b[..., :3] = 200
+    b[..., 3] = 255
+    b[20:180, 20:180, 3] = 0
+    border = _I.fromarray(b, "RGBA")
+    w, h = 600, 300
+    fitted, window = core.fit_border(border, w, h, "slice")
+    f = np.asarray(fitted)
+    k = min(w / 200, h / 200)          # 1.5: the corners scale by the smaller ratio
+    band = round(20 * k)               # 30 px on every side
+    assert window == (band, band, w - band, h - band), window
+    alpha = f[..., 3]
+    assert alpha[band - 2, w // 2] == 255 and alpha[band + 2, w // 2] == 0      # the top edge is `band` thick
+    assert alpha[h // 2, band - 2] == 255 and alpha[h // 2, band + 2] == 0      # so is the left edge, not 60 as stretch would give
+    assert alpha[h // 2, w // 2] == 0
+    s, _ = core.fit_border(border, w, h, "stretch")
+    assert np.asarray(s)[h // 2, 50, 3] == 255

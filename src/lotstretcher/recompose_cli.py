@@ -61,7 +61,7 @@ def main():
                               "opt-in now.")
     parser.add_argument("--frame", action="store_true",
                          help="Composite the dealer frame back on (frameless is the default).")
-    parser.add_argument("--frame-fit", default="fit", choices=["fit", "fill", "stretch"],
+    parser.add_argument("--frame-fit", default="slice", choices=["fit", "fill", "stretch", "slice"],
                          help="How the frame meets a format of another shape: fit (whole frame, centred), "
                               "fill (edges cropped) or stretch. The format decides the canvas.")
     add_text_args(parser)

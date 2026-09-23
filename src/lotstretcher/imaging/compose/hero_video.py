@@ -352,7 +352,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        bars_per_loop: int = BARS_PER_LOOP,
                        glow: bool = True, glow_color=DEFAULT_GLOW_COLOR,
                        glow_radius: int = 24, glow_intensity: float = 0.75,
-                       border_fit: str = "fit",
+                       border_fit: str = "slice",
                        text: dict | None = None, vehicle: dict | None = None,
                        background_image: Path | None = None,
                        border_style: dict | None = None,
