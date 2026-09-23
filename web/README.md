@@ -144,7 +144,10 @@ back to rendering on the page with the same code.
 A run keeps one worker for the lot: its stills and its clip both go
 through it (`js/pipeline/core-worker.js` is the page's handle). The
 live preview stays on the page's plain build, since it wants a frame
-back in the same tick.
+back in the same tick. On a whole clip the gain is smaller than the
+per-frame table suggests (6.8 s to 4.1 s for the conveyor above): the
+H.264 encode is the other half of a clip's time and it does not
+parallelise here.
 
 ## Cross-origin isolation
 
@@ -196,7 +199,8 @@ Measured on desktop Chromium, 4 threads (i9-12900H):
 | matte | 960 ms |
 | compose, 1254² (Rust core) | 135 ms, 227 ms with glow |
 | interior treatment, 900 px wide | 52 ms |
-| video, 720² three-shot conveyor, 9.6 s clip | 5.0 s, 6.8 s with glow |
+| video, 720² three-shot conveyor, 9.6 s clip, on the page | 5.0 s, 6.8 s with glow |
+| the same clip in the run's worker, threaded core, 8 threads | 4.1 s with glow |
 
 ## What the browser does not do
 
