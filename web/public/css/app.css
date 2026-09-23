@@ -171,6 +171,17 @@
   transition: border-color var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
 }
 .dropzone.is-over { border-color: var(--accent); background: var(--accent-wash); }
+/* Once photos are in, the zone is one row: the ways to add more, and
+   still the place to drop or paste. */
+.dropzone.has-photos {
+  flex-direction: row; flex-wrap: wrap; justify-content: flex-start; align-items: center;
+  gap: var(--s-2) var(--s-3); min-height: 0; padding: var(--s-3) var(--s-4); margin-bottom: var(--s-5);
+  text-align: left;
+}
+.dropzone.has-photos > svg, .dropzone.has-photos > div:not(.source-actions):not(.source-more), .dropzone.has-photos > p { display: none; }
+.dropzone.has-photos .source-actions { display: flex; width: auto; max-width: none; gap: var(--s-2); }
+.dropzone.has-photos .source-actions .btn { min-height: 36px; padding: 0 var(--s-4); font-size: var(--t-sm); }
+.dropzone.has-photos .source-more { justify-content: flex-start; }
 .dropzone svg { width: 40px; height: 40px; color: var(--ink-3); stroke-width: 1.4; }
 
 .source-actions { display: grid; gap: var(--s-3); grid-template-columns: 1fr; width: 100%; max-width: 330px; }
@@ -192,7 +203,10 @@
   scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
 }
 .grid.is-strip .tile { flex: 0 0 96px; width: 96px; scroll-snap-align: start; }
-.grid.is-strip .tile-tag { font-size: 9px; padding: 1px 6px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* On a strip thumbnail the tag sits along the bottom, clear of the
+   remove button in the top corner. */
+.grid.is-strip .tile-tag { top: auto; bottom: var(--s-2); font-size: 9px; padding: 1px 6px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grid.is-strip .scene-menu { top: 100%; margin-top: 2px; }
 .grid.is-strip .tile-x { width: 22px; height: 22px; font-size: 12px; }
 
 .tile {

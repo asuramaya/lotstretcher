@@ -255,7 +255,7 @@ export class LibraryView {
     if (this.view === 'history' && this.source) { this.renderHistory(); return; }
 
     const head = el('div', 'section-head');
-    head.append(el('h2', null, 'Library'));
+    head.append(el('h1', null, 'Library'));
     if (this.index) head.append(el('span', 'pill', String(this.vehicles.length)));
     h.appendChild(head);
 
@@ -293,9 +293,9 @@ export class LibraryView {
         h.appendChild(row);
       }
       h.appendChild(el('p', 'small muted',
-        'A listings folder is what the pipeline writes: new/ and used/, one folder per '
-        + 'vehicle, each with its finished bundle. Open one to browse it here. On your own '
-        + 'server the configured library is opened for you.'));
+        'What has been made, read as the command line writes it: a listings folder of new/ '
+        + 'and used/, one folder per vehicle with its stills, framed and interior sets, clips '
+        + 'and posts. Open one to browse it here; your own server opens its configured library for you.'));
       return;
     }
     if (!this.index) {

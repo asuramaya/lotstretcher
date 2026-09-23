@@ -346,6 +346,9 @@ function renderPhotos() {
   // A strip, so the vehicle fields stay a glance below; a tile opens
   // the lightbox.
   $('photoGrid').classList.add('is-strip');
+  // With photos in, the drop zone folds to one row of ways to add more.
+  $('dropzone').classList.toggle('has-photos', n > 0);
+  $('pickBtn').textContent = n > 0 ? 'Add more' : 'Add photos';
   setRunEnabled(n > 0 && !state.running);
   renderSteps();
 
