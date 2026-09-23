@@ -348,36 +348,48 @@ const BADGES = {
 
 /* Groups the user has shut or opened stay that way for the session;
  * without this every edit re-rendered them back to their defaults. */
-const openState = new Map();
 
 /* Render every group into `host`. `values` is the live options object;
  * `onChange(key, value)` is called on every edit. Each group is a
  * collapsible: open when something in it is usable on this host, shut
  * with a "needs your server" badge when nothing is. */
-export function renderControls(host, values, onChange, { thumbFor = null } = {}) {
+let activeTab = null;
+/* The groups as tabs across the top and one panel below, an editor's
+ * tool strip rather than a stack of accordions; the tab stays put
+ * across redraws. */
+export function renderControls(host, values, onChange, opts = {}) {
+  const { thumbFor = null } = opts;
   host.innerHTML = '';
   const allControls = get('controls', 'groups').flatMap((g) => g.controls);
-
-  for (const group of get('controls', 'groups')) {
+  const groups = get('controls', 'groups')
     // A hidden control is real (it has a flag, a value, a showWhen) but
     // is presented inside another one's swatches.
-    const visible = group.controls.filter((c) => shownBy(c, values) && c.presentation !== 'hidden');
-    if (!visible.length) continue;
-
+    .map((g) => ({ group: g, visible: g.controls.filter((c) => shownBy(c, values) && c.presentation !== 'hidden') }))
+    .filter((x) => x.visible.length);
+  if (!groups.some((x) => x.group.id === activeTab)) activeTab = groups[0]?.group.id || null;
+  const tabs = el('div', 'ctrl-tabs');
+  tabs.setAttribute('role', 'tablist');
+  for (const { group: g, visible: v } of groups) {
+    const usable = v.some((c) => availability(c).ok);
+    const t = el('button', 'ctrl-tab', g.label);
+    t.type = 'button';
+    t.setAttribute('role', 'tab');
+    t.setAttribute('aria-selected', String(g.id === activeTab));
+    if (!usable) { t.classList.add('is-server'); t.title = isSelfHosted() ? 'This host lacks it' : 'Needs your server'; }
+    t.onclick = () => { activeTab = g.id; renderControls(host, values, onChange, opts); };
+    tabs.appendChild(t);
+  }
+  host.appendChild(tabs);
+  const current = groups.find((x) => x.group.id === activeTab);
+  if (!current) return;
+  {
+    const { group, visible } = current;
     const usable = visible.some((c) => availability(c).ok);
-    const section = el('details', 'ctrl-group');
-    // Open by default: what changes the picture. The pipeline and video
-    // groups start shut; the estimates beside the preview speak for them.
-    section.open = openState.has(group.id) ? openState.get(group.id) : (usable && group.affects === 'still');
-    section.ontoggle = () => openState.set(group.id, section.open);
-    const summary = el('summary');
-    summary.appendChild(el('span', 'ctrl-group-head', group.label));
+    const body = el('div', 'ctrl-panel');
+    body.setAttribute('role', 'tabpanel');
     const [text, cls] = BADGES[group.affects] || ['', ''];
-    if (!usable) summary.appendChild(el('span', 'ctrl-badge is-server', isSelfHosted() ? 'Host lacks it' : 'Needs your server'));
-    else if (text) summary.appendChild(el('span', `ctrl-badge ${cls}`, text));
-    section.appendChild(summary);
-    const body = el('div', 'ctrl-group-body');
-    section.appendChild(body);
+    if (!usable) body.appendChild(el('p', 'ctrl-badge is-server', isSelfHosted() ? 'This host lacks these' : 'These need your server'));
+    else if (text) body.appendChild(el('p', `ctrl-badge ${cls}`, text));
     const elsewhere = [];
 
     for (const control of visible) {
@@ -434,7 +446,7 @@ export function renderControls(host, values, onChange, { thumbFor = null } = {})
       row.appendChild(text);
       body.appendChild(row);
     }
-    host.appendChild(section);
+    host.appendChild(body);
   }
 }
 
