@@ -447,14 +447,20 @@ export function activeLook(values) {
   return looks().find((lk) => Object.entries(lk.values).every(([k, v]) => values[k] === v))?.id || null;
 }
 
-export function renderLooks(host, values, onApply) {
+export function renderLooks(host, values, onApply, { tileFor = null } = {}) {
   host.innerHTML = '';
   const active = activeLook(values);
   for (const lk of looks()) {
     const chip = el('button', 'chip');
     chip.type = 'button';
     chip.setAttribute('aria-pressed', String(lk.id === active));
-    chip.append(el('strong', null, lk.label), el('span', null, lk.hint));
+    // A tile the core composes with the look's values on the preview's
+    // own subject, so choosing a look is choosing a picture.
+    const art = tileFor?.(lk, values);
+    if (art) { art.className = 'chip-art'; chip.classList.add('has-art'); chip.appendChild(art); }
+    const text = el('span', 'chip-text');
+    text.append(el('strong', null, lk.label), el('span', null, lk.hint));
+    chip.appendChild(text);
     chip.onclick = () => onApply(lk);
     host.appendChild(chip);
   }

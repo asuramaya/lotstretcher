@@ -92,6 +92,8 @@ export class Preview {
     this.current = this.samples[0]?.key || null;
     this.renderSamples();
     this.update();
+    // Anything drawn on the subject (the look tiles) can draw now.
+    this.onSubjectChange?.();
   }
 
   renderSamples() {
@@ -106,7 +108,7 @@ export class Preview {
       b.type = 'button';
       b.setAttribute('aria-pressed', String(o.key === this.current));
       b.append(el('strong', null, o.label), el('span', null, o.note));
-      b.onclick = () => { this.current = o.key; this.renderSamples(); this.update(); };
+      b.onclick = () => { this.current = o.key; this.renderSamples(); this.update(); this.onSubjectChange?.(); };
       host.appendChild(b);
     }
   }

@@ -440,7 +440,9 @@ function renderOptions() {
     renderOptions();
     preview?.update();
   };
-  renderLooks($('looksHost'), o, applyLook);
+  renderLooks($('looksHost'), o, applyLook, { tileFor: lookArt });
+  // The tiles are drawn on the preview's subject: a new sample redraws them.
+  if (preview) preview.onSubjectChange = () => renderLooks($('looksHost'), o, applyLook, { tileFor: lookArt });
 
   // One host, filled from the spec. The old hand-built Pipeline and
   // Look sections are gone: a new control now needs no code here.
@@ -456,7 +458,7 @@ function renderOptions() {
     }
     commitOptions();
     // A moved lever may make or break a look: the chips say which.
-    renderLooks($('looksHost'), o, applyLook);
+    renderLooks($('looksHost'), o, applyLook, { tileFor: lookArt });
     if (affectsPreview(key)) preview?.update(); else preview?.renderEstimates();
   }, { thumbFor: swatchArt });
 
@@ -534,6 +536,41 @@ function swatchArt(control, choice, values, image) {
     return copy;
   }
   return null;
+}
+
+/* A look's tile: the preview's subject composed by the core with the
+ * look's values over the current ones, small. Cached per look and
+ * subject; the values a look does not set (the backdrop, say) are the
+ * current ones, so the tiles change with them. */
+const lookArtCache = new Map();
+function lookArt(lk, values) {
+  const subject = preview?.subject?.();
+  if (!subject) return null;
+  const v = { ...values, ...lk.values };
+  const key = JSON.stringify([lk.id, subject.seed, v.backdrop, v.spotlight, v.glow, v.glowColor, v.glowRadius, v.glowIntensity,
+    v.shadow, v.shadowStrength, v.reflection, v.reflectionStrength, v.border, v.frameColor, v.frameWeight]);
+  if (!lookArtCache.has(key)) {
+    try {
+      const size = 128;
+      const composed = composeHero(subject.cutout, {
+        width: size, height: size, seed: `${subject.seed}:look`,
+        exterior: subject.exterior, interior: subject.interior, generic: v.backdrop === 'generic',
+        spotlight: v.spotlight, marginFrac: 0.08,
+        glow: v.glow, glowColor: v.glowColor, glowRadius: Math.max(2, Math.round((v.glowRadius || 24) / 6)), glowIntensity: v.glowIntensity,
+        border: null, borderStyle: v.border === 'line' ? { kind: 'line', color: v.frameColor || 'white', weight: Math.max(0.02, Number(v.frameWeight) || 0.008) * 2 } : null,
+        shadow: shadowStyle(v), reflection: reflectionStyle(v),
+        text: null,
+      });
+      const c = document.createElement('canvas'); c.width = size; c.height = size;
+      c.getContext('2d').drawImage(composed, 0, 0);
+      lookArtCache.set(key, c);
+    } catch (e) { console.warn('look tile failed', e); lookArtCache.set(key, null); }
+  }
+  const c = lookArtCache.get(key);
+  if (!c) return null;
+  const copy = document.createElement('canvas'); copy.width = copy.height = c.width;
+  copy.getContext('2d').drawImage(c, 0, 0);
+  return copy;
 }
 
 /* The host panel.
@@ -1341,7 +1378,7 @@ async function init() {
     getUserCutouts: () => state.photos.filter((p) => p.cutout).map((p) => p.cutout),
     getPhotoCount: () => state.photos.length,
   });
-  preview.load();
+  preview.load().then(() => renderOptions());
 
   $('clearBtn').onclick = clearPhotos;
   $('runBtn').onclick = run;
