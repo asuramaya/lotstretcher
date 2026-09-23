@@ -396,6 +396,19 @@ is the line's weight as a share of the shorter side. In the app it is
 the "Studio line" tile of the Frame picker, with the colour and weight
 levers beside it. Frame art, when given, wins.
 
+### Looks: one tap, several levers
+
+The Look pane opens with a row of looks, each a named set of light and
+frame values defined once in the spec (`controls.looks`): Clean,
+Showroom (shadow and reflection), Gallery (a white line and a soft
+shadow) and Paint line (the vehicle's colour on the line, a glow and
+the floor). Tapping one sets those levers; every lever stays yours to
+move after, and the chip releases the moment a value differs. On the
+command line `--look NAME` applies the same values to `lotstretcher`,
+`recompose` and `hero-video`; any flag you also type wins over the
+look, so `--look showroom --shadow-strength 0.9` is the showroom with
+a darker shadow.
+
 ### A ground shadow
 
 `--shadow` sets the vehicle down: a soft shadow read off the cutout's

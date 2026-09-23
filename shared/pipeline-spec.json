@@ -595,7 +595,39 @@
       "--no-glow does), surfaces (where it applies), requires (a host",
       "capability it needs), unit/min/max/step for ranges.",
       "",
-      "A control may be browser-only (surfaces without 'cli'), but ONLY with a cliNote saying why. That keeps the exemption visible instead of letting 'no flag yet' quietly become permanent divergence."
+      "A control may be browser-only (surfaces without 'cli'), but ONLY with a cliNote saying why. That keeps the exemption visible instead of letting 'no flag yet' quietly become permanent divergence.",
+      "",
+      "`looks` are one-tap presets: a name and the control values it sets. The app's Look pane renders them as chips above the groups and --look NAME applies the same values on the CLI, with any flag given explicitly winning over the look. Every key must name a control and every value must be one that control accepts (tests/test_control_parity.py)."
+    ],
+    "looks": [
+      {
+        "id": "clean",
+        "label": "Clean",
+        "hint": "Spotlight only, nothing under the car",
+        "values": {"spotlight": true, "glow": false, "shadow": false, "reflection": false, "border": "none"}
+      },
+      {
+        "id": "showroom",
+        "label": "Showroom",
+        "hint": "Set down on a lit, glossy floor",
+        "values": {"spotlight": true, "glow": false, "shadow": true, "shadowStrength": 0.55,
+                   "reflection": true, "reflectionStrength": 0.35, "border": "none"}
+      },
+      {
+        "id": "gallery",
+        "label": "Gallery",
+        "hint": "A white line and a soft shadow",
+        "values": {"spotlight": true, "glow": false, "shadow": true, "shadowStrength": 0.5, "reflection": false,
+                   "border": "line", "frameColor": "white", "frameWeight": 0.008}
+      },
+      {
+        "id": "paint",
+        "label": "Paint line",
+        "hint": "The vehicle's own colour on the line, a glow and the floor",
+        "values": {"spotlight": true, "glow": true, "glowColor": "white", "glowRadius": 32, "glowIntensity": 0.6,
+                   "shadow": true, "shadowStrength": 0.4, "reflection": true, "reflectionStrength": 0.5,
+                   "border": "line", "frameColor": "paint", "frameWeight": 0.012}
+      }
     ],
     "groups": [
       {

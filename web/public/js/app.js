@@ -32,7 +32,7 @@ import { loadCore, version as coreVersion, threadCount as coreThreads, enhanceIn
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { Preview } from './preview.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
-import { renderControls, controlDefaults, controlsToFlags, affectsPreview } from './controls.js';
+import { renderControls, controlDefaults, controlsToFlags, affectsPreview, renderLooks } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
 import { textOptions, textRequest, frameStyle, shadowStyle, reflectionStyle } from './lib/text.js';
@@ -432,6 +432,16 @@ function renderOptions() {
       + 'estimate beside the preview is measured on this device.'
     : 'No video. Stills only, which is faster on a phone.';
 
+  // The looks: one tap sets several controls, then the pane is drawn
+  // again so every lever shows the value the look gave it.
+  const applyLook = (lk) => {
+    Object.assign(o, lk.values);
+    commitOptions();
+    renderOptions();
+    preview?.update();
+  };
+  renderLooks($('looksHost'), o, applyLook);
+
   // One host, filled from the spec. The old hand-built Pipeline and
   // Look sections are gone: a new control now needs no code here.
   renderControls($('controlsHost'), o, (key, value, live) => {
@@ -445,6 +455,8 @@ function renderOptions() {
       if (value?.sourceBlob) store.set(key, value.sourceBlob); else store.del(key);
     }
     commitOptions();
+    // A moved lever may make or break a look: the chips say which.
+    renderLooks($('looksHost'), o, applyLook);
     if (affectsPreview(key)) preview?.update(); else preview?.renderEstimates();
   }, { thumbFor: swatchArt });
 

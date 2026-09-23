@@ -29,6 +29,7 @@ from lotstretcher.imaging.text import (add_frame_style_args, add_reflection_args
                                        controls_from_shadow_args, controls_from_text_args, frame_style,
                                        reflection_style, shadow_style, text_options)
 from lotstretcher.library_ops import vehicle_record
+from lotstretcher.looks import add_look_arg, apply_look
 
 
 def resolve_asset_arg(category: str, value: str | None, default_name: str | None = None) -> Path:
@@ -96,6 +97,7 @@ def main():
     add_frame_style_args(parser)
     add_shadow_args(parser)
     add_reflection_args(parser)
+    add_look_arg(parser)
     parser.add_argument("--music", action="store_true",
                          help="Score the video. Silent is the default; timing comes from --bpm either way, so "
                               "the cut/pump cadence is identical.")
@@ -106,6 +108,7 @@ def main():
                          help="Encode on the GPU (h264_nvenc). Only the encode moves; the frame compositing is CPU either way, so expect a modest win.")
     parser.add_argument("--out", help="Output path (default: <vehicle_folder>/bundle/hero-video.mp4)")
     args = parser.parse_args()
+    apply_look(args, parser)
 
     vehicle_folder = Path(args.vehicle_folder)
     cutout_dir = vehicle_folder / "images" / "exterior" / "cutout"

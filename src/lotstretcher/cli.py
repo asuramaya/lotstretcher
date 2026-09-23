@@ -79,6 +79,7 @@ from lotstretcher.imaging.text import (add_frame_style_args, add_reflection_args
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args)
 from lotstretcher.library_ops import hero_options_from_controls
+from lotstretcher.looks import add_look_arg, apply_look
 from lotstretcher.vehicle_pipeline import log, process_vehicle, process_vehicle_record
 
 
@@ -319,6 +320,7 @@ def main():
     add_frame_style_args(parser)
     add_shadow_args(parser)
     add_reflection_args(parser)
+    add_look_arg(parser)
     parser.add_argument("--frame-fit", default="fit", choices=["fit", "fill", "stretch"],
                          help="How a frame meets a format of another shape (a square dealer frame on a "
                               "4:5 post). fit: the whole frame, centred, the backdrop fills the rest. "
@@ -399,6 +401,7 @@ def main():
                               "both almost always mean the listing crawl didn't actually cover the full "
                               "inventory, not that this many vehicles genuinely sold at once.")
     args = parser.parse_args()
+    apply_look(args, parser)
 
     if args.dealer_config:
         dealer_config.reload(args.dealer_config)

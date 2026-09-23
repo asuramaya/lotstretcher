@@ -438,6 +438,28 @@ export function renderControls(host, values, onChange, { thumbFor = null } = {})
   }
 }
 
+/* One-tap looks (spec controls.looks): a chip per look, pressed when
+ * every value it sets is the current one. Applying one hands its
+ * values to `onApply`; the same values `--look NAME` sets on the CLI. */
+export function looks() { return get('controls', 'looks') || []; }
+
+export function activeLook(values) {
+  return looks().find((lk) => Object.entries(lk.values).every(([k, v]) => values[k] === v))?.id || null;
+}
+
+export function renderLooks(host, values, onApply) {
+  host.innerHTML = '';
+  const active = activeLook(values);
+  for (const lk of looks()) {
+    const chip = el('button', 'chip');
+    chip.type = 'button';
+    chip.setAttribute('aria-pressed', String(lk.id === active));
+    chip.append(el('strong', null, lk.label), el('span', null, lk.hint));
+    chip.onclick = () => onApply(lk);
+    host.appendChild(chip);
+  }
+}
+
 /* Which groups change the still, for anything that wants to know
  * whether an edit should redraw a preview. */
 export function affectsPreview(key) {

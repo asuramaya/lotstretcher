@@ -33,6 +33,7 @@ from lotstretcher.imaging.text import (add_frame_style_args, add_reflection_args
                                        reflection_style, shadow_style, text_options)
 # The rebuild itself lives in library_ops so the server's
 # POST /library/.../recompose runs the identical path.
+from lotstretcher.looks import add_look_arg, apply_look
 from lotstretcher.library_ops import (find_vehicle_folders, recompose_folder,  # noqa: F401
                                       resolve_recompose_options, vehicle_colors, vehicle_record)
 
@@ -66,6 +67,7 @@ def main():
     add_frame_style_args(parser)
     add_shadow_args(parser)
     add_reflection_args(parser)
+    add_look_arg(parser)
     parser.add_argument("--hero-format", action="append", metavar="FORMAT",
                          help="Shape(s) for the hero still; repeatable, or 'all'. square 1254x1254 "
                               "(Marketplace), portrait 1080x1350 (4:5 Instagram/Facebook feed), "
@@ -98,6 +100,7 @@ def main():
                               "photo vendor changes. See imaging/gallery.py::calibrate.")
     parser.add_argument("--dry-run", action="store_true", help="List what would be rebuilt and exit")
     args = parser.parse_args()
+    apply_look(args, parser)
 
     root = Path(args.root).expanduser()
     if not root.is_dir():
