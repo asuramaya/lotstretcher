@@ -165,7 +165,7 @@ def test_the_drawn_frame_fits_every_shape_and_keeps_the_car_inside():
     the vehicle's colour."""
     from lotstretcher.imaging.text import frame_style
     style = frame_style({"border": "line", "frameColor": "white", "frameWeight": 0.01})
-    assert style == {"kind": "line", "color": "white", "weight": 0.01}
+    assert style == {"kind": "line", "color": "white", "weight": 0.01, "inset": 0.035, "radius": 0.02}
     assert frame_style({"border": "none"}) is None
     assert frame_style({"frameStyle": "line", "frameColor": "paint"})["color"] == "paint"
     for (w, h) in ((800, 800), (720, 900), (540, 960)):
@@ -422,7 +422,7 @@ def test_two_chosen_stops_are_taken_as_they_are_and_an_angle_fixes_the_direction
     assert backdrop_angle({"backdrop": "sweep", "backdropAngle": 90}) is None
     two = np.asarray(core.render_frame([], 100, 100, spec)).astype(int)
     assert list(two[5, 50]) != list(two[95, 50])
-    assert two[5, 50][0] > 200 and two[95, 50][2] > 120   # the wall orange, the floor blue, as picked
+    assert two[5, 50][0] > 180 and two[5, 50][2] < 60 and two[95, 50][2] > 100 and two[95, 50][0] < 60   # wall orange, floor blue, as picked
     a = np.asarray(core.render_frame([], 80, 80, {"kind": "generic", "seed": "s", "color": "#ff8800", "color2": "#2244aa", "angle": 0.0})).astype(int)
     b = np.asarray(core.render_frame([], 80, 80, {"kind": "generic", "seed": "s", "color": "#ff8800", "color2": "#2244aa", "angle": 180.0})).astype(int)
     assert np.abs(a - b[:, ::-1]).mean() < 6
