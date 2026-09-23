@@ -647,7 +647,17 @@ function renderOptions() {
   }, {
     thumbFor: swatchArt,
     rail: $('studioRail'),
-    onOpen: () => renderOptions(),
+    // On a phone the panel is a card: a tool opens it, the same tool
+    // again (or its ×) closes it and gives the stage the screen back.
+    onOpen: (id) => {
+      const studio = document.querySelector('.studio');
+      const wasOpen = studio.classList.contains('panel-open');
+      if (wasOpen && id === state.studioTool) studio.classList.remove('panel-open');
+      else studio.classList.add('panel-open');
+      state.studioTool = id;
+      renderOptions();
+      preview?.update();
+    },
     before: [{ id: 'looks', label: 'Looks', hint: 'One tap, several levers', render: part('looksPart') }],
     after: [{ id: 'output', label: 'Output', hint: 'What a run makes, and the command line', render: part('outputPart') }],
     // Settings supplies the Text tool's default line.
@@ -1845,6 +1855,7 @@ async function init() {
   $('stickerUrlInput').addEventListener('paste', () => setTimeout(takeSticker, 0));
 
   $('resetOptions').onclick = () => { state.options = resetOptions(); renderOptions(); preview?.update(); };
+  $('panelClose').onclick = () => { document.querySelector('.studio').classList.remove('panel-open'); preview?.update(); };
 
   // The walkthrough's own buttons: next at the foot of each step, back
   // where there is somewhere to go back to.

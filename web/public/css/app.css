@@ -537,10 +537,14 @@
    px, which a viewport breakpoint treated as a phone. Nothing here
    scrolls but the panel, so the stage never leaves the screen. */
 .pane.pane-studio { padding: 0; overflow: hidden; container-type: size; }
+/* On a phone the rail is a second footer above the nav and the open
+   tool's panel is a card that slides up over the lower half of the
+   stage; the stage has the whole screen when no tool is open. */
 .studio {
-  height: 100%; display: grid;
-  grid-template-rows: auto auto 1fr;
-  grid-template-areas: "stage" "rail" "panel";
+  --rail-h: 64px;
+  height: 100%; display: grid; position: relative;
+  grid-template-rows: minmax(0, 1fr) var(--rail-h);
+  grid-template-areas: "stage" "rail";
 }
 .studio-stage {
   grid-area: stage; display: flex; flex-direction: column; align-items: center; gap: var(--s-2);
@@ -550,7 +554,12 @@
    phone, whatever the height leaves on a wide pane. The frame inside
    it takes the chosen format's own shape (preview.js fitStage), so a
    story stands tall and a landscape lies wide, each as large as fits. */
-.stage-box { --stage-room: fixed; width: 100%; height: 30vh; min-height: 0; display: grid; place-items: center; }
+.stage-box { --stage-room: fill; width: 100%; height: auto; min-height: 0; display: grid; place-items: center; }
+/* With the card open the stage keeps to the top of the screen, the
+   frame and the shape chips above the card's edge. */
+.studio-stage { justify-content: center; }
+.studio.panel-open .studio-stage { justify-content: flex-start; }
+.studio.panel-open .stage-box { --stage-room: fixed; height: 26vh; }
 /* On a phone the bar is one row: the segment and the shape chips by
    name alone; the pressed chip says what the stage shows, and the
    pixel sizes are in the Output tool. */
@@ -609,8 +618,8 @@
    pane on a phone, a column down its edge on a wide one. */
 .studio-rail {
   grid-area: rail; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none;
-  padding: var(--s-1) var(--s-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
-  background: var(--surface);
+  padding: var(--s-1) var(--s-2); border-top: 1px solid var(--line);
+  background: var(--surface); z-index: 3;
 }
 .studio-rail::-webkit-scrollbar { display: none; }
 .tool {
@@ -627,11 +636,19 @@
 .tool.is-server { opacity: .55; }
 
 /* The panel: the open tool's levers, and the only thing that scrolls. */
-.studio-panel { grid-area: panel; min-height: 0; display: flex; flex-direction: column; }
+.studio-panel {
+  position: absolute; left: 0; right: 0; bottom: var(--rail-h); top: 46%; z-index: 2;
+  min-height: 0; display: flex; flex-direction: column;
+  background: var(--surface); border-top: 1px solid var(--line);
+  border-radius: var(--r-xl) var(--r-xl) 0 0; box-shadow: 0 -12px 40px rgba(0,0,0,.35);
+  transform: translateY(calc(100% + 8px)); transition: transform var(--dur-2) var(--ease);
+}
+.studio.panel-open .studio-panel { transform: none; }
 .panel-head {
   flex: none; display: flex; align-items: center; gap: var(--s-3);
   padding: var(--s-3) var(--gutter) var(--s-2);
 }
+.panel-close { display: inline-grid; }
 .panel-head h2 { flex: 1; font-size: var(--t-base); }
 .panel-body { flex: 1; min-height: 0; overflow-y: auto; padding: 0 var(--gutter) var(--s-8); }
 .ctrl-panel { padding: 0 0 var(--s-2); }
@@ -651,11 +668,15 @@
   .studio-rail { flex-direction: column; overflow-x: hidden; overflow-y: auto; padding: var(--s-3) var(--s-1); border: 0; border-right: 1px solid var(--line); }
   .tool { flex: none; min-width: 0; }
   .studio-stage { justify-content: center; padding: var(--s-6); overflow: hidden; }
+  /* The panel is a column of its own, always open; the card rules are undone. */
+  .studio-panel { position: static; grid-area: panel; transform: none; border-radius: 0; box-shadow: none; border-top: 0; }
+  .studio.panel-open .stage-box { --stage-room: fill; height: auto; }
+  .panel-close { display: none; }
   .preview-caption { display: block; }
   .chip.fmt .fmt-text span { display: block; }
   .chip.fmt { min-height: 36px; padding: var(--s-1) var(--s-3) var(--s-1) var(--s-2); }
   /* As big as the height leaves, after the bar under it. */
-  .stage-box { --stage-room: fill; flex: none; height: auto; }
+  .stage-box { flex: none; }
   .studio-panel { border-left: 1px solid var(--line); background: var(--surface); }
   .panel-head, .panel-body { padding-left: var(--s-5); padding-right: var(--s-5); }
 }

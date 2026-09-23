@@ -71,6 +71,14 @@ Safari. For each step, note pass, fail, or the message shown.
   whether the photos and fields return, and whether the Studio opens
   at once (a finished sort and cut comes back with the car; the header
   should not sort again); try **Discard** once too.
+- In the Studio the tools are a bar above the nav. Tap **Backdrop**: a
+  card should slide up over the lower half of the stage, the frame and
+  the shape chips still in view above it. Tap **Backdrop** again, or
+  its ×: the card goes and the stage takes the screen. Report whether
+  the card scrolls on its own without the page moving behind it.
+- In the Backdrop card, switch **Gradient** and **Image**: the tiles
+  should change; on **Sweep**, a colour dot appears in the tile's
+  corner and opens iOS's picker; its × goes back to the paint.
 - In the Studio, tap the **Portrait** chip under the stage: the stage
   should turn tall, the whole portrait in view, nothing clipped. Tick
   its circle and report whether it joins the run (the Output tool's
@@ -79,9 +87,7 @@ Safari. For each step, note pass, fail, or the message shown.
   the phone sideways and report whether the stage refits.
 - Backdrop tool: tap **Your image** and pick a photo from the camera
   roll. It should appear as its own tile, chosen, and stay after a
-  reload; tap its corner × to drop it. Tap **Hue bands**, then the
-  **Colour** swatch that appears: iOS's colour picker should open and
-  the stage follow it as you drag; tap **Paint** to go back.
+  reload; tap its corner × to drop it.
 - Text tool: set **Title** to the vehicle, then drag the words on the
   stage with a finger to another corner. They should follow as you
   drag and the Text tool's Position should read the corner you let go
