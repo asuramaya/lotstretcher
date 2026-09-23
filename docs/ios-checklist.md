@@ -14,6 +14,10 @@ Safari. For each step, note pass, fail, or the message shown.
 - Tap **About**. Report the runtime line: threads and whether it says
   "cross-origin isolated". Safari 17+ should show threads; older shows
   single-threaded.
+- On the same About line, report the **core** entry. It should read
+  "core: wasm v7" (or higher). That is the Rust core, built with SIMD,
+  which Safari has had since 16.4; if it says the core failed to load,
+  copy the message exactly, since nothing composes without it.
 - Report iOS version and device model (Settings > General > About).
 
 ## 2. Add photos
@@ -22,7 +26,8 @@ Safari. For each step, note pass, fail, or the message shown.
   as tiles. HEIC photos are the case to watch: report whether they show
   a thumbnail or a blank tile.
 - **Take photo**: the camera opens (the button only shows on a phone).
-- Add five to eight exterior photos of one vehicle.
+- Add five to eight exterior photos of one vehicle, and one or two of
+  its interior.
 
 ## 3. Process
 
@@ -36,8 +41,11 @@ Safari. For each step, note pass, fail, or the message shown.
 ## 4. Results
 
 - Hero stills render, and the compare slider moves under a finger.
+- An **Interiors** section shows the cabin photos, brighter than the
+  originals and otherwise unchanged (no crop, no backdrop).
 - **Download**: report whether the bundle zip lands in Files, and its
-  size.
+  size. Open it: there should be an `interior/` folder next to the hero
+  images when interiors were added.
 - If video was on: report whether a clip rendered, or the message that
   says video is unavailable. WebCodecs on iOS is the open question.
 

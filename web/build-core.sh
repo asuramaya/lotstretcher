@@ -12,6 +12,9 @@ cd "$(dirname "$0")/../core"
 RUSTFLAGS="-C target-feature=+simd128" cargo build --release --target wasm32-unknown-unknown --features wasm
 wasm-bindgen --target web --out-dir ../web/public/core --out-name lotstretcher_core \
   target/wasm32-unknown-unknown/release/lotstretcher_core.wasm
+# wasm-opt (binaryen; `cargo install wasm-opt` puts it in ~/.cargo/bin)
+# takes the committed binary from 846 KB to 737 KB (272 KB gzipped).
+export PATH="$HOME/.cargo/bin:$PATH"
 if command -v wasm-opt >/dev/null 2>&1; then
   wasm-opt -O3 -o ../web/public/core/lotstretcher_core_bg.wasm ../web/public/core/lotstretcher_core_bg.wasm
 fi
