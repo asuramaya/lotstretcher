@@ -555,21 +555,6 @@ function renderResults() {
   }
 }
 
-/* ---------- options --------------------------------------------------
- * Built from the definitions in options.js rather than written into the
- * markup, so adding an option is a one-line change in one file and the
- * CLI echo below can never disagree with the controls above it. */
-function chipRow(host, defs, selected, onToggle) {
-  host.innerHTML = '';
-  for (const [key, def] of Object.entries(defs)) {
-    const b = el('button', 'chip');
-    b.type = 'button';
-    b.setAttribute('aria-pressed', selected.includes(key) ? 'true' : 'false');
-    b.append(el('strong', null, def.label), el('span', null, `${def.size[0]}x${def.size[1]} ${def.note}`));
-    b.onclick = () => onToggle(key);
-    host.appendChild(b);
-  }
-}
 
 function toggleRow(label, hint, checked, onChange) {
   const row = el('div', 'opt');

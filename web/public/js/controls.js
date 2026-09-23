@@ -16,13 +16,14 @@
 import { get } from './spec.js';
 import { can, isSelfHosted } from './host.js';
 import { assets } from './lib/delegate.js';
+import { el, buildToggle, buildSelect, buildText, buildColor, buildRange, buildSegment, buildPlace, buildDots, buildFile, pickImage, formatValue } from './lib/widgets.js';
 
-const el = (tag, cls, text) => {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text != null) n.textContent = text;
-  return n;
-};
+
+/* Why a choice cannot be taken on this host, or null. */
+function lockedWhy(choice) {
+  if (choice.requires && !can(choice.requires)) return isSelfHosted() ? 'host lacks it' : 'your server only';
+  return null;
+}
 
 function availability(control) {
   const surfaces = control.surfaces || ['browser', 'cli', 'server'];
@@ -119,274 +120,15 @@ function chosen(control, value) {
   return (control.choices || []).find((c) => c.value === value);
 }
 
-function buildToggle(control, value, onChange, disabled) {
-  const sw = el('label', 'switch');
-  const input = document.createElement('input');
-  input.type = 'checkbox';
-  input.checked = !!value;
-  input.disabled = disabled;
-  input.setAttribute('aria-label', control.label);
-  input.onchange = () => onChange(input.checked);
-  sw.append(input, el('i'));
-  return sw;
-}
 
-function buildSelect(control, value, onChange, disabled) {
-  const sel = document.createElement('select');
-  sel.className = 'field';
-  sel.disabled = disabled;
-  const choices = choicesFor(control);
-  if (!choices.length) {
-    const o = document.createElement('option');
-    o.textContent = control.emptyNote || 'none available';
-    sel.appendChild(o);
-    sel.disabled = true;
-    return sel;
-  }
-  for (const c of choices) {
-    const o = document.createElement('option');
-    o.value = String(c.value);
-    o.textContent = c.label ?? String(c.value);
-    /* A choice can be gated on its own ("Stock background" needs an
-     * asset library the browser has not got). It stays listed and
-     * disabled, for the same reason a whole control does: a choice that
-     * vanishes reads as a bug, one that says why reads as a feature of
-     * self-hosting. */
-    if (c.requires && !can(c.requires)) {
-      o.disabled = true;
-      o.textContent += isSelfHosted() ? ' (host lacks it)' : ' (your server only)';
-    }
-    if (String(c.value) === String(value)) o.selected = true;
-    sel.appendChild(o);
-  }
-  sel.onchange = () => {
-    // Keep the original type: a select that silently turns 30 into "30"
-    // breaks anything comparing against the spec's numeric default.
-    const raw = sel.value;
-    const match = choices.find((c) => String(c.value) === raw);
-    onChange(match ? match.value : raw);
-  };
-  return sel;
-}
 
-/* A line of the user's own words. Every keystroke is a live change (the
- * preview redraws the title as it is typed) and leaving the box commits
- * it, the same split as a slider, for the same reason. */
-function buildText(control, value, onChange, disabled, placeholder = null) {
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'field';
-  input.value = value ?? '';
-  input.placeholder = placeholder || control.placeholder || '';
-  input.maxLength = control.maxLength || 80;
-  input.disabled = disabled;
-  input.setAttribute('aria-label', control.label);
-  input.oninput = () => onChange(input.value, true);
-  input.onchange = () => onChange(input.value);
-  return input;
-}
 
-/* A colour of the user's own, or none: the picker is the platform's,
- * and "Paint" hands the choice back to the vehicle (null). Dragging in
- * the picker is live, closing it commits, as a slider does. */
-function buildColor(control, value, onChange, disabled) {
-  const wrap = el('div', 'color-wrap');
-  const input = document.createElement('input');
-  input.type = 'color';
-  input.className = 'color-input';
-  input.value = value || '#4a6fa5';
-  input.disabled = disabled;
-  input.setAttribute('aria-label', control.label);
-  if (!value) wrap.classList.add('is-auto');
-  input.oninput = () => { wrap.classList.remove('is-auto'); onChange(input.value, true); };
-  input.onchange = () => onChange(input.value);
-  const word = el('span', 'color-word', value ? value.toUpperCase() : (control.auto || 'Auto'));
-  const clear = el('button', 'btn btn-ghost btn-sm', control.auto || 'Auto');
-  clear.type = 'button';
-  clear.title = control.auto ? "Back to the vehicle's own paint" : 'Computed';
-  clear.hidden = !value;
-  clear.disabled = disabled;
-  clear.onclick = () => onChange(null);
-  wrap.append(input, word, clear);
-  return wrap;
-}
 
-/* A slider reports every movement as a LIVE change (the preview follows
- * the thumb) and the final value on release as a real one; re-rendering
- * the pane on every movement would rebuild the very slider being
- * dragged. */
-function buildRange(control, value, onChange, disabled) {
-  const wrap = el('div', 'range-wrap');
-  const input = document.createElement('input');
-  input.type = 'range';
-  input.min = control.min;
-  input.max = control.max;
-  input.step = control.step;
-  // A nullable lever (an angle that is seeded unless set) reads Auto
-  // at null; moving the slider sets it, the Auto button clears it.
-  const isAuto = control.nullable && (value === null || value === undefined);
-  input.value = isAuto ? control.min : value;
-  input.disabled = disabled;
-  input.setAttribute('aria-label', control.label);
-  const out = el('span', 'range-out', isAuto ? 'Auto' : formatValue(control, value));
-  input.oninput = () => {
-    out.textContent = formatValue(control, Number(input.value));
-    wrap.classList.remove('is-auto');
-    onChange(Number(input.value), true);
-  };
-  input.onchange = () => onChange(Number(input.value));
-  wrap.append(input, out);
-  if (control.nullable) {
-    if (isAuto) wrap.classList.add('is-auto');
-    const auto = el('button', 'btn btn-ghost btn-sm', 'Auto');
-    auto.type = 'button';
-    auto.hidden = isAuto;
-    auto.onclick = () => onChange(null);
-    wrap.appendChild(auto);
-  }
-  return wrap;
-}
 
-/* A select's choices as one segment row: the compact form a
- * configurator wants for its style (Paint | Bands | Sweep ...). */
-function buildSegment(control, values, onChange, disabled, choices) {
-  const seg = el('div', 'segment seg-wrap');
-  seg.setAttribute('role', 'radiogroup');
-  const current = values[control.key] ?? control.default;
-  for (const choice of choices) {
-    const b = el('button', 'seg', choice.label ?? String(choice.value));
-    b.type = 'button';
-    b.setAttribute('aria-pressed', String(String(current) === String(choice.value)));
-    b.title = choice.hint || '';
-    b.disabled = disabled || (choice.requires && !can(choice.requires));
-    b.onclick = () => {
-      if (choice.sets) for (const [k, v] of Object.entries(choice.sets)) onChange(k, v, true);
-      onChange(control.key, choice.value);
-    };
-    seg.appendChild(b);
-  }
-  return seg;
-}
 
-/* The six text positions as a 3x2 grid of cells: where the words go,
- * seen as a place rather than read as a name. */
-function buildPlace(control, value, onChange, disabled) {
-  const grid = el('div', 'place');
-  for (const pos of ['tl', 'tc', 'tr', 'bl', 'bc', 'br']) {
-    const choice = (control.choices || []).find((c) => c.value === pos);
-    const b = el('button', 'place-cell');
-    b.type = 'button';
-    b.setAttribute('aria-pressed', String(value === pos));
-    b.setAttribute('aria-label', choice?.label || pos);
-    b.title = choice?.label || pos;
-    b.disabled = disabled;
-    b.appendChild(el('i'));
-    b.onclick = () => onChange(pos);
-    grid.appendChild(b);
-  }
-  return grid;
-}
 
-/* A colour lever as a row of dots: the named choices (white, black,
- * the paint) as coloured dots, then the picker dot for a colour of the
- * user's own. `thumbFor` supplies each named dot's colour. */
-function buildDots(control, values, onChange, disabled, thumbFor) {
-  const row = el('div', 'dots');
-  const current = values[control.key] ?? control.default;
-  for (const choice of choicesFor(control)) {
-    const dot = el('button', 'dot');
-    dot.type = 'button';
-    dot.setAttribute('aria-pressed', String(String(current) === String(choice.value)));
-    dot.setAttribute('aria-label', choice.label ?? String(choice.value));
-    dot.title = choice.label ?? String(choice.value);
-    dot.disabled = disabled;
-    const art = thumbFor ? thumbFor(control, choice, values, null) : null;
-    if (art && art.color) dot.style.background = art.color;
-    else dot.classList.add('is-plain');
-    dot.onclick = () => onChange(control.key, choice.value);
-    row.appendChild(dot);
-  }
-  if (control.custom) {
-    const isHex = typeof current === 'string' && /^#[0-9a-f]{3,6}$/i.test(current);
-    const wrap = el('span', `dot dot-custom${isHex ? '' : ' is-auto'}`);
-    wrap.setAttribute('aria-pressed', String(isHex));
-    const input = document.createElement('input');
-    input.type = 'color';
-    input.value = isHex && current.length === 7 ? current : '#4a6fa5';
-    input.disabled = disabled;
-    input.setAttribute('aria-label', `${control.label}: your own`);
-    input.title = isHex ? current.toUpperCase() : 'Your own';
-    input.oninput = () => { wrap.classList.remove('is-auto'); onChange(control.key, input.value, true); };
-    input.onchange = () => onChange(control.key, input.value);
-    wrap.appendChild(input);
-    row.appendChild(wrap);
-  }
-  return row;
-}
 
-/* An image of the user's own: a picker, a thumbnail once chosen, and a
- * way to drop it. The value is a canvas (with .sourceBlob and .name),
- * kept in memory and in IndexedDB by the app; it never goes into the
- * options blob, which is JSON. */
-function buildFile(control, value, onChange, disabled) {
-  const wrap = el('div', 'file-wrap');
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.className = 'sr-only';
-  input.setAttribute('aria-label', control.label);
-  input.onchange = async () => {
-    const f = input.files?.[0];
-    input.value = '';
-    if (!f) return;
-    const { blobToCanvas } = await import('./lib/store.js');
-    const canvas = await blobToCanvas(f);
-    if (!canvas) return;
-    canvas.name = f.name;
-    onChange(canvas);
-  };
-  const pick = el('button', 'btn btn-sm', value ? 'Change' : 'Choose image');
-  pick.type = 'button';
-  pick.disabled = disabled;
-  pick.onclick = () => input.click();
-  wrap.append(input);
-  if (value) {
-    const thumb = document.createElement('canvas');
-    thumb.className = 'file-thumb';
-    const scale = 40 / Math.max(value.width, value.height);
-    thumb.width = Math.max(1, Math.round(value.width * scale));
-    thumb.height = Math.max(1, Math.round(value.height * scale));
-    thumb.getContext('2d').drawImage(value, 0, 0, thumb.width, thumb.height);
-    thumb.title = value.name || '';
-    const clear = el('button', 'btn btn-ghost btn-sm', 'Remove');
-    clear.type = 'button';
-    clear.onclick = () => onChange(null);
-    wrap.append(thumb, pick, clear);
-  } else {
-    wrap.append(pick);
-  }
-  return wrap;
-}
 
-/* An image is picked for a tile that stands for the user's own file. */
-function pickImage(fileControl, onPicked) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.className = 'sr-only';
-  input.onchange = async () => {
-    const f = input.files?.[0];
-    input.remove();
-    if (!f) return;
-    const { blobToCanvas } = await import('./lib/store.js');
-    const canvas = await blobToCanvas(f);
-    if (!canvas) return;
-    canvas.name = f.name;
-    onPicked(canvas);
-  };
-  document.body.appendChild(input);
-  input.click();
-}
 
 /* Tiles instead of a <select>: each choice shows what it is (a gradient,
  * a stock photo, a frame, a colour) through `thumbFor`, supplied by the
@@ -522,12 +264,6 @@ function buildSwatches(control, values, onChange, disabled, thumbFor, allControl
   return grid;
 }
 
-function formatValue(control, value) {
-  if (control.unit === 's') return `${value}s`;
-  if (control.unit === 'px') return `${value}px`;
-  if (control.unit === 'fraction') return `${Math.round(value * 100)}%`;
-  return String(value);
-}
 
 /* What a group's badge says. `affects` comes from the spec: a group
  * that changes the still is what the live preview answers to; video
@@ -681,7 +417,7 @@ export function renderControls(host, values, onChange, opts = {}) {
           const choices = choicesFor(control).filter((c) => !c.tab || c.tab === tab);
           const row = el('div', 'opt opt-block');
           if (!ok) row.appendChild(el('span', 'xs dim', why));
-          row.appendChild(buildSegment(control, values, onChange, !ok, choices));
+          row.appendChild(buildSegment(control, values, onChange, !ok, choices, lockedWhy));
           body.appendChild(row);
           continue;
         }
@@ -716,11 +452,11 @@ export function renderControls(host, values, onChange, opts = {}) {
       const change = (v, live = false) => onChange(control.key, v, live);
 
       let widget;
-      if (control.presentation === 'dots') widget = buildDots(control, values, (k, v, live) => onChange(k, v, live), !ok, thumbFor);
+      if (control.presentation === 'dots') widget = buildDots(control, values, (k, v, live) => onChange(k, v, live), !ok, thumbFor, choicesFor(control));
       else if (control.presentation === 'place') widget = buildPlace(control, value, change, !ok);
-      else if (control.presentation === 'segment') widget = buildSegment(control, values, onChange, !ok, choicesFor(control));
+      else if (control.presentation === 'segment') widget = buildSegment(control, values, onChange, !ok, choicesFor(control), lockedWhy);
       else if (control.type === 'toggle') widget = buildToggle(control, value, change, !ok);
-      else if (control.type === 'select') widget = buildSelect(control, value, change, !ok);
+      else if (control.type === 'select') widget = buildSelect(control, value, change, !ok, choicesFor(control), lockedWhy);
       else if (control.type === 'range') widget = buildRange(control, value, change, !ok);
       else if (control.type === 'file') widget = buildFile(control, value, change, !ok);
       else if (control.type === 'text') widget = buildText(control, value, change, !ok, placeholders[control.key]);

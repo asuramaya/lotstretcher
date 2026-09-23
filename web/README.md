@@ -17,7 +17,7 @@ web/
 │   │   ├── config.js    model manifest, limits, canvas sizes
 │   │   ├── app.js       state + orchestration (no framework)
 │   │   ├── core.js      loads the Rust core (wasm) and packs images for it
-│   │   ├── lib/         imageio, zip, delegate (what a self-hosted server can add)
+│   │   ├── lib/         widgets (every lever the Studio draws, one module), imageio, zip, delegate (what a self-hosted server can add)
 │   │   ├── library/     the listings library: an HTTP or a folder source, one view
 │   │   └── pipeline/    runtime, classify, matte, compose, video, copy, listing, sticker,
 │   │                    core-worker + video-worker (the core in a worker, for a run)

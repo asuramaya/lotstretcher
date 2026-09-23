@@ -17,6 +17,7 @@ import { get as specGet } from './spec.js';
 import * as OPTS from './options.js';
 import { imageNow } from './lib/library.js';
 import { textOptions, textRequestNow, frameStyle, shadowStyle, reflectionStyle } from './lib/text.js';
+import { el, segment, chip } from './lib/widgets.js';
 
 /* A stock asset as a canvas: the site's own file, or the server's
  * picture of one only it holds. A fetch in flight redraws the preview
@@ -24,12 +25,6 @@ import { textOptions, textRequestNow, frameStyle, shadowStyle, reflectionStyle }
 const assetImage = (kind, name, onReady) => imageNow(kind, name, onReady);
 
 
-const el = (tag, cls, text) => {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text != null) n.textContent = text;
-  return n;
-};
 
 export class Preview {
   /* `host` holds #previewCanvas, #previewSamples and #estimates.
@@ -58,8 +53,10 @@ export class Preview {
     this.formatsHost = host.querySelector('#previewFormats');
     this.modesHost = host.querySelector('#previewModes');
     this.scrubInput = host.querySelector('#previewScrub');
-    for (const b of this.modesHost?.querySelectorAll('[data-mode]') || []) {
-      b.onclick = () => this.setMode(b.dataset.mode);
+    // Still | Video, the same segment widget every configurator uses.
+    if (this.modesHost) {
+      this.modesHost.innerHTML = '';
+      this.modesHost.appendChild(segment([{ value: 'still', label: 'Still' }, { value: 'video', label: 'Video' }], this.mode, (m) => this.setMode(m)));
     }
     if (this.scrubInput) {
       this.scrubInput.oninput = () => { this.scrub = Number(this.scrubInput.value) / 1000; this.update(); };
@@ -170,7 +167,7 @@ export class Preview {
 
   setMode(mode) {
     this.mode = mode;
-    for (const b of this.modesHost.querySelectorAll('[data-mode]')) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+    for (const b of this.modesHost.querySelectorAll('.seg')) b.setAttribute('aria-pressed', String(b.dataset.value === mode));
     this.scrubInput.hidden = mode !== 'video';
     this.update();
   }
@@ -216,21 +213,12 @@ export class Preview {
     host.innerHTML = '';
     const current = this.currentFormat();
     for (const f of this.allFormats()) {
-      const b = el('button', 'chip fmt');
-      b.type = 'button';
-      b.setAttribute('aria-pressed', String(f.key === current?.key));
-      if (f.on) b.classList.add('is-on');
-      const tick = el('span', 'fmt-check');
-      tick.setAttribute('role', 'checkbox');
-      tick.setAttribute('aria-checked', String(f.on));
-      tick.setAttribute('aria-label', `Make the ${f.label || f.key}`);
-      tick.title = f.on ? 'In the run; tap to leave it out' : 'Not made; tap to make it';
-      tick.onclick = (e) => { e.stopPropagation(); this.formatFor[this.mode] = f.key; this.onToggleFormat?.(this.mode, f.key); };
-      const text = el('span', 'fmt-text');
-      text.append(el('strong', null, f.label || f.key), el('span', null, `${f.size[0]}×${f.size[1]}`));
-      b.append(tick, text);
-      b.onclick = () => this.showFormat(f.key);
-      host.appendChild(b);
+      host.appendChild(chip({
+        label: f.label || f.key, sub: `${f.size[0]}\u00d7${f.size[1]}`, pressed: f.key === current?.key, on: f.on,
+        tickLabel: `Make the ${f.label || f.key}`,
+        onPick: () => this.showFormat(f.key),
+        onTick: () => { this.formatFor[this.mode] = f.key; this.onToggleFormat?.(this.mode, f.key); },
+      }));
     }
   }
 
