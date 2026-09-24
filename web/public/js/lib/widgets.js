@@ -125,18 +125,23 @@ export function buildRange(control, value, onChange, disabled) {
   input.disabled = disabled;
   input.setAttribute('aria-label', control.label);
   const out = el('span', 'range-out', isAuto ? 'Auto' : formatValue(control, value));
+  let auto = null;
   input.oninput = () => {
     out.textContent = formatValue(control, Number(input.value));
     wrap.classList.remove('is-auto');
+    if (auto) auto.style.display = '';
     onChange(Number(input.value), true);
   };
   input.onchange = () => onChange(Number(input.value));
   wrap.append(input, out);
   if (control.nullable) {
     if (isAuto) wrap.classList.add('is-auto');
-    const auto = el('button', 'btn btn-ghost btn-sm', 'Auto');
+    auto = el('button', 'btn btn-ghost btn-sm', 'Auto');
     auto.type = 'button';
-    auto.hidden = isAuto;
+    auto.title = 'Back to the computed value';
+    // The button's own display rule beats the hidden attribute, so it
+    // is shown and hidden by style: gone while the value reads Auto.
+    auto.style.display = isAuto ? 'none' : '';
     auto.onclick = () => onChange(null);
     wrap.appendChild(auto);
   }
