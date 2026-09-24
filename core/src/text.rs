@@ -541,7 +541,9 @@ pub fn plan_in(req: &PlanRequest, window: (i64, i64, i64, i64)) -> Result<Vec<Ov
         let right = p.position.ends_with('r');
         let centre = p.position.ends_with('c');
         let x = if centre { ((w - bw) / 2.0).round() } else if right { (w - inset - bw).round() } else { inset };
-        let crosses = |q: &(f64, f64, f64, f64, bool)| q.4 == bottom && x < q.0 + q.2 && q.0 < x + bw;
+        // Crossing counts a gap either side, so a centred title and a
+        // left piece that merely abut still take separate rows.
+        let crosses = |q: &(f64, f64, f64, f64, bool)| q.4 == bottom && x < q.0 + q.2 + gap && q.0 < x + bw + gap;
         let top = if bottom {
             let mut floor = h - inset;
             for q in placed.iter().filter(|q| crosses(q)) { floor = floor.min(q.1 - gap); }

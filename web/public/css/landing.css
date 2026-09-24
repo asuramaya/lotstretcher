@@ -174,9 +174,42 @@
   color: #fff; font-size: 10px; font-weight: 650;
 }
 
-/* A square beside a 9:16 portrait, the two about one height. */
+/* The three shapes from one run: the square on the left, the portrait
+   beside it as tall as the square, the horizontal under both. */
 .outgrid { display: grid; grid-template-columns: 1.3fr .75fr; gap: var(--s-3); align-items: start; }
-.outgrid img { width: 100%; border-radius: var(--r-md); border: 1px solid var(--line); box-shadow: var(--sh-2); }
+.outgrid img { width: 100%; height: auto; border-radius: var(--r-md); border: 1px solid var(--line); box-shadow: var(--sh-2); }
+.outgrid .hz { grid-column: 1 / -1; }
+
+/* ---------- spacing classes, in place of inline styles ---------- */
+.hero-cta { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
+.hero-note { margin-top: var(--s-4); }
+.sub { margin-top: var(--s-4); }
+.sub-sm { margin-top: var(--s-3); }
+.max-ch { max-width: 60ch; }
+.centered { margin-inline: auto; }
+.live-h { font-size: var(--t-md); margin-bottom: var(--s-2); }
+.live-cta { margin-top: var(--s-4); }
+.surface-cta { margin-top: var(--s-4); width: 100%; }
+.closer-cta { margin-top: var(--s-5); }
+.foot-row { gap: var(--s-5); }
+.foot-brand { font-size: var(--t-base); }
+.foot-brand img { width: 24px; height: 24px; border-radius: 6px; }
+.ticks li b { color: var(--ink); font-weight: 650; }
+
+/* A portrait shot beside its copy: capped so the column is not a tower. */
+.shot-tall { max-width: 400px; justify-self: center; }
+
+/* The six fonts: three rows of two title bands. */
+.fonts { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
+.fonts img { width: 100%; height: auto; display: block; border-radius: var(--r-md); border: 1px solid var(--line); }
+
+/* The clip frames: a horizontal and a portrait, each as wide as it is. */
+.clips { display: grid; gap: var(--s-4); margin-top: clamp(var(--s-5), 4vw, var(--s-7)); align-items: start; }
+/* Widths in the ratio that makes a 16:9 and a 9:16 the same height. */
+@media (min-width: 720px) { .clips { grid-template-columns: 3.16fr 1fr; align-items: stretch; } }
+@media (max-width: 719px) { .clips .shot:last-child { max-width: 300px; margin-inline: auto; } }
+.clips figcaption { padding: var(--s-2) var(--s-3); }
+.clips .shot { background: var(--surface); }
 
 /* ---------- swatches ---------- */
 .swatches { display: flex; gap: var(--s-2); margin-top: var(--s-5); flex-wrap: wrap; }
@@ -212,6 +245,7 @@
 .block.alt .surface { background: var(--bg); }
 .surface.is-this { border-color: var(--accent-line); background: var(--accent-wash); }
 .surface h3 { margin: var(--s-3) 0 var(--s-2); font-size: var(--t-md); }
+.surface .pill { align-self: flex-start; }
 .surface .ticks { margin-bottom: auto; }
 
 /* ---------- closer ---------- */
@@ -260,6 +294,7 @@ footer a { color: var(--ink-2); }
 .live-cell.skip .tag { background: rgba(120,120,130,.85); }
 
 .live-out { display: grid; gap: var(--s-5); margin-top: var(--s-5); align-items: center; }
+.live-out[hidden] { display: none; }
 @media (min-width: 720px) { .live-out { grid-template-columns: 1fr 1fr; } }
 .live-out figure { margin: 0; }
 .live-out img { width: 100%; border-radius: var(--r-lg); border: 1px solid var(--line); }

@@ -528,3 +528,14 @@ def test_title_size_follows_the_canvas_mean_side_not_its_height():
     title = plan_overlays(1080, 1920, VEHICLE, text_options({**CONTROLS, "textSize": 0.07}))[0]
     assert title["size"] < 0.07 * (1080 * 1920) ** 0.5
     assert title["box_h"] < title["size"] * 1.6, "one line, not two"
+
+
+def test_pieces_that_merely_abut_across_columns_take_separate_rows():
+    """A centred title wide enough to reach a left piece's edge, with no
+    columns shared, still pushes it down: crossing counts a gap."""
+    w, h = 1254, 1254
+    own = {**CONTROLS, "textPosition": "tl", "titlePosition": "tc", "textSize": 0.07, "titleCase": "upper", "titleFont": "Anton"}
+    by = {o["piece"]: o for o in plan_overlays(w, h, VEHICLE, text_options(own))}
+    title, sub = by["title"], by["subtitle"]
+    touching = sub["x"] + sub["box_w"] >= title["x"] - h * 0.02
+    assert (not touching) or sub["y"] >= title["y"] + title["box_h"]

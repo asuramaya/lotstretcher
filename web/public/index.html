@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0b0c0e" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
 <title>lotstretcher | Lot photos into listing photos</title>
-<meta name="description" content="Drop in photos of a car, get back post-ready images and copy. Runs entirely in your browser. No account, no upload, free.">
+<meta name="description" content="Drop in photos of a car. Get back the vehicle cut out on its own backdrop, titled and priced, in every shape, with a clip and the copy. Runs entirely in your browser. No account, no upload, free.">
 <meta property="og:title" content="lotstretcher">
 <meta property="og:description" content="Lot photos into listing photos, entirely on your own device.">
 <meta property="og:image" content="demo/after.jpg">
@@ -38,21 +38,22 @@
     <div class="hero-copy">
       <h1>Lot photos into listing photos.</h1>
       <p class="lede">
-        Drop in a folder of shots. Get back cut-out vehicles on clean
-        backdrops, sized for every platform, with the copy written.
+        Drop in the shots. Get the vehicle cut out on a backdrop from its
+        own paint, titled and priced, in every shape you post, with a
+        clip and the copy written.
       </p>
-      <div class="row wrap" style="gap:var(--s-3);margin-top:var(--s-6)">
+      <div class="hero-cta">
         <a class="btn btn-primary btn-lg" href="app.html">Open the app</a>
         <a class="btn btn-lg" href="#how">See how</a>
       </div>
-      <p class="xs dim" style="margin-top:var(--s-4)">
+      <p class="xs dim hero-note">
         Runs on your phone or laptop. Nothing uploads.
       </p>
     </div>
 
     <!-- The product, doing the thing. Drag to compare. -->
     <figure class="compare" id="compare">
-      <img class="cmp-after" src="demo/after.jpg" alt="The same vehicle composed on a generated backdrop" width="900" height="900">
+      <img class="cmp-after" src="demo/after.jpg" alt="The same vehicle composed on a backdrop from its paint, with its title, a line to ask for Alex and its price" width="900" height="900">
       <div class="cmp-clip" id="cmpClip">
         <img class="cmp-before" src="demo/before.jpg" alt="A vehicle photographed on the lot" width="900" height="900">
       </div>
@@ -97,7 +98,7 @@
       <div class="flow-copy">
         <span class="step-n">1</span>
         <h3>The booth</h3>
-        <p class="muted">Photos from a folder, your camera or pasted links, and the vehicle from a listing address, a VIN or its window sticker, decoded on your device.</p>
+        <p class="muted">Photos from a folder, your camera or pasted links. The vehicle from a listing address, a VIN or its window sticker, read on your device.</p>
       </div>
     </div>
 
@@ -124,15 +125,17 @@
     <div class="flow">
       <figure class="flow-visual">
         <div class="outgrid">
-          <img class="sq" src="demo/after.jpg" alt="Square composed image" loading="lazy">
-          <img class="pt" src="demo/portrait.jpg" alt="Portrait composed image" loading="lazy">
+          <img class="sq" src="demo/after.jpg" alt="The square still" width="900" height="900" loading="lazy">
+          <img class="pt" src="demo/portrait.jpg" alt="The portrait still" width="506" height="900" loading="lazy">
+          <img class="hz" src="demo/horizontal.jpg" alt="The horizontal still" width="900" height="506" loading="lazy">
         </div>
       </figure>
       <div class="flow-copy">
         <span class="step-n">3</span>
         <h3>Take the bundle</h3>
         <p class="muted">
-          Every size, plus copy for Facebook, Instagram and Threads.
+          Square, portrait and horizontal from one set of choices, a clip
+          in the same shapes, and copy for Facebook, Instagram and Threads.
         </p>
       </div>
     </div>
@@ -143,7 +146,7 @@
 <section class="block alt" id="live">
   <div class="shell">
     <h2 class="center-h">Watch it work.</h2>
-    <p class="muted center-h" style="margin-top:var(--s-3)">
+    <p class="muted center-h sub">
       Not a recording. This runs the real pipeline in your browser, on
       this page, right now.
     </p>
@@ -161,9 +164,9 @@
       <div class="live-out" id="liveOut" hidden>
         <figure><img id="liveHero" alt="Composed result"><figcaption class="xs dim">Composed on this device</figcaption></figure>
         <div>
-          <h3 style="font-size:var(--t-md);margin-bottom:var(--s-2)">Timings on your hardware</h3>
+          <h3 class="live-h">Timings on your hardware</h3>
           <dl class="timings" id="liveTimings"></dl>
-          <a class="btn btn-primary" href="app.html" style="margin-top:var(--s-4)">Do this with your photos</a>
+          <a class="btn btn-primary live-cta" href="app.html">Do this with your photos</a>
         </div>
       </div>
     </div>
@@ -171,18 +174,18 @@
 </section>
 
 <!-- ================= backdrop ================= -->
-<section class="block alt">
+<section class="block">
   <div class="shell split">
     <div>
       <span class="eyebrow">No stock backgrounds</span>
       <h2>The backdrop comes from the car.</h2>
-      <p class="muted" style="margin-top:var(--s-4)">
+      <p class="muted sub">
         Each backdrop is generated from that vehicle's own paint and
-        interior colours. No two listings share one, so a feed never
-        looks stamped out.
+        interior colours: a gradient, a sweep, a halo or two tones of it.
+        No two listings share one, so a feed never looks stamped out.
       </p>
       <div class="swatches" id="swatches" aria-hidden="true"></div>
-      <p class="xs dim" style="margin-top:var(--s-4)">
+      <p class="xs dim sub">
         No API key. No network call.
       </p>
     </div>
@@ -193,30 +196,87 @@
 </section>
 
 <!-- ================= studio ================= -->
-<section class="block">
+<section class="block alt">
   <div class="shell split flip">
     <div>
       <span class="eyebrow">The studio</span>
       <h2>Then make it yours.</h2>
-      <p class="muted" style="margin-top:var(--s-4)">
-        Pick a stock backdrop or drop in your own lot. Put a frame on it,
-        fitted to every shape you post. Write the title, the price and
-        who to ask for straight onto the still, each in its own font,
-        corner and colour, the paint's if you like. Every lever redraws
-        a live preview as you move it.
+      <p class="muted sub">
+        Five tools on one stage, every lever redrawing a live preview as
+        you move it. The stage is the still you will post, in the shape
+        you have picked.
       </p>
       <ul class="ticks">
-        <li>Backdrops, frames and six fonts ship with the site</li>
-        <li>Square, portrait and horizontal from one set of choices</li>
-        <li>The same text on every frame of the clip</li>
+        <li><b>Backdrop.</b> The car's own gradient, a stock picture like this flag, or your own lot.</li>
+        <li><b>Frame.</b> A line the core draws, a stock frame, or your dealer's, fitted to every shape.</li>
+        <li><b>Text.</b> Title, subtitle and price, each with its own font, corner and colour.</li>
+        <li><b>Light.</b> A spotlight with strength and spread, a glow, a ground shadow, a floor reflection.</li>
+        <li><b>Video.</b> Length, pace and the shapes of the clip.</li>
       </ul>
-      <p class="xs dim" style="margin-top:var(--s-4)">
-        Still on your device. The library is a few hundred KB of files.
+      <p class="xs dim sub">
+        Still on your device. The backdrops, frames and fonts are a few
+        hundred KB of files shipped with the site.
       </p>
     </div>
-    <figure class="shot">
-      <img src="demo/studio.jpg" alt="A portrait still with a stock flag backdrop, a fitted frame, a title, a subtitle and a price badge" loading="lazy" width="720" height="900">
+    <figure class="shot shot-tall">
+      <img src="demo/studio.jpg" alt="A portrait still: a flag backdrop, a drawn frame, the title across the top in Anton, the subtitle and a price badge in the vehicle's paint top left" loading="lazy" width="720" height="1280">
     </figure>
+  </div>
+</section>
+
+<!-- ================= text ================= -->
+<section class="block">
+  <div class="shell">
+    <div class="split">
+      <div>
+        <span class="eyebrow">Text</span>
+        <h2>Three pieces, each its own.</h2>
+        <p class="muted sub">
+          The title, a subtitle and the price badge. Set them together
+          or one at a time: font, corner, colour, case, on a pill or
+          bare. The badge can take the vehicle's paint. Drag any piece on
+          the stage and it snaps to a corner.
+        </p>
+        <ul class="ticks">
+          <li>Six fonts, all open licensed, drawn by the same core on the still and the clip</li>
+          <li>Pieces sharing a corner stack; pieces in different corners keep clear of each other</li>
+          <li>A title too wide for the shape shrinks to one line before it wraps</li>
+        </ul>
+      </div>
+      <figure class="fonts" aria-label="The same title in six fonts">
+        <img src="demo/font-lato.jpg" alt="Lato Bold" width="640" height="247" loading="lazy">
+        <img src="demo/font-oswald.jpg" alt="Oswald Bold" width="640" height="247" loading="lazy">
+        <img src="demo/font-montserrat.jpg" alt="Montserrat ExtraBold" width="640" height="247" loading="lazy">
+        <img src="demo/font-bebas.jpg" alt="Bebas Neue" width="640" height="247" loading="lazy">
+        <img src="demo/font-anton.jpg" alt="Anton" width="640" height="247" loading="lazy">
+        <img src="demo/font-playfair.jpg" alt="Playfair Display Bold" width="640" height="247" loading="lazy">
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ================= clip ================= -->
+<section class="block alt">
+  <div class="shell">
+    <span class="eyebrow">Video</span>
+    <h2>The clip, from the same choices.</h2>
+    <p class="muted sub max-ch">
+      Three or more exteriors become a conveyor: each shot rolls into the
+      hero slot and out again, on the same backdrop, in the same frame,
+      with the same text and light as the stills. The arrangement follows
+      the shape: a lineup across a horizontal clip, a stack down a
+      portrait one.
+    </p>
+    <div class="clips">
+      <figure class="shot">
+        <img src="demo/clip-horizontal.jpg" alt="A horizontal clip frame: the hero truck centred with an accent shot each side on one floor" loading="lazy" width="900" height="507">
+        <figcaption class="xs dim">Horizontal, 1920 by 1080</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="demo/clip-portrait.jpg" alt="A portrait clip frame: the hero truck between the shot before it and the shot after" loading="lazy" width="506" height="900">
+        <figcaption class="xs dim">Portrait, 1080 by 1920</figcaption>
+      </figure>
+    </div>
   </div>
 </section>
 
@@ -226,7 +286,7 @@
     <div>
       <span class="eyebrow">Window sticker</span>
       <h2>Specs, without typing them.</h2>
-      <p class="muted" style="margin-top:var(--s-4)">
+      <p class="muted sub">
         Point it at a window sticker PDF and it reads the trim, engine,
         colours and options straight off the page.
       </p>
@@ -243,19 +303,19 @@
 </section>
 
 <!-- ================= library ================= -->
-<section class="block">
+<section class="block alt">
   <div class="shell split">
     <div>
       <span class="eyebrow">Library</span>
       <h2>Everything it made, in one place.</h2>
-      <p class="muted" style="margin-top:var(--s-4)">
+      <p class="muted sub">
         The pipeline writes one folder per vehicle. The Library pane reads
-        that folder and shows every hero, framed set, clip and post,
+        that folder and shows every still, framed set, clip and post,
         searchable by title, VIN or stock number.
       </p>
       <ul class="ticks">
         <li>Open a listings folder from disk, on any browser</li>
-        <li>Load a vehicle's originals back in and rerun it with today's options</li>
+        <li>Load a vehicle's originals back in and rerun it with today's choices</li>
         <li>On your server: rebuild in place, re-scrape from the listing, sync the lot, delist</li>
       </ul>
     </div>
@@ -266,10 +326,10 @@
 </section>
 
 <!-- ================= privacy ================= -->
-<section class="block alt">
+<section class="block">
   <div class="shell narrow center-h">
     <h2>Nothing leaves the device.</h2>
-    <p class="muted" style="margin-top:var(--s-4);max-width:56ch;margin-inline:auto">
+    <p class="muted sub max-ch centered">
       Not encrypted in transit. Not deleted after 30 days. There is no
       server to send photos to. This site is static files, and the work
       happens in your tab.
@@ -285,7 +345,7 @@
 </section>
 
 <!-- ================= surfaces ================= -->
-<section class="block">
+<section class="block alt">
   <div class="shell">
     <h2 class="center-h">One product, two surfaces.</h2>
     <div class="surfaces">
@@ -294,11 +354,11 @@
         <h3>The website</h3>
         <p class="small muted">One car, right now, from a phone.</p>
         <ul class="ticks small">
-          <li>Upload, camera, pasted URLs, or a listing address or VIN</li>
+          <li>Upload, camera, pasted links, or a listing address or VIN</li>
           <li>Browse a listings folder from disk</li>
           <li>Runs in your browser, nothing to install</li>
         </ul>
-        <a class="btn btn-primary" href="app.html" style="margin-top:var(--s-4);width:100%">Open the app</a>
+        <a class="btn btn-primary surface-cta" href="app.html">Open the app</a>
       </div>
       <div class="surface">
         <span class="pill">Self-hosted</span>
@@ -307,9 +367,9 @@
         <ul class="ticks small">
           <li>Scraping and inventory sync</li>
           <li>Library served, rebuilt, re-scraped and delisted in place</li>
-          <li>Runs on your machine; Python, a GPU helps</li>
+          <li>Music under the clip, the flag video, GPU encoding</li>
         </ul>
-        <a class="btn" href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener" style="margin-top:var(--s-4);width:100%">Get the source</a>
+        <a class="btn surface-cta" href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener">Get the source</a>
       </div>
     </div>
   </div>
@@ -319,21 +379,22 @@
 <section class="closer">
   <div class="shell center-h">
     <h2>Try it on one car.</h2>
-    <p class="muted" style="margin-top:var(--s-3)">Takes about a minute.</p>
-    <a class="btn btn-primary btn-lg" href="app.html" style="margin-top:var(--s-5)">Open the app</a>
+    <p class="muted sub-sm">Takes about a minute.</p>
+    <a class="btn btn-primary btn-lg closer-cta" href="app.html">Open the app</a>
   </div>
 </section>
 
 <footer>
-  <div class="shell row wrap" style="gap:var(--s-5)">
-    <a class="brand" href="#top" style="font-size:var(--t-base)"><img src="icons/icon.svg" alt=""> lotstretcher</a>
+  <div class="shell row wrap foot-row">
+    <a class="brand foot-brand" href="#top"><img src="icons/icon.svg" alt=""> lotstretcher</a>
     <span class="grow"></span>
     <a href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener">Source</a>
     <a href="app.html">Open app</a>
   </div>
   <div class="shell">
-    <p class="xs dim" style="margin-top:var(--s-4)">
-      MIT licensed.
+    <p class="xs dim sub">
+      MIT licensed. The fonts are Lato, Oswald, Montserrat, Bebas Neue,
+      Anton and Playfair Display, under the SIL Open Font License.
     </p>
   </div>
 </footer>
