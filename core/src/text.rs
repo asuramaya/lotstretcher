@@ -107,6 +107,10 @@ pub struct Overlay {
     pub box_w: f64,
     #[serde(default)]
     pub box_h: f64,
+    /// Which piece this is ("title", "badge" or "line"), so a stage can
+    /// tell which lever a drag on it moves.
+    #[serde(default)]
+    pub piece: String,
 }
 
 /// The rows the overlays occupy, as (top, bottom) in pixels, or None.
@@ -227,6 +231,42 @@ pub struct PlanRequest {
     pub shadow: bool,
     #[serde(default = "line_size")]
     pub line_size: f64,
+    /// The badge's size as a share of the title's.
+    #[serde(default = "badge_size")]
+    pub badge_size: f64,
+    /// Each piece's own font, position, colour, case and box, where it
+    /// departs from the shared levers above.
+    #[serde(default)]
+    pub title_style: PieceStyle,
+    #[serde(default)]
+    pub badge_style: PieceStyle,
+    #[serde(default)]
+    pub line_style: PieceStyle,
+}
+
+impl PlanRequest {
+    /// Whether any piece asks for the paint, so the op samples it.
+    pub fn wants_paint(&self) -> bool {
+        [Some(&self.color), self.title_style.color.as_ref(), self.badge_style.color.as_ref(), self.line_style.color.as_ref()]
+            .into_iter().flatten().any(|c| c == "paint")
+    }
+}
+
+/// One piece's own styling: every field is optional and falls back to
+/// the request's shared lever, so a plan with no piece styles is the
+/// plan the shared levers describe.
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct PieceStyle {
+    #[serde(default)]
+    pub font: Option<String>,
+    #[serde(default)]
+    pub position: Option<String>,
+    #[serde(default)]
+    pub color: Option<String>,
+    #[serde(default)]
+    pub case: Option<String>,
+    #[serde(default)]
+    pub boxed: Option<bool>,
 }
 
 /// The paint an overlay plan colours itself with: the record's exterior
@@ -272,6 +312,14 @@ pub struct TextRequest {
     /// The line's size as a share of the title's.
     #[serde(default = "line_size")]
     pub line_size: f64,
+    #[serde(default = "badge_size")]
+    pub badge_size: f64,
+    #[serde(default)]
+    pub title_style: PieceStyle,
+    #[serde(default)]
+    pub badge_style: PieceStyle,
+    #[serde(default)]
+    pub line_style: PieceStyle,
 }
 
 impl TextRequest {
@@ -282,7 +330,15 @@ impl TextRequest {
             position: self.position.clone(), color: self.color.clone(), size: self.size, font: self.font.clone(),
             window: None, accent: self.accent, sample: None,
             case: self.case.clone(), boxed: self.boxed, shadow: self.shadow, line_size: self.line_size,
+            badge_size: self.badge_size, title_style: self.title_style.clone(),
+            badge_style: self.badge_style.clone(), line_style: self.line_style.clone(),
         }
+    }
+
+    /// Whether any piece asks for the paint, so a compose samples it.
+    pub fn wants_paint(&self) -> bool {
+        [Some(&self.color), self.title_style.color.as_ref(), self.badge_style.color.as_ref(), self.line_style.color.as_ref()]
+            .into_iter().flatten().any(|c| c == "paint")
     }
 
     /// Nothing to draw: the compose skips the plan and needs no font.
@@ -297,7 +353,40 @@ fn white() -> String { "white".into() }
 fn as_is() -> String { "as-is".into() }
 fn yes() -> bool { true }
 fn line_size() -> f64 { 0.62 }
+fn badge_size() -> f64 { 0.85 }
 fn size() -> f64 { 0.05 }
+
+/// The words and the pill for a text colour: white, black, the paint
+/// (the badge in the accent, the words white or black over it) or a
+/// colour of the user's own, treated as a paint would be.
+fn colours_for(name: &str, accent: [u8; 3]) -> Result<([u8; 3], [u8; 4]), String> {
+    let over = |c: [u8; 3]| -> [u8; 3] {
+        let bright = 0.299 * c[0] as f64 + 0.587 * c[1] as f64 + 0.114 * c[2] as f64 > 170.0;
+        if bright { [16, 16, 16] } else { [255, 255, 255] }
+    };
+    match name {
+        "black" => Ok(([16, 16, 16], [255, 255, 255, 220])),
+        "white" => Ok(([255, 255, 255], [16, 18, 22, 210])),
+        "paint" => Ok((over(accent), [accent[0], accent[1], accent[2], 235])),
+        other => match crate::palette::parse_hex(other) {
+            Some(c) => Ok((over(c), [c[0], c[1], c[2], 235])),
+            None => Err(format!("unknown text colour {other:?}; white, black, paint or #rrggbb")),
+        },
+    }
+}
+
+fn set_case(case: &str, s: &str) -> Result<String, String> {
+    match case {
+        "as-is" => Ok(s.to_string()),
+        "upper" => Ok(s.to_uppercase()),
+        other => Err(format!("unknown text case {other:?}; as-is or upper")),
+    }
+}
+
+fn check_position(pos: &str) -> Result<(), String> {
+    if matches!(pos, "tl" | "tr" | "bl" | "br" | "bc" | "tc") { Ok(()) }
+    else { Err(format!("unknown text position {pos:?}; tl, tr, bl, br, tc or bc")) }
+}
 
 /// The vehicle's title line: year make model trim, whichever are set.
 pub fn vehicle_title(v: &Value) -> String {
@@ -334,16 +423,29 @@ pub fn plan(req: &PlanRequest) -> Result<Vec<Overlay>, String> {
 /// the bottom when its middle is below the canvas's.
 pub fn shrink_window(window: (i64, i64, i64, i64), overlays: &[Overlay], height: usize) -> (i64, i64, i64, i64) {
     let mut w = window;
-    if let Some((top, bottom)) = band(overlays) {
-        let gap = (height as f64 * 0.02).round() as i64;
-        let (top, bottom) = (top.floor() as i64, bottom.ceil() as i64);
-        if (top + bottom) / 2 > (height as i64) / 2 {
-            w.3 = w.3.min(top - gap).max(w.1 + 1);
-        } else {
-            w.1 = w.1.max(bottom + gap).min(w.3 - 1);
-        }
+    let gap = (height as f64 * 0.02).round() as i64;
+    // Pieces may sit in both halves (a title up top, the line below):
+    // each half gives up its own band, never the whole canvas.
+    let half = |o: &&Overlay| (o.y + o.y + o.box_h) / 2.0 > height as f64 / 2.0;
+    let upper: Vec<&Overlay> = overlays.iter().filter(|o| !half(o)).collect();
+    let lower: Vec<&Overlay> = overlays.iter().filter(half).collect();
+    if let Some((_, bottom)) = band_of(&upper) {
+        w.1 = w.1.max(bottom.ceil() as i64 + gap).min(w.3 - 1);
+    }
+    if let Some((top, _)) = band_of(&lower) {
+        w.3 = w.3.min(top.floor() as i64 - gap).max(w.1 + 1);
     }
     w
+}
+
+fn band_of(overlays: &[&Overlay]) -> Option<(f64, f64)> {
+    let mut top = f64::MAX;
+    let mut bottom = f64::MIN;
+    for o in overlays {
+        top = top.min(o.y);
+        bottom = bottom.max(o.y + o.box_h);
+    }
+    if top == f64::MAX { None } else { Some((top, bottom)) }
 }
 
 /// The plan inside a window (a frame's car window, or the canvas): the
@@ -353,91 +455,84 @@ pub fn plan_in(req: &PlanRequest, window: (i64, i64, i64, i64)) -> Result<Vec<Ov
     let (wl, wt) = (window.0.max(0) as f64, window.1.max(0) as f64);
     let (w, h) = ((window.2 as f64).min(cw) - wl, (window.3 as f64).min(ch) - wt);
     if w <= 0.0 || h <= 0.0 { return Err("text window is empty".into()); }
-    let font = req.font.clone().unwrap_or_else(|| DEFAULT_FONT.into());
-    if !has_font(&font) { return Err(format!("font {font:?} is not loaded; load_font first")); }
+    let shared_font = req.font.clone().unwrap_or_else(|| DEFAULT_FONT.into());
     // "paint": the badge takes the vehicle's own colour and the words
     // stay white (black on a pale paint), so the text reads as part of
     // the car rather than a label stuck on it.
     let accent = req.accent.unwrap_or([120, 120, 130]);
-    let pale = 0.299 * accent[0] as f64 + 0.587 * accent[1] as f64 + 0.114 * accent[2] as f64 > 170.0;
-    let (color, pill_color): ([u8; 3], [u8; 4]) = match req.color.as_str() {
-        "black" => ([16, 16, 16], [255, 255, 255, 220]),
-        "white" => ([255, 255, 255], [16, 18, 22, 210]),
-        "paint" => (if pale { [16, 16, 16] } else { [255, 255, 255] }, [accent[0], accent[1], accent[2], 235]),
-        // A colour of the user's own is treated as a paint would be: the
-        // badge in it, the words white or black over it.
-        other => match crate::palette::parse_hex(other) {
-            Some(c) => {
-                let bright = 0.299 * c[0] as f64 + 0.587 * c[1] as f64 + 0.114 * c[2] as f64 > 170.0;
-                (if bright { [16, 16, 16] } else { [255, 255, 255] }, [c[0], c[1], c[2], 235])
-            }
-            None => return Err(format!("unknown text colour {other:?}; white, black, paint or #rrggbb")),
-        },
-    };
     let base = (req.size * ch).max(8.0);
     let inset = (w.min(h) * 0.045).round();
     let gap = (base * 0.35).round();
     let max_width = w - 2.0 * inset;
 
-    // Each piece: text, size, pill?
-    let mut pieces: Vec<(String, f64, Option<Pill>)> = Vec::new();
+    // Each piece with its own levers resolved: the piece's style where
+    // it has one, else the shared lever.
+    struct Piece { name: &'static str, text: String, px: f64, pill: Option<Pill>, position: String, font: String, color: [u8; 3] }
+    let resolve = |name: &'static str, style: &PieceStyle, text: &str, px: f64, pill_default: bool, always_pill: bool| -> Result<Piece, String> {
+        let font = style.font.clone().unwrap_or_else(|| shared_font.clone());
+        if !has_font(&font) { return Err(format!("font {font:?} is not loaded; load_font first")); }
+        let position = style.position.clone().unwrap_or_else(|| req.position.clone());
+        check_position(&position)?;
+        let (color, pill_color) = colours_for(style.color.as_deref().unwrap_or(&req.color), accent)?;
+        let case = style.case.as_deref().unwrap_or(&req.case);
+        let boxed = always_pill || style.boxed.unwrap_or(pill_default);
+        let pill = if boxed { Some(Pill { color: pill_color, pad: (px * 0.35).round(), radius: (px * 0.35).round() }) } else { None };
+        Ok(Piece { name, text: set_case(case, text)?, px, pill, position, font, color })
+    };
+    let mut pieces: Vec<Piece> = Vec::new();
     let title = match req.title.as_str() {
         "vehicle" => vehicle_title(&req.vehicle),
         "custom" => req.custom_title.clone().unwrap_or_default(),
         "none" => String::new(),
         other => return Err(format!("unknown title mode {other:?}; none, vehicle or custom")),
     };
-    let set = |s: &str| -> Result<String, String> {
-        match req.case.as_str() {
-            "as-is" => Ok(s.to_string()),
-            "upper" => Ok(s.to_uppercase()),
-            other => Err(format!("unknown text case {other:?}; as-is or upper")),
-        }
-    };
-    let pill_for = |px: f64| Pill { color: pill_color, pad: (px * 0.35).round(), radius: (px * 0.35).round() };
     if !title.trim().is_empty() {
-        pieces.push((set(title.trim())?, base, if req.boxed { Some(pill_for(base)) } else { None }));
+        pieces.push(resolve("title", &req.title_style, title.trim(), base, req.boxed, false)?);
     }
     if req.price_badge {
         if let Some(p) = badge_price(&req.vehicle) {
-            let px = (base * 0.85).round();
-            pieces.push((p, px, Some(pill_for(px))));
+            let px = (base * req.badge_size.max(0.2).min(1.5)).round();
+            pieces.push(resolve("badge", &req.badge_style, &p, px, true, true)?);
         }
     }
     if let Some(line) = req.line.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
         let px = (base * req.line_size.max(0.2).min(1.5)).round();
-        pieces.push((set(line)?, px, if req.boxed { Some(pill_for(px)) } else { None }));
+        pieces.push(resolve("line", &req.line_style, line, px, req.boxed, false)?);
     }
     if pieces.is_empty() { return Ok(Vec::new()); }
 
-    // Measure, then place from the anchor corner.
+    // Measure each piece, then stack the pieces sharing a corner from
+    // that corner: title, badge, line from the top down wherever the
+    // stack sits, so a bottom corner is filled from the last piece up.
     let mut boxes: Vec<(f64, f64)> = Vec::new();
-    for (text, px, pill) in &pieces {
-        let m = rasterize(&font, text, *px as f32, Some(max_width as f32))?;
-        let pad = pill.as_ref().map(|p| 2.0 * p.pad).unwrap_or(0.0);
+    for p in &pieces {
+        let m = rasterize(&p.font, &p.text, p.px as f32, Some(max_width as f32))?;
+        let pad = p.pill.as_ref().map(|q| 2.0 * q.pad).unwrap_or(0.0);
         boxes.push((m.width as f64 + pad, m.height as f64 + pad));
     }
-    let bottom = req.position.starts_with('b');
-    let right = req.position.ends_with('r');
-    let centre = req.position.ends_with('c');
-    if !matches!(req.position.as_str(), "tl" | "tr" | "bl" | "br" | "bc" | "tc") {
-        return Err(format!("unknown text position {:?}; tl, tr, bl, br, tc or bc", req.position));
+    let mut corners: Vec<String> = Vec::new();
+    for p in &pieces { if !corners.contains(&p.position) { corners.push(p.position.clone()); } }
+    let mut out: Vec<(usize, Overlay)> = Vec::new();
+    for corner in corners {
+        let bottom = corner.starts_with('b');
+        let right = corner.ends_with('r');
+        let centre = corner.ends_with('c');
+        let mut items: Vec<usize> = (0..pieces.len()).filter(|&i| pieces[i].position == corner).collect();
+        if bottom { items.reverse(); }
+        let mut y = if bottom { h - inset } else { inset };
+        for i in items {
+            let (bw, bh) = boxes[i];
+            let p = &pieces[i];
+            let x = if centre { ((w - bw) / 2.0).round() } else if right { (w - inset - bw).round() } else { inset };
+            let top = if bottom { y - bh } else { y };
+            out.push((i, Overlay {
+                text: p.text.clone(), font: Some(p.font.clone()), size: p.px, color: p.color, x: x + wl, y: (top + wt).round(),
+                max_width: Some(max_width), shadow: p.pill.is_none() && req.shadow, pill: p.pill.clone(), box_w: bw, box_h: bh,
+                piece: p.name.to_string(),
+            }));
+            y = if bottom { top - gap } else { y + bh + gap };
+        }
     }
-    // The stack reads title, price, line from the top down wherever it
-    // sits, so a bottom corner is filled from the last piece upwards.
-    let mut items: Vec<_> = pieces.into_iter().zip(boxes).collect();
-    if bottom { items.reverse(); }
-    let mut out = Vec::new();
-    let mut y = if bottom { h - inset } else { inset };
-    for ((text, px, pill), (bw, bh)) in items {
-        let x = if centre { ((w - bw) / 2.0).round() } else if right { (w - inset - bw).round() } else { inset };
-        let top = if bottom { y - bh } else { y };
-        out.push(Overlay {
-            text, font: Some(font.clone()), size: px, color, x: x + wl, y: (top + wt).round(),
-            max_width: Some(max_width), shadow: pill.is_none() && req.shadow, pill, box_w: bw, box_h: bh,
-        });
-        y = if bottom { top - gap } else { y + bh + gap };
-    }
-    if bottom { out.reverse(); }
-    Ok(out)
+    out.sort_by_key(|(i, _)| *i);
+    Ok(out.into_iter().map(|(_, o)| o).collect())
 }

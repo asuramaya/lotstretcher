@@ -428,3 +428,43 @@ def test_two_chosen_stops_are_taken_as_they_are_and_an_angle_fixes_the_direction
     assert np.abs(a - b[:, ::-1]).mean() < 6
     fs = frame_style({"border": "line", "frameInset": 0.1, "frameRadius": 0.05})
     assert fs["inset"] == 0.1 and fs["radius"] == 0.05
+
+
+def test_each_piece_can_take_its_own_corner_font_colour_and_box():
+    """The per-piece levers (--title-font, --line-position, --badge-color,
+    --line-box ...): a piece with its own corner leaves the stack, one
+    with its own font is set in it, and the shared levers still describe
+    every piece left alone."""
+    w, h = 1080, 1350
+    own = {**CONTROLS, "linePosition": "tr", "titleFont": "Oswald Bold", "badgeColor": "paint",
+           "lineBox": "on", "lineCase": "upper", "textFont": "Lato Bold"}
+    plan = plan_overlays(w, h, VEHICLE, text_options(own))
+    by = {o["piece"]: o for o in plan}
+    assert set(by) == {"title", "badge", "line"}
+    # The line went to the top right, on its own, in upper case, on a pill.
+    assert by["line"]["y"] < h / 2 < by["title"]["y"]
+    assert by["line"]["x"] + by["line"]["box_w"] > w * 0.9
+    assert by["line"]["text"] == "ASK FOR ALEX" and by["line"]["pill"]
+    # The title took its own font; the others kept the shared one.
+    assert by["title"]["font"] == "Oswald Bold"
+    assert by["badge"]["font"] == by["line"]["font"] == "Lato Bold"
+    # The badge took the paint (a red cutout gives a red pill); the title stayed white.
+    assert by["title"]["color"] == [255, 255, 255]
+    named = {**VEHICLE, "exterior_color": "Red"}
+    red = plan_overlays(w, h, named, text_options(own))
+    badge = next(o for o in red if o["piece"] == "badge")
+    assert badge["pill"]["color"][0] > badge["pill"]["color"][2]
+    # The same controls with every piece lever at "same" is the shared plan.
+    same = {**CONTROLS, "titleFont": "same", "linePosition": None, "badgeColor": "same", "lineBox": "same"}
+    assert plan_overlays(w, h, VEHICLE, text_options(same)) == plan_overlays(w, h, VEHICLE, text_options(CONTROLS))
+
+
+def test_pieces_in_both_halves_shrink_each_half_only():
+    """A title up top and a line at the bottom take a band off each end,
+    never the whole window between them."""
+    from lotstretcher.imaging.text import text_window
+    w, h = 1080, 1350
+    plan = plan_overlays(w, h, VEHICLE, text_options({**CONTROLS, "textPosition": "tl", "linePosition": "br"}), window=(0, 0, w, h))
+    top, bottom = text_window((0, 0, w, h), h, plan)[1], text_window((0, 0, w, h), h, plan)[3]
+    assert 0 < top < h * 0.3 and h * 0.7 < bottom < h
+

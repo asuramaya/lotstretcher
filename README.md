@@ -523,10 +523,35 @@ lotstretcher URL --title vehicle --price-badge --text-line "Ask for Alex" \
 `--title custom` writes `--title-text`. `--price-badge` puts the post's
 own resolved price in a pill (MSRP for new, the listed price for used).
 `--text-color paint` puts the vehicle's own colour on the badge, from
-the listing's colour name or sampled off the cutout. The app's Text
-tool is the same seven levers, previewed live as you type, and the
-text can be dragged on the stage: it snaps to the six positions
-`--text-position` knows, so the lever and the flag still say the same. `recompose` takes them too. The clip carries the same text on
+the listing's colour name or sampled off the cutout. `--text-font`
+picks the studio font (Lato Bold, Oswald Bold, Montserrat ExtraBold,
+Bebas Neue, Anton, Playfair Display Bold; all OFL, shipped with their
+licences under assets/fonts/), `--text-case upper` sets the words in
+capitals, `--text-boxed` puts the title and line on pills like the
+badge, `--no-text-shadow` drops the soft shadow, and `--text-line-size`
+and `--badge-size` are the line's and the badge's size as a share of
+the title's.
+
+Each piece can then depart from the shared levers on its own:
+`--title-font`, `--title-position`, `--title-color`, `--title-case`,
+`--title-box on|off`, the same five for `--line-*`, and `--badge-font`,
+`--badge-position`, `--badge-color`. Left unset, a piece follows the
+shared flag; pieces sharing a corner stack there, and a piece sent to
+its own corner takes a band off that end of the canvas alone.
+
+```bash
+lotstretcher URL --title vehicle --price-badge --text-line "0% APR to May" \
+    --text-position bl --title-font "Oswald Bold" --title-case upper \
+    --badge-color paint --line-position tr --line-box on
+```
+
+The app's Text tool is the same levers, previewed live as you type: an
+All tab for the shared ones and a Title, Badge and Line tab for each
+piece's own, each tab there while its piece is on. The text can be
+dragged on the stage: it snaps to the six positions `--text-position`
+knows, and with a piece's tab open the drag moves that piece alone (a
+piece already placed on its own moves when the pointer lands on it), so
+the lever and the flag still say the same. `recompose` takes them too. The clip carries the same text on
 every frame, with the conveyor laid out in the room beside it, and sits
 on the same backdrop as the stills: `--photo-background` puts the photo
 behind the clip too, unless `--video-flag-background` asks for the

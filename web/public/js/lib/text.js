@@ -41,6 +41,11 @@ export function loadedFonts() { return Object.fromEntries(bytes); }
  * mapping as imaging/text.py::text_options. */
 export function textOptions(o) {
   return {
+    font: o.textFont || DEFAULT_FONT,
+    badge_size: o.badgeSize != null ? Number(o.badgeSize) : 0.85,
+    title_style: pieceStyle(o, 'title'),
+    badge_style: pieceStyle(o, 'badge'),
+    line_style: pieceStyle(o, 'line'),
     title: o.titleMode || 'none',
     custom_title: o.titleText || null,
     price_badge: !!o.priceBadge,
@@ -53,6 +58,45 @@ export function textOptions(o) {
     shadow: o.textShadow == null ? true : !!o.textShadow,
     line_size: o.textLineSize != null ? Number(o.textLineSize) : 0.62,
   };
+}
+
+export const PIECES = ['title', 'badge', 'line'];
+const PIECE_LEVERS = ['font', 'position', 'color', 'case', 'box'];
+
+/* One piece's own levers (titleFont, titlePosition, ...) as the core's
+ * PieceStyle: only what departs from the shared lever; "same", "" and
+ * null all mean the shared one. The twin of imaging/text.py::piece_style. */
+export function pieceStyle(o, piece) {
+  const out = {};
+  for (const lever of PIECE_LEVERS) {
+    const v = o[`${piece}${lever[0].toUpperCase()}${lever.slice(1)}`];
+    if (v == null || v === '' || v === 'same') continue;
+    if (lever === 'box') out.boxed = v === 'on' || v === true;
+    else out[lever] = v;
+  }
+  return out;
+}
+
+/* Every font the plan draws with: the shared one and each piece's own. */
+export function fontsIn(text) {
+  const names = [text.font || DEFAULT_FONT];
+  for (const p of PIECES) {
+    const own = text[`${p}_style`]?.font;
+    if (own && !names.includes(own)) names.push(own);
+  }
+  return names;
+}
+
+async function ensureFonts(text) {
+  await Promise.all(fontsIn(text).map((n) => ensureFont(n)));
+  return text.font || DEFAULT_FONT;
+}
+
+function fontsReady(text, onReady) {
+  const missing = fontsIn(text).filter((n) => !fontReady(n));
+  if (!missing.length) return true;
+  Promise.all(missing.map((n) => ensureFont(n))).then(() => onReady?.()).catch((e) => console.warn('studio font', e));
+  return false;
 }
 
 /* The app's frame controls as the core's border_style, or null: the
@@ -87,7 +131,7 @@ export function wantsText(text) {
  * window itself. */
 export async function textRequest(vehicle, text) {
   if (!wantsText(text)) return null;
-  const font = await ensureFont(text.font || DEFAULT_FONT);
+  const font = await ensureFonts(text);
   return { ...text, font, vehicle: vehicle || {} };
 }
 
@@ -95,19 +139,15 @@ export async function textRequest(vehicle, text) {
  * `onReady` fires once it has so a preview can redraw. */
 export function textRequestNow(vehicle, text, onReady) {
   if (!wantsText(text)) return null;
-  const font = text.font || DEFAULT_FONT;
-  if (!fontReady(font)) {
-    ensureFont(font).then(() => onReady?.()).catch((e) => console.warn('studio font', e));
-    return null;
-  }
-  return { ...text, font, vehicle: vehicle || {} };
+  if (!fontsReady(text, onReady)) return null;
+  return { ...text, font: text.font || DEFAULT_FONT, vehicle: vehicle || {} };
 }
 
 /* Overlays for one canvas, or [] when no text is asked for, so a run
  * without text never fetches the font. */
 export async function planOverlays(width, height, vehicle, text) {
   if (!wantsText(text)) return [];
-  const font = await ensureFont(text.font || DEFAULT_FONT);
+  const font = await ensureFonts(text);
   return core.overlayPlan(width, height, vehicle, { ...text, font });
 }
 
@@ -115,10 +155,6 @@ export async function planOverlays(width, height, vehicle, text) {
  * `onReady` fires once it has so a preview can redraw. */
 export function planOverlaysNow(width, height, vehicle, text, onReady) {
   if (!wantsText(text)) return [];
-  const font = text.font || DEFAULT_FONT;
-  if (!fontReady(font)) {
-    ensureFont(font).then(() => onReady?.()).catch((e) => console.warn('studio font', e));
-    return [];
-  }
-  return core.overlayPlan(width, height, vehicle, { ...text, font });
+  if (!fontsReady(text, onReady)) return [];
+  return core.overlayPlan(width, height, vehicle, { ...text, font: text.font || DEFAULT_FONT });
 }

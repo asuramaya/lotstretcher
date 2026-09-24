@@ -26,7 +26,9 @@ def test_defaults_match_the_recompose_cli():
                           "glow_intensity": 0.75, "gradient": True, "border_fit": "slice",
                           "text": {"title": "none", "custom_title": None, "price_badge": False, "line": None,
                                    "position": "bl", "color": "white", "size": 0.05,
-                                   "case": "as-is", "boxed": False, "shadow": True, "line_size": 0.62},
+                                   "case": "as-is", "boxed": False, "shadow": True, "line_size": 0.62,
+                                   "font": "Lato Bold", "badge_size": 0.85,
+                                   "title_style": {}, "badge_style": {}, "line_style": {}},
                           "border_style": None, "shadow": None, "reflection": None, "backdrop": "vehicle",
                           "backdrop_color": None, "backdrop_color2": None, "backdrop_angle": None}
     assert r["hero_formats"] == ("square",)

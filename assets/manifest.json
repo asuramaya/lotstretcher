@@ -100,6 +100,71 @@
       ],
       "studio": true,
       "note": "The studio's text font (core/src/text.rs). OFL 1.1; the licence file ships beside it."
+    },
+    {
+      "file": "fonts/Oswald-Bold.ttf",
+      "name": "Oswald Bold",
+      "license": "fonts/Oswald-LICENSE.txt",
+      "tags": [
+        "sans",
+        "condensed",
+        "bold",
+        "ofl"
+      ],
+      "studio": true,
+      "note": "A condensed headline face; tall words in a narrow band. OFL 1.1; the licence file ships beside it. Static instance made with fontTools from the Google Fonts source."
+    },
+    {
+      "file": "fonts/Montserrat-ExtraBold.ttf",
+      "name": "Montserrat ExtraBold",
+      "license": "fonts/Montserrat-LICENSE.txt",
+      "tags": [
+        "sans",
+        "geometric",
+        "bold",
+        "ofl"
+      ],
+      "studio": true,
+      "note": "A wide geometric face; a poster's title. OFL 1.1; the licence file ships beside it. Static instance made with fontTools from the Google Fonts source."
+    },
+    {
+      "file": "fonts/BebasNeue-Regular.ttf",
+      "name": "Bebas Neue",
+      "license": "fonts/BebasNeue-LICENSE.txt",
+      "tags": [
+        "display",
+        "caps",
+        "condensed",
+        "ofl"
+      ],
+      "studio": true,
+      "note": "All-caps display face; the case lever makes no difference to it. OFL 1.1; the licence file ships beside it. Static instance made with fontTools from the Google Fonts source."
+    },
+    {
+      "file": "fonts/Anton-Regular.ttf",
+      "name": "Anton",
+      "license": "fonts/Anton-LICENSE.txt",
+      "tags": [
+        "display",
+        "heavy",
+        "condensed",
+        "ofl"
+      ],
+      "studio": true,
+      "note": "A heavy condensed impact-style face for a loud price. OFL 1.1; the licence file ships beside it. Static instance made with fontTools from the Google Fonts source."
+    },
+    {
+      "file": "fonts/PlayfairDisplay-Bold.ttf",
+      "name": "Playfair Display Bold",
+      "license": "fonts/PlayfairDisplay-LICENSE.txt",
+      "tags": [
+        "serif",
+        "display",
+        "bold",
+        "ofl"
+      ],
+      "studio": true,
+      "note": "A high-contrast serif for a luxury line. OFL 1.1; the licence file ships beside it. Static instance made with fontTools from the Google Fonts source."
     }
   ]
 }

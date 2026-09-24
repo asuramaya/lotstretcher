@@ -309,7 +309,7 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
     let mut overlays = req.overlays.clone();
     if let Some(t) = req.text.as_ref().filter(|t| !t.is_empty()) {
         let mut plan = t.for_canvas(w, h);
-        if plan.accent.is_none() && plan.color == "paint" {
+        if plan.accent.is_none() && t.wants_paint() {
             let hero = match req.cars.first() { Some(s) => Some(slice_image(arena, s)?), None => None };
             plan.accent = crate::text::accent_for(&plan.vehicle, hero.as_deref());
         }

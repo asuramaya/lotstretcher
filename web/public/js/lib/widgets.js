@@ -164,7 +164,20 @@ export function buildSegment(control, values, onChange, disabled, choices, locke
 /* The six text positions as a 3x2 grid of cells: where the words go,
  * seen as a place rather than read as a name. */
 export function buildPlace(control, value, onChange, disabled) {
+  const wrap = el('div', 'place-wrap');
   const grid = el('div', 'place');
+  wrap.appendChild(grid);
+  // A piece's own place can be "same as all" (null): the grid shows no
+  // cell pressed and a Same button hands the piece back to the stack.
+  if (control.nullable) {
+    const same = el('button', `btn btn-ghost btn-sm place-same${value == null ? ' is-on' : ''}`, 'Same');
+    same.type = 'button';
+    same.title = (control.choices || []).find((c) => c.value == null)?.label || 'Same as all';
+    same.setAttribute('aria-pressed', String(value == null));
+    same.disabled = disabled;
+    same.onclick = () => onChange(null);
+    wrap.appendChild(same);
+  }
   for (const pos of ['tl', 'tc', 'tr', 'bl', 'bc', 'br']) {
     const choice = (control.choices || []).find((c) => c.value === pos);
     const b = el('button', 'place-cell');
@@ -177,7 +190,7 @@ export function buildPlace(control, value, onChange, disabled) {
     b.onclick = () => onChange(pos);
     grid.appendChild(b);
   }
-  return grid;
+  return control.nullable ? wrap : grid;
 }
 
 /* A colour lever as a row of dots: the named choices (white, black,
@@ -195,6 +208,7 @@ export function buildDots(control, values, onChange, disabled, thumbFor, choices
     dot.disabled = disabled;
     const art = thumbFor ? thumbFor(control, choice, values, null) : null;
     if (art && art.color) dot.style.background = art.color;
+    else if (choice.value === 'same') { dot.classList.add('dot-same'); dot.textContent = '='; }
     else dot.classList.add('is-plain');
     dot.onclick = () => onChange(control.key, choice.value);
     row.appendChild(dot);

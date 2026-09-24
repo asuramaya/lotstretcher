@@ -16,7 +16,7 @@ import { prepareClip, drawClipFrame } from './pipeline/video.js';
 import { get as specGet } from './spec.js';
 import * as OPTS from './options.js';
 import { imageNow } from './lib/library.js';
-import { textOptions, textRequestNow, frameStyle, shadowStyle, reflectionStyle } from './lib/text.js';
+import { textOptions, textRequestNow, planOverlaysNow, frameStyle, shadowStyle, reflectionStyle } from './lib/text.js';
 import { el, segment, chip } from './lib/widgets.js';
 
 /* A stock asset as a canvas: the site's own file, or the server's
@@ -69,11 +69,17 @@ export class Preview {
     // third across and half down is one of the six positions the Text
     // tool (and --text-position) knows, so the drag sets the same lever.
     // Moving is live; letting go commits.
+    // Which piece moves is the app's call (`textTarget(hit)`: the open
+    // Text tab, or a piece already placed on its own under the pointer);
+    // null moves the whole stack.
     this.onTextPosition = null;
+    this.textTarget = null;
     this.dragPos = null;
+    this.dragPiece = null;
     this.canvas.addEventListener('pointerdown', (e) => {
       if (!this.hasText()) return;
       this.canvas.setPointerCapture(e.pointerId);
+      this.dragPiece = this.textTarget ? this.textTarget(this.pieceAt(e)) : null;
       this.dragPos = this.positionAt(e);
       this.canvas.classList.add('is-dragging');
       e.preventDefault();
@@ -81,14 +87,15 @@ export class Preview {
     this.canvas.addEventListener('pointermove', (e) => {
       if (this.dragPos === null) return;
       const pos = this.positionAt(e);
-      if (pos !== this.dragPos) { this.dragPos = pos; this.onTextPosition?.(pos, true); }
+      if (pos !== this.dragPos) { this.dragPos = pos; this.onTextPosition?.(pos, true, this.dragPiece); }
     });
     const drop = (e) => {
       if (this.dragPos === null) return;
       const pos = this.positionAt(e);
       this.dragPos = null;
       this.canvas.classList.remove('is-dragging');
-      this.onTextPosition?.(pos, false);
+      this.onTextPosition?.(pos, false, this.dragPiece);
+      this.dragPiece = null;
     };
     this.canvas.addEventListener('pointerup', drop);
     this.canvas.addEventListener('pointercancel', drop);
@@ -102,6 +109,24 @@ export class Preview {
   hasText() {
     const o = this.getOptions() || {};
     return (o.titleMode && o.titleMode !== 'none') || !!o.priceBadge || !!(o.textLine && o.textLine.trim());
+  }
+
+  /* The piece under the pointer ("title", "badge", "line") or null:
+   * the plan is asked for at the canvas's own size, so the boxes are
+   * the ones drawn. A frame's window is not applied here; the inset
+   * it adds is small against a piece's box. */
+  pieceAt(e) {
+    const subject = this.subject?.();
+    const o = this.getOptions() || {};
+    if (!subject || this.mode === 'video') return null;
+    try {
+      const plan = planOverlaysNow(this.canvas.width, this.canvas.height, subject.vehicle, textOptions(o), null);
+      const r = this.canvas.getBoundingClientRect();
+      const px = (e.clientX - r.left) / Math.max(1, r.width) * this.canvas.width;
+      const py = (e.clientY - r.top) / Math.max(1, r.height) * this.canvas.height;
+      const hit = plan.find((ov) => px >= ov.x && px <= ov.x + ov.box_w && py >= ov.y && py <= ov.y + ov.box_h);
+      return hit?.piece || null;
+    } catch { return null; }
   }
 
   /* The six text positions, from where the pointer is on the stage:

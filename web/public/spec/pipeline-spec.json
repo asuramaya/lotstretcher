@@ -1082,7 +1082,8 @@
               }
             ],
             "cli": "--title",
-            "tooltip": "A headline on the still, drawn by the core in the studio font"
+            "tooltip": "A headline on the still, drawn by the core in the studio font",
+            "tab": "all"
           },
           {
             "key": "titleText",
@@ -1096,7 +1097,8 @@
               "equals": "custom"
             },
             "cli": "--title-text",
-            "tooltip": "What the title says"
+            "tooltip": "What the title says",
+            "tab": "all"
           },
           {
             "key": "priceBadge",
@@ -1105,7 +1107,8 @@
             "type": "toggle",
             "default": false,
             "cli": "--price-badge",
-            "tooltip": "The post's own price in a pill: MSRP for new, the listed price for used"
+            "tooltip": "The post's own price in a pill: MSRP for new, the listed price for used",
+            "tab": "all"
           },
           {
             "key": "textLine",
@@ -1115,7 +1118,19 @@
             "default": "",
             "placeholder": "Ask for Alex",
             "cli": "--text-line",
-            "tooltip": "A smaller line: the dealer, who to ask for, a call to action"
+            "tooltip": "A smaller line: the dealer, who to ask for, a call to action",
+            "tab": "all"
+          },
+          {
+            "key": "textFont",
+            "label": "Font",
+            "hint": "",
+            "type": "select",
+            "dynamic": "fonts",
+            "default": "Lato Bold",
+            "cli": "--text-font",
+            "tab": "all",
+            "tooltip": "The studio font every piece is set in; each piece can take its own"
           },
           {
             "key": "textPosition",
@@ -1151,7 +1166,8 @@
             ],
             "cli": "--text-position",
             "tooltip": "Where the text sits; the vehicle keeps clear of it",
-            "presentation": "place"
+            "presentation": "place",
+            "tab": "all"
           },
           {
             "key": "textColor",
@@ -1176,7 +1192,8 @@
             "cli": "--text-color",
             "presentation": "dots",
             "custom": true,
-            "cliNote": "--text-color takes a name or your own #rrggbb."
+            "cliNote": "--text-color takes a name or your own #rrggbb.",
+            "tab": "all"
           },
           {
             "key": "textSize",
@@ -1189,7 +1206,8 @@
             "step": 0.005,
             "unit": "fraction",
             "cli": "--text-size",
-            "tooltip": "The title's height as a share of the canvas"
+            "tooltip": "The title's height as a share of the canvas",
+            "tab": "all"
           },
           {
             "key": "textCase",
@@ -1208,7 +1226,8 @@
                 "label": "UPPER"
               }
             ],
-            "cli": "--text-case"
+            "cli": "--text-case",
+            "tab": "all"
           },
           {
             "key": "textBoxed",
@@ -1217,7 +1236,8 @@
             "tooltip": "The title and the line on pills, like the price badge",
             "type": "toggle",
             "default": false,
-            "cli": "--text-boxed"
+            "cli": "--text-boxed",
+            "tab": "all"
           },
           {
             "key": "textShadow",
@@ -1227,11 +1247,267 @@
             "type": "toggle",
             "default": true,
             "cli": "--no-text-shadow",
-            "cliInvert": true
+            "cliInvert": true,
+            "tab": "all"
+          },
+          {
+            "key": "titleFont",
+            "label": "Font",
+            "hint": "",
+            "type": "select",
+            "dynamic": "fonts",
+            "same": "Same as all",
+            "default": "same",
+            "cli": "--title-font",
+            "tab": "title",
+            "showWhen": {
+              "key": "titleMode",
+              "notEquals": "none"
+            },
+            "tooltip": "The title's own font"
+          },
+          {
+            "key": "titlePosition",
+            "label": "Position",
+            "hint": "",
+            "type": "select",
+            "presentation": "place",
+            "nullable": true,
+            "default": null,
+            "choices": [
+              {
+                "value": null,
+                "label": "Same as all"
+              },
+              {
+                "value": "tl",
+                "label": "Top left"
+              },
+              {
+                "value": "tc",
+                "label": "Top centre"
+              },
+              {
+                "value": "tr",
+                "label": "Top right"
+              },
+              {
+                "value": "bl",
+                "label": "Bottom left"
+              },
+              {
+                "value": "bc",
+                "label": "Bottom centre"
+              },
+              {
+                "value": "br",
+                "label": "Bottom right"
+              }
+            ],
+            "cli": "--title-position",
+            "tab": "title",
+            "showWhen": {
+              "key": "titleMode",
+              "notEquals": "none"
+            },
+            "tooltip": "The title's own corner; pieces sharing a corner stack there"
+          },
+          {
+            "key": "titleColor",
+            "label": "Colour",
+            "hint": "",
+            "type": "select",
+            "presentation": "dots",
+            "custom": true,
+            "default": "same",
+            "choices": [
+              {
+                "value": "same",
+                "label": "Same as all"
+              },
+              {
+                "value": "white",
+                "label": "White"
+              },
+              {
+                "value": "black",
+                "label": "Black"
+              },
+              {
+                "value": "paint",
+                "label": "Paint"
+              }
+            ],
+            "cli": "--title-color",
+            "tab": "title",
+            "showWhen": {
+              "key": "titleMode",
+              "notEquals": "none"
+            },
+            "cliNote": "--title-color takes a name or your own #rrggbb."
+          },
+          {
+            "key": "titleCase",
+            "label": "Case",
+            "hint": "",
+            "type": "select",
+            "presentation": "segment",
+            "default": "same",
+            "choices": [
+              {
+                "value": "same",
+                "label": "Same"
+              },
+              {
+                "value": "as-is",
+                "label": "As typed"
+              },
+              {
+                "value": "upper",
+                "label": "UPPER"
+              }
+            ],
+            "cli": "--title-case",
+            "tab": "title",
+            "showWhen": {
+              "key": "titleMode",
+              "notEquals": "none"
+            }
+          },
+          {
+            "key": "titleBox",
+            "label": "Boxed",
+            "hint": "",
+            "type": "select",
+            "presentation": "segment",
+            "default": "same",
+            "choices": [
+              {
+                "value": "same",
+                "label": "Same"
+              },
+              {
+                "value": "on",
+                "label": "On"
+              },
+              {
+                "value": "off",
+                "label": "Off"
+              }
+            ],
+            "cli": "--title-box",
+            "tab": "title",
+            "showWhen": {
+              "key": "titleMode",
+              "notEquals": "none"
+            },
+            "tooltip": "The title on a pill, or bare"
+          },
+          {
+            "key": "badgeSize",
+            "label": "Size",
+            "hint": "",
+            "type": "range",
+            "default": 0.85,
+            "min": 0.4,
+            "max": 1.4,
+            "step": 0.02,
+            "unit": "fraction",
+            "cli": "--badge-size",
+            "tab": "badge",
+            "showWhen": "priceBadge",
+            "tooltip": "The badge's size as a share of the title's"
+          },
+          {
+            "key": "badgeFont",
+            "label": "Font",
+            "hint": "",
+            "type": "select",
+            "dynamic": "fonts",
+            "same": "Same as all",
+            "default": "same",
+            "cli": "--badge-font",
+            "tab": "badge",
+            "showWhen": "priceBadge",
+            "tooltip": "The price badge's own font"
+          },
+          {
+            "key": "badgePosition",
+            "label": "Position",
+            "hint": "",
+            "type": "select",
+            "presentation": "place",
+            "nullable": true,
+            "default": null,
+            "choices": [
+              {
+                "value": null,
+                "label": "Same as all"
+              },
+              {
+                "value": "tl",
+                "label": "Top left"
+              },
+              {
+                "value": "tc",
+                "label": "Top centre"
+              },
+              {
+                "value": "tr",
+                "label": "Top right"
+              },
+              {
+                "value": "bl",
+                "label": "Bottom left"
+              },
+              {
+                "value": "bc",
+                "label": "Bottom centre"
+              },
+              {
+                "value": "br",
+                "label": "Bottom right"
+              }
+            ],
+            "cli": "--badge-position",
+            "tab": "badge",
+            "showWhen": "priceBadge",
+            "tooltip": "The price badge's own corner; pieces sharing a corner stack there"
+          },
+          {
+            "key": "badgeColor",
+            "label": "Colour",
+            "hint": "",
+            "type": "select",
+            "presentation": "dots",
+            "custom": true,
+            "default": "same",
+            "choices": [
+              {
+                "value": "same",
+                "label": "Same as all"
+              },
+              {
+                "value": "white",
+                "label": "White"
+              },
+              {
+                "value": "black",
+                "label": "Black"
+              },
+              {
+                "value": "paint",
+                "label": "Paint"
+              }
+            ],
+            "cli": "--badge-color",
+            "tab": "badge",
+            "showWhen": "priceBadge",
+            "cliNote": "--badge-color takes a name or your own #rrggbb."
           },
           {
             "key": "textLineSize",
-            "label": "Line size",
+            "label": "Size",
             "hint": "",
             "tooltip": "The line's size as a share of the title's",
             "type": "range",
@@ -1241,6 +1517,173 @@
             "step": 0.02,
             "unit": "fraction",
             "cli": "--text-line-size",
+            "showWhen": "textLine",
+            "tab": "line"
+          },
+          {
+            "key": "lineFont",
+            "label": "Font",
+            "hint": "",
+            "type": "select",
+            "dynamic": "fonts",
+            "same": "Same as all",
+            "default": "same",
+            "cli": "--line-font",
+            "tab": "line",
+            "showWhen": "textLine",
+            "tooltip": "The line's own font"
+          },
+          {
+            "key": "linePosition",
+            "label": "Position",
+            "hint": "",
+            "type": "select",
+            "presentation": "place",
+            "nullable": true,
+            "default": null,
+            "choices": [
+              {
+                "value": null,
+                "label": "Same as all"
+              },
+              {
+                "value": "tl",
+                "label": "Top left"
+              },
+              {
+                "value": "tc",
+                "label": "Top centre"
+              },
+              {
+                "value": "tr",
+                "label": "Top right"
+              },
+              {
+                "value": "bl",
+                "label": "Bottom left"
+              },
+              {
+                "value": "bc",
+                "label": "Bottom centre"
+              },
+              {
+                "value": "br",
+                "label": "Bottom right"
+              }
+            ],
+            "cli": "--line-position",
+            "tab": "line",
+            "showWhen": "textLine",
+            "tooltip": "The line's own corner; pieces sharing a corner stack there"
+          },
+          {
+            "key": "lineColor",
+            "label": "Colour",
+            "hint": "",
+            "type": "select",
+            "presentation": "dots",
+            "custom": true,
+            "default": "same",
+            "choices": [
+              {
+                "value": "same",
+                "label": "Same as all"
+              },
+              {
+                "value": "white",
+                "label": "White"
+              },
+              {
+                "value": "black",
+                "label": "Black"
+              },
+              {
+                "value": "paint",
+                "label": "Paint"
+              }
+            ],
+            "cli": "--line-color",
+            "tab": "line",
+            "showWhen": "textLine",
+            "cliNote": "--line-color takes a name or your own #rrggbb."
+          },
+          {
+            "key": "lineCase",
+            "label": "Case",
+            "hint": "",
+            "type": "select",
+            "presentation": "segment",
+            "default": "same",
+            "choices": [
+              {
+                "value": "same",
+                "label": "Same"
+              },
+              {
+                "value": "as-is",
+                "label": "As typed"
+              },
+              {
+                "value": "upper",
+                "label": "UPPER"
+              }
+            ],
+            "cli": "--line-case",
+            "tab": "line",
+            "showWhen": "textLine"
+          },
+          {
+            "key": "lineBox",
+            "label": "Boxed",
+            "hint": "",
+            "type": "select",
+            "presentation": "segment",
+            "default": "same",
+            "choices": [
+              {
+                "value": "same",
+                "label": "Same"
+              },
+              {
+                "value": "on",
+                "label": "On"
+              },
+              {
+                "value": "off",
+                "label": "Off"
+              }
+            ],
+            "cli": "--line-box",
+            "tab": "line",
+            "showWhen": "textLine",
+            "tooltip": "The line on a pill, or bare"
+          }
+        ],
+        "tabs": [
+          {
+            "id": "all",
+            "label": "All",
+            "hint": "The levers every piece shares"
+          },
+          {
+            "id": "title",
+            "label": "Title",
+            "hint": "The title's own levers",
+            "showWhen": {
+              "key": "titleMode",
+              "notEquals": "none"
+            }
+          },
+          {
+            "id": "badge",
+            "label": "Badge",
+            "hint": "The price badge's own levers",
+            "showWhen": "priceBadge"
+          },
+          {
+            "id": "line",
+            "label": "Line",
+            "hint": "The line's own levers",
             "showWhen": "textLine"
           }
         ]

@@ -97,6 +97,12 @@ function choicesFor(control) {
   if (control.dynamic === 'borders') return library.borders || [];
   if (control.dynamic === 'backgrounds') return library.backgrounds || [];
   if (control.dynamic === 'audio') return library.audio || [];
+  // The studio's fonts, by name; a piece's own font lever leads with
+  // "Same as all" (control.same) so it can hand back to the shared one.
+  if (control.dynamic === 'fonts') {
+    const fonts = (library.fonts || []).map((f) => ({ value: f.name, label: f.name }));
+    return control.same ? [{ value: 'same', label: control.same }, ...fonts] : fonts;
+  }
   return [];
 }
 
@@ -318,6 +324,9 @@ function icon(id) {
 let activeTab = null;
 const subTab = {};       // a tabbed group's open tab, by group id
 export function openTool(id) { activeTab = id; }
+/* The open sub-tab of a tabbed group (Text: all | title | badge | line),
+ * so the stage knows which piece a drag moves. */
+export function openSubTab(groupId) { return subTab[groupId] || null; }
 export function renderControls(host, values, onChange, opts = {}) {
   const { thumbFor = null, rail = null, before = [], after = [], placeholders = {}, uploads = {}, onUpload = null, onRemoveUpload = null } = opts;
   host.innerHTML = '';
@@ -385,16 +394,21 @@ export function renderControls(host, values, onChange, opts = {}) {
      * controls and choices at a time. The tab opens on whichever holds
      * the chosen value, and stays where it was put across redraws. */
     let tab = null;
-    if (group.tabs?.length) {
+    // A tab can follow a value (the Title tab is there while a title is
+    // on): a hidden tab's controls are not in effect, and the panel falls
+    // back to the first tab still shown.
+    const tabs = (group.tabs || []).filter((t) => shownBy(t, values));
+    if (tabs.length) {
       if (!subTab[group.id]) {
         const picker = visible.find((c) => c.presentation === 'swatches' && (c.choices || []).some((ch) => ch.tab));
         const chosen = picker && (picker.choices || []).find((ch) => String(ch.value) === String(values[picker.key] ?? picker.default));
-        subTab[group.id] = chosen?.tab || group.tabs[0].id;
+        subTab[group.id] = chosen?.tab || tabs[0].id;
       }
+      if (!tabs.some((t) => t.id === subTab[group.id])) subTab[group.id] = tabs[0].id;
       tab = subTab[group.id];
       const seg = el('div', 'segment ctrl-subtabs');
       seg.setAttribute('role', 'tablist');
-      for (const t of group.tabs) {
+      for (const t of tabs) {
         const b = el('button', 'seg', t.label);
         b.type = 'button';
         b.setAttribute('role', 'tab');
@@ -406,7 +420,7 @@ export function renderControls(host, values, onChange, opts = {}) {
       body.appendChild(seg);
     }
 
-    const tabSpec = tab ? group.tabs.find((t) => t.id === tab) : null;
+    const tabSpec = tab ? tabs.find((t) => t.id === tab) : null;
     for (const control of visible) {
       if (tab && control.tab && control.tab !== tab) continue;
       const { ok, why, onServer } = availability(control);

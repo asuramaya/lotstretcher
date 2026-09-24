@@ -284,7 +284,7 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
             OpResult::Json(serde_json::to_string(&Scalar { value: true }).unwrap())
         }
         Op::OverlayPlan(mut req) => {
-            if req.accent.is_none() && req.color == "paint" {
+            if req.accent.is_none() && req.wants_paint() {
                 let sample = match &req.sample { Some(s) => Some(slice_image(arena, s)?), None => None };
                 req.accent = crate::text::accent_for(&req.vehicle, sample.as_deref());
             }

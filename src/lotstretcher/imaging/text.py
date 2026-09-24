@@ -14,7 +14,19 @@ from lotstretcher import core
 from lotstretcher.imaging.assets import ASSETS_DIR
 
 DEFAULT_FONT = "Lato Bold"
-FONT_FILES = {DEFAULT_FONT: "fonts/Lato-Bold.ttf"}
+
+
+def _font_files() -> dict[str, str]:
+    """name -> file under assets/, from the manifest: the same list the
+    studio ships (web/build-studio.py), so the CLI and the app offer the
+    same fonts and the name is never retyped."""
+    import json
+    manifest = json.loads((Path(ASSETS_DIR) / "manifest.json").read_text())
+    return {e["name"]: e["file"] for e in manifest.get("fonts", []) if e.get("studio")}
+
+
+FONT_FILES = _font_files()
+FONTS = tuple(FONT_FILES)
 _loaded: set[str] = set()
 
 
@@ -81,6 +93,45 @@ def add_text_args(parser) -> None:
                         help="No soft shadow under unboxed words.")
     parser.add_argument("--text-line-size", type=float, default=0.62, metavar="FRACTION",
                         help="The line's size as a share of the title's (default: 0.62).")
+    parser.add_argument("--badge-size", type=float, default=0.85, metavar="FRACTION",
+                        help="The price badge's size as a share of the title's (default: 0.85).")
+    parser.add_argument("--text-font", default=DEFAULT_FONT, choices=FONTS, metavar="FONT",
+                        help=f"The studio font every piece is set in (default: {DEFAULT_FONT}); one of "
+                             f"{', '.join(FONTS)}.")
+    # Each piece's own levers. Left unset ("same"), a piece follows the
+    # shared flag above; set, it departs from it on that lever alone.
+    # Spelled out flag by flag so the one-route test reads them off the
+    # source, as it reads every other flag.
+    parser.add_argument("--title-font", default=None, choices=FONTS, metavar="FONT",
+                        help="The title's own font (default: --text-font).")
+    parser.add_argument("--title-position", default=None, choices=POSITIONS,
+                        help="The title's own corner (default: --text-position). Pieces sharing a corner stack there.")
+    parser.add_argument("--title-color", default=None, type=color_choice(COLORS), metavar="COLOR",
+                        help="The title's own colour: white, black, paint or #rrggbb (default: --text-color).")
+    parser.add_argument("--title-case", default=None, choices=TEXT_CASES,
+                        help="The title's own case (default: --text-case).")
+    parser.add_argument("--title-box", default=None, choices=BOX_CHOICES,
+                        help="The title on a pill (on) or bare (off); default: --text-boxed.")
+    parser.add_argument("--badge-font", default=None, choices=FONTS, metavar="FONT",
+                        help="The price badge's own font (default: --text-font).")
+    parser.add_argument("--badge-position", default=None, choices=POSITIONS,
+                        help="The price badge's own corner (default: --text-position).")
+    parser.add_argument("--badge-color", default=None, type=color_choice(COLORS), metavar="COLOR",
+                        help="The price badge's own colour: white, black, paint or #rrggbb (default: --text-color).")
+    parser.add_argument("--line-font", default=None, choices=FONTS, metavar="FONT",
+                        help="The line's own font (default: --text-font).")
+    parser.add_argument("--line-position", default=None, choices=POSITIONS,
+                        help="The line's own corner (default: --text-position).")
+    parser.add_argument("--line-color", default=None, type=color_choice(COLORS), metavar="COLOR",
+                        help="The line's own colour: white, black, paint or #rrggbb (default: --text-color).")
+    parser.add_argument("--line-case", default=None, choices=TEXT_CASES,
+                        help="The line's own case (default: --text-case).")
+    parser.add_argument("--line-box", default=None, choices=BOX_CHOICES,
+                        help="The line on a pill (on) or bare (off); default: --text-boxed.")
+
+
+PIECES = ("title", "badge", "line")
+BOX_CHOICES = ("on", "off")
 
 
 FRAME_STYLES = ("none", "line")
@@ -265,12 +316,43 @@ def controls_from_text_args(args) -> dict:
         "textBoxed": bool(args.text_boxed),
         "textShadow": not args.no_text_shadow,
         "textLineSize": args.text_line_size,
+        "badgeSize": args.badge_size,
+        "textFont": args.text_font,
+        "titleFont": args.title_font, "titlePosition": args.title_position, "titleColor": args.title_color,
+        "titleCase": args.title_case, "titleBox": args.title_box,
+        "badgeFont": args.badge_font, "badgePosition": args.badge_position, "badgeColor": args.badge_color,
+        "lineFont": args.line_font, "linePosition": args.line_position, "lineColor": args.line_color,
+        "lineCase": args.line_case, "lineBox": args.line_box,
     }
+
+
+PIECE_LEVERS = ("font", "position", "color", "case", "box")
+
+
+def piece_style(options: dict, piece: str) -> dict:
+    """One piece's own levers (app keys titleFont, titlePosition, ...)
+    as the core's PieceStyle: only what departs from the shared lever.
+    "same", "" and None all mean the shared one."""
+    out: dict = {}
+    for lever in PIECE_LEVERS:
+        value = options.get(f"{piece}{lever.title()}")
+        if value in (None, "", "same"):
+            continue
+        if lever == "box":
+            out["boxed"] = value == "on" or value is True
+        else:
+            out[lever] = value
+    return out
 
 
 def text_options(options: dict) -> dict:
     """The Text controls (app keys) as the core's plan fields."""
     return {
+        "font": options.get("textFont") or DEFAULT_FONT,
+        "badge_size": float(options.get("badgeSize") if options.get("badgeSize") is not None else 0.85),
+        "title_style": piece_style(options, "title"),
+        "badge_style": piece_style(options, "badge"),
+        "line_style": piece_style(options, "line"),
         "title": options.get("titleMode") or "none",
         "custom_title": options.get("titleText") or None,
         "price_badge": bool(options.get("priceBadge", False)),
@@ -285,6 +367,23 @@ def text_options(options: dict) -> dict:
     }
 
 
+def fonts_in(text: dict) -> list[str]:
+    """Every font the plan draws with: the shared one and each piece's own."""
+    names = [text.get("font") or DEFAULT_FONT]
+    for piece in PIECES:
+        own = (text.get(f"{piece}_style") or {}).get("font")
+        if own and own not in names:
+            names.append(own)
+    return names
+
+
+def ensure_fonts(text: dict) -> str:
+    """Load every font the plan needs; returns the shared font's name."""
+    for name in fonts_in(text):
+        ensure_font(name)
+    return text.get("font") or DEFAULT_FONT
+
+
 def wants_text(text: dict) -> bool:
     return text.get("title", "none") != "none" or bool(text.get("price_badge")) or bool(text.get("line"))
 
@@ -296,7 +395,7 @@ def text_request(vehicle: dict | None, text: dict) -> dict | None:
     sits on the frame's art."""
     if not wants_text(text):
         return None
-    font = ensure_font(text.get("font") or DEFAULT_FONT)
+    font = ensure_fonts(text)
     return {**{k: v for k, v in text.items() if k != "font"}, "font": font, "vehicle": vehicle or {}}
 
 
@@ -309,7 +408,7 @@ def plan_overlays(width: int, height: int, vehicle: dict | None, text: dict,
     when the record names no colour."""
     if not wants_text(text):
         return []
-    font = ensure_font(text.get("font") or DEFAULT_FONT)
+    font = ensure_fonts(text)
     op = {"font": font, "window": list(window) if window else None, **{k: v for k, v in text.items() if k != "font"}}
     if sample is not None:
         op["sample"] = {"$image": 0}

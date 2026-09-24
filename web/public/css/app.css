@@ -770,6 +770,9 @@
 .dot-custom input::-moz-color-swatch { border: 0; border-radius: var(--r-full); }
 .dot-custom.is-auto { background: conic-gradient(#f66, #fc6, #6f6, #6ff, #66f, #f6f, #f66); }
 .dot-custom.is-auto input::-webkit-color-swatch { opacity: 0; }
+.dot-same { background: var(--surface-3); color: var(--ink-3); font: 600 12px/1 var(--font); }
+.place-wrap { display: flex; align-items: center; gap: var(--s-2); flex: none; }
+.place-same[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); }
 .range-wrap.is-auto input[type="range"] { opacity: .45; }
 /* The text's place: a 3x2 grid, the chosen cell filled. */
 .place { display: grid; grid-template-columns: repeat(3, 26px); grid-template-rows: repeat(2, 26px); gap: 3px; flex: none; }

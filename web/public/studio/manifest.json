@@ -50,6 +50,36 @@
       "file": "fonts/Lato-Bold.ttf",
       "bytes": 657188,
       "license": "fonts/Lato-LICENSE.txt"
+    },
+    {
+      "name": "Oswald Bold",
+      "file": "fonts/Oswald-Bold.ttf",
+      "bytes": 88940,
+      "license": "fonts/Oswald-LICENSE.txt"
+    },
+    {
+      "name": "Montserrat ExtraBold",
+      "file": "fonts/Montserrat-ExtraBold.ttf",
+      "bytes": 374632,
+      "license": "fonts/Montserrat-LICENSE.txt"
+    },
+    {
+      "name": "Bebas Neue",
+      "file": "fonts/BebasNeue-Regular.ttf",
+      "bytes": 61400,
+      "license": "fonts/BebasNeue-LICENSE.txt"
+    },
+    {
+      "name": "Anton",
+      "file": "fonts/Anton-Regular.ttf",
+      "bytes": 170812,
+      "license": "fonts/Anton-LICENSE.txt"
+    },
+    {
+      "name": "Playfair Display Bold",
+      "file": "fonts/PlayfairDisplay-Bold.ttf",
+      "bytes": 194928,
+      "license": "fonts/PlayfairDisplay-LICENSE.txt"
     }
   ]
 }

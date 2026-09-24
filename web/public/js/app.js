@@ -32,7 +32,7 @@ import { loadCore, version as coreVersion, threadCount as coreThreads, enhanceIn
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { Preview } from './preview.js';
 import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
-import { renderControls, controlDefaults, controlsToFlags, affectsPreview, renderLooks } from './controls.js';
+import { renderControls, controlDefaults, controlsToFlags, affectsPreview, renderLooks, openSubTab } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
 import { textOptions, textRequest, frameStyle, shadowStyle, reflectionStyle } from './lib/text.js';
@@ -713,7 +713,7 @@ function swatchArt(control, choice, values, image) {
     const rgb = specGet('glow', 'colors')[choice.value];
     return rgb ? { color: `rgb(${rgb.join(',')})` } : null;
   }
-  if (control.key === 'frameColor' || control.key === 'textColor') {
+  if (control.key === 'frameColor' || /^(text|title|badge|line)Color$/.test(control.key)) {
     // White, black, or the paint as the core would read it off the subject.
     if (choice.value === 'white') return { color: '#ffffff' };
     if (choice.value === 'black') return { color: '#101010' };
@@ -1861,11 +1861,20 @@ async function init() {
     onToggleFormat: toggleFormat,
   });
   // Dragging the text on the stage moves the Text tool's position lever.
-  preview.onTextPosition = (pos, live) => {
-    state.options.textPosition = pos;
+  // A drag on the stage moves the piece the open Text tab names (the
+  // whole stack from the All tab), or a piece already placed on its
+  // own when the pointer lands on it.
+  preview.onTextPosition = (pos, live, piece) => {
+    state.options[piece ? `${piece}Position` : 'textPosition'] = pos;
     if (live) { preview.update(); return; }
     commitOptions();
     preview.update();
+  };
+  preview.textTarget = (hit) => {
+    const tab = openSubTab('text');
+    if (tab && tab !== 'all') return tab;
+    if (hit && state.options[`${hit}Position`]) return hit;
+    return null;
   };
   preview.load().then(() => renderOptions());
 
