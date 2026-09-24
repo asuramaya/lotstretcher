@@ -142,7 +142,7 @@ may not do. The video renderer runs in a worker of its own
 (`js/pipeline/video-worker.js`) and loads the threaded build there
 (`public/core-threads/`, rayon over web workers, wasm-bindgen-rayon in
 its no-bundler mode, built by `build-core.sh` on nightly with
-rust-src). The page hands the worker the spec, the studio font's bytes,
+rust-src). The page hands the worker the spec, the loaded studio fonts' bytes,
 the cutouts and the backdrop as pixels, and gets the MP4 back; the page
 stays free to draw while it renders. Anything that stops the worker
 (no cross-origin isolation, no WebCodecs there, a failed load) falls

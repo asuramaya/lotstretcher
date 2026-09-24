@@ -99,6 +99,9 @@ Safari. For each step, note pass, fail, or the message shown.
   its Position grid should light the corner while the title stays put.
   Under Font, pick **Anton**: the words should redraw in it within a
   second or two (the font is fetched on first use, ~170 KB).
+- Light tool: on the **Spot** tab, drag **Strength** to the right. The
+  backdrop's corners should darken as you drag, and **Auto** should
+  bring the measured dim back.
 - Frame tool: tap **Studio line**, then the **Your own** tile under
   Line colour. Report whether the picker opens and the line takes the
   colour on the stage.
