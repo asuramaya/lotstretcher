@@ -238,7 +238,8 @@ def conveyor_stack_layout(window: tuple[int, int, int, int], n_extra: int = 2) -
     # A short window (a frame's, or one with a text band taken off) can
     # leave a band shorter than the accent: the accent shrinks to the
     # band, never past the window's edge where the frame would cut it.
-    band = max(1, min(top_band, bottom_band))
+    # Less a breath of air, so a tall hero never touches its accents.
+    band = max(1, min(top_band, bottom_band) - round(wh * 0.03))
     if accent_h > band:
         accent_w, accent_h = max(1, min(ww, round(band * CONVEYOR_ACCENT_ASPECT))), band
         accent_l = wl + (ww - accent_w) // 2
