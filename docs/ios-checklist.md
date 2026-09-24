@@ -94,7 +94,11 @@ Safari. For each step, note pass, fail, or the message shown.
 - Text tool: set **Title** to the vehicle, then drag the words on the
   stage with a finger to another corner. They should follow as you
   drag and the Text tool's Position should read the corner you let go
-  in; the stage must not scroll while dragging.
+  in; the stage must not scroll while dragging. Then type a **Line**,
+  open the **Line** tab and drag again: only the line should move, and
+  its Position grid should light the corner while the title stays put.
+  Under Font, pick **Anton**: the words should redraw in it within a
+  second or two (the font is fetched on first use, ~170 KB).
 - Frame tool: tap **Studio line**, then the **Your own** tile under
   Line colour. Report whether the picker opens and the line takes the
   colour on the stage.
