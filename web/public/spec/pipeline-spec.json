@@ -1101,6 +1101,17 @@
             "tab": "all"
           },
           {
+            "key": "subtitle",
+            "label": "Subtitle",
+            "hint": "",
+            "type": "text",
+            "default": "",
+            "placeholder": "Ask for Alex",
+            "cli": "--subtitle",
+            "tooltip": "A subtitle under the title: the trim line, the dealer, who to ask for",
+            "tab": "all"
+          },
+          {
             "key": "priceBadge",
             "label": "Price badge",
             "hint": "",
@@ -1108,17 +1119,6 @@
             "default": false,
             "cli": "--price-badge",
             "tooltip": "The post's own price in a pill: MSRP for new, the listed price for used",
-            "tab": "all"
-          },
-          {
-            "key": "textLine",
-            "label": "Line",
-            "hint": "",
-            "type": "text",
-            "default": "",
-            "placeholder": "Ask for Alex",
-            "cli": "--text-line",
-            "tooltip": "A smaller line: the dealer, who to ask for, a call to action",
             "tab": "all"
           },
           {
@@ -1509,36 +1509,36 @@
             "cliNote": "--badge-color takes a name or your own #rrggbb."
           },
           {
-            "key": "textLineSize",
+            "key": "subtitleSize",
             "label": "Size",
             "hint": "",
-            "tooltip": "The line's size as a share of the title's",
+            "tooltip": "The subtitle's size as a share of the title's",
             "type": "range",
             "default": 0.62,
             "min": 0.3,
             "max": 1.2,
             "step": 0.02,
             "unit": "fraction",
-            "cli": "--text-line-size",
-            "showWhen": "textLine",
-            "tab": "line"
+            "cli": "--subtitle-size",
+            "showWhen": "subtitle",
+            "tab": "subtitle"
           },
           {
-            "key": "lineFont",
+            "key": "subtitleFont",
             "label": "Font",
             "hint": "",
             "type": "select",
             "dynamic": "fonts",
             "same": "Same as all",
             "default": "same",
-            "cli": "--line-font",
-            "tab": "line",
-            "showWhen": "textLine",
+            "cli": "--subtitle-font",
+            "tab": "subtitle",
+            "showWhen": "subtitle",
             "tooltip": "The line's own font",
             "faces": true
           },
           {
-            "key": "linePosition",
+            "key": "subtitlePosition",
             "label": "Position",
             "hint": "",
             "type": "select",
@@ -1575,13 +1575,13 @@
                 "label": "Bottom right"
               }
             ],
-            "cli": "--line-position",
-            "tab": "line",
-            "showWhen": "textLine",
+            "cli": "--subtitle-position",
+            "tab": "subtitle",
+            "showWhen": "subtitle",
             "tooltip": "The line's own corner; pieces sharing a corner stack there"
           },
           {
-            "key": "lineColor",
+            "key": "subtitleColor",
             "label": "Colour",
             "hint": "",
             "type": "select",
@@ -1606,13 +1606,13 @@
                 "label": "Paint"
               }
             ],
-            "cli": "--line-color",
-            "tab": "line",
-            "showWhen": "textLine",
+            "cli": "--subtitle-color",
+            "tab": "subtitle",
+            "showWhen": "subtitle",
             "cliNote": "--line-color takes a name or your own #rrggbb."
           },
           {
-            "key": "lineCase",
+            "key": "subtitleCase",
             "label": "Case",
             "hint": "",
             "type": "select",
@@ -1632,12 +1632,12 @@
                 "label": "UPPER"
               }
             ],
-            "cli": "--line-case",
-            "tab": "line",
-            "showWhen": "textLine"
+            "cli": "--subtitle-case",
+            "tab": "subtitle",
+            "showWhen": "subtitle"
           },
           {
-            "key": "lineBox",
+            "key": "subtitleBox",
             "label": "Boxed",
             "hint": "",
             "type": "select",
@@ -1657,9 +1657,9 @@
                 "label": "Off"
               }
             ],
-            "cli": "--line-box",
-            "tab": "line",
-            "showWhen": "textLine",
+            "cli": "--subtitle-box",
+            "tab": "subtitle",
+            "showWhen": "subtitle",
             "tooltip": "The line on a pill, or bare"
           }
         ],
@@ -1679,16 +1679,16 @@
             }
           },
           {
+            "id": "subtitle",
+            "label": "Subtitle",
+            "hint": "The subtitle's own levers",
+            "showWhen": "subtitle"
+          },
+          {
             "id": "badge",
             "label": "Badge",
             "hint": "The price badge's own levers",
             "showWhen": "priceBadge"
-          },
-          {
-            "id": "line",
-            "label": "Line",
-            "hint": "The line's own levers",
-            "showWhen": "textLine"
           }
         ]
       },

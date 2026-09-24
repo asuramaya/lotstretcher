@@ -653,7 +653,7 @@ function renderOptions() {
     before: [{ id: 'looks', label: 'Looks', hint: 'One tap, several levers', render: part('looksPart') }],
     after: [{ id: 'output', label: 'Output', hint: 'What a run makes, and the command line', render: part('outputPart') }],
     // Settings supplies the Text tool's default line.
-    placeholders: { textLine: state.dealer.greeting || null },
+    placeholders: { subtitle: state.dealer.greeting || null },
     uploads: state.uploads,
     onUpload: addUpload,
     onRemoveUpload: removeUpload,
@@ -720,7 +720,7 @@ function swatchArt(control, choice, values, image) {
     const rgb = specGet('glow', 'colors')[choice.value];
     return rgb ? { color: `rgb(${rgb.join(',')})` } : null;
   }
-  if (control.key === 'frameColor' || /^(text|title|badge|line)Color$/.test(control.key)) {
+  if (control.key === 'frameColor' || /^(text|title|subtitle|badge)Color$/.test(control.key)) {
     // White, black, or the paint as the core would read it off the subject.
     if (choice.value === 'white') return { color: '#ffffff' };
     if (choice.value === 'black') return { color: '#101010' };

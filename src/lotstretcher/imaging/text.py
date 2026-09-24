@@ -75,8 +75,8 @@ def add_text_args(parser) -> None:
     parser.add_argument("--price-badge", action="store_true",
                         help="A price badge on the still: the post's own resolved price (MSRP for new, "
                              "listed price for used).")
-    parser.add_argument("--text-line", default=None, metavar="TEXT",
-                        help="A smaller line under the title: the dealer, a salesperson, a call to action.")
+    parser.add_argument("--subtitle", "--text-line", dest="subtitle", default=None, metavar="TEXT",
+                        help="A subtitle under the title: the trim line, the dealer, who to ask for.")
     parser.add_argument("--text-position", default="bl", choices=POSITIONS,
                         help="Where the text stack sits: tl, tr, bl, br, tc or bc (default: bl).")
     parser.add_argument("--text-color", default="white", type=color_choice(COLORS), metavar="COLOR",
@@ -88,11 +88,11 @@ def add_text_args(parser) -> None:
     parser.add_argument("--text-case", default="as-is", choices=TEXT_CASES,
                         help="The case the words are set in: as-is (default) or upper.")
     parser.add_argument("--text-boxed", action="store_true",
-                        help="The title and the line on pills too, like the price badge (default: off).")
+                        help="The title and the subtitle on pills too, like the price badge (default: off).")
     parser.add_argument("--no-text-shadow", action="store_true",
                         help="No soft shadow under unboxed words.")
-    parser.add_argument("--text-line-size", type=float, default=0.62, metavar="FRACTION",
-                        help="The line's size as a share of the title's (default: 0.62).")
+    parser.add_argument("--subtitle-size", type=float, default=0.62, metavar="FRACTION",
+                        help="The subtitle's size as a share of the title's (default: 0.62).")
     parser.add_argument("--badge-size", type=float, default=0.85, metavar="FRACTION",
                         help="The price badge's size as a share of the title's (default: 0.85).")
     parser.add_argument("--text-font", default=DEFAULT_FONT, choices=FONTS, metavar="FONT",
@@ -118,19 +118,19 @@ def add_text_args(parser) -> None:
                         help="The price badge's own corner (default: --text-position).")
     parser.add_argument("--badge-color", default=None, type=color_choice(COLORS), metavar="COLOR",
                         help="The price badge's own colour: white, black, paint or #rrggbb (default: --text-color).")
-    parser.add_argument("--line-font", default=None, choices=FONTS, metavar="FONT",
-                        help="The line's own font (default: --text-font).")
-    parser.add_argument("--line-position", default=None, choices=POSITIONS,
-                        help="The line's own corner (default: --text-position).")
-    parser.add_argument("--line-color", default=None, type=color_choice(COLORS), metavar="COLOR",
-                        help="The line's own colour: white, black, paint or #rrggbb (default: --text-color).")
-    parser.add_argument("--line-case", default=None, choices=TEXT_CASES,
-                        help="The line's own case (default: --text-case).")
-    parser.add_argument("--line-box", default=None, choices=BOX_CHOICES,
-                        help="The line on a pill (on) or bare (off); default: --text-boxed.")
+    parser.add_argument("--subtitle-font", default=None, choices=FONTS, metavar="FONT",
+                        help="The subtitle's own font (default: --text-font).")
+    parser.add_argument("--subtitle-position", default=None, choices=POSITIONS,
+                        help="The subtitle's own corner (default: --text-position).")
+    parser.add_argument("--subtitle-color", default=None, type=color_choice(COLORS), metavar="COLOR",
+                        help="The subtitle's own colour: white, black, paint or #rrggbb (default: --text-color).")
+    parser.add_argument("--subtitle-case", default=None, choices=TEXT_CASES,
+                        help="The subtitle's own case (default: --text-case).")
+    parser.add_argument("--subtitle-box", default=None, choices=BOX_CHOICES,
+                        help="The subtitle on a pill (on) or bare (off); default: --text-boxed.")
 
 
-PIECES = ("title", "badge", "line")
+PIECES = ("title", "subtitle", "badge")
 BOX_CHOICES = ("on", "off")
 
 
@@ -341,21 +341,21 @@ def controls_from_text_args(args) -> dict:
         "titleMode": args.title,
         "titleText": args.title_text,
         "priceBadge": bool(args.price_badge),
-        "textLine": args.text_line,
+        "subtitle": args.subtitle,
         "textPosition": args.text_position,
         "textColor": args.text_color,
         "textSize": args.text_size,
         "textCase": args.text_case,
         "textBoxed": bool(args.text_boxed),
         "textShadow": not args.no_text_shadow,
-        "textLineSize": args.text_line_size,
+        "subtitleSize": args.subtitle_size,
         "badgeSize": args.badge_size,
         "textFont": args.text_font,
         "titleFont": args.title_font, "titlePosition": args.title_position, "titleColor": args.title_color,
         "titleCase": args.title_case, "titleBox": args.title_box,
         "badgeFont": args.badge_font, "badgePosition": args.badge_position, "badgeColor": args.badge_color,
-        "lineFont": args.line_font, "linePosition": args.line_position, "lineColor": args.line_color,
-        "lineCase": args.line_case, "lineBox": args.line_box,
+        "subtitleFont": args.subtitle_font, "subtitlePosition": args.subtitle_position, "subtitleColor": args.subtitle_color,
+        "subtitleCase": args.subtitle_case, "subtitleBox": args.subtitle_box,
     }
 
 
@@ -385,18 +385,18 @@ def text_options(options: dict) -> dict:
         "badge_size": float(options.get("badgeSize") if options.get("badgeSize") is not None else 0.85),
         "title_style": piece_style(options, "title"),
         "badge_style": piece_style(options, "badge"),
-        "line_style": piece_style(options, "line"),
+        "subtitle_style": piece_style(options, "subtitle"),
         "title": options.get("titleMode") or "none",
         "custom_title": options.get("titleText") or None,
         "price_badge": bool(options.get("priceBadge", False)),
-        "line": options.get("textLine") or None,
+        "subtitle": options.get("subtitle") or None,
         "position": options.get("textPosition") or "bl",
         "color": options.get("textColor") or "white",
         "size": float(options.get("textSize") if options.get("textSize") is not None else 0.05),
         "case": options.get("textCase") or "as-is",
         "boxed": bool(options.get("textBoxed", False)),
         "shadow": bool(options.get("textShadow", True)) if options.get("textShadow") is not None else True,
-        "line_size": float(options.get("textLineSize") if options.get("textLineSize") is not None else 0.62),
+        "subtitle_size": float(options.get("subtitleSize") if options.get("subtitleSize") is not None else 0.62),
     }
 
 
@@ -418,7 +418,7 @@ def ensure_fonts(text: dict) -> str:
 
 
 def wants_text(text: dict) -> bool:
-    return text.get("title", "none") != "none" or bool(text.get("price_badge")) or bool(text.get("line"))
+    return text.get("title", "none") != "none" or bool(text.get("price_badge")) or bool(text.get("subtitle"))
 
 
 def text_request(vehicle: dict | None, text: dict) -> dict | None:

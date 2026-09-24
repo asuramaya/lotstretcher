@@ -1,4 +1,4 @@
-//! Text on a still: a title, a price badge, a dealer line. Rasterised
+//! Text on a still: a title, a subtitle, a price badge. Rasterised
 //! here (fontdue, pure Rust, same glyphs on both hosts) from a font the
 //! host loads once, so the browser's preview and the CLI's hero carry
 //! the same letters at the same places.
@@ -107,7 +107,7 @@ pub struct Overlay {
     pub box_w: f64,
     #[serde(default)]
     pub box_h: f64,
-    /// Which piece this is ("title", "badge" or "line"), so a stage can
+    /// Which piece this is ("title", "subtitle" or "badge"), so a stage can
     /// tell which lever a drag on it moves.
     #[serde(default)]
     pub piece: String,
@@ -201,8 +201,8 @@ pub struct PlanRequest {
     pub custom_title: Option<String>,
     #[serde(default)]
     pub price_badge: bool,
-    #[serde(default)]
-    pub line: Option<String>,
+    #[serde(default, alias = "line")]
+    pub subtitle: Option<String>,
     /// "tl", "tr", "bl", "br" or "bc".
     #[serde(default = "bl")]
     pub position: String,
@@ -229,8 +229,8 @@ pub struct PlanRequest {
     pub boxed: bool,
     #[serde(default = "yes")]
     pub shadow: bool,
-    #[serde(default = "line_size")]
-    pub line_size: f64,
+    #[serde(default = "subtitle_size", alias = "line_size")]
+    pub subtitle_size: f64,
     /// The badge's size as a share of the title's.
     #[serde(default = "badge_size")]
     pub badge_size: f64,
@@ -240,14 +240,14 @@ pub struct PlanRequest {
     pub title_style: PieceStyle,
     #[serde(default)]
     pub badge_style: PieceStyle,
-    #[serde(default)]
-    pub line_style: PieceStyle,
+    #[serde(default, alias = "line_style")]
+    pub subtitle_style: PieceStyle,
 }
 
 impl PlanRequest {
     /// Whether any piece asks for the paint, so the op samples it.
     pub fn wants_paint(&self) -> bool {
-        [Some(&self.color), self.title_style.color.as_ref(), self.badge_style.color.as_ref(), self.line_style.color.as_ref()]
+        [Some(&self.color), self.title_style.color.as_ref(), self.badge_style.color.as_ref(), self.subtitle_style.color.as_ref()]
             .into_iter().flatten().any(|c| c == "paint")
     }
 }
@@ -288,8 +288,8 @@ pub struct TextRequest {
     pub custom_title: Option<String>,
     #[serde(default)]
     pub price_badge: bool,
-    #[serde(default)]
-    pub line: Option<String>,
+    #[serde(default, alias = "line")]
+    pub subtitle: Option<String>,
     #[serde(default = "bl")]
     pub position: String,
     #[serde(default = "white")]
@@ -303,47 +303,47 @@ pub struct TextRequest {
     /// "as-is" or "upper": the case the words are set in.
     #[serde(default = "as_is")]
     pub case: String,
-    /// Title and line on pills too, like the badge.
+    /// Title and subtitle on pills too, like the badge.
     #[serde(default)]
     pub boxed: bool,
     /// The soft shadow under unboxed words.
     #[serde(default = "yes")]
     pub shadow: bool,
-    /// The line's size as a share of the title's.
-    #[serde(default = "line_size")]
-    pub line_size: f64,
+    /// The subtitle's size as a share of the title's.
+    #[serde(default = "subtitle_size", alias = "line_size")]
+    pub subtitle_size: f64,
     #[serde(default = "badge_size")]
     pub badge_size: f64,
     #[serde(default)]
     pub title_style: PieceStyle,
     #[serde(default)]
     pub badge_style: PieceStyle,
-    #[serde(default)]
-    pub line_style: PieceStyle,
+    #[serde(default, alias = "line_style")]
+    pub subtitle_style: PieceStyle,
 }
 
 impl TextRequest {
     pub fn for_canvas(&self, width: usize, height: usize) -> PlanRequest {
         PlanRequest {
             width, height, vehicle: self.vehicle.clone(), title: self.title.clone(),
-            custom_title: self.custom_title.clone(), price_badge: self.price_badge, line: self.line.clone(),
+            custom_title: self.custom_title.clone(), price_badge: self.price_badge, subtitle: self.subtitle.clone(),
             position: self.position.clone(), color: self.color.clone(), size: self.size, font: self.font.clone(),
             window: None, accent: self.accent, sample: None,
-            case: self.case.clone(), boxed: self.boxed, shadow: self.shadow, line_size: self.line_size,
+            case: self.case.clone(), boxed: self.boxed, shadow: self.shadow, subtitle_size: self.subtitle_size,
             badge_size: self.badge_size, title_style: self.title_style.clone(),
-            badge_style: self.badge_style.clone(), line_style: self.line_style.clone(),
+            badge_style: self.badge_style.clone(), subtitle_style: self.subtitle_style.clone(),
         }
     }
 
     /// Whether any piece asks for the paint, so a compose samples it.
     pub fn wants_paint(&self) -> bool {
-        [Some(&self.color), self.title_style.color.as_ref(), self.badge_style.color.as_ref(), self.line_style.color.as_ref()]
+        [Some(&self.color), self.title_style.color.as_ref(), self.badge_style.color.as_ref(), self.subtitle_style.color.as_ref()]
             .into_iter().flatten().any(|c| c == "paint")
     }
 
     /// Nothing to draw: the compose skips the plan and needs no font.
     pub fn is_empty(&self) -> bool {
-        self.title == "none" && !self.price_badge && self.line.as_deref().map_or(true, |l| l.trim().is_empty())
+        self.title == "none" && !self.price_badge && self.subtitle.as_deref().map_or(true, |l| l.trim().is_empty())
     }
 }
 
@@ -352,7 +352,7 @@ fn bl() -> String { "bl".into() }
 fn white() -> String { "white".into() }
 fn as_is() -> String { "as-is".into() }
 fn yes() -> bool { true }
-fn line_size() -> f64 { 0.62 }
+fn subtitle_size() -> f64 { 0.62 }
 fn badge_size() -> f64 { 0.85 }
 fn size() -> f64 { 0.05 }
 
@@ -411,8 +411,8 @@ pub fn badge_price(v: &Value) -> Option<String> {
 }
 
 /// Overlays for one canvas: the pieces stacked in the chosen corner,
-/// title first (largest), then the price badge, then the line. Bottom
-/// corners stack upwards so the title stays nearest the vehicle.
+/// title first (largest), then the subtitle, then the price badge.
+/// Bottom corners stack upwards so the title stays nearest the vehicle.
 pub fn plan(req: &PlanRequest) -> Result<Vec<Overlay>, String> {
     let window = req.window.map(|w| (w[0], w[1], w[2], w[3])).unwrap_or((0, 0, req.width as i64, req.height as i64));
     plan_in(req, window)
@@ -424,7 +424,7 @@ pub fn plan(req: &PlanRequest) -> Result<Vec<Overlay>, String> {
 pub fn shrink_window(window: (i64, i64, i64, i64), overlays: &[Overlay], height: usize) -> (i64, i64, i64, i64) {
     let mut w = window;
     let gap = (height as f64 * 0.02).round() as i64;
-    // Pieces may sit in both halves (a title up top, the line below):
+    // Pieces may sit in both halves (a title up top, the badge below):
     // each half gives up its own band, never the whole canvas.
     let half = |o: &&Overlay| (o.y + o.y + o.box_h) / 2.0 > height as f64 / 2.0;
     let upper: Vec<&Overlay> = overlays.iter().filter(|o| !half(o)).collect();
@@ -460,7 +460,11 @@ pub fn plan_in(req: &PlanRequest, window: (i64, i64, i64, i64)) -> Result<Vec<Ov
     // stay white (black on a pale paint), so the text reads as part of
     // the car rather than a label stuck on it.
     let accent = req.accent.unwrap_or([120, 120, 130]);
-    let base = (req.size * ch).max(8.0);
+    // The title's size follows the canvas's geometric mean side, not its
+    // height: a portrait clip is twice as tall as a square still of the
+    // same width and its title would otherwise wrap in letters twice as
+    // big, while a landscape one would shrink to a caption.
+    let base = (req.size * (cw * ch).sqrt()).max(8.0);
     let inset = (w.min(h) * 0.045).round();
     let gap = (base * 0.35).round();
     let max_width = w - 2.0 * inset;
@@ -489,49 +493,70 @@ pub fn plan_in(req: &PlanRequest, window: (i64, i64, i64, i64)) -> Result<Vec<Ov
     if !title.trim().is_empty() {
         pieces.push(resolve("title", &req.title_style, title.trim(), base, req.boxed, false)?);
     }
+    if let Some(sub) = req.subtitle.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        let px = (base * req.subtitle_size.max(0.2).min(1.5)).round();
+        pieces.push(resolve("subtitle", &req.subtitle_style, sub, px, req.boxed, false)?);
+    }
     if req.price_badge {
         if let Some(p) = badge_price(&req.vehicle) {
             let px = (base * req.badge_size.max(0.2).min(1.5)).round();
             pieces.push(resolve("badge", &req.badge_style, &p, px, true, true)?);
         }
     }
-    if let Some(line) = req.line.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
-        let px = (base * req.line_size.max(0.2).min(1.5)).round();
-        pieces.push(resolve("line", &req.line_style, line, px, req.boxed, false)?);
-    }
     if pieces.is_empty() { return Ok(Vec::new()); }
 
-    // Measure each piece, then stack the pieces sharing a corner from
-    // that corner: title, badge, line from the top down wherever the
-    // stack sits, so a bottom corner is filled from the last piece up.
+    // Measure each piece, then place them in order (title, subtitle,
+    // badge) from the top of a top corner down and from the bottom of a
+    // bottom corner up, so a bottom stack keeps the title nearest the
+    // vehicle. A piece is placed clear of every piece already in its
+    // half whose columns it would cross: pieces sharing a corner stack
+    // there, and a wide centred title pushes a left or right piece down
+    // rather than taking it on top.
+    // A piece too wide for the window shrinks to fit on one line first,
+    // down to six tenths of its size; only past that does it wrap.
     let mut boxes: Vec<(f64, f64)> = Vec::new();
-    for p in &pieces {
-        let m = rasterize(&p.font, &p.text, p.px as f32, Some(max_width as f32))?;
+    for p in pieces.iter_mut() {
         let pad = p.pill.as_ref().map(|q| 2.0 * q.pad).unwrap_or(0.0);
+        let one_line = rasterize(&p.font, &p.text, p.px as f32, None)?;
+        let room = max_width - pad;
+        if one_line.width as f64 > room && room > 0.0 {
+            // A hair under the room: the wrap measures advances, the ink is narrower.
+            p.px = (p.px * 0.97 * room / one_line.width as f64).max(p.px * 0.6).round();
+        }
+        let m = rasterize(&p.font, &p.text, p.px as f32, Some(max_width as f32))?;
         boxes.push((m.width as f64 + pad, m.height as f64 + pad));
     }
-    let mut corners: Vec<String> = Vec::new();
-    for p in &pieces { if !corners.contains(&p.position) { corners.push(p.position.clone()); } }
+    let bottom_of = |i: usize| pieces[i].position.starts_with('b');
+    let mut order: Vec<usize> = (0..pieces.len()).filter(|&i| !bottom_of(i)).collect();
+    let mut lower: Vec<usize> = (0..pieces.len()).filter(|&i| bottom_of(i)).collect();
+    lower.reverse();
+    order.extend(lower);
+    // Placed boxes in window coordinates: (x, top, w, h, bottom half?).
+    let mut placed: Vec<(f64, f64, f64, f64, bool)> = Vec::new();
     let mut out: Vec<(usize, Overlay)> = Vec::new();
-    for corner in corners {
-        let bottom = corner.starts_with('b');
-        let right = corner.ends_with('r');
-        let centre = corner.ends_with('c');
-        let mut items: Vec<usize> = (0..pieces.len()).filter(|&i| pieces[i].position == corner).collect();
-        if bottom { items.reverse(); }
-        let mut y = if bottom { h - inset } else { inset };
-        for i in items {
-            let (bw, bh) = boxes[i];
-            let p = &pieces[i];
-            let x = if centre { ((w - bw) / 2.0).round() } else if right { (w - inset - bw).round() } else { inset };
-            let top = if bottom { y - bh } else { y };
-            out.push((i, Overlay {
-                text: p.text.clone(), font: Some(p.font.clone()), size: p.px, color: p.color, x: x + wl, y: (top + wt).round(),
-                max_width: Some(max_width), shadow: p.pill.is_none() && req.shadow, pill: p.pill.clone(), box_w: bw, box_h: bh,
-                piece: p.name.to_string(),
-            }));
-            y = if bottom { top - gap } else { y + bh + gap };
-        }
+    for i in order {
+        let (bw, bh) = boxes[i];
+        let p = &pieces[i];
+        let bottom = p.position.starts_with('b');
+        let right = p.position.ends_with('r');
+        let centre = p.position.ends_with('c');
+        let x = if centre { ((w - bw) / 2.0).round() } else if right { (w - inset - bw).round() } else { inset };
+        let crosses = |q: &(f64, f64, f64, f64, bool)| q.4 == bottom && x < q.0 + q.2 && q.0 < x + bw;
+        let top = if bottom {
+            let mut floor = h - inset;
+            for q in placed.iter().filter(|q| crosses(q)) { floor = floor.min(q.1 - gap); }
+            floor - bh
+        } else {
+            let mut ceiling = inset;
+            for q in placed.iter().filter(|q| crosses(q)) { ceiling = ceiling.max(q.1 + q.3 + gap); }
+            ceiling
+        };
+        placed.push((x, top, bw, bh, bottom));
+        out.push((i, Overlay {
+            text: p.text.clone(), font: Some(p.font.clone()), size: p.px, color: p.color, x: x + wl, y: (top + wt).round(),
+            max_width: Some(max_width), shadow: p.pill.is_none() && req.shadow, pill: p.pill.clone(), box_w: bw, box_h: bh,
+            piece: p.name.to_string(),
+        }));
     }
     out.sort_by_key(|(i, _)| *i);
     Ok(out.into_iter().map(|(_, o)| o).collect())

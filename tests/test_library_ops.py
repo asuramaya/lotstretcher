@@ -24,11 +24,11 @@ def test_defaults_match_the_recompose_cli():
     assert r["background_path"] is None and r["border_path"] is None
     assert r["style"] == {"glow": True, "glow_color": "white", "glow_radius": 24,
                           "glow_intensity": 0.75, "gradient": True, "border_fit": "slice",
-                          "text": {"title": "none", "custom_title": None, "price_badge": False, "line": None,
+                          "text": {"title": "none", "custom_title": None, "price_badge": False, "subtitle": None,
                                    "position": "bl", "color": "white", "size": 0.05,
-                                   "case": "as-is", "boxed": False, "shadow": True, "line_size": 0.62,
+                                   "case": "as-is", "boxed": False, "shadow": True, "subtitle_size": 0.62,
                                    "font": "Lato Bold", "badge_size": 0.85,
-                                   "title_style": {}, "badge_style": {}, "line_style": {}},
+                                   "title_style": {}, "badge_style": {}, "subtitle_style": {}},
                           "border_style": None, "shadow": None, "reflection": None, "backdrop": "vehicle",
                           "backdrop_color": None, "backdrop_color2": None, "backdrop_angle": None}
     assert r["hero_formats"] == ("square",)
@@ -139,7 +139,7 @@ def test_hero_options_carry_the_studio_levers():
     the app or the flags asked for."""
     from lotstretcher.imaging.text import text_options
     controls = {"frameFit": "fill", "titleMode": "custom", "titleText": "Just arrived", "priceBadge": True,
-                "textLine": "Ask for Alex", "textPosition": "tr", "textColor": "paint", "textSize": 0.07}
+                "subtitle": "Ask for Alex", "textPosition": "tr", "textColor": "paint", "textSize": 0.07}
     got = library_ops.hero_options_from_controls(controls)
     assert got.border_fit == "fill"
     assert got.text == text_options(controls)

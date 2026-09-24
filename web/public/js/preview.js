@@ -111,7 +111,7 @@ export class Preview {
     return (o.titleMode && o.titleMode !== 'none') || !!o.priceBadge || !!(o.textLine && o.textLine.trim());
   }
 
-  /* The piece under the pointer ("title", "badge", "line") or null:
+  /* The piece under the pointer ("title", "subtitle", "badge") or null:
    * the plan is asked for at the canvas's own size, so the boxes are
    * the ones drawn. A frame's window is not applied here; the inset
    * it adds is small against a piece's box. */

@@ -94,8 +94,8 @@ Safari. For each step, note pass, fail, or the message shown.
 - Text tool: set **Title** to the vehicle, then drag the words on the
   stage with a finger to another corner. They should follow as you
   drag and the Text tool's Position should read the corner you let go
-  in; the stage must not scroll while dragging. Then type a **Line**,
-  open the **Line** tab and drag again: only the line should move, and
+  in; the stage must not scroll while dragging. Then type a **Subtitle**,
+  open the **Subtitle** tab and drag again: only the subtitle should move, and
   its Position grid should light the corner while the title stays put.
   Under Font, pick **Anton**: the words should redraw in it within a
   second or two (the font is fetched on first use, ~170 KB).
@@ -103,7 +103,7 @@ Safari. For each step, note pass, fail, or the message shown.
   backdrop's corners should darken as you drag, and **Auto** should
   bring the measured dim back.
 - Frame tool: tap **Studio line**, then the **Your own** tile under
-  Line colour. Report whether the picker opens and the line takes the
+  Subtitle colour. Report whether the picker opens and the subtitle takes the
   colour on the stage.
 - Once the header's progress line has finished, tap a photo's sort tag in the strip ("interior", "detail"):
   a menu offers Exterior / Interior / Detail / Skip. Correct one and

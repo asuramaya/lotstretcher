@@ -45,22 +45,22 @@ export function textOptions(o) {
     badge_size: o.badgeSize != null ? Number(o.badgeSize) : 0.85,
     title_style: pieceStyle(o, 'title'),
     badge_style: pieceStyle(o, 'badge'),
-    line_style: pieceStyle(o, 'line'),
+    subtitle_style: pieceStyle(o, 'subtitle'),
     title: o.titleMode || 'none',
     custom_title: o.titleText || null,
     price_badge: !!o.priceBadge,
-    line: o.textLine || null,
+    subtitle: o.subtitle || null,
     position: o.textPosition || 'bl',
     color: o.textColor || 'white',
     size: o.textSize != null ? Number(o.textSize) : 0.05,
     case: o.textCase || 'as-is',
     boxed: !!o.textBoxed,
     shadow: o.textShadow == null ? true : !!o.textShadow,
-    line_size: o.textLineSize != null ? Number(o.textLineSize) : 0.62,
+    subtitle_size: o.subtitleSize != null ? Number(o.subtitleSize) : 0.62,
   };
 }
 
-export const PIECES = ['title', 'badge', 'line'];
+export const PIECES = ['title', 'subtitle', 'badge'];
 const PIECE_LEVERS = ['font', 'position', 'color', 'case', 'box'];
 
 /* One piece's own levers (titleFont, titlePosition, ...) as the core's
@@ -133,7 +133,7 @@ export function reflectionStyle(o) {
 }
 
 export function wantsText(text) {
-  return text.title !== 'none' || !!text.price_badge || !!text.line;
+  return text.title !== 'none' || !!text.price_badge || !!text.subtitle;
 }
 
 /* The Text controls and the vehicle as one compose field, with the font

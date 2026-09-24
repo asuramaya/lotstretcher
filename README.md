@@ -524,11 +524,19 @@ Floor tabs.
 
 The core draws text (core/src/text.rs, the studio's Lato Bold, OFL) so
 the CLI's hero and the app's preview carry the same words at the same
-places. Three pieces stack in a corner and the vehicle is laid out clear
-of them; with a frame they sit inside its window, never on its art.
+places. Three pieces, the title, a subtitle and the price badge, stack
+in a corner and the vehicle is laid out clear of them; with a frame
+they sit inside its window, never on its art. Pieces sent to different
+corners of the same half are kept clear of each other too: a wide title
+across the top centre pushes a top-left badge under it rather than
+taking it on top. The title's size follows the canvas's geometric mean
+side, so a portrait clip and a landscape one carry it at the same size
+as a square still of the same area, and a piece too wide for the
+window shrinks to fit on one line (down to six tenths of its size)
+before it wraps.
 
 ```bash
-lotstretcher URL --title vehicle --price-badge --text-line "Ask for Alex" \
+lotstretcher URL --title vehicle --price-badge --subtitle "Ask for Alex" \
     --text-position br --text-color white --text-size 0.05
 ```
 
@@ -540,26 +548,26 @@ the listing's colour name or sampled off the cutout. `--text-font`
 picks the studio font (Lato Bold, Oswald Bold, Montserrat ExtraBold,
 Bebas Neue, Anton, Playfair Display Bold; all OFL, shipped with their
 licences under assets/fonts/), `--text-case upper` sets the words in
-capitals, `--text-boxed` puts the title and line on pills like the
-badge, `--no-text-shadow` drops the soft shadow, and `--text-line-size`
-and `--badge-size` are the line's and the badge's size as a share of
+capitals, `--text-boxed` puts the title and subtitle on pills like the
+badge, `--no-text-shadow` drops the soft shadow, and `--subtitle-size`
+and `--badge-size` are the subtitle's and the badge's size as a share of
 the title's.
 
 Each piece can then depart from the shared levers on its own:
 `--title-font`, `--title-position`, `--title-color`, `--title-case`,
-`--title-box on|off`, the same five for `--line-*`, and `--badge-font`,
+`--title-box on|off`, the same five for `--subtitle-*`, and `--badge-font`,
 `--badge-position`, `--badge-color`. Left unset, a piece follows the
 shared flag; pieces sharing a corner stack there, and a piece sent to
 its own corner takes a band off that end of the canvas alone.
 
 ```bash
-lotstretcher URL --title vehicle --price-badge --text-line "0% APR to May" \
+lotstretcher URL --title vehicle --price-badge --subtitle "0% APR to May" \
     --text-position bl --title-font "Oswald Bold" --title-case upper \
-    --badge-color paint --line-position tr --line-box on
+    --badge-color paint --subtitle-position tr --subtitle-box on
 ```
 
 The app's Text tool is the same levers, previewed live as you type: an
-All tab for the shared ones and a Title, Badge and Line tab for each
+All tab for the shared ones and a Title, Subtitle and Badge tab for each
 piece's own, each tab there while its piece is on. The text can be
 dragged on the stage: it snaps to the six positions `--text-position`
 knows, and with a piece's tab open the drag moves that piece alone (a

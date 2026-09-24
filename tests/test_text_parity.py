@@ -24,7 +24,7 @@ pytestmark = pytest.mark.skipif(not core.available(), reason=f"core not built: {
 REPO = Path(__file__).resolve().parents[1]
 VEHICLE = {"year": "2024", "make": "Ford", "model": "Maverick", "trim": "XLT", "condition": "New",
            "display_price": "31480", "vin": "1FTTW8", "sticker": None}
-CONTROLS = {"titleMode": "vehicle", "priceBadge": True, "textLine": "Ask for Alex",
+CONTROLS = {"titleMode": "vehicle", "priceBadge": True, "subtitle": "Ask for Alex",
             "textPosition": "bl", "textColor": "white", "textSize": 0.05}
 
 
@@ -46,10 +46,10 @@ def test_no_text_means_no_overlays_and_no_font():
 def test_plan_reads_the_vehicle_like_the_post_does():
     plan = plan_overlays(1080, 1350, VEHICLE, text_options(CONTROLS))
     texts = [o["text"] for o in plan]
-    assert texts == ["2024 Ford Maverick XLT", "$31,480", "Ask for Alex"]
-    # Title largest, line smallest; only the badge has a pill.
-    assert plan[0]["size"] > plan[1]["size"] > plan[2]["size"]
-    assert [bool(o["pill"]) for o in plan] == [False, True, False]
+    assert texts == ["2024 Ford Maverick XLT", "Ask for Alex", "$31,480"]
+    # Title largest, subtitle smallest; only the badge has a pill.
+    assert plan[0]["size"] > plan[2]["size"] > plan[1]["size"]
+    assert [bool(o["pill"]) for o in plan] == [False, False, True]
     # Reads top-down in the bottom corner too.
     assert plan[0]["y"] < plan[1]["y"] < plan[2]["y"]
 
@@ -431,23 +431,23 @@ def test_two_chosen_stops_are_taken_as_they_are_and_an_angle_fixes_the_direction
 
 
 def test_each_piece_can_take_its_own_corner_font_colour_and_box():
-    """The per-piece levers (--title-font, --line-position, --badge-color,
-    --line-box ...): a piece with its own corner leaves the stack, one
+    """The per-piece levers (--title-font, --subtitle-position, --badge-color,
+    --subtitle-box ...): a piece with its own corner leaves the stack, one
     with its own font is set in it, and the shared levers still describe
     every piece left alone."""
     w, h = 1080, 1350
-    own = {**CONTROLS, "linePosition": "tr", "titleFont": "Oswald Bold", "badgeColor": "paint",
-           "lineBox": "on", "lineCase": "upper", "textFont": "Lato Bold"}
+    own = {**CONTROLS, "subtitlePosition": "tr", "titleFont": "Oswald Bold", "badgeColor": "paint",
+           "subtitleBox": "on", "subtitleCase": "upper", "textFont": "Lato Bold"}
     plan = plan_overlays(w, h, VEHICLE, text_options(own))
     by = {o["piece"]: o for o in plan}
-    assert set(by) == {"title", "badge", "line"}
-    # The line went to the top right, on its own, in upper case, on a pill.
-    assert by["line"]["y"] < h / 2 < by["title"]["y"]
-    assert by["line"]["x"] + by["line"]["box_w"] > w * 0.9
-    assert by["line"]["text"] == "ASK FOR ALEX" and by["line"]["pill"]
+    assert set(by) == {"title", "subtitle", "badge"}
+    # The subtitle went to the top right, on its own, in upper case, on a pill.
+    assert by["subtitle"]["y"] < h / 2 < by["title"]["y"]
+    assert by["subtitle"]["x"] + by["subtitle"]["box_w"] > w * 0.9
+    assert by["subtitle"]["text"] == "ASK FOR ALEX" and by["subtitle"]["pill"]
     # The title took its own font; the others kept the shared one.
     assert by["title"]["font"] == "Oswald Bold"
-    assert by["badge"]["font"] == by["line"]["font"] == "Lato Bold"
+    assert by["badge"]["font"] == by["subtitle"]["font"] == "Lato Bold"
     # The badge took the paint (a red cutout gives a red pill); the title stayed white.
     assert by["title"]["color"] == [255, 255, 255]
     named = {**VEHICLE, "exterior_color": "Red"}
@@ -455,7 +455,7 @@ def test_each_piece_can_take_its_own_corner_font_colour_and_box():
     badge = next(o for o in red if o["piece"] == "badge")
     assert badge["pill"]["color"][0] > badge["pill"]["color"][2]
     # The same controls with every piece lever at "same" is the shared plan.
-    same = {**CONTROLS, "titleFont": "same", "linePosition": None, "badgeColor": "same", "lineBox": "same"}
+    same = {**CONTROLS, "titleFont": "same", "subtitlePosition": None, "badgeColor": "same", "subtitleBox": "same"}
     assert plan_overlays(w, h, VEHICLE, text_options(same)) == plan_overlays(w, h, VEHICLE, text_options(CONTROLS))
 
 
@@ -464,7 +464,7 @@ def test_pieces_in_both_halves_shrink_each_half_only():
     never the whole window between them."""
     from lotstretcher.imaging.text import text_window
     w, h = 1080, 1350
-    plan = plan_overlays(w, h, VEHICLE, text_options({**CONTROLS, "textPosition": "tl", "linePosition": "br"}), window=(0, 0, w, h))
+    plan = plan_overlays(w, h, VEHICLE, text_options({**CONTROLS, "textPosition": "tl", "subtitlePosition": "br"}), window=(0, 0, w, h))
     top, bottom = text_window((0, 0, w, h), h, plan)[1], text_window((0, 0, w, h), h, plan)[3]
     assert 0 < top < h * 0.3 and h * 0.7 < bottom < h
 
@@ -494,3 +494,37 @@ def test_spotlight_strength_and_spread_are_levers():
     f_off = core.render_frame([car], 400, 400, bg, spotlight=None)
     assert corner_lum(f_hard) < corner_lum(f_off) * 0.6
 
+
+
+def test_pieces_in_different_corners_of_one_half_never_cross():
+    """A wide title at the top centre and the badge at the top left both
+    start at the top; the badge is placed below the title's box rather
+    than on it, as pieces sharing a corner are."""
+    w, h = 1080, 1920
+    own = {**CONTROLS, "textPosition": "tl", "titlePosition": "tc", "textSize": 0.07}
+    by = {o["piece"]: o for o in plan_overlays(w, h, VEHICLE, text_options(own))}
+    title, badge = by["title"], by["badge"]
+    assert badge["x"] < title["x"] + title["box_w"], "the boxes share columns"
+    assert badge["y"] >= title["y"] + title["box_h"], "so the badge sits under the title"
+    # In the other half nothing crosses: a top-right badge beside a short
+    # top-left title keeps the top row.
+    apart = {**CONTROLS, "titleMode": "custom", "titleText": "F-150", "textPosition": "tl", "badgePosition": "tr"}
+    by = {o["piece"]: o for o in plan_overlays(w, h, VEHICLE, text_options(apart))}
+    assert by["badge"]["y"] == by["title"]["y"]
+
+
+def test_title_size_follows_the_canvas_mean_side_not_its_height():
+    """A portrait clip's title is set from the canvas's geometric mean
+    side: on 1080x1920 it is sqrt(2) smaller than height alone would
+    make it, so the vehicle title stays on one line, and on 1920x1080
+    it is that much larger than a caption."""
+    square = plan_overlays(1080, 1080, VEHICLE, text_options(CONTROLS))[0]["size"]
+    portrait = plan_overlays(1080, 1920, VEHICLE, text_options(CONTROLS))[0]["size"]
+    landscape = plan_overlays(1920, 1080, VEHICLE, text_options(CONTROLS))[0]["size"]
+    assert portrait == landscape
+    assert abs(portrait / square - (1920 / 1080) ** 0.5) < 0.02
+    # Too wide for the window, a title shrinks to fit one line before it
+    # wraps: the size lever is a ceiling, not a promise of two lines.
+    title = plan_overlays(1080, 1920, VEHICLE, text_options({**CONTROLS, "textSize": 0.07}))[0]
+    assert title["size"] < 0.07 * (1080 * 1920) ** 0.5
+    assert title["box_h"] < title["size"] * 1.6, "one line, not two"

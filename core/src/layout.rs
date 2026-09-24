@@ -89,9 +89,14 @@ pub fn conveyor_stack(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
     let ah = r(aw as f64 / CONVEYOR_ACCENT_ASPECT);
     let hero_top = wt + (wh - hero_h).div_euclid(2);
     let hero = (wl, hero_top, wr, hero_top + hero_h);
-    let al = wl + (ww - aw).div_euclid(2);
     let top_band = hero_top - wt;
     let bottom_band = wb - (hero_top + hero_h);
+    // A short window (a frame's, or one with a text band taken off) can
+    // leave a band shorter than the accent: the accent shrinks to the
+    // band, never past the window's edge where the frame would cut it.
+    let band = top_band.min(bottom_band).max(1);
+    let (aw, ah) = if ah > band { (r(band as f64 * CONVEYOR_ACCENT_ASPECT).min(ww).max(1), band) } else { (aw, ah) };
+    let al = wl + (ww - aw).div_euclid(2);
     let top_y = wt + ((top_band - ah).div_euclid(2)).max(0);
     let bottom_y = hero_top + hero_h + ((bottom_band - ah).div_euclid(2)).max(0);
     vec![
