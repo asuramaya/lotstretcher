@@ -50,8 +50,11 @@ export function buildSelect(control, value, onChange, disabled, choices = contro
       o.textContent += ` (${why})`;
     }
     if (String(c.value) === String(value)) o.selected = true;
+    // A choice that is a typeface shows its name in it (control.faces).
+    if (control.faces && c.value !== 'same') o.style.fontFamily = `"${c.value}"`;
     sel.appendChild(o);
   }
+  if (control.faces && value && value !== 'same') sel.style.fontFamily = `"${value}"`;
   sel.onchange = () => {
     // Keep the original type: a select that silently turns 30 into "30"
     // breaks anything comparing against the spec's numeric default.

@@ -1130,7 +1130,8 @@
             "default": "Lato Bold",
             "cli": "--text-font",
             "tab": "all",
-            "tooltip": "The studio font every piece is set in; each piece can take its own"
+            "tooltip": "The studio font every piece is set in; each piece can take its own",
+            "faces": true
           },
           {
             "key": "textPosition",
@@ -1264,7 +1265,8 @@
               "key": "titleMode",
               "notEquals": "none"
             },
-            "tooltip": "The title's own font"
+            "tooltip": "The title's own font",
+            "faces": true
           },
           {
             "key": "titlePosition",
@@ -1429,7 +1431,8 @@
             "cli": "--badge-font",
             "tab": "badge",
             "showWhen": "priceBadge",
-            "tooltip": "The price badge's own font"
+            "tooltip": "The price badge's own font",
+            "faces": true
           },
           {
             "key": "badgePosition",
@@ -1531,7 +1534,8 @@
             "cli": "--line-font",
             "tab": "line",
             "showWhen": "textLine",
-            "tooltip": "The line's own font"
+            "tooltip": "The line's own font",
+            "faces": true
           },
           {
             "key": "linePosition",

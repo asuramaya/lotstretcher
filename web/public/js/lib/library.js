@@ -38,6 +38,12 @@ export async function loadLibrary() {
       const studio = await res.json();
       for (const f of studio.fonts || []) {
         lib.fonts.push({ name: f.name, src: `studio/${f.file}`, license: f.license ? `studio/${f.license}` : null });
+        // The same file the core draws with, as a page font too, so a
+        // font's name can be shown in its own face. Fetched on first
+        // use, not here.
+        try {
+          if (typeof FontFace !== 'undefined' && document?.fonts) document.fonts.add(new FontFace(f.name, `url(studio/${f.file})`));
+        } catch { /* no page fonts: the names show in the UI font */ }
       }
       for (const kind of ['backgrounds', 'borders']) {
         for (const e of studio[kind] || []) {
