@@ -107,10 +107,31 @@ pub fn conveyor_stack(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
     ]
 }
 
-/// Whichever conveyor suits the frame: stacked once taller than wide.
+/// A window much wider than tall (a 16:9 clip once the text's band is
+/// off the top): the accents sit beside the hero on one floor, a lineup,
+/// instead of in the top corners under the text where the three trucks
+/// and the words crowded one band.
+const CONVEYOR_WIDE_RATIO: f64 = 1.6;
+
+pub fn conveyor_wide(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
+    let (wl, wt, wr, wb) = window;
+    let (ww, wh) = ((wr - wl) as f64, (wb - wt) as f64);
+    let aw = r(ww * 0.24);
+    let ah = r(wh * 0.5);
+    let gap = r(ww * 0.015);
+    let left = (wl, wb - ah, wl + aw, wb);
+    let right = (wr - aw, wb - ah, wr, wb);
+    vec![((wl + aw + gap, wt, wr - aw - gap, wb), Anchor::Bottom), (left, Anchor::Bottom), (right, Anchor::Bottom)]
+}
+
+/// Whichever conveyor suits the frame: stacked once taller than wide,
+/// a lineup once much wider than tall, the corners layout between.
 pub fn conveyor_for_window(window: Box_, n_extra: usize) -> Vec<(Box_, Anchor)> {
     let (wl, wt, wr, wb) = window;
-    if (wr - wl) < (wb - wt) { conveyor_stack(window, n_extra) } else { conveyor(window, n_extra) }
+    let (ww, wh) = ((wr - wl) as f64, (wb - wt) as f64);
+    if ww < wh { conveyor_stack(window, n_extra) }
+    else if ww >= wh * CONVEYOR_WIDE_RATIO { conveyor_wide(window, n_extra) }
+    else { conveyor(window, n_extra) }
 }
 
 pub fn layout(name: &str, window: Box_, n_extra: usize) -> Result<Vec<(Box_, Anchor)>, String> {
@@ -120,6 +141,7 @@ pub fn layout(name: &str, window: Box_, n_extra: usize) -> Result<Vec<(Box_, Anc
         "quad" => quad(window, n_extra),
         "conveyor" => conveyor_for_window(window, n_extra),
         "conveyor_stack" => conveyor_stack(window, n_extra),
+        "conveyor_wide" => conveyor_wide(window, n_extra),
         other => return Err(format!("unknown layout {other:?}")),
     })
 }

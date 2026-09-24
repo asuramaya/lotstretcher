@@ -252,12 +252,36 @@ def conveyor_stack_layout(window: tuple[int, int, int, int], n_extra: int = 2) -
     return [(hero_box, "center"), (top_box, "center"), (bottom_box, "center")]
 
 
+CONVEYOR_WIDE_RATIO = 1.6        # past this, the accents sit beside the hero
+
+
+def conveyor_wide_layout(window: tuple[int, int, int, int], n_extra: int = 2) -> list[tuple[tuple, str]]:
+    """The conveyor for a window much wider than tall (a 16:9 clip once
+    the text's band is off the top): the accents sit beside the hero on
+    one floor, a lineup, instead of in the top corners under the text
+    where the three trucks and the words crowded one band. The core's
+    layout.rs::conveyor_wide, mirrored."""
+    wl, wt, wr, wb = window
+    ww, wh = wr - wl, wb - wt
+    accent_w, accent_h = round(ww * 0.24), round(wh * 0.5)
+    gap = round(ww * 0.015)
+    left_box = (wl, wb - accent_h, wl + accent_w, wb)
+    right_box = (wr - accent_w, wb - accent_h, wr, wb)
+    hero_box = (wl + accent_w + gap, wt, wr - accent_w - gap, wb)
+    return [(hero_box, "bottom"), (left_box, "bottom"), (right_box, "bottom")]
+
+
 def conveyor_for_window(window: tuple[int, int, int, int]):
     """Whichever conveyor arrangement suits this frame's shape. Stacked
-    once the window is taller than it is wide; side-by-side otherwise, so
-    square and 16:9 both keep the tuned original."""
+    once the window is taller than it is wide; a lineup once much wider
+    than tall; the tuned corners original between, so a square keeps it."""
     wl, wt, wr, wb = window
-    return conveyor_stack_layout if (wr - wl) < (wb - wt) else conveyor_layout
+    ww, wh = wr - wl, wb - wt
+    if ww < wh:
+        return conveyor_stack_layout
+    if ww >= wh * CONVEYOR_WIDE_RATIO:
+        return conveyor_wide_layout
+    return conveyor_layout
 
 
 LAYOUTS = {
@@ -266,4 +290,5 @@ LAYOUTS = {
     "quad": quad_layout,
     "conveyor": conveyor_layout,
     "conveyor_stack": conveyor_stack_layout,
+    "conveyor_wide": conveyor_wide_layout,
 }

@@ -123,10 +123,10 @@ def test_glow_matches_python():
     assert mean_abs_diff(core_img, py_img) < 3.0
 
 
-@pytest.mark.parametrize("layout", ["single", "corners", "quad", "conveyor", "conveyor_stack"])
+@pytest.mark.parametrize("layout", ["single", "corners", "quad", "conveyor", "conveyor_stack", "conveyor_wide"])
 def test_layouts_match_python(layout):
     from lotstretcher.imaging.compose.layout import LAYOUTS, conveyor_for_window
-    window = (0, 0, 1254, 1254) if layout != "conveyor_stack" else (0, 0, 1080, 1920)
+    window = {"conveyor_stack": (0, 0, 1080, 1920), "conveyor_wide": (0, 0, 1920, 900)}.get(layout, (0, 0, 1254, 1254))
     fn = conveyor_for_window(window) if layout == "conveyor" else LAYOUTS[layout]
     expected = fn(window, 3)
     # The core's boxes are observed through composition: every slot that

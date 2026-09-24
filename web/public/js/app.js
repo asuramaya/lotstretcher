@@ -257,6 +257,14 @@ function go(pane) {
     // The preview is drawn only while it can be seen.
     preview?.renderSamples();
     preview?.update();
+    // On a phone the panel is a card: the first visit opens the Looks
+    // card so the Studio never reads as an empty stage with a bar.
+    const studio = document.querySelector('.studio');
+    if (studio && !state.studioOpened && !studio.classList.contains('panel-open')
+        && getComputedStyle(studio.querySelector('.studio-panel')).position === 'absolute') {
+      state.studioOpened = true;
+      studio.querySelector('.studio-rail .tool')?.click();
+    }
   }
   $(`pane-${pane}`).scrollTop = 0;
   renderSteps();
@@ -383,11 +391,12 @@ function renderPhotos() {
     img.decoding = 'async';
     // A URL photo can fail CORS; show it as failed rather than as a
     // silently broken image icon.
-    img.onerror = () => { tile.classList.add('is-pending'); tile.append(tagOf('unreachable')); };
+    img.onerror = () => { if (!p.unreachable) { p.unreachable = true; renderPhotos(); } };
+    if (p.unreachable) { tile.classList.add('is-pending'); tile.append(tagOf('unreachable')); }
     tile.appendChild(img);
 
     // The sort is a suggestion: the tag is a button that corrects it.
-    const tag = p.rejected ? tagOf('skipped') : p.scene ? tagOf(p.angle ? `${p.scene} · ${angleLabel(p.angle)}` : p.scene) : null;
+    const tag = p.unreachable ? null : p.rejected ? tagOf('skipped') : p.scene ? tagOf(p.angle ? `${p.scene} · ${angleLabel(p.angle)}` : p.scene) : null;
     if (tag) {
       tag.classList.add('tile-tag-btn');
       if (p.userScene) tag.classList.add('is-user');
@@ -1852,6 +1861,17 @@ async function init() {
 
   $('resetOptions').onclick = () => { state.options = resetOptions(); renderOptions(); preview?.update(); };
   $('panelClose').onclick = () => { document.querySelector('.studio').classList.remove('panel-open'); preview?.update(); };
+  // The rail scrolls on a phone with the scrollbar hidden: a fade on
+  // the edge with more past it says so.
+  const rail = $('studioRail');
+  const railHint = () => {
+    rail.classList.toggle('can-scroll', rail.scrollWidth > rail.clientWidth + 2);
+    rail.classList.toggle('is-start', rail.scrollLeft <= 2);
+    rail.classList.toggle('is-end', rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 2);
+  };
+  rail.addEventListener('scroll', railHint, { passive: true });
+  if ('ResizeObserver' in window) new ResizeObserver(railHint).observe(rail);
+  railHint();
 
   // The walkthrough's own buttons: next at the foot of each step, back
   // where there is somewhere to go back to.

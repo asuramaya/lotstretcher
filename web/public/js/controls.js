@@ -156,6 +156,7 @@ function buildSwatches(control, values, onChange, disabled, thumbFor, allControl
     tile.setAttribute('aria-pressed', String(pressed));
     if (locked) tile.classList.add('is-locked');
     const thumb = el('span', 'swatch-thumb');
+    thumb.dataset.control = control.key;
     const art = thumbFor ? thumbFor(control, choice, values, image) : null;
     if (art instanceof HTMLElement) thumb.appendChild(art);
     else if (art && art.color) thumb.style.background = art.color;

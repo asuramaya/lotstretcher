@@ -205,9 +205,15 @@
 .grid.is-strip .tile { flex: 0 0 96px; width: 96px; scroll-snap-align: start; }
 /* On a strip thumbnail the tag sits along the bottom, clear of the
    remove button in the top corner. */
-.grid.is-strip .tile-tag { top: auto; bottom: var(--s-2); font-size: 9px; padding: 1px 6px; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The tag is the button that corrects the sort, so it is never cut
+   short: it sits under the thumbnail as a caption the tile's width. */
+.grid.is-strip { padding-bottom: 26px; }
+.grid.is-strip .tile-tag { top: 100%; bottom: auto; left: 0; right: 0; margin-top: 3px; font-size: 9px; padding: 2px 4px; border-radius: var(--r-sm); text-align: center; background: var(--sunken); color: var(--ink-2); backdrop-filter: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .grid.is-strip .scene-menu { top: 100%; margin-top: 2px; }
 .grid.is-strip .tile-x { width: 22px; height: 22px; font-size: 12px; }
+/* A finger gets a hit area past the drawn circle. */
+.tile-x::after, .fmt-check::after { content: ''; position: absolute; inset: -8px; }
+.fmt-check { position: relative; }
 
 .tile {
   position: relative;
@@ -265,7 +271,7 @@
 .scene-choice { border: 0; background: transparent; color: var(--ink); text-align: left; padding: 6px 10px; border-radius: var(--r-sm); font-size: var(--t-sm); cursor: pointer; white-space: nowrap; }
 .scene-choice:hover { background: var(--surface-2); }
 .scene-choice[aria-pressed="true"] { color: var(--accent); font-weight: 650; }
-.grid.is-strip .tile { overflow: visible; }
+.grid.is-strip .tile { overflow: visible; contain: none; }
 .grid.is-strip .tile img { border-radius: var(--r-md); }
 .tile-x {
   position: absolute; top: var(--s-2); right: var(--s-2);
@@ -404,6 +410,7 @@
   display: grid; place-items: center; animation: fade var(--dur-2) var(--ease);
 }
 .lightbox[hidden] { display: none; }
+body:has(.lightbox:not([hidden])) .nav { visibility: hidden; }
 .lightbox img { max-width: 96vw; max-height: 88vh; object-fit: contain; border-radius: var(--r-md); user-select: none; -webkit-user-drag: none; }
 .lightbox-x, .lightbox-nav {
   position: absolute; border: 0; border-radius: var(--r-full); color: #fff; cursor: pointer;
@@ -635,6 +642,9 @@
   background: var(--surface); z-index: 3;
 }
 .studio-rail::-webkit-scrollbar { display: none; }
+.studio-rail.can-scroll:not(.is-end) { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent); }
+.studio-rail.can-scroll:not(.is-start) { -webkit-mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent); mask-image: linear-gradient(to right, transparent, #000 44px, #000 calc(100% - 44px), transparent); }
+.studio-rail.can-scroll.is-end:not(.is-start) { -webkit-mask-image: linear-gradient(to right, transparent, #000 44px); mask-image: linear-gradient(to right, transparent, #000 44px); }
 .tool {
   flex: 1 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
   min-width: 60px; min-height: 52px; padding: var(--s-1) var(--s-2);
@@ -733,6 +743,7 @@
 }
 .swatch-thumb canvas, .swatch-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .swatch-thumb.is-plain { background: var(--sunken); }
+.swatch-thumb[data-control="border"] { background-image: none; background: #2a2d33; }
 .swatch-thumb.is-upload { display: grid; place-items: center; background: var(--sunken); }
 .swatch-thumb.is-upload::before {
   content: '+'; font-size: 28px; font-weight: 300; color: var(--ink-3); line-height: 1;
@@ -788,6 +799,12 @@
 .range-wrap.is-auto input[type="range"] { opacity: .45; }
 /* The text's place: a 3x2 grid, the chosen cell filled. */
 .place { display: grid; grid-template-columns: repeat(3, 26px); grid-template-rows: repeat(2, 26px); gap: 3px; flex: none; }
+@media (pointer: coarse) {
+  .place { grid-template-columns: repeat(3, 36px); grid-template-rows: repeat(2, 36px); gap: 4px; }
+  .place-cell i { width: 14px; height: 8px; }
+  .fmt-check { width: 24px; height: 24px; }
+  .grid.is-strip .tile-x { width: 28px; height: 28px; font-size: 14px; }
+}
 .place-cell { border: 1.5px solid var(--line-2); border-radius: 6px; background: var(--surface); padding: 0; cursor: pointer; display: grid; place-items: center; }
 .place-cell i { width: 10px; height: 6px; border-radius: 2px; background: var(--line-2); display: block; }
 .place-cell[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-wash); }

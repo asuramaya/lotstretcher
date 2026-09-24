@@ -573,7 +573,9 @@ dragged on the stage: it snaps to the six positions `--text-position`
 knows, and with a piece's tab open the drag moves that piece alone (a
 piece already placed on its own moves when the pointer lands on it), so
 the lever and the flag still say the same. `recompose` takes them too. The clip carries the same text on
-every frame, with the conveyor laid out in the room beside it, and sits
+every frame, with the conveyor laid out in the room beside it (three
+trucks in the top corners and below on a square, stacked on a portrait,
+a lineup with the accents beside the hero on a wide one), and sits
 on the same backdrop as the stills: `--photo-background` puts the photo
 behind the clip too, unless `--video-flag-background` asks for the
 flag video instead.
