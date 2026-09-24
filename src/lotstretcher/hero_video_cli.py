@@ -24,10 +24,10 @@ from lotstretcher.imaging.compose import render_hero_video
 from lotstretcher.imaging.compose.hero_video import (BARS_PER_LOOP, DEFAULT_BPM, DEFAULT_VIDEO_FORMAT,
                                           VIDEO_FORMATS)
 from lotstretcher.imaging.select import order_for_conveyor_start, pick_all_for_carousel
-from lotstretcher.imaging.text import (add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_text_args,
+from lotstretcher.imaging.text import (add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args, frame_style,
-                                       reflection_style, shadow_style, text_options)
+                                       reflection_style, shadow_style, spotlight_style, controls_from_spotlight_args, text_options)
 from lotstretcher.library_ops import vehicle_record
 from lotstretcher.looks import add_look_arg, apply_look
 
@@ -97,6 +97,7 @@ def main():
     add_text_args(parser)
     add_frame_style_args(parser)
     add_shadow_args(parser)
+    add_spotlight_args(parser)
     add_reflection_args(parser)
     add_backdrop_arg(parser)
     add_look_arg(parser)
@@ -182,6 +183,7 @@ def render_one(fmt, args, vehicle_folder, border_path, background_video, gradien
         glow_color=args.glow_color,
         glow_radius=args.glow_radius,
         glow_intensity=args.glow_intensity,
+        spotlight=spotlight_style(controls_from_spotlight_args(args)),
         border_fit=args.frame_fit,
         text=text_options(controls_from_text_args(args)),
         vehicle=vehicle_record(vehicle_folder),

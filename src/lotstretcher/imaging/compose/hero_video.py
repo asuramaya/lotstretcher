@@ -352,6 +352,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        bars_per_loop: int = BARS_PER_LOOP,
                        glow: bool = True, glow_color=DEFAULT_GLOW_COLOR,
                        glow_radius: int = 24, glow_intensity: float = 0.75,
+                       spotlight: bool | dict = True,
                        border_fit: str = "slice",
                        text: dict | None = None, vehicle: dict | None = None,
                        background_image: Path | None = None,
@@ -562,7 +563,11 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                     cars = [_car_at(cars_held[c["shot"]], c["rect"], c["alpha"]) for c in fo["cars"]]
                     canvas = core.render_frame(
                         cars, canvas_size[0], canvas_size[1], background, background_image=bg_frame,
-                        border=border_held, spotlight=(hero["center"][0], hero["center"][1], hero["dim"]),
+                        border=border_held,
+                        # The still's spotlight levers on every frame: off is off,
+                        # a chosen strength or spread replaces the measured ones.
+                        spotlight=None if not spotlight else (hero["center"][0], hero["center"][1], hero["dim"],
+                                                              spotlight if isinstance(spotlight, dict) else {}),
                         glow=glow, glow_color=str(glow_color), glow_radius=glow_radius,
                         glow_intensity=glow_intensity, overlays=overlays, shadow=shadow,
                         reflection=reflection)

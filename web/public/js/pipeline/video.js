@@ -154,7 +154,7 @@ function drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, p
   });
   const out = core.renderFrame(cars, width, height, background, {
     backgroundImage, border: prepared.frameId ?? null,
-    spotlight: spotlight ? { cx: hero.center[0], cy: hero.center[1], dim: hero.dim } : null,
+    spotlight: spotlight ? { cx: hero.center[0], cy: hero.center[1], dim: hero.dim ?? 1, strength: spotlight.strength ?? null, spread: spotlight.spread ?? null } : null,
     resample: 'bilinear', overlays,
     ...glow,
   });
@@ -202,7 +202,7 @@ function drawFrame(ctx, prepared, { width, height, shots, t, duration, palette, 
 
   const out = core.renderFrame(cars, width, height, background, {
     backgroundImage, border: prepared.frameId ?? null,
-    spotlight: spotlight ? { cx: wl + ww / 2, cy: wt + wh / 2, dim: shots[index].dim } : null,
+    spotlight: spotlight ? { cx: wl + ww / 2, cy: wt + wh / 2, dim: shots[index].dim ?? 1, strength: spotlight.strength ?? null, spread: spotlight.spread ?? null } : null,
     resample: 'bilinear', overlays,
     ...glow,
   });
@@ -269,7 +269,8 @@ export function prepareClip(cutouts, {
     const angle = (hashAngle(s));
     return { start, end, angle };
   });
-  if (spotlight) {
+  // A chosen strength needs no measurement; the dim is the core's from it.
+  if (spotlight && spotlight.strength == null) {
     for (const shot of shots) {
       const availW = width * (1 - 2 * HERO_MARGIN_FRAC);
       const availH = height * (1 - 2 * HERO_MARGIN_FRAC);

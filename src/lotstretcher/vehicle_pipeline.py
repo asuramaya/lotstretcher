@@ -107,6 +107,7 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         glow_color=hero_opts.glow_color,
         glow_radius=hero_opts.glow_radius,
         glow_intensity=hero_opts.glow_intensity,
+        spotlight=hero_opts.spotlight,
         border_fit=hero_opts.border_fit,
         text=hero_opts.text,
         vehicle=vehicle_record(folder),
@@ -141,7 +142,8 @@ class HeroOptions:
     gradient: bool = True
     # --no-spotlight and --margin-frac. Both were accepted by the CLI and
     # never applied until the control-parity work found them dead.
-    spotlight: bool = True
+    # True, False, or {"strength", "spread"} (imaging/text.py::spotlight_style).
+    spotlight: bool | dict = True
     margin_frac: float = 0.06
     video: bool = True
     # --video-fps / --video-duration; None means the renderer's own

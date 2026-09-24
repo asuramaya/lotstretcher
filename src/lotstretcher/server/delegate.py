@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any
 
 from ..imaging.text import (backdrop_angle, backdrop_color, backdrop_color2, backdrop_spec, frame_style, reflection_style,
-                            shadow_style, text_options, text_request)
+                            shadow_style, spotlight_style, text_options, text_request)
 
 MAX_CUTOUT_BYTES = 24 * 1024 * 1024
 MAX_CANVAS = 4096
@@ -168,7 +168,7 @@ def compose(cutout_png: bytes, options: dict[str, Any],
     composed = compose_hero(
         background, border, [cutout_path],
         layout="single",
-        spotlight=bool(options.get("spotlight", True)),
+        spotlight=spotlight_style(options),
         glow=bool(options.get("glow", False)),
         glow_color=options.get("glowColor") or "white",
         glow_radius=int(options.get("glowRadius") or 24),

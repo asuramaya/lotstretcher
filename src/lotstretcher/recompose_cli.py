@@ -27,7 +27,8 @@ import sys
 from pathlib import Path
 
 from lotstretcher.imaging import assets
-from lotstretcher.imaging.text import (add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_text_args,
+from lotstretcher.imaging.text import (add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
+                                       controls_from_spotlight_args, spotlight_style,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args, frame_style,
                                        reflection_style, shadow_style, text_options)
@@ -67,6 +68,7 @@ def main():
     add_text_args(parser)
     add_frame_style_args(parser)
     add_shadow_args(parser)
+    add_spotlight_args(parser)
     add_reflection_args(parser)
     add_backdrop_arg(parser)
     add_look_arg(parser)
@@ -207,6 +209,7 @@ def main():
                       border_style=frame_style(controls_from_frame_style_args(args)),
                       shadow=shadow_style(controls_from_shadow_args(args)),
                       reflection=reflection_style(controls_from_reflection_args(args)),
+                      spotlight=spotlight_style(controls_from_spotlight_args(args)),
                       backdrop=args.backdrop, backdrop_color=args.backdrop_color,
                       backdrop_color2=args.backdrop_color2, backdrop_angle=args.backdrop_angle),
         "interiors": args.interiors,

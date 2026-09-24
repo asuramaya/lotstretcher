@@ -468,3 +468,29 @@ def test_pieces_in_both_halves_shrink_each_half_only():
     top, bottom = text_window((0, 0, w, h), h, plan)[1], text_window((0, 0, w, h), h, plan)[3]
     assert 0 < top < h * 0.3 and h * 0.7 < bottom < h
 
+
+def test_spotlight_strength_and_spread_are_levers():
+    """--spotlight-strength replaces the measured dim (0 leaves the
+    backdrop alone, 1 dims it as hard as the measurement ever would) and
+    --spotlight-spread tightens the pool of light; the clip's frames
+    take the same levers as the still."""
+    bg = {"kind": "generic", "seed": "spot"}
+    def corner_lum(img):
+        px = img.convert("RGB").load()
+        return sum(px[3, 3][:3]) / 3
+    off = core.compose_hero([cutout()], 400, 400, bg, spotlight=False)
+    none = core.compose_hero([cutout()], 400, 400, bg, spotlight={"strength": 0.0})
+    hard = core.compose_hero([cutout()], 400, 400, bg, spotlight={"strength": 1.0})
+    tight = core.compose_hero([cutout()], 400, 400, bg, spotlight={"strength": 1.0, "spread": 0.45})
+    assert corner_lum(none) == corner_lum(off)
+    assert corner_lum(hard) < corner_lum(off) * 0.6
+    # A tighter spread reaches the corner's dim sooner, so a point halfway
+    # out is darker under it than under the default spread.
+    mid = lambda img: sum(img.convert("RGB").load()[80, 80][:3]) / 3
+    assert mid(tight) < mid(hard)
+    # The frame op takes the same levers.
+    car = (cutout(), 50, 100, 300, 156, 1.0)
+    f_hard = core.render_frame([car], 400, 400, bg, spotlight=(200, 200, 1.0, {"strength": 1.0}))
+    f_off = core.render_frame([car], 400, 400, bg, spotlight=None)
+    assert corner_lum(f_hard) < corner_lum(f_off) * 0.6
+

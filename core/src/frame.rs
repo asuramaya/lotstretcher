@@ -46,7 +46,15 @@ fn one() -> f64 { 1.0 }
 pub struct Mix { pub image: Slice, pub t: f64 }
 
 #[derive(Deserialize)]
-pub struct Spotlight { pub cx: f64, pub cy: f64, pub dim: f64 }
+pub struct Spotlight {
+    pub cx: f64, pub cy: f64,
+    /// The measured dim; `strength` (0..1), when given, replaces it.
+    pub dim: f64,
+    #[serde(default)]
+    pub strength: Option<f64>,
+    #[serde(default)]
+    pub spread: Option<f64>,
+}
 
 #[derive(Deserialize)]
 pub struct FrameRequest {
@@ -128,7 +136,8 @@ pub fn render_frame(req: &FrameRequest, arena: &[u8]) -> Result<Image, String> {
         }
     };
     if let Some(s) = &req.spotlight {
-        apply_spotlight(&mut canvas, s.cx, s.cy, s.dim);
+        let dim = s.strength.map(crate::spotlight::dim_for_strength).unwrap_or(s.dim);
+        apply_spotlight(&mut canvas, s.cx, s.cy, dim, s.spread);
     }
     let color = glow_color(req.glow_color.as_deref().unwrap_or("white"))?;
     let radius = req.glow_radius.unwrap_or_else(|| spec::f64_at(&["glow", "radius"]) as usize);

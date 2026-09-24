@@ -121,6 +121,12 @@ pub struct ComposeRequest {
     pub layout: String,
     #[serde(default = "default_true")]
     pub spotlight: bool,
+    /// A chosen strength (0..1) instead of the measured dim, and a
+    /// spread (outer radius fraction) instead of the spec's.
+    #[serde(default)]
+    pub spotlight_strength: Option<f64>,
+    #[serde(default)]
+    pub spotlight_spread: Option<f64>,
     #[serde(default)]
     pub glow: bool,
     #[serde(default)]
@@ -362,11 +368,13 @@ pub fn compose_hero(req: &ComposeRequest, arena: &[u8]) -> Result<Image, String>
             let rw = resized.width.min(w.saturating_sub(x0));
             let rh = resized.height.min(h.saturating_sub(y0));
             if rw > 0 && rh > 0 {
-                let region = crop(&canvas, x0, y0, rw, rh);
-                let dim = compute_dim_strength(&region, resized);
+                let dim = match req.spotlight_strength {
+                    Some(s) => crate::spotlight::dim_for_strength(s),
+                    None => compute_dim_strength(&crop(&canvas, x0, y0, rw, rh), resized),
+                };
                 let cx = *x as f64 + resized.width as f64 / 2.0;
                 let cy = *y as f64 + resized.height as f64 / 2.0;
-                apply_spotlight(&mut canvas, cx, cy, dim);
+                apply_spotlight(&mut canvas, cx, cy, dim, req.spotlight_spread);
             }
         }
     }

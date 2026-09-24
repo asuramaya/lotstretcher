@@ -16,7 +16,7 @@ import { prepareClip, drawClipFrame } from './pipeline/video.js';
 import { get as specGet } from './spec.js';
 import * as OPTS from './options.js';
 import { imageNow } from './lib/library.js';
-import { textOptions, textRequestNow, planOverlaysNow, frameStyle, shadowStyle, reflectionStyle } from './lib/text.js';
+import { textOptions, textRequestNow, planOverlaysNow, frameStyle, shadowStyle, reflectionStyle, spotlightStyle } from './lib/text.js';
 import { el, segment, chip } from './lib/widgets.js';
 
 /* A stock asset as a canvas: the site's own file, or the server's
@@ -332,7 +332,7 @@ export class Preview {
         backdrop: o.backdrop, backdropColor: o.backdropColor || null, backdropColor2: o.backdropColor2 || null, backdropAngle: o.backdropAngle ?? null,
         background: o.backdrop === 'custom' ? o.customBackground || null : stockBackground,
         border, borderFit: o.frameFit, borderStyle: frameStyle(o), shadow: shadowStyle(o), reflection: reflectionStyle(o),
-        spotlight: o.spotlight,
+        spotlight: spotlightStyle(o),
         marginFrac: o.margin,
         glow: o.glow, glowColor: o.glowColor, glowRadius: o.glowRadius, glowIntensity: o.glowIntensity,
       });
@@ -372,12 +372,12 @@ export class Preview {
     const background = o.backdrop === 'custom' ? o.customBackground || null
       : o.backdrop === 'asset' && o.background ? assetImage('backgrounds', o.background, () => this.update()) : null;
     const style = frameStyle(o);
-    const key = JSON.stringify([width, height, seed, o.backdrop, o.backdropColor, o.backdropColor2, o.spotlight, subject.exterior, subject.interior, cutouts.length, text,
+    const key = JSON.stringify([width, height, seed, o.backdrop, o.backdropColor, o.backdropColor2, spotlightStyle(o), subject.exterior, subject.interior, cutouts.length, text,
       background ? `${o.backdrop}:${o.background || o.customBackground?.name || ''}` : null, style]);
     if (key !== this.clipKey) {
       this.clip = prepareClip(cutouts, {
         width, height, seed: `${seed}:video`, exterior: subject.exterior, interior: subject.interior,
-        generic: o.backdrop === 'generic', backdrop: o.backdrop, backdropColor: o.backdropColor || null, backdropColor2: o.backdropColor2 || null, spotlight: o.spotlight, text, background, frameStyle: style,
+        generic: o.backdrop === 'generic', backdrop: o.backdrop, backdropColor: o.backdropColor || null, backdropColor2: o.backdropColor2 || null, spotlight: spotlightStyle(o), text, background, frameStyle: style,
         vehicle: subject.vehicle,
       });
       this.clipKey = key;
@@ -386,7 +386,7 @@ export class Preview {
     const t0 = performance.now();
     this.canvas.width = width; this.canvas.height = height;
     drawClipFrame(this.canvas.getContext('2d'), this.clip, this.scrub * this.clip.duration, {
-      spotlight: o.spotlight, glow: o.glow, glowColor: o.glowColor, glowRadius: o.glowRadius, glowIntensity: o.glowIntensity,
+      spotlight: spotlightStyle(o), glow: o.glow, glowColor: o.glowColor, glowRadius: o.glowRadius, glowIntensity: o.glowIntensity,
       shadow: shadowStyle(o), reflection: reflectionStyle(o),
     });
     this.lastMs = performance.now() - t0;

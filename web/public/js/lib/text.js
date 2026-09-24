@@ -107,6 +107,17 @@ export function frameStyle(o) {
   return { kind: 'line', color: o.frameColor || 'white', weight: num('frameWeight', 0.008), inset: num('frameInset', 0.035), radius: num('frameRadius', 0.02) };
 }
 
+/* The app's spotlight controls as what the core takes: false when off,
+ * true when on with the measured dim, else {strength, spread} with the
+ * levers set. The twin of imaging/text.py::spotlight_style. */
+export function spotlightStyle(o) {
+  if (o.spotlight === false) return false;
+  const out = {};
+  if (o.spotStrength != null && o.spotStrength !== '') out.strength = Number(o.spotStrength);
+  if (o.spotSpread != null && o.spotSpread !== '') out.spread = Number(o.spotSpread);
+  return Object.keys(out).length ? out : true;
+}
+
 /* The app's shadow controls as the core's `shadow` field, or null: the
  * same mapping as imaging/text.py::shadow_style. */
 export function shadowStyle(o) {

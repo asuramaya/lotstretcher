@@ -37,7 +37,7 @@ def _load_border(border_path: str) -> Image.Image:
 
 
 def compose_hero(background_path, border_path: Path | None, car_paths: list[Path],
-                  layout: str = "single", spotlight: bool = True,
+                  layout: str = "single", spotlight: bool | dict = True,
                   glow: bool = False, glow_color=DEFAULT_GLOW_COLOR,
                   glow_radius: int = 24, glow_intensity: float = 0.75,
                   margin_frac: float = 0.06,

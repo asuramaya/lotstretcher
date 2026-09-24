@@ -507,6 +507,19 @@ floor gives; `--reflection-strength` is its opacity at the floor line
 (default 0.35). It sits under the shadow, so the two together read as
 one floor. The app's Light group has the same toggle and slider.
 
+### The spotlight
+
+The backdrop dims around the vehicle so it reads as the brightest thing
+in the frame; how hard is measured from the contrast between the car
+and what sits behind it (core/src/spotlight.rs). `--spotlight-strength`
+sets it instead, 0 to 1 (1 is as hard as the measurement ever dims),
+`--spotlight-spread` is how far the pool of light reaches as a fraction
+of the distance to the farthest corner (default 0.85; smaller is a
+tighter spot), and `--no-spotlight` turns it off. The clip's frames
+take the same three, so the still and the video are lit alike. The
+app's Light tool has them under **Spot**, beside the Glow, Shadow and
+Floor tabs.
+
 ### Text on the still
 
 The core draws text (core/src/text.rs, the studio's Lato Bold, OFL) so

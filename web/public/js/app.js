@@ -35,7 +35,7 @@ import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './hos
 import { renderControls, controlDefaults, controlsToFlags, affectsPreview, renderLooks, openSubTab } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
-import { textOptions, textRequest, frameStyle, shadowStyle, reflectionStyle } from './lib/text.js';
+import { textOptions, textRequest, frameStyle, shadowStyle, reflectionStyle, spotlightStyle } from './lib/text.js';
 import { normalizeListing, recordFromHtml } from './pipeline/listing.js';
 import { recordFromText } from './pipeline/vin.js';
 import { LibraryView } from './library/view.js';
@@ -789,7 +789,7 @@ function lookArt(lk, values) {
   const subject = preview?.subject?.();
   if (!subject) return null;
   const v = { ...values, ...lk.values };
-  const key = JSON.stringify([lk.id, subject.seed, v.backdrop, v.backdropColor, v.backdropColor2, v.backdropAngle, v.spotlight, v.glow, v.glowColor, v.glowRadius, v.glowIntensity,
+  const key = JSON.stringify([lk.id, subject.seed, v.backdrop, v.backdropColor, v.backdropColor2, v.backdropAngle, spotlightStyle(v), v.glow, v.glowColor, v.glowRadius, v.glowIntensity,
     v.shadow, v.shadowStrength, v.reflection, v.reflectionStrength, v.border, v.frameColor, v.frameWeight]);
   if (!lookArtCache.has(key)) {
     try {
@@ -798,7 +798,7 @@ function lookArt(lk, values) {
         width: size, height: size, seed: `${subject.seed}:look`,
         exterior: subject.exterior, interior: subject.interior, generic: v.backdrop === 'generic', backdrop: v.backdrop,
         backdropColor: v.backdropColor || null, backdropColor2: v.backdropColor2 || null, backdropAngle: v.backdropAngle ?? null,
-        spotlight: v.spotlight, marginFrac: 0.08,
+        spotlight: spotlightStyle(v), marginFrac: 0.08,
         glow: v.glow, glowColor: v.glowColor, glowRadius: Math.max(2, Math.round((v.glowRadius || 24) / 6)), glowIntensity: v.glowIntensity,
         border: null, borderStyle: v.border === 'line' ? { ...frameStyle(v), weight: Math.max(0.02, Number(v.frameWeight) || 0.008) * 2 } : null,
         shadow: shadowStyle(v), reflection: reflectionStyle(v),
@@ -1172,7 +1172,7 @@ async function run() {
           exterior: state.vehicle.exterior_color,
           interior: state.vehicle.interior_color,
           width: w, height: h,
-          spotlight: state.options.spotlight,
+          spotlight: spotlightStyle(state.options),
           marginFrac: state.options.margin,
           generic: state.options.backdrop === 'generic', backdrop: state.options.backdrop,
           backdropColor: state.options.backdropColor || null,
@@ -1235,7 +1235,7 @@ async function run() {
             generic: state.options.backdrop === 'generic', backdrop: state.options.backdrop,
             backdropColor: state.options.backdropColor || null,
             backdropColor2: state.options.backdropColor2 || null,
-            spotlight: state.options.spotlight,
+            spotlight: spotlightStyle(state.options),
             glow: state.options.glow,
             glowColor: state.options.glowColor,
             glowRadius: state.options.glowRadius,

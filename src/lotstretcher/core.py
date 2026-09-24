@@ -135,8 +135,16 @@ def _buffer(arena: bytearray):
     return (ctypes.c_uint8 * len(arena)).from_buffer(arena) if arena else None
 
 
+def spotlight_fields(spotlight) -> dict:
+    """The core's three spotlight fields from a host's value: a bool, or
+    {"strength", "spread"} (on, with those levers)."""
+    if isinstance(spotlight, dict):
+        return {"spotlight": True, "spotlight_strength": spotlight.get("strength"), "spotlight_spread": spotlight.get("spread")}
+    return {"spotlight": bool(spotlight), "spotlight_strength": None, "spotlight_spread": None}
+
+
 def compose_hero(cars, width: int, height: int, background: dict, *, layout: str = "single",
-                 spotlight: bool = True, glow: bool = False, glow_color: str | None = None,
+                 spotlight: bool | dict = True, glow: bool = False, glow_color: str | None = None,
                  glow_radius: int | None = None, glow_intensity: float | None = None,
                  margin_frac: float | None = None, background_image=None, border=None,
                  border_fit: str | None = None, overlays: list | None = None, text: dict | None = None,
@@ -173,7 +181,7 @@ def compose_hero(cars, width: int, height: int, background: dict, *, layout: str
 
     req = {
         "width": width, "height": height, "background": bg, "cars": car_slices, "layout": layout,
-        "spotlight": spotlight, "glow": glow, "glow_color": glow_color, "glow_radius": glow_radius,
+        **spotlight_fields(spotlight), "glow": glow, "glow_color": glow_color, "glow_radius": glow_radius,
         "glow_intensity": glow_intensity, "margin_frac": margin_frac,
         "border": slices[border_index] if border_index is not None else None,
         "border_fit": border_fit,
@@ -266,7 +274,11 @@ def render_frame(cars, width: int, height: int, background: dict, *, border=None
         op["border"] = {"$image": len(images)}
         images.append(border)
     if spotlight is not None:
-        op["spotlight"] = {"cx": spotlight[0], "cy": spotlight[1], "dim": spotlight[2]}
+        # (cx, cy, dim) or (cx, cy, dim, {"strength", "spread"}): the
+        # levers, when given, replace the measured dim and the spread.
+        levers = spotlight[3] if len(spotlight) > 3 and isinstance(spotlight[3], dict) else {}
+        op["spotlight"] = {"cx": spotlight[0], "cy": spotlight[1], "dim": spotlight[2],
+                           "strength": levers.get("strength"), "spread": levers.get("spread")}
     return call(op, images)
 
 

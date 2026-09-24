@@ -170,6 +170,39 @@ def frame_style(options: dict) -> dict | None:
             "weight": num("frameWeight", 0.008), "inset": num("frameInset", 0.035), "radius": num("frameRadius", 0.02)}
 
 
+def add_spotlight_args(parser) -> None:
+    """The spotlight's flags, shared by the CLIs: off, a chosen strength
+    in place of the measured dim, and a spread for the pool of light."""
+    parser.add_argument("--no-spotlight", action="store_true",
+                        help="Disable the adaptive spotlight dim behind the vehicle. See the core "
+                             "(core/src/spotlight.rs) -- the dim is measured from the actual contrast, "
+                             "so turning it off flattens light cars against light backdrops.")
+    parser.add_argument("--spotlight-strength", type=float, default=None, metavar="FRACTION",
+                        help="How hard the backdrop dims around the vehicle, 0-1 (default: measured from "
+                             "the contrast between the vehicle and what sits behind it).")
+    parser.add_argument("--spotlight-spread", type=float, default=None, metavar="FRACTION",
+                        help="How far the pool of light reaches, as a fraction of the distance to the "
+                             "farthest corner, 0.4-1 (default: 0.85). Smaller is a tighter spot.")
+
+
+def controls_from_spotlight_args(args) -> dict:
+    return {"spotlight": not args.no_spotlight, "spotStrength": args.spotlight_strength, "spotSpread": args.spotlight_spread}
+
+
+def spotlight_style(options: dict) -> bool | dict:
+    """The app's spotlight controls as what the core takes: False when
+    off, True when on with the measured dim and the spec's spread, else
+    {"strength", "spread"} with whichever levers are set."""
+    if not options.get("spotlight", True):
+        return False
+    out = {}
+    for key, name in (("spotStrength", "strength"), ("spotSpread", "spread")):
+        value = options.get(key)
+        if value is not None and value != "":
+            out[name] = float(value)
+    return out or True
+
+
 SHADOW_STRENGTH = 0.5
 
 

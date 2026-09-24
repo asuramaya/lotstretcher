@@ -138,7 +138,8 @@ export function composeHero(cars, width, height, background, {
   const { buf, slices } = arena(images);
   if (bgIndex !== null) bg.image = slices[bgIndex];
   const req = {
-    width, height, background: bg, cars: slices.slice(0, cars.length), layout, spotlight, glow,
+    width, height, background: bg, cars: slices.slice(0, cars.length), layout,
+    spotlight: !!spotlight, spotlight_strength: spotlight?.strength ?? null, spotlight_spread: spotlight?.spread ?? null, glow,
     glow_color: glowColor, glow_radius: glowRadius, glow_intensity: glowIntensity, margin_frac: marginFrac,
     border: borderIndex !== null ? slices[borderIndex] : null,
     border_fit: borderFit, overlays, text, border_style: borderStyle, shadow, reflection,

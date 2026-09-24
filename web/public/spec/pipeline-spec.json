@@ -1701,7 +1701,39 @@
             "default": true,
             "cli": "--no-spotlight",
             "cliInvert": true,
-            "tooltip": "Dim the backdrop around the vehicle"
+            "tooltip": "Dim the backdrop around the vehicle",
+            "tab": "spot"
+          },
+          {
+            "key": "spotStrength",
+            "label": "Strength",
+            "hint": "",
+            "type": "range",
+            "nullable": true,
+            "default": null,
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05,
+            "unit": "fraction",
+            "cli": "--spotlight-strength",
+            "tab": "spot",
+            "showWhen": "spotlight",
+            "tooltip": "How hard the backdrop dims around the vehicle; Auto measures it from the contrast"
+          },
+          {
+            "key": "spotSpread",
+            "label": "Spread",
+            "hint": "",
+            "type": "range",
+            "default": 0.85,
+            "min": 0.4,
+            "max": 1.0,
+            "step": 0.05,
+            "unit": "fraction",
+            "cli": "--spotlight-spread",
+            "tab": "spot",
+            "showWhen": "spotlight",
+            "tooltip": "How far the pool of light reaches; smaller is a tighter spot"
           },
           {
             "key": "glow",
@@ -1711,7 +1743,8 @@
             "default": false,
             "cli": "--no-glow",
             "cliInvert": true,
-            "tooltip": "Halo behind the cutout"
+            "tooltip": "Halo behind the cutout",
+            "tab": "glow"
           },
           {
             "key": "glowColor",
@@ -1725,7 +1758,8 @@
             "cli": "--glow-color",
             "showWhen": "glow",
             "custom": true,
-            "cliNote": "--glow-color takes a name or your own #rrggbb."
+            "cliNote": "--glow-color takes a name or your own #rrggbb.",
+            "tab": "glow"
           },
           {
             "key": "glowRadius",
@@ -1738,7 +1772,8 @@
             "step": 2,
             "unit": "px",
             "cli": "--glow-radius",
-            "showWhen": "glow"
+            "showWhen": "glow",
+            "tab": "glow"
           },
           {
             "key": "glowIntensity",
@@ -1750,16 +1785,18 @@
             "max": 1.0,
             "step": 0.05,
             "cli": "--glow-intensity",
-            "showWhen": "glow"
+            "showWhen": "glow",
+            "tab": "glow"
           },
           {
             "key": "shadow",
-            "label": "Ground shadow",
+            "label": "Shadow",
             "hint": "",
             "type": "toggle",
             "default": false,
             "cli": "--shadow",
-            "tooltip": "A soft shadow under the vehicle, read off its own silhouette"
+            "tooltip": "A soft shadow under the vehicle, read off its own silhouette",
+            "tab": "shadow"
           },
           {
             "key": "shadowStrength",
@@ -1771,16 +1808,18 @@
             "max": 1.0,
             "step": 0.05,
             "cli": "--shadow-strength",
-            "showWhen": "shadow"
+            "showWhen": "shadow",
+            "tab": "shadow"
           },
           {
             "key": "reflection",
-            "label": "Floor reflection",
+            "label": "Reflection",
             "hint": "",
             "type": "toggle",
             "default": false,
             "cli": "--reflection",
-            "tooltip": "The vehicle mirrored below itself and faded out, as a glossy floor gives"
+            "tooltip": "The vehicle mirrored below itself and faded out, as a glossy floor gives",
+            "tab": "floor"
           },
           {
             "key": "reflectionStrength",
@@ -1792,7 +1831,30 @@
             "max": 1.0,
             "step": 0.05,
             "cli": "--reflection-strength",
-            "showWhen": "reflection"
+            "showWhen": "reflection",
+            "tab": "floor"
+          }
+        ],
+        "tabs": [
+          {
+            "id": "spot",
+            "label": "Spot",
+            "hint": "The dim around the vehicle"
+          },
+          {
+            "id": "glow",
+            "label": "Glow",
+            "hint": "A halo behind the cutout"
+          },
+          {
+            "id": "shadow",
+            "label": "Shadow",
+            "hint": "A ground shadow under the vehicle"
+          },
+          {
+            "id": "floor",
+            "label": "Floor",
+            "hint": "A glossy floor reflection"
           }
         ]
       },

@@ -48,12 +48,12 @@ pub fn compute_dim_strength(bg_region: &Image, car: &Image) -> f64 {
 /// Radial dim: full brightness within innerRadiusFrac of `center`,
 /// fading to `dim` by outerRadiusFrac, flat beyond. Radii are fractions
 /// of the distance to the farthest corner. In place, RGB or RGBA.
-pub fn apply_spotlight(canvas: &mut Image, cx: f64, cy: f64, dim: f64) {
+pub fn apply_spotlight(canvas: &mut Image, cx: f64, cy: f64, dim: f64, spread: Option<f64>) {
     if dim >= 1.0 {
         return;
     }
     let (w, h, c) = (canvas.width, canvas.height, canvas.channels);
-    let factor = spotlight_factor(w, h, cx, cy, dim);
+    let factor = spotlight_factor(w, h, cx, cy, dim, spread);
     // Fixed point: the factor is in [dim, 1], so a 16.16 multiply and a
     // shift reproduce the f32 multiply-then-truncate to the pixel.
     let factor: &[f32] = &factor;
@@ -70,7 +70,7 @@ pub fn apply_spotlight(canvas: &mut Image, cx: f64, cy: f64, dim: f64) {
 }
 
 thread_local! {
-    static FACTOR_CACHE: std::cell::RefCell<Vec<((usize, usize, i64, i64, i64), std::rc::Rc<Vec<f32>>)>> =
+    static FACTOR_CACHE: std::cell::RefCell<Vec<((usize, usize, i64, i64, i64, i64), std::rc::Rc<Vec<f32>>)>> =
         std::cell::RefCell::new(Vec::new());
 }
 const FACTOR_CACHE_MAX: usize = 16;
@@ -79,13 +79,23 @@ const FACTOR_CACHE_MAX: usize = 16;
 /// one centre and dim for a whole shot, so the map is built once per
 /// shot rather than once per frame. Keyed on rounded values so
 /// floating-point jitter cannot defeat the cache.
-fn spotlight_factor(w: usize, h: usize, cx: f64, cy: f64, dim: f64) -> std::rc::Rc<Vec<f32>> {
-    let key = (w, h, cx.round() as i64, cy.round() as i64, (dim * 1000.0).round() as i64);
+/// The dim a chosen strength (0..1) asks for: 0 leaves the backdrop
+/// as it is, 1 dims it as hard as the measured spotlight ever would.
+pub fn dim_for_strength(strength: f64) -> f64 {
+    let min_dim = spec::f64_at(&["compose", "spotlight", "minDim"]);
+    1.0 - strength.clamp(0.0, 1.0) * (1.0 - min_dim)
+}
+
+/// `spread` is the outer radius as a fraction of the distance to the
+/// farthest corner (the spec's outerRadiusFrac when None): a smaller
+/// spread is a tighter pool of light around the car.
+fn spotlight_factor(w: usize, h: usize, cx: f64, cy: f64, dim: f64, spread: Option<f64>) -> std::rc::Rc<Vec<f32>> {
+    let inner = spec::f64_at(&["compose", "spotlight", "innerRadiusFrac"]);
+    let outer = spread.unwrap_or_else(|| spec::f64_at(&["compose", "spotlight", "outerRadiusFrac"])).max(inner + 0.05);
+    let key = (w, h, cx.round() as i64, cy.round() as i64, (dim * 1000.0).round() as i64, (outer * 1000.0).round() as i64);
     if let Some(hit) = FACTOR_CACHE.with(|c| c.borrow().iter().find(|(k, _)| *k == key).map(|(_, v)| v.clone())) {
         return hit;
     }
-    let inner = spec::f64_at(&["compose", "spotlight", "innerRadiusFrac"]);
-    let outer = spec::f64_at(&["compose", "spotlight", "outerRadiusFrac"]);
     let max_dist = [(0.0, 0.0), (w as f64, 0.0), (0.0, h as f64), (w as f64, h as f64)]
         .iter()
         .map(|(px, py)| ((cx - px).powi(2) + (cy - py).powi(2)).sqrt())

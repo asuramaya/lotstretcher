@@ -19,7 +19,7 @@ from pathlib import Path
 from lotstretcher.imaging import assets
 from lotstretcher.imaging.compose import compose_interiors, compose_vehicle, compose_wheel_shots
 from lotstretcher.imaging.text import (BACKDROPS, backdrop_angle, backdrop_color, backdrop_color2, frame_style, reflection_style,
-                                       shadow_style, text_options)
+                                       shadow_style, spotlight_style, text_options)
 
 
 def generated_backdrop(options: dict) -> str:
@@ -155,7 +155,7 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
         glow_color=options.get("glowColor") or "white",
         glow_radius=int(options.get("glowRadius") or 24),
         glow_intensity=float(options.get("glowIntensity") or 0.75),
-        spotlight=bool(options.get("spotlight", True)),
+        spotlight=spotlight_style(options),
         margin_frac=float(options.get("margin") if options.get("margin") is not None else 0.06),
         border_fit=options.get("frameFit") or "slice",
         text=text_options(options),
