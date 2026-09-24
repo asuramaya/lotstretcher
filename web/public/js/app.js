@@ -476,14 +476,17 @@ function renderResults() {
   $('interiorSection').hidden = interiors.length === 0;
   interiorHost.innerHTML = '';
   for (const p of interiors) {
-    const tile = el('div', 'tile');
+    const tile = el('div', 'tile is-captioned');
+    const pic = el('div', 'tile-pic');
+    pic.style.aspectRatio = `${p.interior.width} / ${p.interior.height}`;
     const scale = 420 / Math.max(p.interior.width, p.interior.height);
     const c = makeCanvas(Math.round(p.interior.width * scale), Math.round(p.interior.height * scale));
     ctxOf(c).drawImage(p.interior, 0, 0, c.width, c.height);
     const img = el('img');
     canvasToBlob(c, 'image/jpeg', 0.85).then((b) => { img.src = URL.createObjectURL(b); });
     img.alt = `Interior photo ${p.name}, corrected`;
-    tile.append(img, tagOf('interior'));
+    pic.append(img);
+    tile.append(pic, tagOf('interior'));
     interiorHost.appendChild(tile);
   }
   const interiorItems = interiors.map((p) => canvasItem(p.interior, p.name, 'interior', () => saveInterior(p)));
@@ -497,8 +500,11 @@ function renderResults() {
   const stillItems = [];
   for (const p of heroes) {
     for (const [fmt, canvas] of Object.entries(p.heroes || { square: p.hero })) {
-      const tile = el('div', 'tile');
-      tile.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
+      // The tag is a caption under the picture, not a chip over it:
+      // the still's own text may sit in any corner now.
+      const tile = el('div', 'tile is-captioned');
+      const pic = el('div', 'tile-pic');
+      pic.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
       const k = 480 / Math.max(canvas.width, canvas.height);
       const c = makeCanvas(Math.round(canvas.width * k), Math.round(canvas.height * k));
       ctxOf(c).drawImage(canvas, 0, 0, c.width, c.height);
@@ -506,7 +512,8 @@ function renderResults() {
       canvasToBlob(c, 'image/jpeg', 0.85).then((b) => { img.src = URL.createObjectURL(b); });
       const label = OPTS.HERO_FORMATS[fmt]?.label || fmt;
       img.alt = `${label} still from ${p.name}`;
-      tile.append(img, tagOf(`${angleLabel(p.angle)} \u00b7 ${label}`));
+      pic.append(img);
+      tile.append(pic, tagOf(`${angleLabel(p.angle)} \u00b7 ${label}`));
       stillItems.push(canvasItem(canvas, `${p.name} \u00b7 ${label}`, angleLabel(p.angle), () => saveOne(p, fmt)));
       const at = stillItems.length - 1;
       tile.onclick = () => openLightbox(stillItems, at);
