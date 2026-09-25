@@ -4,7 +4,7 @@
     "expect": {
       "vin": "1FTFW1RGXPFA30435",
       "model_line": "F-150 Raptor",
-      "n_equipment_total": 35,
+      "n_equipment_total": 48,
       "n_optional": 14,
       "n_warranties": 3,
       "pricing": {
@@ -14,7 +14,7 @@
         "total_msrp": "$87,980.00"
       }
     },
-    "note": "Real bug case: BASE PRICE and DESTINATION & DELIVERY (right column) land on the same visual row as OPTIONAL EQUIPMENT lines (left column) -- 'RAPTOR SERIES' shares a row with 'BASE PRICE $76,775.00'. A label match anchored at a row's first N words missed both fields entirely (silently -- parse_sticker doesn't raise, it just omits the key). Fixed by matching the label as a subsequence anywhere in the row instead. Pin this one to keep it fixed."
+    "note": "Real bug case: BASE PRICE and DESTINATION & DELIVERY (right column) land on the same visual row as OPTIONAL EQUIPMENT lines (left column) -- 'RAPTOR SERIES' shares a row with 'BASE PRICE $76,775.00'. A label match anchored at a row's first N words missed both fields entirely (silently -- parse_sticker doesn't raise, it just omits the key). Fixed by matching the label as a subsequence anywhere in the row instead. Pin this one to keep it fixed. KNOWN-IMPERFECT count (2026-09-25): 48 is what the core's parser returns since the equipment grid stopped truncating each column at another column's header (944c6f7); the 35 pinned before that fix was the truncated grid. Seven of the 48 are unpunctuated wrapped lines counted as items ('Tailpipes', '(On/Off)', 'Mounted Side Impact', 'Front Performance', 'Wheel With Audio', 'Hotspot Telematics Modem', 'Rear View Camera'): the wrap rule only reads punctuation, and a better rule must be made against tests/fixtures/sticker-reference.json too."
   },
   {
     "pdf": "bronco-sport-clean.pdf",
