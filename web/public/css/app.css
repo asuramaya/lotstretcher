@@ -196,6 +196,16 @@
   gap: var(--s-3);
 }
 @media (min-width: 640px) { .grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: var(--s-4); } }
+/* Results: one row of tiles per shape, each sized to its shape. */
+.shape-groups { display: grid; gap: var(--s-5); }
+.shape-head { font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 0 0 var(--s-2); letter-spacing: .02em; }
+.shape-grid { align-items: start; }
+.shape-grid.is-portrait { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.shape-grid.is-horizontal { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+@media (min-width: 640px) {
+  .shape-grid.is-portrait { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .shape-grid.is-horizontal { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+}
 /* Once photos are in, the grid is one scrolling strip so the vehicle
    fields sit a glance below; a tile opens the lightbox. */
 .grid.is-strip {

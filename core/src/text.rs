@@ -422,31 +422,52 @@ pub fn plan(req: &PlanRequest) -> Result<Vec<Overlay>, String> {
 /// a small gap, so a title never sits across a bumper. The band is at
 /// the bottom when its middle is below the canvas's.
 pub fn shrink_window(window: (i64, i64, i64, i64), overlays: &[Overlay], height: usize) -> (i64, i64, i64, i64) {
+    let banded = shrink_by_bands(window, overlays, height);
+    // A window much wider than tall (a 16:9 still or clip) may have room
+    // beside the vehicle instead: a stack in a left or right corner can
+    // take a column off that side and leave the vehicle the full height.
+    // Whichever of the two leaves the bigger vehicle wins, so a narrow
+    // stack takes a column and a long one-line title takes a band.
+    let (ww, wh) = ((window.2 - window.0) as f64, (window.3 - window.1) as f64);
+    if ww >= wh * 1.6 && !overlays.is_empty() {
+        if let Some(col) = shrink_by_column(window, overlays, height) {
+            if vehicle_room(col) > vehicle_room(banded) { return col; }
+        }
+    }
+    banded
+}
+
+/// How wide a vehicle of a typical 1.6:1 silhouette can be drawn in a
+/// window: its width, or 1.6 times its height, whichever binds.
+fn vehicle_room(w: (i64, i64, i64, i64)) -> f64 {
+    let (ww, wh) = ((w.2 - w.0).max(0) as f64, (w.3 - w.1).max(0) as f64);
+    ww.min(wh * 1.6)
+}
+
+fn shrink_by_column(window: (i64, i64, i64, i64), overlays: &[Overlay], height: usize) -> Option<(i64, i64, i64, i64)> {
     let mut w = window;
     let gap = (height as f64 * 0.02).round() as i64;
-    // A window much wider than tall (a 16:9 still or clip) has room
-    // beside the vehicle, not above or below it: a stack in a left or
-    // right corner takes a column off that side and the vehicle keeps
-    // the height. Centred pieces still take a band.
-    let (ww, wh) = ((w.2 - w.0) as f64, (w.3 - w.1) as f64);
-    if ww >= wh * 1.6 && !overlays.is_empty() {
-        let mid = (w.0 + w.2) as f64 / 2.0;
-        let mut rest: Vec<&Overlay> = Vec::new();
-        for o in overlays {
-            if o.x + o.box_w < mid { w.0 = w.0.max((o.x + o.box_w).ceil() as i64 + gap); }
-            else if o.x > mid { w.2 = w.2.min(o.x.floor() as i64 - gap); }
-            else { rest.push(o); }
-        }
-        if w.2 <= w.0 + 1 { return window; }
-        let half = |o: &&Overlay| (o.y + o.y + o.box_h) / 2.0 > height as f64 / 2.0;
-        let upper: Vec<&Overlay> = rest.iter().copied().filter(|o| !half(o)).collect();
-        let lower: Vec<&Overlay> = rest.iter().copied().filter(half).collect();
-        if let Some((_, bottom)) = band_of(&upper) { w.1 = w.1.max(bottom.ceil() as i64 + gap).min(w.3 - 1); }
-        if let Some((top, _)) = band_of(&lower) { w.3 = w.3.min(top.floor() as i64 - gap).max(w.1 + 1); }
-        return w;
+    let mid = (w.0 + w.2) as f64 / 2.0;
+    let mut rest: Vec<&Overlay> = Vec::new();
+    for o in overlays {
+        if o.x + o.box_w < mid { w.0 = w.0.max((o.x + o.box_w).ceil() as i64 + gap); }
+        else if o.x > mid { w.2 = w.2.min(o.x.floor() as i64 - gap); }
+        else { rest.push(o); }
     }
-    // Pieces may sit in both halves (a title up top, the badge below):
-    // each half gives up its own band, never the whole canvas.
+    if w.2 <= w.0 + 1 { return None; }
+    let half = |o: &&Overlay| (o.y + o.y + o.box_h) / 2.0 > height as f64 / 2.0;
+    let upper: Vec<&Overlay> = rest.iter().copied().filter(|o| !half(o)).collect();
+    let lower: Vec<&Overlay> = rest.iter().copied().filter(half).collect();
+    if let Some((_, bottom)) = band_of(&upper) { w.1 = w.1.max(bottom.ceil() as i64 + gap).min(w.3 - 1); }
+    if let Some((top, _)) = band_of(&lower) { w.3 = w.3.min(top.floor() as i64 - gap).max(w.1 + 1); }
+    Some(w)
+}
+
+/// Pieces may sit in both halves (a title up top, the badge below):
+/// each half gives up its own band, never the whole canvas.
+fn shrink_by_bands(window: (i64, i64, i64, i64), overlays: &[Overlay], height: usize) -> (i64, i64, i64, i64) {
+    let mut w = window;
+    let gap = (height as f64 * 0.02).round() as i64;
     let half = |o: &&Overlay| (o.y + o.y + o.box_h) / 2.0 > height as f64 / 2.0;
     let upper: Vec<&Overlay> = overlays.iter().filter(|o| !half(o)).collect();
     let lower: Vec<&Overlay> = overlays.iter().filter(half).collect();

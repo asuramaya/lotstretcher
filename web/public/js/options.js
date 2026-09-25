@@ -44,7 +44,10 @@ export function initFromSpec() {
     none: 'Sort only, no cutouts',
   }[k] || k]));
 
-  DEFAULTS.heroFormats = [get('heroStillFormats', 'default')];
+  DEFAULTS.heroFormats = [...(get('heroStillFormats', 'browserDefault') || [get('heroStillFormats', 'default')])];
+  /* A clip only where the browser can encode one in hardware. */
+  const clip = get('videoFormats', 'browserDefault') || [];
+  DEFAULTS.videoFormats = (typeof VideoEncoder !== 'undefined') ? [...clip] : [];
   DEFAULTS.glowColor = get('glow', 'default');
   DEFAULTS.glowRadius = get('glow', 'radius');
   DEFAULTS.glowIntensity = get('glow', 'intensity');
@@ -69,7 +72,7 @@ export const DEFAULTS = {
   glowColor: 'white',
   glowRadius: 24,
   glowIntensity: 0.75,
-  shadow: false,
+  // shadow comes from the spec's control default (controlDefaults).
   shadowStrength: 0.5,
   reflection: false,
   reflectionStrength: 0.35,

@@ -501,33 +501,47 @@ function renderResults() {
   const interiorItems = interiors.map((p) => canvasItem(p.interior, p.name, 'interior', () => saveInterior(p)));
   [...interiorHost.children].forEach((tile, i) => { tile.onclick = () => openLightbox(interiorItems, i); });
 
-  // One tile per still: every format of every photo, each in its own
-  // shape, since the run composed each one separately and a square
-  // crop of a portrait would hide what the format is for.
+  // One tile per still, grouped by shape: a row of squares, a row of
+  // portraits, a row of horizontals, each tile in its own proportions,
+  // so a tall portrait never stretches a square's row.
   const grid = $('resultGrid');
   grid.innerHTML = '';
   const stillItems = [];
+  const byFormat = new Map();
   for (const p of heroes) {
     for (const [fmt, canvas] of Object.entries(p.heroes || { square: p.hero })) {
+      if (!byFormat.has(fmt)) byFormat.set(fmt, []);
+      byFormat.get(fmt).push([p, canvas]);
+    }
+  }
+  const order = Object.keys(OPTS.HERO_FORMATS);
+  const formats = [...byFormat.keys()].sort((a, b) => order.indexOf(a) - order.indexOf(b));
+  for (const fmt of formats) {
+    const label = OPTS.HERO_FORMATS[fmt]?.label || fmt;
+    const group = el('section', 'shape-group');
+    if (formats.length > 1) group.append(el('h3', 'shape-head', label));
+    const row = el('div', `grid shape-grid is-${fmt}`);
+    for (const [p, canvas] of byFormat.get(fmt)) {
       // The tag is a caption under the picture, not a chip over it:
       // the still's own text may sit in any corner now.
       const tile = el('div', 'tile is-captioned');
       const pic = el('div', 'tile-pic');
       pic.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
-      const k = 480 / Math.max(canvas.width, canvas.height);
+      const k = 640 / Math.max(canvas.width, canvas.height);
       const c = makeCanvas(Math.round(canvas.width * k), Math.round(canvas.height * k));
       ctxOf(c).drawImage(canvas, 0, 0, c.width, c.height);
       const img = el('img');
       canvasToBlob(c, 'image/jpeg', 0.85).then((b) => { img.src = URL.createObjectURL(b); });
-      const label = OPTS.HERO_FORMATS[fmt]?.label || fmt;
       img.alt = `${label} still from ${p.name}`;
       pic.append(img);
-      tile.append(pic, tagOf(`${angleLabel(p.angle)} \u00b7 ${label}`));
+      tile.append(pic, tagOf(angleLabel(p.angle)));
       stillItems.push(canvasItem(canvas, `${p.name} \u00b7 ${label}`, angleLabel(p.angle), () => saveOne(p, fmt)));
       const at = stillItems.length - 1;
       tile.onclick = () => openLightbox(stillItems, at);
-      grid.appendChild(tile);
+      row.appendChild(tile);
     }
+    group.append(row);
+    grid.appendChild(group);
   }
 
   const videoHost = $('videoGrid');

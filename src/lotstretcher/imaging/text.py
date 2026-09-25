@@ -8,9 +8,11 @@ for one canvas size. Nothing here decides where a word goes.
 """
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
 from lotstretcher import core
+from lotstretcher import spec as _spec
 from lotstretcher.imaging.assets import ASSETS_DIR
 
 DEFAULT_FONT = "Lato Bold"
@@ -67,14 +69,16 @@ def color_choice(allowed: tuple[str, ...]):
 def add_text_args(parser) -> None:
     """The Text controls as command-line flags, shared by lotstretcher
     and recompose so the two never drift."""
-    parser.add_argument("--title", default="none", choices=TITLE_MODES,
+    title_default = _spec.control_default("titleMode", "none")
+    parser.add_argument("--title", default=title_default, choices=TITLE_MODES,
                         help="A title on the still: 'vehicle' writes year make model trim from the "
-                             "listing, 'custom' writes --title-text (default: none).")
+                             f"listing, 'custom' writes --title-text, 'none' leaves it off (default: {title_default}).")
     parser.add_argument("--title-text", default=None, metavar="TEXT",
                         help="The title when --title custom.")
-    parser.add_argument("--price-badge", action="store_true",
+    parser.add_argument("--price-badge", action=argparse.BooleanOptionalAction,
+                        default=bool(_spec.control_default("priceBadge", False)),
                         help="A price badge on the still: the post's own resolved price (MSRP for new, "
-                             "listed price for used).")
+                             "listed price for used). On unless --no-price-badge; drawn only when there is a price.")
     parser.add_argument("--subtitle", "--text-line", dest="subtitle", default=None, metavar="TEXT",
                         help="A subtitle under the title: the trim line, the dealer, who to ask for.")
     parser.add_argument("--text-position", default="bl", choices=POSITIONS,
@@ -209,9 +213,10 @@ SHADOW_STRENGTH = 0.5
 
 def add_shadow_args(parser) -> None:
     """The ground shadow's flags, shared by the CLIs."""
-    parser.add_argument("--shadow", action="store_true",
+    parser.add_argument("--shadow", action=argparse.BooleanOptionalAction,
+                        default=bool(_spec.control_default("shadow", False)),
                         help="A soft ground shadow under the vehicle, read off its own silhouette, so it "
-                             "looks set down on the backdrop (default: off).")
+                             "looks set down on the backdrop. On unless --no-shadow.")
     parser.add_argument("--shadow-strength", type=float, default=SHADOW_STRENGTH, metavar="FRACTION",
                         help=f"The shadow's darkness, 0-1 (default: {SHADOW_STRENGTH}).")
 

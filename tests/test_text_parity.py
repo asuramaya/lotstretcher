@@ -551,15 +551,33 @@ def test_typed_words_trim_the_vehicle_title():
     assert plan_overlays(800, 800, VEHICLE, text_options(blank))[0]["text"] == "2024 Ford Maverick XLT"
 
 
-def test_on_a_wide_canvas_a_corner_stack_takes_a_column_not_a_band():
-    """A 16:9 still with the text bottom-left: the vehicle's window loses
-    a column on the left and keeps its full height; a centred title still
-    takes a band."""
+def _room(win):
+    left, t, r, b = win
+    return min(r - left, (b - t) * 1.6)
+
+
+def test_on_a_wide_canvas_the_text_takes_whichever_leaves_the_bigger_vehicle():
+    """A 16:9 still with the text in a bottom corner: a long one-line
+    title takes a band off the bottom (a column would squeeze the vehicle
+    into half the width), a narrow tall stack takes a column and leaves
+    the vehicle the full height. A centred title always takes a band, and
+    a square is unchanged."""
     from lotstretcher.imaging.text import text_window
     w, h = 1920, 1080
-    plan = plan_overlays(w, h, VEHICLE, text_options({**CONTROLS, "textPosition": "bl"}))
-    left, t, r, b = text_window((0, 0, w, h), h, plan)
-    assert left > 0 and t == 0 and b == h and r == w
+    long_title = plan_overlays(w, h, VEHICLE, text_options({**CONTROLS, "textPosition": "bl"}))
+    left, t, r, b = text_window((0, 0, w, h), h, long_title)
+    assert left == 0 and b < h, "a long title in a corner takes a band"
+
+    narrow = {**CONTROLS, "textPosition": "bl", "titleMode": "custom", "titleText": "GT",
+              "subtitle": "V8", "priceBadge": True, "textSize": 0.12}
+    stack = plan_overlays(w, h, VEHICLE, text_options(narrow))
+    win = text_window((0, 0, w, h), h, stack)
+    assert win[0] > 0 and win[1] == 0 and win[3] == h, "a narrow tall stack takes a column"
+
+    # The narrow stack's column really does leave more room than its band.
+    band_top = min(o["y"] for o in stack)
+    assert _room(win) > _room((0, 0, w, band_top))
+
     centred = plan_overlays(w, h, VEHICLE, text_options({**CONTROLS, "textPosition": "tc"}))
     left, t, r, b = text_window((0, 0, w, h), h, centred)
     assert left == 0 and t > 0

@@ -56,7 +56,12 @@
         "label": "Horizontal",
         "note": "YouTube, landscape feed"
       }
-    }
+    },
+    "browserDefault": [
+      "square",
+      "portrait",
+      "horizontal"
+    ]
   },
   "videoFormats": {
     "$comment": "compose/hero_video.py::VIDEO_FORMATS",
@@ -89,7 +94,10 @@
         "label": "Horizontal",
         "note": "YouTube, landscape feed"
       }
-    }
+    },
+    "browserDefault": [
+      "vertical"
+    ]
   },
   "video": {
     "$comment": [
@@ -609,11 +617,11 @@
       {
         "id": "clean",
         "label": "Clean",
-        "hint": "Spotlight only, nothing under the car",
+        "hint": "Spotlight and a soft ground shadow",
         "values": {
           "spotlight": true,
           "glow": false,
-          "shadow": false,
+          "shadow": true,
           "reflection": false,
           "border": "none"
         }
@@ -1078,7 +1086,7 @@
             "label": "Title",
             "hint": "",
             "type": "select",
-            "default": "none",
+            "default": "vehicle",
             "choices": [
               {
                 "value": "none",
@@ -1128,7 +1136,7 @@
             "label": "Price badge",
             "hint": "",
             "type": "toggle",
-            "default": false,
+            "default": true,
             "cli": "--price-badge",
             "tooltip": "The post's own price in a pill: MSRP for new, the listed price for used",
             "tab": "all"
@@ -1819,7 +1827,7 @@
             "label": "Shadow",
             "hint": "",
             "type": "toggle",
-            "default": false,
+            "default": true,
             "cli": "--shadow",
             "tooltip": "A soft shadow under the vehicle, read off its own silhouette",
             "tab": "shadow"

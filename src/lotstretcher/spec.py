@@ -48,6 +48,16 @@ def get(*path, default=None):
     return node
 
 
+def control_default(key: str, default=None):
+    """A Studio control's default (controls.groups[].controls[].default),
+    so a CLI flag starts where the app's lever does."""
+    for group in get("controls", "groups", default=[]) or []:
+        for control in group.get("controls", []):
+            if control.get("key") == key:
+                return control.get("default", default)
+    return default
+
+
 def sizes(section: str) -> dict[str, tuple[int, int]]:
     """{name: (w, h)} for heroStillFormats or videoFormats."""
     formats = get(section, "formats", default={})
