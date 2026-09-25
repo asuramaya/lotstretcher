@@ -263,8 +263,8 @@ def conveyor_wide_layout(window: tuple[int, int, int, int], n_extra: int = 2) ->
     layout.rs::conveyor_wide, mirrored."""
     wl, wt, wr, wb = window
     ww, wh = wr - wl, wb - wt
-    accent_w, accent_h = round(ww * 0.24), round(wh * 0.5)
-    gap = round(ww * 0.015)
+    accent_w, accent_h = round(ww * 0.19), round(wh * 0.42)
+    gap = round(ww * 0.005)
     left_box = (wl, wb - accent_h, wl + accent_w, wb)
     right_box = (wr - accent_w, wb - accent_h, wr, wb)
     hero_box = (wl + accent_w + gap, wt, wr - accent_w - gap, wb)

@@ -541,7 +541,10 @@ lotstretcher URL --title vehicle --price-badge --subtitle "Ask for Alex" \
 ```
 
 `--title vehicle` writes year make model trim from the listing;
-`--title custom` writes `--title-text`. `--price-badge` puts the post's
+`--title custom` writes `--title-text`; with `--title vehicle`, `--title-text`
+replaces the record's words, so a long trim can be cut to "2024 Mustang GT"
+(the app's Text tool shows the vehicle's own words as the Words field's
+placeholder). `--price-badge` puts the post's
 own resolved price in a pill (MSRP for new, the listed price for used).
 `--text-color paint` puts the vehicle's own colour on the badge, from
 the listing's colour name or sampled off the cutout. `--text-font`

@@ -1099,17 +1099,17 @@
           },
           {
             "key": "titleText",
-            "label": "Title text",
+            "label": "Words",
             "hint": "",
             "type": "text",
             "default": "",
-            "placeholder": "Just arrived",
+            "placeholder": "Year make model trim",
             "showWhen": {
               "key": "titleMode",
-              "equals": "custom"
+              "notEquals": "none"
             },
             "cli": "--title-text",
-            "tooltip": "What the title says",
+            "tooltip": "The title's words. Left empty with Year make model, the vehicle's own; typed, yours, so a long trim can be cut",
             "tab": "all"
           },
           {

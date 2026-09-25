@@ -485,7 +485,9 @@ pub fn plan_in(req: &PlanRequest, window: (i64, i64, i64, i64)) -> Result<Vec<Ov
     };
     let mut pieces: Vec<Piece> = Vec::new();
     let title = match req.title.as_str() {
-        "vehicle" => vehicle_title(&req.vehicle),
+        // Typed words win over the record's, so a title can be trimmed
+        // ("2024 Mustang GT") without leaving the vehicle mode.
+        "vehicle" => req.custom_title.as_deref().map(str::trim).filter(|s| !s.is_empty()).map(String::from).unwrap_or_else(|| vehicle_title(&req.vehicle)),
         "custom" => req.custom_title.clone().unwrap_or_default(),
         "none" => String::new(),
         other => return Err(format!("unknown title mode {other:?}; none, vehicle or custom")),

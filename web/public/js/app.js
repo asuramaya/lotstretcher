@@ -604,6 +604,12 @@ function selectRow(label, hint, value, choices, onChange) {
   return row;
 }
 
+/* The vehicle's own title, as the Text tool's Words field shows it
+ * empty: year make model trim, whichever are filled. */
+function vehicleTitleWords() {
+  return ['year', 'make', 'model', 'trim'].map((k) => ($(`f-${k}`)?.value || '').trim()).filter(Boolean).join(' ');
+}
+
 function renderOptions() {
   const o = state.options;
 
@@ -662,7 +668,7 @@ function renderOptions() {
     before: [{ id: 'looks', label: 'Looks', hint: 'One tap, several levers', render: part('looksPart') }],
     after: [{ id: 'output', label: 'Output', hint: 'What a run makes, and the command line', render: part('outputPart') }],
     // Settings supplies the Text tool's default line.
-    placeholders: { subtitle: state.dealer.greeting || null },
+    placeholders: { subtitle: state.dealer.greeting || null, titleText: vehicleTitleWords() || null },
     uploads: state.uploads,
     onUpload: addUpload,
     onRemoveUpload: removeUpload,

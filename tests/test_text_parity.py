@@ -539,3 +539,12 @@ def test_pieces_that_merely_abut_across_columns_take_separate_rows():
     title, sub = by["title"], by["subtitle"]
     touching = sub["x"] + sub["box_w"] >= title["x"] - h * 0.02
     assert (not touching) or sub["y"] >= title["y"] + title["box_h"]
+
+
+def test_typed_words_trim_the_vehicle_title():
+    """--title vehicle --title-text "2024 Mustang GT": the typed words
+    replace the record's; empty, the record's own stand."""
+    own = {**CONTROLS, "titleMode": "vehicle", "titleText": "2024 Maverick XLT"}
+    assert plan_overlays(800, 800, VEHICLE, text_options(own))[0]["text"] == "2024 Maverick XLT"
+    blank = {**CONTROLS, "titleMode": "vehicle", "titleText": "  "}
+    assert plan_overlays(800, 800, VEHICLE, text_options(blank))[0]["text"] == "2024 Ford Maverick XLT"

@@ -116,9 +116,9 @@ const CONVEYOR_WIDE_RATIO: f64 = 1.6;
 pub fn conveyor_wide(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
     let (wl, wt, wr, wb) = window;
     let (ww, wh) = ((wr - wl) as f64, (wb - wt) as f64);
-    let aw = r(ww * 0.24);
-    let ah = r(wh * 0.5);
-    let gap = r(ww * 0.015);
+    let aw = r(ww * 0.19);
+    let ah = r(wh * 0.42);
+    let gap = r(ww * 0.005);
     let left = (wl, wb - ah, wl + aw, wb);
     let right = (wr - aw, wb - ah, wr, wb);
     vec![((wl + aw + gap, wt, wr - aw - gap, wb), Anchor::Bottom), (left, Anchor::Bottom), (right, Anchor::Bottom)]
