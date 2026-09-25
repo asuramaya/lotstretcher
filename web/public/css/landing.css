@@ -127,23 +127,43 @@
 }
 .center-h { text-align: center; }
 
-.split { display: grid; gap: clamp(var(--s-5), 4vw, var(--s-7)); align-items: center; }
-@media (min-width: 860px) {
-  .split { grid-template-columns: 1fr 1fr; }
-  .split.flip > :first-child { order: 2; }
-}
-
-.shot { margin: 0; border-radius: var(--r-xl); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--sh-2); }
+.shot { margin: 0; border-radius: var(--r-xl); overflow: hidden; border: 1px solid var(--line); box-shadow: var(--sh-2); background: var(--surface); }
 .shot img { width: 100%; height: auto; display: block; }
 .shot.paper { background: #fff; }
 
-/* ---------- three-step flow ---------- */
-.flow { display: grid; gap: var(--s-5); align-items: center; margin-top: clamp(var(--s-6), 5vw, var(--s-8)); }
-@media (min-width: 860px) {
-  .flow { grid-template-columns: 1.15fr .85fr; gap: var(--s-8); }
-  .flow.flip > :first-child { order: 2; }
+/* ---------- pictures with a word under them ---------- */
+figure.pic, .vars figure, .shapes figure, .duo figure { margin: 0; }
+.vars figcaption, .shapes figcaption, .duo figcaption, .clips figcaption {
+  margin-top: var(--s-2); font-size: var(--t-sm); color: var(--ink-2); text-align: center;
 }
-.flow-visual { margin: 0; }
+.vars img, .shapes img, .fleet img {
+  width: 100%; height: auto; display: block;
+  border-radius: var(--r-lg); border: 1px solid var(--line); box-shadow: var(--sh-2);
+}
+
+/* One car, eight looks: four across, two on a phone. */
+.vars { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-4) var(--s-3); margin-top: clamp(var(--s-5), 4vw, var(--s-7)); }
+@media (min-width: 720px) { .vars { grid-template-columns: repeat(4, 1fr); gap: var(--s-5) var(--s-4); } }
+
+/* The three shapes: square and portrait at one height, the horizontal
+   under both, as wide as the two together. */
+.shapes { display: grid; grid-template-columns: 1.78fr 1fr; gap: var(--s-4); margin-top: clamp(var(--s-5), 4vw, var(--s-7)); align-items: start; }
+.shapes .hz { grid-column: 1 / -1; }
+@media (min-width: 860px) {
+  .shapes { grid-template-columns: 1fr .5625fr 1.78fr; align-items: start; }
+  .shapes .hz { grid-column: auto; }
+}
+
+/* The fleet: five squares across, a scrolling row on a phone. */
+.fleet { display: flex; gap: var(--s-3); margin-top: clamp(var(--s-5), 4vw, var(--s-7)); overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: var(--s-2); scrollbar-width: none; }
+.fleet::-webkit-scrollbar { display: none; }
+.fleet img { flex: 0 0 62vw; max-width: 300px; scroll-snap-align: start; }
+@media (min-width: 720px) { .fleet { display: grid; grid-template-columns: repeat(5, 1fr); overflow: visible; } .fleet img { max-width: none; } }
+
+/* Three steps in a row, a line each. */
+.steps { display: grid; gap: var(--s-6); }
+@media (min-width: 720px) { .steps { grid-template-columns: repeat(3, 1fr); gap: var(--s-6); } }
+.steps h3 { font-size: var(--t-md); letter-spacing: -.01em; margin-bottom: var(--s-1); }
 .step-n {
   display: grid; place-items: center;
   width: 34px; height: 34px;
@@ -152,101 +172,32 @@
   font-weight: 750; font-size: var(--t-base);
   margin-bottom: var(--s-3);
 }
-.flow-copy h3 { font-size: var(--t-lg); letter-spacing: -.02em; margin-bottom: var(--s-2); }
 
-.lotstrip { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--s-2); }
-.lotstrip img {
-  width: 100%; aspect-ratio: 1; object-fit: cover;
-  border-radius: var(--r-md); border: 1px solid var(--line);
-}
-/* A slight fan, so a row of thumbnails reads as "a pile of photos you
-   dropped in" rather than as a finished gallery. */
-.lotstrip img:nth-child(odd) { transform: translateY(-6px) rotate(-1.2deg); }
-.lotstrip img:nth-child(even) { transform: translateY(6px) rotate(1.4deg); }
-
-.sortgrid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
-.sorted { position: relative; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--line); }
-.sorted img { width: 100%; aspect-ratio: 1; object-fit: cover; }
-.sorted span {
-  position: absolute; left: var(--s-2); bottom: var(--s-2);
-  padding: 2px var(--s-2); border-radius: var(--r-full);
-  background: rgba(0,0,0,.66); backdrop-filter: blur(8px);
-  color: #fff; font-size: 10px; font-weight: 650;
-}
-
-/* The three shapes from one run: the square on the left, the portrait
-   beside it as tall as the square, the horizontal under both. */
-.outgrid { display: grid; grid-template-columns: 1.3fr .75fr; gap: var(--s-3); align-items: start; }
-.outgrid img { width: 100%; height: auto; border-radius: var(--r-md); border: 1px solid var(--line); box-shadow: var(--sh-2); }
-.outgrid .hz { grid-column: 1 / -1; }
+/* The sticker beside the library, a line under each. */
+.duo { display: grid; gap: var(--s-5); align-items: start; }
+@media (min-width: 860px) { .duo { grid-template-columns: .8fr 1.2fr; } }
+.duo .shot { display: flex; flex-direction: column; }
+.duo figcaption { padding: var(--s-3) var(--s-3) var(--s-2); }
+.duo .paper figcaption { color: #333; }
 
 /* ---------- spacing classes, in place of inline styles ---------- */
 .hero-cta { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }
 .hero-note { margin-top: var(--s-4); }
 .sub { margin-top: var(--s-4); }
 .sub-sm { margin-top: var(--s-3); }
-.max-ch { max-width: 60ch; }
-.centered { margin-inline: auto; }
-.live-h { font-size: var(--t-md); margin-bottom: var(--s-2); }
-.live-cta { margin-top: var(--s-4); }
-.surface-cta { margin-top: var(--s-4); width: 100%; }
 .closer-cta { margin-top: var(--s-5); }
 .foot-row { gap: var(--s-5); }
 .foot-brand { font-size: var(--t-base); }
 .foot-brand img { width: 24px; height: 24px; border-radius: 6px; }
-.ticks li b { color: var(--ink); font-weight: 650; }
-
-/* A portrait shot beside its copy: capped so the column is not a tower. */
-.shot-tall { max-width: 400px; justify-self: center; }
-
-/* The six fonts: three rows of two title bands. */
-.fonts { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
-.fonts img { width: 100%; height: auto; display: block; border-radius: var(--r-md); border: 1px solid var(--line); }
 
 /* The clip frames: a horizontal and a portrait, each as wide as it is. */
 .clips { display: grid; gap: var(--s-4); margin-top: clamp(var(--s-5), 4vw, var(--s-7)); align-items: start; }
 /* Widths in the ratio that makes a 16:9 and a 9:16 the same height. */
 @media (min-width: 720px) { .clips { grid-template-columns: 3.16fr 1fr; align-items: stretch; } }
 @media (max-width: 719px) { .clips .shot:last-child { max-width: 300px; margin-inline: auto; } }
-.clips figcaption { padding: var(--s-2) var(--s-3); }
 .clips .shot { background: var(--surface); }
 
-/* ---------- swatches ---------- */
-.swatches { display: flex; gap: var(--s-2); margin-top: var(--s-5); flex-wrap: wrap; }
-.swatch {
-  width: 62px; height: 62px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--line);
-}
-
-/* ---------- ticks ---------- */
-.ticks { list-style: none; padding: 0; margin: var(--s-4) 0 0; display: grid; gap: var(--s-2); }
-.ticks li { position: relative; padding-left: 26px; color: var(--ink-2); }
-.ticks li::before {
-  content: ''; position: absolute; left: 4px; top: .55em;
-  width: 9px; height: 5px;
-  border-left: 2px solid var(--accent);
-  border-bottom: 2px solid var(--accent);
-  rotate: -45deg;
-}
-
 .claimrow { display: flex; flex-wrap: wrap; gap: var(--s-2); justify-content: center; margin-top: var(--s-6); }
-
-/* ---------- surfaces ---------- */
-.surfaces { display: grid; gap: var(--s-4); margin-top: clamp(var(--s-5), 4vw, var(--s-7)); }
-@media (min-width: 760px) { .surfaces { grid-template-columns: 1fr 1fr; } }
-.surface {
-  display: flex; flex-direction: column;
-  padding: var(--s-5);
-  border-radius: var(--r-lg);
-  border: 1px solid var(--line);
-  background: var(--surface);
-}
-.block.alt .surface { background: var(--bg); }
-.surface.is-this { border-color: var(--accent-line); background: var(--accent-wash); }
-.surface h3 { margin: var(--s-3) 0 var(--s-2); font-size: var(--t-md); }
-.surface .pill { align-self: flex-start; }
-.surface .ticks { margin-bottom: auto; }
 
 /* ---------- closer ---------- */
 .closer { padding: clamp(var(--s-7), 7vw, var(--s-9)) 0; border-top: 1px solid var(--line); }
@@ -254,54 +205,3 @@
 footer { padding: var(--s-6) 0 calc(var(--s-7) + var(--safe-b)); border-top: 1px solid var(--line); color: var(--ink-3); }
 footer a { color: var(--ink-2); }
 
-/* ---------- live demo ----------
- * The page running its own pipeline. Everything here is state the run
- * actually produces; nothing is pre-baked, which is the whole point. */
-.livebox {
-  margin-top: clamp(var(--s-5), 4vw, var(--s-7));
-  padding: var(--s-5);
-  border: 1px solid var(--line);
-  border-radius: var(--r-xl);
-  background: var(--bg);
-}
-.live-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
-.live-bar { margin-top: var(--s-4); }
-
-.live-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: var(--s-2);
-  margin-top: var(--s-4);
-}
-@media (min-width: 620px) { .live-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); } }
-
-.live-cell { position: relative; border-radius: var(--r-md); overflow: hidden; border: 1px solid var(--line); background: var(--sunken); }
-.live-cell img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; transition: opacity var(--dur-2) var(--ease), filter var(--dur-2) var(--ease); }
-.live-cell.waiting img { opacity: .35; filter: grayscale(1); }
-.live-cell.busy::after {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(100deg, transparent 20%, var(--accent-wash) 50%, transparent 80%);
-  background-size: 220% 100%; animation: sweep 1.2s linear infinite;
-}
-@keyframes sweep { from { background-position: 180% 0 } to { background-position: -80% 0 } }
-.live-cell .tag {
-  position: absolute; left: 6px; bottom: 6px;
-  padding: 2px 8px; border-radius: var(--r-full);
-  background: rgba(0,0,0,.7); backdrop-filter: blur(8px);
-  color: #fff; font-size: 10px; font-weight: 650;
-}
-.live-cell .tag b { color: var(--accent-hi); font-weight: 700; }
-.live-cell.skip .tag { background: rgba(120,120,130,.85); }
-
-.live-out { display: grid; gap: var(--s-5); margin-top: var(--s-5); align-items: center; }
-.live-out[hidden] { display: none; }
-@media (min-width: 720px) { .live-out { grid-template-columns: 1fr 1fr; } }
-.live-out figure { margin: 0; }
-.live-out img { width: 100%; border-radius: var(--r-lg); border: 1px solid var(--line); }
-
-.timings { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: var(--s-2) var(--s-4); font-size: var(--t-sm); }
-.timings dt { color: var(--ink-3); }
-.timings dd { margin: 0; font-variant-numeric: tabular-nums; }
-
-/* Real labels on the static sort grid, measured by the shipped models. */
-.sorted span b { color: var(--accent-hi); font-weight: 700; margin-left: 3px; }
