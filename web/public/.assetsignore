@@ -1,0 +1,6 @@
+# Not uploaded as site assets. The matting model is over Cloudflare's
+# 25 MiB per-file cap and is served from R2 (MODEL_ORIGIN in js/config.js);
+# the rest is tooling that never ships.
+models/matte.onnx
+models/scene_student.pt
+bench/

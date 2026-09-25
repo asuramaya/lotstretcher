@@ -31,7 +31,7 @@ export const MODELS = {
  * cannot be an asset regardless of billing -- it lives in R2, which has
  * zero egress cost. Same reason handlingtheloop keeps its stem weights
  * on HuggingFace. Empty string = serve from the same origin (dev). */
-export const MODEL_ORIGIN = '';
+export const MODEL_ORIGIN = 'https://pub-23689ab3309342fdbbbc4d7644517eb3.r2.dev/';
 
 export const ORT_PATH = 'ort/';
 
