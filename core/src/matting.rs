@@ -24,9 +24,25 @@ use crate::Image;
 fn box_mean(src: &[f32], w: usize, h: usize, r: usize) -> Vec<f32> {
     if r == 0 { return src.to_vec(); }
     let rows = box_rows(src, w, h, r);
-    let t = transpose(&rows, w, h);
-    let cols = box_rows(&t, h, w, r);
-    transpose(&cols, h, w)
+    box_cols(&rows, w, h, r)
+}
+
+/// The vertical pass as a running sum of whole rows: every access walks
+/// memory in order, where a transpose jumps a row's width per read.
+fn box_cols(src: &[f32], w: usize, h: usize, r: usize) -> Vec<f32> {
+    let mut out = vec![0f32; w * h];
+    let mut acc = vec![0f32; w];
+    let hi0 = r.min(h - 1);
+    for y in 0..=hi0 { for (a, v) in acc.iter_mut().zip(&src[y * w..(y + 1) * w]) { *a += *v; } }
+    for y in 0..h {
+        let lo = y.saturating_sub(r);
+        let hi = (y + r).min(h - 1);
+        let inv = 1.0 / (hi - lo + 1) as f32;
+        for (o, a) in out[y * w..(y + 1) * w].iter_mut().zip(&acc) { *o = a * inv; }
+        if y + r + 1 < h { for (a, v) in acc.iter_mut().zip(&src[(y + r + 1) * w..(y + r + 2) * w]) { *a += *v; } }
+        if y >= r { for (a, v) in acc.iter_mut().zip(&src[(y - r) * w..(y - r + 1) * w]) { *a -= *v; } }
+    }
+    out
 }
 
 fn box_rows(src: &[f32], w: usize, h: usize, r: usize) -> Vec<f32> {
@@ -48,12 +64,34 @@ fn box_rows(src: &[f32], w: usize, h: usize, r: usize) -> Vec<f32> {
     out
 }
 
-fn transpose(src: &[f32], w: usize, h: usize) -> Vec<f32> {
-    let mut out = vec![0f32; w * h];
-    par::rows_mut(&mut out, h, |x, col| {
-        for y in 0..h { col[y] = src[y * w + x]; }
+
+/// Block-average by `k` (edge blocks averaged over what they hold).
+fn shrink(src: &[f32], w: usize, h: usize, k: usize, sw: usize, sh: usize) -> Vec<f32> {
+    let mut out = vec![0f32; sw * sh];
+    par::rows_mut(&mut out, sw, |sy, row| {
+        let y0 = sy * k; let y1 = (y0 + k).min(h);
+        for (sx, v) in row.iter_mut().enumerate() {
+            let x0 = sx * k; let x1 = (x0 + k).min(w);
+            let mut sum = 0f32;
+            for y in y0..y1 { for x in x0..x1 { sum += src[y * w + x]; } }
+            *v = sum / ((y1 - y0) * (x1 - x0)) as f32;
+        }
     });
     out
+}
+
+/// A shrunk plane read back at full-resolution pixel (x, y), bilinear
+/// between block centres.
+#[inline]
+fn sample(src: &[f32], sw: usize, sh: usize, k: usize, x: usize, y: usize) -> f32 {
+    let fx = ((x as f32 + 0.5) / k as f32 - 0.5).clamp(0.0, (sw - 1) as f32);
+    let fy = ((y as f32 + 0.5) / k as f32 - 0.5).clamp(0.0, (sh - 1) as f32);
+    let (x0, y0) = (fx as usize, fy as usize);
+    let (x1, y1) = ((x0 + 1).min(sw - 1), (y0 + 1).min(sh - 1));
+    let (tx, ty) = (fx - x0 as f32, fy - y0 as f32);
+    let a = src[y0 * sw + x0] * (1.0 - tx) + src[y0 * sw + x1] * tx;
+    let b = src[y1 * sw + x0] * (1.0 - tx) + src[y1 * sw + x1] * tx;
+    a * (1.0 - ty) + b * ty
 }
 
 fn param(key: &str, default: f64) -> f64 {
@@ -116,28 +154,60 @@ pub fn refine_cutout(img: &Image) -> Result<Image, String> {
         }
     }
 
-    // 2. Foreground colour: two blur-fusion passes, wide then fine.
+    // 2. Foreground colour, two blur-fusion passes. A colour only moves
+    //    where the alpha is partial (an opaque pixel's estimate is its
+    //    own colour, a clear one's is multiplied away), so both passes
+    //    write only the band and what the fine pass reads around it.
+    let partial: Vec<f32> = alpha.iter().map(|&a| if a > 0.0 && a < 1.0 { 1.0 } else { 0.0 }).collect();
+    let near = box_mean(&partial, w, h, r_fine);
+    let live: Vec<usize> = (0..n).filter(|&i| near[i] > 0.0).collect();
+
     let mut f = rgb.clone();
     let mut bg = rgb.clone();
-    for r in [r_wide, r_fine] {
-        let ba = box_mean(&alpha, w, h, r);
-        let mut nf = [vec![0f32; n], vec![0f32; n], vec![0f32; n]];
-        let mut nb = [vec![0f32; n], vec![0f32; n], vec![0f32; n]];
+
+    // Wide pass: its means are smooth at its radius, so they are taken on
+    // a copy shrunk by k and read back bilinearly at the live pixels.
+    {
+        let k = (r_wide / 12).clamp(1, 8);
+        let (sw, sh) = (w.div_ceil(k), h.div_ceil(k));
+        let rs = (r_wide / k).max(1);
+        let sa = box_mean(&shrink(&alpha, w, h, k, sw, sh), sw, sh, rs);
+        for c in 0..3 {
+            let fa: Vec<f32> = rgb[c].iter().zip(&alpha).map(|(x, y)| x * y).collect();
+            let b1a: Vec<f32> = rgb[c].iter().zip(&alpha).map(|(x, y)| x * (1.0 - y)).collect();
+            let sfa = box_mean(&shrink(&fa, w, h, k, sw, sh), sw, sh, rs);
+            let sb1a = box_mean(&shrink(&b1a, w, h, k, sw, sh), sw, sh, rs);
+            let sbf: Vec<f32> = sfa.iter().zip(&sa).map(|(x, a)| x / (a + 1e-5)).collect();
+            let sbb: Vec<f32> = sb1a.iter().zip(&sa).map(|(x, a)| x / ((1.0 - a) + 1e-5)).collect();
+            for &i in &live {
+                let (x, y) = (i % w, i / w);
+                let bf = sample(&sbf, sw, sh, k, x, y);
+                let bb = sample(&sbb, sw, sh, k, x, y);
+                let al = alpha[i];
+                f[c][i] = (bf + al * (rgb[c][i] - al * bf - (1.0 - al) * bb)).clamp(0.0, 1.0);
+                bg[c][i] = bb;
+            }
+        }
+    }
+
+    // Fine pass, full resolution, written at the band only.
+    {
+        let ba = box_mean(&alpha, w, h, r_fine);
         for c in 0..3 {
             let fa: Vec<f32> = f[c].iter().zip(&alpha).map(|(x, y)| x * y).collect();
             let b1a: Vec<f32> = bg[c].iter().zip(&alpha).map(|(x, y)| x * (1.0 - y)).collect();
-            let bfa = box_mean(&fa, w, h, r);
-            let bb1a = box_mean(&b1a, w, h, r);
-            for i in 0..n {
+            let bfa = box_mean(&fa, w, h, r_fine);
+            let bb1a = box_mean(&b1a, w, h, r_fine);
+            let mut nf = f[c].clone();
+            for &i in &live {
+                let al = alpha[i];
+                if al <= 0.0 || al >= 1.0 { continue; }
                 let bf = bfa[i] / (ba[i] + 1e-5);
                 let bb = bb1a[i] / ((1.0 - ba[i]) + 1e-5);
-                let al = alpha[i];
-                nf[c][i] = (bf + al * (rgb[c][i] - al * bf - (1.0 - al) * bb)).clamp(0.0, 1.0);
-                nb[c][i] = bb;
+                nf[i] = (bf + al * (rgb[c][i] - al * bf - (1.0 - al) * bb)).clamp(0.0, 1.0);
             }
+            f[c] = nf;
         }
-        f = nf;
-        bg = nb;
     }
 
     let mut out = Image::new(w, h, 4);

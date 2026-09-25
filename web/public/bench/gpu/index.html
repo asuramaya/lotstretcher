@@ -1,0 +1,30 @@
+<!doctype html><meta charset="utf-8"><title>gpu bench</title>
+<pre id="out">running</pre>
+<script type="module">
+const out = document.getElementById('out');
+const log = (s) => { out.textContent += '\n' + s; console.log('[bench] ' + s); };
+const q = new URLSearchParams(location.search);
+const model = q.get('model') || 'matte';
+const size = Number(q.get('size') || 256);
+const eps = (q.get('ep') || 'webgpu,wasm').split(',');
+const ort = await import('./ort.webgpu.min.mjs');
+ort.env.wasm.wasmPaths = new URL('./', location.href).href;
+ort.env.wasm.numThreads = Math.min(4, navigator.hardwareConcurrency || 4);
+log(`isolated=${self.crossOriginIsolated} webgpu=${!!navigator.gpu} adapter=${navigator.gpu ? !!(await navigator.gpu.requestAdapter()) : false}`);
+const buf = await (await fetch(q.get('url') || `https://models.lotstretcher.org/models/v1/${model}.onnx`)).arrayBuffer();
+const input = new Float32Array(3 * size * size).map(() => Math.random());
+for (const ep of eps) {
+  try {
+    let t = performance.now();
+    const s = await ort.InferenceSession.create(buf, { executionProviders: [ep], graphOptimizationLevel: 'all' });
+    const create = performance.now() - t;
+    const feeds = { [s.inputNames[0]]: new ort.Tensor('float32', input, [1, 3, size, size]) };
+    await s.run(feeds);
+    const times = [];
+    for (let i = 0; i < 5; i++) { t = performance.now(); await s.run(feeds); times.push(performance.now() - t); }
+    times.sort((a, b) => a - b);
+    log(`${ep}: create ${create.toFixed(0)} ms, run median ${times[2].toFixed(0)} ms (min ${times[0].toFixed(0)})`);
+  } catch (e) { log(`${ep}: FAILED ${String(e).slice(0, 200)}`); }
+}
+log('done');
+</script>
