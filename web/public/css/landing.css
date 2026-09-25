@@ -9,9 +9,12 @@
 
 
 /* ---------- hero ---------- */
-.hero { padding: clamp(var(--s-6), 5vw, var(--s-8)) 0 clamp(var(--s-7), 6vw, var(--s-9)); }
+.hero { padding: clamp(var(--s-6), 5vw, var(--s-8)) 0 clamp(var(--s-7), 6vw, var(--s-9)); border-bottom: 1px solid var(--line); }
 .hero-grid { display: grid; gap: clamp(var(--s-6), 5vw, var(--s-8)); align-items: center; }
-@media (min-width: 900px) { .hero-grid { grid-template-columns: 1fr 1.05fr; } }
+@media (min-width: 900px) { .hero-grid { grid-template-columns: 1.15fr .85fr; } }
+/* The compare is a picture beside the words, not the whole fold. */
+.compare { max-width: 440px; width: 100%; margin-inline: auto; }
+@media (min-width: 900px) { .compare { justify-self: end; } }
 
 .hero h1 {
   font-size: clamp(2.4rem, 6.4vw, 4rem);
@@ -99,23 +102,6 @@
 }
 .cmp-tag-l { left: var(--s-4); }
 .cmp-tag-r { right: var(--s-4); background: var(--accent); color: var(--accent-ink); }
-
-/* ---------- numbers strip ---------- */
-.strip { border-block: 1px solid var(--line); background: var(--surface); }
-.strip-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr);
-  gap: var(--s-5) var(--s-4);
-  padding-block: var(--s-6);
-  text-align: center;
-}
-@media (min-width: 720px) { .strip-grid { grid-template-columns: repeat(4, 1fr); } }
-.strip-grid strong {
-  display: block;
-  font-size: clamp(var(--t-lg), 3.4vw, var(--t-xl));
-  letter-spacing: -.03em;
-  color: var(--accent);
-}
-.strip-grid span { font-size: var(--t-sm); color: var(--ink-2); }
 
 /* ---------- blocks ---------- */
 .block { padding: clamp(var(--s-7), 7vw, var(--s-9)) 0; }
