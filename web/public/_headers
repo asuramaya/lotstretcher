@@ -20,6 +20,14 @@
   # no server here to send it to.
   Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; connect-src 'self' blob: data: https:; worker-src 'self' blob:; media-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 
+# The static host's own answer to the app's capability probe (host.js):
+# a file, so the CDN says "static" with a 200 instead of logging a 404 on
+# every load. The self-hosted server answers from its API route, which is
+# registered before its static mount and so shadows this file.
+/capabilities
+  Content-Type: application/json
+  Cache-Control: no-store
+
 # Models are content-addressed by deploy and large. Cache them hard --
 # the 44MB matting model should download exactly once per device.
 /models/*

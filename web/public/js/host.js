@@ -33,8 +33,9 @@ const STATIC_HOST = {
 
 let caps = null;
 
-/* Ask the host. A 404 is the expected answer on the CDN, not an error:
- * static hosting has no /capabilities, which is itself the answer. */
+/* Ask the host. The CDN answers from a static file (web/public/
+ * capabilities: host "static"); the self-hosted server from its API. A
+ * failed probe still means static. */
 export async function loadCapabilities() {
   if (caps) return caps;
   try {
