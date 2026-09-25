@@ -11,7 +11,7 @@
 
 import {
   initConfigFromSpec, LIMITS, IMAGE_EXTS,
-  MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE, INTERIOR_LEAN, EXTERIOR_LEAN, FRAME_FILL_MIN_EDGES,
+  MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE, INTERIOR_LEAN, EXTERIOR_LEAN, FRAME_FILL_MIN_EDGES, MAX_SOURCE_SIDE,
 } from './config.js';
 import { initRuntime, runtime, loadModel, totalBytes, prefetchModels, modelsCached } from './pipeline/runtime.js';
 import { classifyScene, classifyAngle, loadLabels } from './pipeline/classify.js';
@@ -240,6 +240,7 @@ async function offerResume() {
 /* ---------- navigation --------------------------------------------- */
 function go(pane) {
   state.pane = pane;
+  document.querySelector('.app')?.setAttribute('data-pane', pane);
   // The step is part of the saved car, so a resume lands where it left.
   if (state.photos.length && !state.restoring) saveSessionSoon();
   for (const p of ['booth', 'options', 'results', 'library']) {
@@ -263,7 +264,7 @@ function go(pane) {
     if (studio && !state.studioOpened && !studio.classList.contains('panel-open')
         && getComputedStyle(studio.querySelector('.studio-panel')).position === 'absolute') {
       state.studioOpened = true;
-      studio.querySelector('.studio-rail .tool')?.click();
+      studio.querySelector('.studio-rail .tool[role="tab"]')?.click();
     }
   }
   $(`pane-${pane}`).scrollTop = 0;
@@ -688,6 +689,17 @@ function renderOptions() {
     onRemoveUpload: removeUpload,
   });
   $('panelTitle').textContent = head?.label || '';
+  // On a phone the Studio hides the page tabs to give the stage their
+  // room; the rail's first button goes back to the photos instead.
+  const rail = $('studioRail');
+  if (!rail.querySelector('.tool-back')) {
+    const back = el('button', 'tool tool-back');
+    back.type = 'button';
+    back.title = 'Back to the photos';
+    back.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Photos</span>';
+    back.onclick = () => go('booth');
+    rail.prepend(back);
+  }
   const badge = $('panelBadge');
   badge.hidden = !head?.badge;
   if (head?.badge) { badge.textContent = head.badge[0]; badge.className = `ctrl-badge ${head.badge[1]}`; }
@@ -953,7 +965,7 @@ async function sortAndCut(stages) {
       renderPhotos();
       try {
         t0 = performance.now();
-        const bitmap = await decode(p.blob || p.url);
+        const bitmap = await decode(p.blob || p.url, MAX_SOURCE_SIDE);
         clock('decode', t0);
         p.bitmap = bitmap;
         if (p.userScene) { /* the person said what it is; the model does not argue */ } else {

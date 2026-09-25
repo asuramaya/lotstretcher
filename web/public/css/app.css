@@ -668,6 +668,17 @@ body:has(.lightbox:not([hidden])) .nav { visibility: hidden; }
 .tool[aria-selected="true"] { color: var(--accent); background: var(--accent-wash); }
 .tool.is-server { opacity: .55; }
 
+/* A phone's Studio drops the page tabs (the rail's own Photos button
+   goes back, the header's Process goes on), so the stage and the card
+   share the room the second footer took. */
+.tool-back { flex: 0 0 auto; min-width: 56px; color: var(--ink-2); border-right: 1px solid var(--line); border-radius: var(--r-md) 0 0 var(--r-md); }
+@media (max-width: 859px) {
+  .app[data-pane="options"] > .nav { display: none; }
+  .app[data-pane="options"] .studio { --rail-h: calc(64px + var(--safe-b)); }
+  .app[data-pane="options"] .studio-rail { padding-bottom: calc(var(--s-1) + var(--safe-b)); }
+}
+@media (min-width: 860px) { .tool-back { display: none; } }
+
 /* The panel: the open tool's levers, and the only thing that scrolls. */
 .studio-panel {
   position: absolute; left: 0; right: 0; bottom: var(--rail-h); top: 46%; z-index: 2;

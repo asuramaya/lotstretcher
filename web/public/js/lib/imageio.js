@@ -16,15 +16,27 @@ import { NORM_MEAN, NORM_STD } from '../config.js';
 const isBlob = (v) => v && typeof v === 'object'
   && typeof v.arrayBuffer === 'function' && typeof v.size === 'number';
 
-export async function decode(source) {
+export async function decode(source, maxSide = 0) {
   // A Blob/File decodes directly. A URL needs fetching first so that a
   // CORS failure surfaces as a clear error rather than a tainted canvas
   // later, at composite time, where the cause is much harder to see.
-  if (isBlob(source)) return createImageBitmap(source);
-
-  const res = await fetch(source, { mode: 'cors' });
-  if (!res.ok) throw new Error(`${res.status} fetching image`);
-  return createImageBitmap(await res.blob());
+  let blob = source;
+  if (!isBlob(source)) {
+    const res = await fetch(source, { mode: 'cors' });
+    if (!res.ok) throw new Error(`${res.status} fetching image`);
+    blob = await res.blob();
+  }
+  const bm = await createImageBitmap(blob);
+  // Capped on the long side (spec cutout.maxSourceSideBrowser): every
+  // later step costs in proportion to the pixels.
+  const long = Math.max(bm.width, bm.height);
+  if (!maxSide || long <= maxSide) return bm;
+  const k = maxSide / long;
+  const small = await createImageBitmap(bm, {
+    resizeWidth: Math.round(bm.width * k), resizeHeight: Math.round(bm.height * k), resizeQuality: 'high',
+  });
+  bm.close?.();
+  return small;
 }
 
 export function makeCanvas(w, h) {

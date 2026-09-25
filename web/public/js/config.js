@@ -71,6 +71,7 @@ export let MAX_AMBIGUOUS_FRACTION = 0;
  * "cutout" is most of the frame, which is what happens when matting
  * fails open and keeps the background. */
 export let MIN_COVERAGE = 0;
+export let MAX_SOURCE_SIDE = 2048;
 export let MAX_COVERAGE = 0;
 
 /* Below this, the angle is reported as unknown rather than asserted.
@@ -104,6 +105,7 @@ export function initConfigFromSpec(get) {
   ALPHA_THRESHOLD = get('cutout', 'alphaThreshold');
   MAX_AMBIGUOUS_FRACTION = get('cutout', 'maxAmbiguousFraction');
   MIN_COVERAGE = get('cutout', 'minCoverage');
+  MAX_SOURCE_SIDE = get('cutout', 'maxSourceSideBrowser') || 0;
   MAX_COVERAGE = get('cutout', 'maxCoverage');
   MIN_ANGLE_CONFIDENCE = get('confidence', 'minAngle');
   MIN_SCENE_CONFIDENCE = get('confidence', 'minScene');

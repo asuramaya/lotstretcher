@@ -366,7 +366,7 @@ export function renderControls(host, values, onChange, opts = {}) {
     const i = tools.findIndex((t) => t.id === activeTab);
     const next = tools[(i + step + tools.length) % tools.length];
     e.preventDefault();
-    strip.children[tools.indexOf(next)]?.click();
+    strip.querySelectorAll('[role="tab"]')[tools.indexOf(next)]?.click();
     strip.querySelector('[aria-selected="true"]')?.focus();
   };
   if (!rail) host.appendChild(strip);

@@ -228,12 +228,16 @@
     "signatureSize": 32
   },
   "cutout": {
-    "$comment": "imaging/cutout.py",
+    "$comment": [
+      "imaging/cutout.py",
+      "maxSourceSideBrowser: the browser decodes a photo at most this many pixels on its long side. The widest a car is ever drawn is about 0.9 of a 1920 frame, so nothing visible is lost, and a 12 MP phone photo no longer costs three times the matting, refinement and compositing time of a 4 MP one. The CLI keeps full size."
+    ],
     "alphaThreshold": 16,
     "maxAmbiguousFraction": 0.05,
     "frameFillMinEdges": 2,
     "minCoverage": 0.02,
-    "maxCoverage": 0.92
+    "maxCoverage": 0.92,
+    "maxSourceSideBrowser": 2048
   },
   "confidence": {
     "$comment": [
