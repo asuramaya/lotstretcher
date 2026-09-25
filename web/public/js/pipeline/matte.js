@@ -14,6 +14,7 @@
 
 import { loadModel, getOrt } from './runtime.js';
 import { resizeTo, imageDataOf, makeCanvas, ctxOf } from '../lib/imageio.js';
+import { available as coreAvailable, call as coreCall, toImageData } from '../core.js';
 import {
   ALPHA_THRESHOLD, MAX_AMBIGUOUS_FRACTION, MIN_COVERAGE, MAX_COVERAGE,
 } from '../config.js';
@@ -128,12 +129,21 @@ export function applyMatte(bitmap, { alpha, size }) {
   fctx.drawImage(bitmap, 0, 0);
   const img = fctx.getImageData(0, 0, W, H);
 
+  for (let i = 0; i < W * H; i++) img.data[i * 4 + 3] = mask[i * 4];
+
+  /* The stretched matte is soft for several pixels and carries the old
+   * background's colour in that rim (a pale halo on a dark backdrop).
+   * The core snaps the edge to the photo and takes the background out
+   * of the rim's colour (core/src/matting.rs), as the CLI does. */
+  let out = img;
+  if (coreAvailable()) {
+    try { out = toImageData(coreCall({ op: 'refine_cutout', image: { $image: 0 } }, [img])); } catch { out = img; }
+  }
+
   let minX = W, minY = H, maxX = -1, maxY = -1, opaque = 0;
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
-      const i = y * W + x;
-      const a = mask[i * 4];
-      img.data[i * 4 + 3] = a;
+      const a = out.data[(y * W + x) * 4 + 3];
       if (a > ALPHA_THRESHOLD) {
         opaque++;
         if (x < minX) minX = x;
@@ -146,7 +156,7 @@ export function applyMatte(bitmap, { alpha, size }) {
 
   if (maxX < 0) return { canvas: null, bbox: null, coverage: 0 };
 
-  fctx.putImageData(img, 0, 0);
+  fctx.putImageData(out, 0, 0);
 
   const cw = maxX - minX + 1, ch = maxY - minY + 1;
   const cut = makeCanvas(cw, ch);

@@ -267,9 +267,10 @@ def test_the_floor_reflection_mirrors_the_car_below_it_and_fades_out():
     car = (plain[:, :, 0] > 150) & (plain[:, :, 1] < 80)
     ys, xs = np.where(car)
     bottom, cx = ys.max(), int(xs.mean())
-    just_below, far_below = mirrored[bottom + 3, cx], mirrored[bottom + 200, cx]
+    far = min(bottom + 200, plain.shape[0] - 1)
+    just_below, far_below = mirrored[bottom + 3, cx], mirrored[far, cx]
     assert just_below[0] > just_below[1] + 60, "red mirrored just under the car"
-    assert (far_below == plain[bottom + 200, cx]).all(), "faded out well below"
+    assert (far_below == plain[far, cx]).all(), "faded out well below"
     # A weaker reflection is less red; the shadow darkens it further.
     weak = np.asarray(core.compose_hero([cutout()], 800, 800, bg, spotlight=False, reflection={"strength": 0.3})).astype(int)
     assert weak[bottom + 3, cx, 1] > just_below[1]

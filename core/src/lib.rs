@@ -30,6 +30,7 @@ pub mod carousel;
 pub mod spin;
 pub mod interior;
 pub mod mask;
+pub mod matting;
 pub mod sticker;
 pub mod copy;
 pub mod text;

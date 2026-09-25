@@ -285,7 +285,7 @@ const WORDS: &[(&str, &str)] = &[
     ("prv", "Privacy"), ("dfrst", "Defrost"), ("aprch", "Approach"), ("ltg", "Lighting"), ("stab", "Stabilizer"),
     ("sta", "Stabilizer"), ("inft", "Inflator"), ("slnt", "Sealant"), ("spr", "Spare"), ("actv", "Active"),
     ("grl", "Grille"), ("spl", "Special"), ("mos", "Months"), ("diffrntl", "Differential"),
-    ("beadlck", "Beadlock"), ("indiv", "Individual"), ("press", "Pressure"), ("monit", "Monitoring"),
+    ("beadlck", "Beadlock"), ("projctr", "Projector"), ("indiv", "Individual"), ("press", "Pressure"), ("monit", "Monitoring"),
 ];
 
 /// Letters a sticker title-cases that are read as letters.
@@ -293,7 +293,7 @@ const ACRONYMS: &[&str] = &[
     "LED", "LCD", "USB", "ABS", "AWD", "FWD", "RWD", "4WD", "4X4", "4X2", "GPS", "HID", "MPG",
     "BLIS", "TPMS", "HVAC", "AC", "DC", "V6", "V8", "HD", "PVD", "XL", "HV", "NCM", "ESC", "RSC",
     "CCD", "CD", "RH", "LH", "II", "III", "IV", "GVWR", "LT", "ST", "XLT", "STX", "SE", "SEL", "SOS",
-    "AEB", "CCS", "XM", "TX", "GT",
+    "AEB", "CCS", "XM", "TX", "GT", "MP3", "NACS",
 ];
 
 /// Lines that are not features: credits for something taken off, and
@@ -349,6 +349,13 @@ pub fn tidy_feature(raw: &str) -> String {
                 "kw" => format!("{digits}kW"), "kwh" => format!("{digits}kWh"),
                 "yr" | "yrs" => format!("{digits}-Year"), "k" => format!("{digits}K"),
                 "l" => format!("{digits}L"), "v" => format!("{digits}V"), "gal" => format!("{digits} gal"),
+                // "4Wheel" -> "4-Wheel", "1Time" -> "1-Time"; short units
+                // ("4X4", "5G", "12V") are letters.
+                u if u.len() > 2 && u.chars().all(|c| c.is_ascii_alphabetic()) => {
+                    let mut t = u.to_string();
+                    t[..1].make_ascii_uppercase();
+                    format!("{digits}-{t}")
+                }
                 _ => word.to_uppercase(),
             };
             out.push_str(&fixed);

@@ -192,6 +192,13 @@ def remove_background(content: bytes, alpha_threshold: int = 16, model_name: str
     ) >= FRAME_FILL_MIN_EDGES
     quality_ok = bbox is not None and ambiguous_fraction <= MAX_AMBIGUOUS_FRACTION and not fills_frame
 
+    # The gates above read the model's own alpha; what gets composed has
+    # its edge snapped to the photo and the background taken out of the
+    # rim's colour (core/src/matting.rs), the same step the browser runs.
+    from lotstretcher import core
+    if core.available():
+        result = core.call({"op": "refine_cutout", "image": {"$image": 0}}, [result]).copy()
+
     return CutoutResult(
         coverage=coverage, bbox=bbox, cutout=result,
         quality_ok=quality_ok, ambiguous_fraction=float(ambiguous_fraction),

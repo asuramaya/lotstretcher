@@ -282,6 +282,7 @@
   "compose": {
     "$comment": "compose/hero.py and compose/background.py",
     "marginFrac": 0.06,
+    "heightCapAspect": 1.7,
     "spotlight": {
       "innerRadiusFrac": 0.28,
       "outerRadiusFrac": 0.85,
@@ -2550,5 +2551,14 @@
       "2GC": "Chevrolet",
       "2HK": "Honda"
     }
+  },
+  "matteRefine": {
+    "$comment": "core/src/matting.rs: guided-filter edge refinement and blur-fusion foreground colour, as fractions of the photo's short side",
+    "guideRadiusFrac": 0.006,
+    "guideEps": 0.0002,
+    "fgWideRadiusFrac": 0.09,
+    "fgFineRadiusFrac": 0.006,
+    "edgeLow": 0.12,
+    "edgeHigh": 0.88
   }
 }

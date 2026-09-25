@@ -8,7 +8,14 @@ cars over in the same order the chosen layout expects.
 """
 from __future__ import annotations
 
+import math
+
 from PIL import Image
+
+from lotstretcher import spec as _spec
+
+
+HEIGHT_CAP_ASPECT = float(_spec.get("compose", "heightCapAspect", default=1.7))
 
 
 def compute_placement(car: Image.Image, box: tuple[int, int, int, int],
@@ -21,8 +28,12 @@ def compute_placement(car: Image.Image, box: tuple[int, int, int, int],
     bl, bt, br, bb = box
     avail_w = (br - bl) * (1 - 2 * margin_frac)
     avail_h = (bb - bt) * (1 - 2 * margin_frac)
+    # Height capped at a reference silhouette's (core layout.rs
+    # height_cap_aspect): a head-on shot stands no taller than a
+    # three-quarter one, and centred cars share one floor line.
+    ref_h = min(avail_h, avail_w / HEIGHT_CAP_ASPECT)
 
-    scale = min(avail_w / car.width, avail_h / car.height)
+    scale = min(avail_w / car.width, avail_h / car.height, ref_h / car.height)
     new_size = (max(1, round(car.width * scale)), max(1, round(car.height * scale)))
     # Resampled by the core, so a placement measured here is the same
     # pixels the core composites.
@@ -33,7 +44,8 @@ def compute_placement(car: Image.Image, box: tuple[int, int, int, int],
     if anchor == "bottom":
         y = bb - int((bb - bt) * margin_frac) - new_size[1]
     else:
-        y = bt + ((bb - bt) - new_size[1]) // 2
+        floor = bt + ((bb - bt) - ref_h) / 2 + ref_h
+        y = math.floor(floor + 0.5) - new_size[1]  # Rust's round: half away from zero
 
     return x, y, car_resized
 

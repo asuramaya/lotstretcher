@@ -231,6 +231,7 @@ pub enum Op {
     PlaceLayer { image: Slice, width: usize, height: usize, rect: [i64; 4] },
     Blend { a: Slice, b: Slice, t: f64 },
     EnhanceInterior { image: Slice },
+    RefineCutout { image: Slice },
     EnhanceExposure { image: Slice, #[serde(default)] target_median: Option<f64>, #[serde(default)] max_lift: Option<f64> },
     WhiteBalance { image: Slice },
     Scrim { image: Slice, #[serde(default)] band_frac: Option<f64> },
@@ -346,6 +347,7 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
             let car = slice_image(arena, &image)?;
             OpResult::Image(crate::spin::place_layer(&car, width, height, rect)?)
         }
+        Op::RefineCutout { image } => { let img = slice_image(arena, &image)?; OpResult::Image(crate::matting::refine_cutout(&img)?) }
         Op::EnhanceInterior { image } => { let img = slice_image(arena, &image)?; OpResult::Image(crate::interior::enhance_interior(&img)) }
         Op::EnhanceExposure { image, target_median, max_lift } => {
             let img = slice_image(arena, &image)?;

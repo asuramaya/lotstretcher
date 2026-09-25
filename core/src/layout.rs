@@ -10,17 +10,32 @@ pub struct Placement { pub x: i64, pub y: i64, pub w: usize, pub h: usize }
 
 /// Scale a (cw x ch) cutout to fit `bx` minus a margin; centred
 /// horizontally, centred or bottom-anchored vertically.
+/// The silhouette a car's height is capped at: a vehicle is never drawn
+/// taller than one of this width-to-height ratio would be in the same
+/// box, so a head-on shot (about 1.2:1) stands as tall as a three-quarter
+/// one instead of filling the frame, and a set reads as one shoot.
+pub fn height_cap_aspect() -> f64 {
+    crate::spec::get(&["compose", "heightCapAspect"]).as_f64().unwrap_or(1.7)
+}
+
 pub fn compute_placement(cw: usize, ch: usize, bx: Box_, margin_frac: f64, anchor: Anchor) -> Placement {
     let (bl, bt, br, bb) = bx;
     let avail_w = (br - bl) as f64 * (1.0 - 2.0 * margin_frac);
     let avail_h = (bb - bt) as f64 * (1.0 - 2.0 * margin_frac);
-    let scale = (avail_w / cw as f64).min(avail_h / ch as f64);
+    // The tallest a car of the reference shape could stand in this box.
+    let ref_h = avail_h.min(avail_w / height_cap_aspect());
+    let scale = (avail_w / cw as f64).min(avail_h / ch as f64).min(ref_h / ch as f64);
     let w = ((cw as f64 * scale).round() as usize).max(1);
     let h = ((ch as f64 * scale).round() as usize).max(1);
     let x = bl + ((br - bl) - w as i64).div_euclid(2);
     let y = match anchor {
         Anchor::Bottom => bb - ((bb - bt) as f64 * margin_frac) as i64 - h as i64,
-        Anchor::Center => bt + ((bb - bt) - h as i64).div_euclid(2),
+        // Centred on the reference car, then set down on its floor line:
+        // every car in a set has its wheels at the same height.
+        Anchor::Center => {
+            let floor = bt as f64 + ((bb - bt) as f64 - ref_h) / 2.0 + ref_h;
+            floor.round() as i64 - h as i64
+        }
     };
     Placement { x, y, w, h }
 }
