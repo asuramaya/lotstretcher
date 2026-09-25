@@ -44,6 +44,15 @@ pub struct Overview {
     #[serde(skip_serializing_if = "Option::is_none")] pub exterior_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")] pub interior_trim: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")] pub model: Option<String>,
+    /// The trim a shopper would say ("Badlands", "XLT", "GT Premium"),
+    /// from the year line with the model, body and drivetrain words
+    /// taken out, or from the series in the seating line.
+    #[serde(skip_serializing_if = "Option::is_none")] pub trim: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub body_style: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub drivetrain: Option<String>,
+    /// The model as a title uses it: no make, no drivetrain, and the
+    /// Super Duty's F-250/F-350 put back in front.
+    #[serde(skip_serializing_if = "Option::is_none")] pub model_name: Option<String>,
 }
 
 #[derive(Serialize, Default)]
@@ -214,6 +223,7 @@ fn parse_overview(words: &[&Word], rows: &[Vec<&Word>], y_tol: f64) -> Overview 
     if let Some(first) = block_rows.first() {
         o.model_line = Some(py_title(&row_text(first)));
     }
+    let mut unclassified: Vec<String> = Vec::new();
     for row in block_rows.iter().skip(1) {
         let text = row_text(row);
         let up = upper(&text);
@@ -225,6 +235,8 @@ fn parse_overview(words: &[&Word], rows: &[Vec<&Word>], y_tol: f64) -> Overview 
             o.engine = Some(py_title(&text));
         } else if up.contains("TRANSMISSION") || has_word(&up, "AUTO") || has_word(&up, "MANUAL") {
             o.transmission = Some(py_title(&text));
+        } else {
+            unclassified.push(text);
         }
     }
 
@@ -245,7 +257,130 @@ fn parse_overview(words: &[&Word], rows: &[Vec<&Word>], y_tol: f64) -> Overview 
             o.model = Some(format!("{} {} {}", first, model_line, parts[1..].join(" ")));
         }
     }
+    // "XLT SERIES" under the equipment group (F-150), or the Super Duty's
+    // "LARIAT 176" WB STYLESIDE" line in the description block.
+    let mut series: Option<String> = None;
+    for row in rows {
+        let Some(j) = row.iter().position(|w| upper(&w.text) == "SERIES" && w.x0 < 420.0) else { continue };
+        let x = row[j].x0;
+        let before: Vec<&str> = row[..j].iter().filter(|w| w.x0 > x - 200.0).map(|w| w.text.as_str()).collect();
+        if !before.is_empty() && before.len() <= 3 { series = Some(before.join(" ")); break; }
+    }
+    if series.is_none() {
+        for line in &unclassified {
+            let words: Vec<&str> = line.split_whitespace().collect();
+            if !words.iter().any(|w| upper(w) == "WB") { continue; }
+            let lead: Vec<&str> = words.iter().take_while(|w| !w.chars().any(|c| c.is_ascii_digit())).copied().collect();
+            if !lead.is_empty() { series = Some(lead.join(" ")); break; }
+        }
+    }
+    identity(&mut o, series);
     o
+}
+
+// ---------------------------------------------------------------- trim / body / drivetrain
+
+const DRIVES: [&str; 7] = ["4X4", "4X2", "FWD", "AWD", "RWD", "4WD", "2WD"];
+const MAKES: [&str; 2] = ["FORD", "LINCOLN"];
+
+fn drive_word(up: &str) -> Option<&'static str> { DRIVES.iter().find(|d| **d == up).copied() }
+
+/// Sticker shorthand for trim words, spelled the way the badge reads.
+fn trim_word(w: &str) -> String {
+    let up = upper(w);
+    let fixed = match up.as_str() {
+        "XLT" | "XL" | "SE" | "SEL" | "ST" | "GT" | "SVT" | "FX4" | "STX" | "ST-LINE" | "I" | "II" | "III" => None,
+        "LTD" => Some("Limited"),
+        "KNG" => Some("King"),
+        "TIMBERLNE" => Some("Timberline"),
+        "PLAT" => Some("Platinum"),
+        "ECOBOOST" => Some("EcoBoost"),
+        _ => Some(""),
+    };
+    match fixed {
+        None => if up == "ST-LINE" { "ST-Line".into() } else { up },
+        Some("") => py_title(w),
+        Some(x) => x.into(),
+    }
+}
+
+fn identity(o: &mut Overview, series: Option<String>) {
+    let model_line = o.model_line.clone().unwrap_or_default();
+    let model_words: Vec<String> = model_line.split_whitespace().map(upper).collect();
+    let mut trim: Vec<String> = Vec::new();
+    let mut body: Vec<String> = Vec::new();
+    let mut super_duty: Option<String> = None;
+
+    if let Some(line) = &o.trim_drivetrain {
+        let words: Vec<&str> = line.split_whitespace().collect();
+        let mut i = 0;
+        if words.first().map(|w| w.len() == 4 && w.chars().all(|c| c.is_ascii_digit())).unwrap_or(false) { i = 1; }
+        while i < words.len() {
+            let raw = words[i];
+            let mut up = upper(raw);
+            let next = words.get(i + 1).map(|w| upper(w)).unwrap_or_default();
+            i += 1;
+            // "St-Line-Awd": a drivetrain glued on with a hyphen.
+            if let Some(pos) = up.rfind('-') {
+                if let Some(d) = drive_word(&up[pos + 1..]) {
+                    if o.drivetrain.is_none() { o.drivetrain = Some(d.into()); }
+                    up.truncate(pos);
+                }
+            }
+            if up.is_empty() || up == "-" { continue; }
+            if let Some(d) = drive_word(&up) { if o.drivetrain.is_none() { o.drivetrain = Some(d.into()); } continue; }
+            if up == "ADVANCED" && drive_word(&next).is_some() { continue; }
+            match up.as_str() {
+                "SUPERCREW" => { body.push("SuperCrew".into()); continue; }
+                "SUPERCAB" => { body.push("SuperCab".into()); continue; }
+                "REGULAR" | "CREW" if next == "CAB" => { body.push(format!("{} Cab", py_title(raw))); i += 1; continue; }
+                "COUPE" | "CONVERTIBLE" | "FASTBACK" | "VAN" | "WAGON" => { body.push(py_title(raw)); continue; }
+                // Super Duty rear wheels, Transit roof heights and seats, bed length.
+                "DRW" | "SRW" | "MR" | "HR" | "LR" | "PASS" | "CARGO" | "BOX" => continue,
+                "EXPED." | "EXPED" => continue,
+                _ => {}
+            }
+            if up.ends_with("-DOOR") { body.push(py_title(raw)); continue; }
+            if up.contains('\'') || up.chars().all(|c| c.is_ascii_digit()) { continue; }
+            // F350, F-150: the model, not the trim.
+            let bare = up.replace('-', "");
+            if bare.len() == 4 && bare.starts_with('F') && bare[1..].chars().all(|c| c.is_ascii_digit()) {
+                super_duty = Some(format!("F-{}", &bare[1..]));
+                continue;
+            }
+            if model_words.contains(&up) || MAKES.contains(&up.as_str()) { continue; }
+            // "St Line" reads as the badge does: "ST-Line".
+            if up == "LINE" && trim.last().map(|t| t == "ST").unwrap_or(false) { trim.pop(); trim.push("ST-Line".into()); continue; }
+            trim.push(trim_word(if up.len() < raw.len() { &raw[..up.len()] } else { raw }));
+        }
+    }
+    if trim.is_empty() {
+        if let Some(sr) = &series {
+            trim = sr.split_whitespace().filter(|w| !model_words.contains(&upper(w))).map(trim_word).collect();
+        }
+    }
+    if trim.is_empty() {
+        // "Badlands - 4 Passenger", "Limited 7-Passenger": the series.
+        if let Some(seat) = &o.seating_capacity {
+            let mut series = Vec::new();
+            for w in seat.split_whitespace() {
+                let up = upper(w);
+                if up == "-" || up.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) || up.contains("PASSENGER") { break; }
+                series.push(trim_word(w));
+            }
+            trim = series;
+        }
+    }
+    if !trim.is_empty() { o.trim = Some(trim.join(" ")); }
+    if !body.is_empty() { o.body_style = Some(body.join(" ")); }
+
+    let mut name: Vec<String> = model_line.split_whitespace()
+        .filter(|w| !MAKES.contains(&upper(w).as_str()) && drive_word(&upper(w)).is_none())
+        .map(|w| w.to_string()).collect();
+    if let Some(f) = super_duty {
+        if upper(&model_line) == "SUPER DUTY" { name.insert(0, f); }
+    }
+    if !name.is_empty() { o.model_name = Some(name.join(" ")); }
 }
 
 // ---------------------------------------------------------------- equipment grid

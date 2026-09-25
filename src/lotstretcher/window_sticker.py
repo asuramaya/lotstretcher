@@ -61,6 +61,9 @@ def parse_window_sticker(v: Vehicle, pdf_path: Path, out_dir: Path) -> None:
                            "using site-listed features as fallback.")
         return
     v.sticker = data
+    # The listing's own trim wins; a sticker only fills a blank one.
+    if not getattr(v, "trim", None) and data.get("overview", {}).get("trim"):
+        v.trim = data["overview"]["trim"]
     (out_dir / "window-sticker.json").write_text(json.dumps(data, indent=2))
     v.warnings.append("Extracted structured feature data from window sticker (window-sticker.json).")
 

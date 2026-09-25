@@ -137,24 +137,23 @@ export async function parseSticker(source) {
   if (o.vin) out.vin = o.vin;
   if (rec.placeholder) return out;
 
-  if (o.model_line) { out.model_line = o.model_line; out.model = o.model_line; }
+  if (o.model_line) { out.model_line = o.model_line; out.model = o.model_name || o.model_line; }
   if (o.trim_drivetrain) out.trim_drivetrain = o.trim_drivetrain;
   if (o.seating_capacity) out.seating = o.seating_capacity;
   if (o.engine) out.engine = displayCase(o.engine);
   if (o.transmission) out.transmission = displayCase(o.transmission);
   if (o.exterior_color) out.exterior_color = o.exterior_color;
   if (o.interior_trim) out.interior_color = o.interior_trim;
-  // The number a shopper means by "the price" is the total MSRP.
-  out.price = rec.pricing.total_msrp || rec.pricing.base_price || null;
-
-  // Year / trim / drivetrain fall out of "2026 Xlt Fwd".
+  if (o.trim) out.trim = o.trim;
+  if (o.body_style) out.body_style = o.body_style;
+  if (o.drivetrain) out.drivetrain = o.drivetrain;
+  /* The sticker's total is what the car cost NEW. It is only the asking
+   * price of a new car, so it is kept as msrp and the form decides
+   * (stickerPriceApplies) whether it may become the price. */
+  out.msrp = rec.pricing.total_msrp || rec.pricing.base_price || null;
   if (out.trim_drivetrain) {
-    const parts = out.trim_drivetrain.split(/\s+/);
-    if (/^\d{4}$/.test(parts[0])) {
-      out.year = parts[0];
-      if (parts.length > 1) out.trim = titleCase(parts[1]);
-      if (parts.length > 2) out.drivetrain = titleCase(parts.slice(2).join(' '));
-    }
+    const first = out.trim_drivetrain.split(/\s+/)[0];
+    if (/^\d{4}$/.test(first)) out.year = first;
   }
   return out;
 }
@@ -167,7 +166,7 @@ export function stickerToVehicle(sticker) {
   for (const [from, to] of [
     ['year', 'year'], ['make', 'make'], ['model', 'model'], ['trim', 'trim'],
     ['exterior_color', 'exterior_color'], ['interior_color', 'interior_color'],
-    ['vin', 'vin'], ['price', 'price'],
+    ['vin', 'vin'], ['msrp', 'msrp'],
   ]) {
     if (!sticker[from]) continue;
     let value = String(sticker[from]);
@@ -177,8 +176,19 @@ export function stickerToVehicle(sticker) {
     else value = value.replace(/^\$/, '').replace(/,/g, '');
     v[to] = value;
   }
-  if (v.price) v.price = v.price.replace(/\.00$/, '');
+  if (v.msrp) v.msrp = v.msrp.replace(/\.00$/, '');
   return v;
+}
+
+/* Whether a sticker's MSRP may stand as the asking price: only for a car
+ * sold new. Stated condition decides; with none stated, a sticker for
+ * this model year or next is taken as a new car, anything older as used
+ * (a 2021 sticker on a lot in 2026 is five years of depreciation off). */
+export function stickerPriceApplies(condition, year, now = new Date()) {
+  const c = String(condition || '').toLowerCase();
+  if (c) return c === 'new';
+  const y = Number(year);
+  return Number.isFinite(y) && y >= now.getFullYear();
 }
 
 export { loadPdfjs };

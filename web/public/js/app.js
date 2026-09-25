@@ -1460,7 +1460,7 @@ async function importSticker(source, label) {
   $('stickerRow').classList.remove('is-ok');
   note.textContent = 'Reading the PDF...';
   try {
-    const { parseSticker, stickerToVehicle } = await import('./pipeline/sticker.js');
+    const { parseSticker, stickerToVehicle, stickerPriceApplies } = await import('./pipeline/sticker.js');
     const parsed = await parseSticker(source);
 
     if (parsed.placeholder) {
@@ -1471,10 +1471,14 @@ async function importSticker(source, label) {
     const fields = stickerToVehicle(parsed);
     const map = {
       year: 'f-year', make: 'f-make', model: 'f-model', trim: 'f-trim',
-      exterior_color: 'f-ext', interior_color: 'f-int',
-      price: 'f-price', vin: 'f-vin',
+      exterior_color: 'f-ext', interior_color: 'f-int', vin: 'f-vin',
     };
     let filled = 0;
+    // The sticker's total is the price only when the car is sold new.
+    if (fields.msrp && stickerPriceApplies($('f-cond').value, fields.year || $('f-year').value)) {
+      fields.price = fields.msrp;
+      map.price = 'f-price';
+    }
     for (const [key, id] of Object.entries(map)) {
       // Never overwrite something the user typed themselves.
       if (fields[key] && !$(id).value.trim()) { $(id).value = fields[key]; filled++; }
@@ -2027,6 +2031,15 @@ async function init() {
   // Typing in the vehicle form is read as it happens, so a title or a
   // paint colour on the stage follows the words.
   for (const id of FORM_IDS) $(id).addEventListener('input', () => { saveSessionSoon(); readVehicle(); if (state.pane === 'options') preview?.update(); });
+  /* Marking the car New after a sticker was read lets its MSRP stand as
+   * the price, if no price was typed. */
+  $('f-cond').addEventListener('change', () => {
+    const msrp = state.sticker?.msrp;
+    if ($('f-cond').value === 'New' && msrp && !$('f-price').value.trim()) {
+      $('f-price').value = String(msrp).replace(/^\$/, '').replace(/,/g, '').replace(/\.00$/, '');
+      $('f-price').dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
   state.restoring = true;   // until offerResume has looked
   offerResume();
 

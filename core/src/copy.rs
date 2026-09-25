@@ -240,6 +240,144 @@ fn py_repr(v: &Value) -> String {
     }
 }
 
+
+// ------------------------------------------------------------ sticker shorthand
+
+/// Whole phrases the sticker prints in shorthand, matched before words.
+const PHRASES: &[(&str, &str)] = &[
+    ("1touch", "One-Touch"), ("1-touch", "One-Touch"), ("ip cluster", "Instrument Cluster"),
+    ("dr/pass", "Driver/Passenger"), ("drv/pass", "Driver/Passenger"), ("4gwi-fi", "4G Wi-Fi"),
+    ("am/fm", "AM/FM"), ("a/s", "All-Season"), ("a/t", "All-Terrain"), ("a/c", "A/C"),
+    ("w/", "with "), ("5gwi-fi", "5G Wi-Fi"), ("usb a", "USB-A"), ("usb c", "USB-C"), ("blt-in", "Built-In"),
+    ("stop n go", "Stop-and-Go"), ("shift-on-fly", "Shift-on-the-Fly"), ("one touch remov", "One-Touch Removable"),
+];
+
+/// Sticker abbreviations, word by word (compared lower-case).
+const WORDS: &[(&str, &str)] = &[
+    ("lthr", "Leather"), ("str", "Steering"), ("strg", "Steering"), ("whl", "Wheel"), ("wh", "Wheel"),
+    ("whls", "Wheels"), ("htd", "Heated"), ("pwr", "Power"), ("frt", "Front"), ("frnt", "Front"),
+    ("ctr", "Center"), ("scrn", "Screen"), ("touchscrn", "Touchscreen"), ("drv", "Driver"), ("drvr", "Driver"),
+    ("win", "Windows"), ("ctd", "Coated"), ("pwdr", "Powder"), ("veh", "Vehicle"), ("aux", "Auxiliary"),
+    ("wht", "White"), ("blk", "Black"), ("adj", "Adjustable"), ("pkg", "Package"), ("pak", "Pack"),
+    ("sys", "System"), ("trlr", "Trailer"), ("ctrl", "Control"), ("cntrl", "Control"), ("ctl", "Control"),
+    ("rr", "Rear"), ("wndw", "Window"), ("instr", "Instrument"), ("elec", "Electronic"), ("elect", "Electronic"),
+    ("elctr", "Electronic"), ("asst", "Assist"), ("mgmt", "Management"), ("cam", "Camera"), ("illum", "Illuminated"),
+    ("mirr", "Mirrors"), ("seq", "Sequential"), ("spd", "Speed"), ("lwr", "Lower"), ("upr", "Upper"),
+    ("dbl", "Double"), ("dig", "Digital"), ("gls", "Gloss"), ("ptd", "Painted"), ("pntd", "Painted"),
+    ("pnt", "Painted"), ("alum", "Aluminum"), ("alm", "Aluminum"), ("al", "Aluminum"), ("met", "Metallic"),
+    ("splt", "Split"), ("spk", "Spoke"), ("slvr", "Silver"), ("hi", "High"), ("mach", "Machined"),
+    ("mch", "Machined"), ("crbnzd", "Carbonized"), ("gry", "Gray"), ("crbn", "Carbon"), ("brt", "Bright"),
+    ("pkt", "Pocket"), ("pkts", "Pockets"), ("prem", "Premium"), ("bsw", "Blackwall"), ("owl", "Outlined White Letter"),
+    ("lte", "LTE"), ("wifi", "Wi-Fi"), ("warr", "Warranty"), ("svc", "Service"), ("batt", "Battery"),
+    ("compon", "Components"), ("exh", "Exhaust"), ("adp", "Adaptive"), ("crz", "Cruise"), ("cond", "Conditioning"),
+    ("carpt", "Carpet"), ("dlr", "Dealer"), ("instld", "Installed"), ("accy", "Accessory"), ("susp", "Suspension"),
+    ("clth", "Cloth"), ("bkt", "Bucket"), ("cnctd", "Connected"), ("conn", "Connected"), ("nav", "Navigation"),
+    ("inc", "Included"), ("incl", "Included"), ("sub", "Subscription"), ("siriusxm", "SiriusXM"), ("tc", "Tri-Coat"),
+    ("cc", "Clearcoat"), ("dr", "Door"), ("vis", "Visor"), ("tractn", "Traction"), ("intell", "Intelligent"),
+    ("equip", "Equipment"), ("exp", "Experience"), ("bluecruise", "BlueCruise"), ("advancetrac", "AdvanceTrac"),
+    ("remov", "Removable"), ("rd", "Road"), ("cluste", "Cluster"), ("tir", "Tire"), ("fordpass", "FordPass"),
+    ("pano", "Panoramic"), ("sync", "SYNC"), ("mi", "Mile"), ("yr", "Year"), ("flr", "Floor"),
+    ("lners", "Liners"), ("rw", "Row"), ("rws", "Rows"), ("crpet", "Carpet"), ("lth", "Leather"),
+    ("steer", "Steering"), ("clustr", "Cluster"), ("digtal", "Digital"), ("scr", "Screen"), ("mnt", "Mount"),
+    ("sig", "Signature"), ("projectn", "Projection"), ("proj", "Projection"), ("fst", "Fast"), ("chrg", "Charge"),
+    ("adptr", "Adapter"), ("mble", "Mobile"), ("gl", "Glass"), ("sha", "Shade"), ("mrrors", "Mirrors"),
+    ("fld", "Fold"), ("mem", "Memory"), ("bds", "Boards"), ("accn", "Accent"), ("man", "Manual"),
+    ("prv", "Privacy"), ("dfrst", "Defrost"), ("aprch", "Approach"), ("ltg", "Lighting"), ("stab", "Stabilizer"),
+    ("sta", "Stabilizer"), ("inft", "Inflator"), ("slnt", "Sealant"), ("spr", "Spare"), ("actv", "Active"),
+    ("grl", "Grille"), ("spl", "Special"), ("mos", "Months"), ("diffrntl", "Differential"),
+    ("beadlck", "Beadlock"), ("indiv", "Individual"), ("press", "Pressure"), ("monit", "Monitoring"),
+];
+
+/// Letters a sticker title-cases that are read as letters.
+const ACRONYMS: &[&str] = &[
+    "LED", "LCD", "USB", "ABS", "AWD", "FWD", "RWD", "4WD", "4X4", "4X2", "GPS", "HID", "MPG",
+    "BLIS", "TPMS", "HVAC", "AC", "DC", "V6", "V8", "HD", "PVD", "XL", "HV", "NCM", "ESC", "RSC",
+    "CCD", "CD", "RH", "LH", "II", "III", "IV", "GVWR", "LT", "ST", "XLT", "STX", "SE", "SEL", "SOS",
+    "AEB", "CCS", "XM", "TX", "GT",
+];
+
+/// Lines that are not features: credits for something taken off, and
+/// the scraps a sticker's narrow columns wrap onto a line of their own.
+fn is_feature(line: &str) -> bool {
+    let l = line.to_lowercase();
+    if l.contains("removal") || l.contains(" credit") || l.starts_with("tag ") { return false; }
+    // "2021 Model Year", and a wrapped last word left alone ("Program").
+    if l.ends_with("model year") || l.trim() == "program" { return false; }
+    let letters = line.chars().filter(|c| c.is_alphabetic()).count();
+    letters >= 4 && !line.starts_with('(')
+}
+
+/// A sticker line as a person would write it: "Lthr Gear Knob/Str Wheel"
+/// becomes "Leather Gear Knob/Steering Wheel", "Bumper,Rear-Pwdr Ctd
+/// Steel" becomes "Bumper, Rear-Powder Coated Steel".
+pub fn tidy_feature(raw: &str) -> String {
+    // A comma always takes a space after it.
+    let mut s = String::new();
+    let chars: Vec<char> = raw.trim().chars().collect();
+    for (i, ch) in chars.iter().enumerate() {
+        s.push(*ch);
+        if *ch == ',' && chars.get(i + 1).map(|c| c.is_alphabetic()).unwrap_or(false) { s.push(' '); }
+    }
+    let mut lower = s.to_lowercase();
+    for (from, to) in PHRASES {
+        let mut start = 0;
+        while let Some(pos) = lower[start..].find(from).map(|p| p + start) {
+            let before_ok = pos == 0 || !lower[..pos].chars().last().map(|c| c.is_alphanumeric()).unwrap_or(false);
+            let end = pos + from.len();
+            let after_ok = from.ends_with('/') || end >= lower.len() || !lower[end..].chars().next().map(|c| c.is_alphanumeric()).unwrap_or(false);
+            if before_ok && after_ok {
+                s.replace_range(pos..end, to);
+                lower = s.to_lowercase();
+                start = pos + to.len();
+            } else {
+                start = end;
+            }
+        }
+    }
+    // Word by word, keeping every separator where it was.
+    let mut out = String::new();
+    let mut word = String::new();
+    let flush = |word: &mut String, out: &mut String| {
+        if word.is_empty() { return; }
+        let lw = word.to_lowercase();
+        let digits: String = lw.chars().take_while(|c| c.is_ascii_digit()).collect();
+        let unit = &lw[digits.len()..];
+        if !digits.is_empty() && !unit.is_empty() {
+            // "1St" -> "1st", "88Kwh" -> "88kWh", "4Yr" -> "4-Year".
+            let fixed = match unit {
+                "st" | "nd" | "rd" | "th" => format!("{digits}{unit}"),
+                "kw" => format!("{digits}kW"), "kwh" => format!("{digits}kWh"),
+                "yr" | "yrs" => format!("{digits}-Year"), "k" => format!("{digits}K"),
+                "l" => format!("{digits}L"), "v" => format!("{digits}V"), "gal" => format!("{digits} gal"),
+                _ => word.to_uppercase(),
+            };
+            out.push_str(&fixed);
+        } else if let Some((_, to)) = WORDS.iter().find(|(f, _)| *f == lw) { out.push_str(to); }
+        else if ACRONYMS.contains(&word.to_uppercase().as_str()) { out.push_str(&word.to_uppercase()); }
+        else { out.push_str(word); }
+        word.clear();
+    };
+    for ch in s.chars() {
+        if ch.is_alphanumeric() { word.push(ch); } else { flush(&mut word, &mut out); out.push(ch); }
+    }
+    flush(&mut word, &mut out);
+    // "Captain'S" -> "Captain's"; a trailing option price is a 2021
+    // invoice line, not a feature.
+    let mut out = out.replace("'S ", "'s ").replace("'S", "'s");
+    let trimmed = out.trim_end().to_string();
+    if let Some(pos) = trimmed.rfind(' ') {
+        let tail = &trimmed[pos + 1..];
+        if tail.contains('.') && tail.chars().all(|c| c.is_ascii_digit() || c == ',' || c == '.') {
+            out = trimmed[..pos].trim_end().trim_end_matches(" -").to_string();
+        }
+    }
+    out.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// Standard features per sticker column before the rest are counted
+/// instead of listed: a Marketplace post is read on a phone.
+const STANDARD_PER_SECTION: usize = 8;
+
 // ------------------------------------------------------------ the Marketplace post
 
 fn feature_key(feature: &str) -> String {
@@ -336,23 +474,27 @@ pub fn build_facebook_post(v: &Value, dealer: &Dealer) -> String {
     let sticker = field(v, "sticker");
     let equipment = field(sticker, "equipment");
     if truthy(equipment) {
-        for (key, label) in [("exterior", "Exterior"), ("interior", "Interior"), ("functional_tech", "Functional & Tech"), ("safety_security", "Safety & Security")] {
-            let feats = new_features(string_list(field(equipment, key)));
-            if feats.is_empty() { continue; }
-            lines.push(format!("{label}:"));
-            for f in feats { lines.push(format!("- {f}")); }
-            lines.push(String::new());
-        }
-        let optional = new_features(string_list(field(sticker, "optional_equipment")));
+        // What this car was ordered with comes first; the standard list
+        // is the same on every car of the trim.
+        let optional = new_features(string_list(field(sticker, "optional_equipment")).iter().filter(|f| is_feature(f)).map(|f| tidy_feature(f)).collect());
         if !optional.is_empty() {
             lines.push("Optional Equipment:".into());
             for f in optional { lines.push(format!("- {f}")); }
             lines.push(String::new());
         }
+        for (key, label) in [("exterior", "Exterior"), ("interior", "Interior"), ("functional_tech", "Functional & Tech"), ("safety_security", "Safety & Security")] {
+            let feats = new_features(string_list(field(equipment, key)).iter().filter(|f| is_feature(f)).map(|f| tidy_feature(f)).collect());
+            if feats.is_empty() { continue; }
+            lines.push(format!("{label}:"));
+            let more = feats.len().saturating_sub(STANDARD_PER_SECTION);
+            for f in feats.into_iter().take(STANDARD_PER_SECTION) { lines.push(format!("- {f}")); }
+            if more > 0 { lines.push(format!("- and {more} more")); }
+            lines.push(String::new());
+        }
         let warranties = string_list(field(sticker, "warranties"));
         if !warranties.is_empty() && lower_trim(v, "make") == "ford" {
             lines.push("Factory Warranties:".into());
-            for w in warranties { lines.push(format!("- {w}")); }
+            for w in warranties { lines.push(format!("- {}", tidy_feature(&w))); }
             lines.push(String::new());
         }
     } else if truthy(field(v, "main_features")) {

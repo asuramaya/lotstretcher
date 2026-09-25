@@ -36,6 +36,10 @@ def test_real_sticker_parses_as_before(name):
     got = parse_sticker(PDFS[name])
     got.pop("placeholder")
     got.pop("make", None)
+    # Added after the reference was taken: the identity split (see
+    # test_sticker_identity.py), checked there against each listing.
+    for k in ("trim", "body_style", "drivetrain", "model_name"):
+        got["overview"].pop(k, None)
     assert got == expected
     assert find_panel_split_x(PDFS[name]) == pytest.approx(split)
 
