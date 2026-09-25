@@ -116,12 +116,17 @@ const CONVEYOR_WIDE_RATIO: f64 = 1.6;
 pub fn conveyor_wide(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
     let (wl, wt, wr, wb) = window;
     let (ww, wh) = ((wr - wl) as f64, (wb - wt) as f64);
-    let aw = r(ww * 0.19);
-    let ah = r(wh * 0.42);
-    let gap = r(ww * 0.005);
-    let left = (wl, wb - ah, wl + aw, wb);
-    let right = (wr - aw, wb - ah, wr, wb);
-    vec![((wl + aw + gap, wt, wr - aw - gap, wb), Anchor::Bottom), (left, Anchor::Bottom), (right, Anchor::Bottom)]
+    // A staggered lineup: the hero wide across the front, the accents
+    // behind it at the edges, higher (further back) and half hidden by
+    // it, as a showroom row is shot. The hero is drawn last.
+    let hw = r(ww * 0.74);
+    let hl = wl + ((ww as i64) - hw).div_euclid(2);
+    let aw = r(ww * 0.27);
+    let ah = r(wh * 0.5);
+    let ab = wb - r(wh * 0.14);
+    let left = (wl, ab - ah, wl + aw, ab);
+    let right = (wr - aw, ab - ah, wr, ab);
+    vec![((hl, wt, hl + hw, wb), Anchor::Bottom), (left, Anchor::Bottom), (right, Anchor::Bottom)]
 }
 
 /// Whichever conveyor suits the frame: stacked once taller than wide,

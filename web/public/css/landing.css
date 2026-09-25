@@ -173,12 +173,9 @@ figure.pic, .vars figure, .shapes figure, .duo figure { margin: 0; }
   margin-bottom: var(--s-3);
 }
 
-/* The sticker beside the library, a line under each. */
-.duo { display: grid; gap: var(--s-5); align-items: start; }
-@media (min-width: 860px) { .duo { grid-template-columns: .8fr 1.2fr; } }
-.duo .shot { display: flex; flex-direction: column; }
-.duo figcaption { padding: var(--s-3) var(--s-3) var(--s-2); }
-.duo .paper figcaption { color: #333; }
+/* A picture under a heading. */
+.block h2 + .shot, .block h2 + .vars, .block h2 + .shapes, .block h2 + .clips { margin-top: clamp(var(--s-5), 4vw, var(--s-7)); }
+.paper-center { max-width: 560px; margin-inline: auto; }
 
 /* ---------- spacing classes, in place of inline styles ---------- */
 .hero-cta { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-6); }

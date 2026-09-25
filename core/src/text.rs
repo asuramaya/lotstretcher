@@ -424,6 +424,27 @@ pub fn plan(req: &PlanRequest) -> Result<Vec<Overlay>, String> {
 pub fn shrink_window(window: (i64, i64, i64, i64), overlays: &[Overlay], height: usize) -> (i64, i64, i64, i64) {
     let mut w = window;
     let gap = (height as f64 * 0.02).round() as i64;
+    // A window much wider than tall (a 16:9 still or clip) has room
+    // beside the vehicle, not above or below it: a stack in a left or
+    // right corner takes a column off that side and the vehicle keeps
+    // the height. Centred pieces still take a band.
+    let (ww, wh) = ((w.2 - w.0) as f64, (w.3 - w.1) as f64);
+    if ww >= wh * 1.6 && !overlays.is_empty() {
+        let mid = (w.0 + w.2) as f64 / 2.0;
+        let mut rest: Vec<&Overlay> = Vec::new();
+        for o in overlays {
+            if o.x + o.box_w < mid { w.0 = w.0.max((o.x + o.box_w).ceil() as i64 + gap); }
+            else if o.x > mid { w.2 = w.2.min(o.x.floor() as i64 - gap); }
+            else { rest.push(o); }
+        }
+        if w.2 <= w.0 + 1 { return window; }
+        let half = |o: &&Overlay| (o.y + o.y + o.box_h) / 2.0 > height as f64 / 2.0;
+        let upper: Vec<&Overlay> = rest.iter().copied().filter(|o| !half(o)).collect();
+        let lower: Vec<&Overlay> = rest.iter().copied().filter(half).collect();
+        if let Some((_, bottom)) = band_of(&upper) { w.1 = w.1.max(bottom.ceil() as i64 + gap).min(w.3 - 1); }
+        if let Some((top, _)) = band_of(&lower) { w.3 = w.3.min(top.floor() as i64 - gap).max(w.1 + 1); }
+        return w;
+    }
     // Pieces may sit in both halves (a title up top, the badge below):
     // each half gives up its own band, never the whole canvas.
     let half = |o: &&Overlay| (o.y + o.y + o.box_h) / 2.0 > height as f64 / 2.0;

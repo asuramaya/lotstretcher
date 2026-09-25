@@ -256,19 +256,20 @@ CONVEYOR_WIDE_RATIO = 1.6        # past this, the accents sit beside the hero
 
 
 def conveyor_wide_layout(window: tuple[int, int, int, int], n_extra: int = 2) -> list[tuple[tuple, str]]:
-    """The conveyor for a window much wider than tall (a 16:9 clip once
-    the text's band is off the top): the accents sit beside the hero on
-    one floor, a lineup, instead of in the top corners under the text
-    where the three trucks and the words crowded one band. The core's
+    """The conveyor for a window much wider than tall (a 16:9 clip): a
+    staggered lineup, the hero wide across the front, the accents behind
+    it at the edges, higher (further back) and half hidden by it, as a
+    showroom row is shot. The hero is drawn last. The core's
     layout.rs::conveyor_wide, mirrored."""
     wl, wt, wr, wb = window
     ww, wh = wr - wl, wb - wt
-    accent_w, accent_h = round(ww * 0.19), round(wh * 0.42)
-    gap = round(ww * 0.005)
-    left_box = (wl, wb - accent_h, wl + accent_w, wb)
-    right_box = (wr - accent_w, wb - accent_h, wr, wb)
-    hero_box = (wl + accent_w + gap, wt, wr - accent_w - gap, wb)
-    return [(hero_box, "bottom"), (left_box, "bottom"), (right_box, "bottom")]
+    hero_w = round(ww * 0.74)
+    hero_l = wl + (ww - hero_w) // 2
+    accent_w, accent_h = round(ww * 0.27), round(wh * 0.5)
+    accent_b = wb - round(wh * 0.14)
+    left_box = (wl, accent_b - accent_h, wl + accent_w, accent_b)
+    right_box = (wr - accent_w, accent_b - accent_h, wr, accent_b)
+    return [((hero_l, wt, hero_l + hero_w, wb), "bottom"), (left_box, "bottom"), (right_box, "bottom")]
 
 
 def conveyor_for_window(window: tuple[int, int, int, int]):

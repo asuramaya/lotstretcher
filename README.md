@@ -526,7 +526,9 @@ The core draws text (core/src/text.rs, the studio's Lato Bold, OFL) so
 the CLI's hero and the app's preview carry the same words at the same
 places. Three pieces, the title, a subtitle and the price badge, stack
 in a corner and the vehicle is laid out clear of them; with a frame
-they sit inside its window, never on its art. Pieces sent to different
+they sit inside its window, never on its art. On a canvas much wider
+than tall a corner stack takes a column off its side rather than a band
+off the top or bottom, so the vehicle keeps the height. Pieces sent to different
 corners of the same half are kept clear of each other too: a wide title
 across the top centre pushes a top-left badge under it rather than
 taking it on top. The title's size follows the canvas's geometric mean
@@ -578,7 +580,8 @@ piece already placed on its own moves when the pointer lands on it), so
 the lever and the flag still say the same. `recompose` takes them too. The clip carries the same text on
 every frame, with the conveyor laid out in the room beside it (three
 trucks in the top corners and below on a square, stacked on a portrait,
-a lineup with the accents beside the hero on a wide one), and sits
+a staggered lineup on a wide one, the hero across the front and the
+accents behind it at the edges), and sits
 on the same backdrop as the stills: `--photo-background` puts the photo
 behind the clip too, unless `--video-flag-background` asks for the
 flag video instead.
