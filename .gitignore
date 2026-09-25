@@ -19,3 +19,9 @@ node_modules/
 # Rust core build output; web/public/core/ (the wasm) is committed so the static site needs no toolchain
 core/target/
 
+
+# The WebGPU bench (web/public/bench/gpu) fetches its runtime locally:
+#   npm pack onnxruntime-web@1.22.0 && tar xzf onnxruntime-web-1.22.0.tgz
+#   cp package/dist/{ort.webgpu.min.mjs,ort-wasm-simd-threaded.jsep.mjs,ort-wasm-simd-threaded.jsep.wasm} web/public/bench/gpu/
+web/public/bench/gpu/*.wasm
+web/public/bench/gpu/*.mjs

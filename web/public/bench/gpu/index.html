@@ -1,4 +1,7 @@
 <!doctype html><meta charset="utf-8"><title>gpu bench</title>
+<!-- ORT WebGPU vs wasm on the three models. Not shipped (bench/ is in .assetsignore).
+     Needs ort.webgpu.min.mjs and the jsep files from onnxruntime-web 1.22.0 here; see .gitignore.
+     Measured 2026-09-25: the u2net matte fails on WebGPU (MaxPool ceil), the classifiers gain ~1 ms. -->
 <pre id="out">running</pre>
 <script type="module">
 const out = document.getElementById('out');
