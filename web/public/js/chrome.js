@@ -41,9 +41,11 @@ export function mountBrand(host) {
   brand.href = here === 'app' ? SURFACES.landing.href : '#top';
   brand.title = here === 'app' ? SURFACES.landing.title : '';
 
-  const mark = document.createElement('span');
-  mark.className = 'brand-mark';
-  brand.append(mark, document.createTextNode(' lotstretcher'));
+  // The word is the mark: "lot" in ink, "stretcher" in the accent.
+  const tail = document.createElement('span');
+  tail.className = 'brand-tail';
+  tail.textContent = 'stretcher';
+  brand.append(document.createTextNode('lot'), tail);
   host.appendChild(brand);
 
   return { here, other };

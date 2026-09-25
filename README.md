@@ -3,13 +3,17 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Interface: CLI](https://img.shields.io/badge/interface-CLI-informational.svg)](#cli-command-reference)
-[![Tests](https://img.shields.io/badge/tests-80%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-612%20passed-brightgreen.svg)](tests/)
 
 **lotstretcher** automates the workflow of turning a vehicle listing from a dealership website
 into polished, platform-specific social-media posts and high-converting marketing visuals -- stretching one
 photo shoot into every format a dealer's lot needs to sell a car online.
 
-Given a vehicle detail page (VDP) URL, it:
+It runs two ways, and they are the same app: **[lotstretcher.org](https://lotstretcher.org)** does one
+car at a time entirely in your browser (no account, nothing uploads, free), and **self-hosted** runs the
+CLI and server below on a whole lot, on a schedule. See [One App, Two Hosts](#one-app-two-hosts).
+
+Given a vehicle detail page (VDP) URL, the self-hosted pipeline:
 
 1. **Scrapes** vehicle specs, full-resolution photo galleries, window stickers, and Carfax history via Playwright (bypassing Cloudflare challenges).
 2. **Processes** photos through a computer vision pipeline — zero-shot CLIP classification, rembg (BiRefNet) background removal, perceptual-hash deduplication (including a cross-vehicle photo cache that reuses an already-processed cutout when the dealer's CDN serves the same manufacturer stock photo to multiple listings), dealer banner cropping, and super-resolution upscaling.

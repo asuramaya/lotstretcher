@@ -208,20 +208,16 @@ hr.rule { border: 0; border-top: 1px solid var(--line); margin: var(--s-5) 0; }
 }
 
 /* ---------- shared header ----------
- * .brand and .brand-mark live HERE, not in app.css: both pages use them,
+ * .brand and .brand-tail live HERE, not in app.css: both pages use them,
  * and keeping them app-only meant the landing page drew a brand whose
  * mark was invisible because it never loaded that stylesheet. */
 .brand {
-  display: flex; align-items: center; gap: var(--s-2);
-  font-weight: 680; letter-spacing: -.02em;
+  display: inline-flex; align-items: baseline;
+  font-weight: 720; letter-spacing: -.03em; font-size: var(--t-md);
   color: var(--ink); text-decoration: none;
 }
 .brand:hover { text-decoration: none; }
-.brand-mark {
-  width: 22px; height: 22px; border-radius: 6px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-lo));
-  flex: none;
-}
+.brand-tail { color: var(--accent); }
 
  * The brand and the cross-link between surfaces look and behave the
  * same on the landing page and in the app; only the page's own actions
