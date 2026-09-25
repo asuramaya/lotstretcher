@@ -1,6 +1,6 @@
 [package]
 name = "lotstretcher-core"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "The one implementation of lotstretcher's image math, compiled to native (for the CLI and server) and to wasm32 (for the browser)."
 license = "MIT"

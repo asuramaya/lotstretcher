@@ -90,7 +90,8 @@ def main():
     ap.add_argument("--check", nargs="*", default=[], help="extra photos to print predictions for")
     ap.add_argument("--export-only", action="store_true", help="export models/scene_student.pt without training")
     args = ap.parse_args()
-    random.seed(7); torch.manual_seed(7)
+    random.seed(7)
+    torch.manual_seed(7)
     if args.export_only:
         model = mobilenet_v3_small(weights=None)
         model.classifier[3] = nn.Linear(model.classifier[3].in_features, len(CLASSES))
@@ -120,20 +121,29 @@ def main():
     dv = DataLoader(Photos(val, False), batch_size=args.batch, shuffle=False, num_workers=4)
 
     def evaluate():
-        model.eval(); conf = np.zeros((len(CLASSES), len(CLASSES)), dtype=int)
+        model.eval()
+        conf = np.zeros((len(CLASSES), len(CLASSES)), dtype=int)
         with torch.no_grad():
             for x, y in dv:
                 pred = model(x.to(dev)).argmax(1).cpu().numpy()
-                for t, p in zip(y.numpy(), pred): conf[t, p] += 1
+                for t, p in zip(y.numpy(), pred):
+                    conf[t, p] += 1
         acc = np.trace(conf) / max(1, conf.sum())
         return acc, conf
 
     for epoch in range(args.epochs):
-        model.train(); total = 0.0; n = 0
+        model.train()
+        total = 0.0
+        n = 0
         for x, y in dl:
             x, y = x.to(dev), y.to(dev)
-            opt.zero_grad(); loss = loss_fn(model(x), y); loss.backward(); opt.step(); sched.step()
-            total += loss.item() * len(y); n += len(y)
+            opt.zero_grad()
+            loss = loss_fn(model(x), y)
+            loss.backward()
+            opt.step()
+            sched.step()
+            total += loss.item() * len(y)
+            n += len(y)
         acc, conf = evaluate()
         print(f"epoch {epoch + 1}/{args.epochs}: loss {total / n:.3f}, held-out accuracy {acc:.3f}")
     print("held-out confusion (rows truth, cols predicted; order", CLASSES, "):")
@@ -161,7 +171,9 @@ def export(model, check):
         tf = T.Compose([T.Resize((224, 224)), T.ToTensor(), T.Normalize(MEAN, STD)])
         for f in check:
             x = tf(Image.open(f).convert("RGB")).numpy()[None]
-            z = sess.run(None, {"input": x})[0][0]; p = np.exp(z - z.max()); p /= p.sum()
+            z = sess.run(None, {"input": x})[0][0]
+            p = np.exp(z - z.max())
+            p /= p.sum()
             print(f"  {Path(f).name}: {CLASSES[int(p.argmax())]} {p.max():.2f}")
 
 

@@ -213,8 +213,8 @@ def test_window_detection_matches_the_reference():
 def test_collision_matches_the_reference():
     border = Image.open(BORDER).convert("RGBA")
     cut = synthetic_cutout(600, 300)
-    l, t, r, b = core.detect_window(border)
-    x, y = l + 20, t - 40   # start overlapping the header art
+    left, t, r, b = core.detect_window(border)
+    x, y = left + 20, t - 40   # start overlapping the header art
     assert core.resolve_collision(border, cut, x, y) == reference_resolve_collision(border, cut, x, y)
 
 
@@ -255,8 +255,8 @@ def test_the_format_decides_the_canvas_and_the_frame_is_fitted_to_it():
         fitted, window = core.fit_border(border, w, h, fit)
         assert fitted.size == (w, h)
         farr = np.asarray(fitted)
-        l, t, r, b = window
-        assert 0 <= l < r <= w and 0 <= t < b <= h, f"{fit}: window {window} is off the canvas"
+        left, t, r, b = window
+        assert 0 <= left < r <= w and 0 <= t < b <= h, f"{fit}: window {window} is off the canvas"
         # The frame's own opaque art shows through wherever the fitted
         # frame is opaque, whichever way it was fitted.
         opaque = farr[..., 3] == 255

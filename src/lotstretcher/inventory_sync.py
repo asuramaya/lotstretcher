@@ -395,10 +395,10 @@ def run_sync(config: dict, dry_run: bool = False, headed: bool = False,
         and e.get("folder") not in already_delisted
     ]
     if not listing_complete and not allow_mass_delist:
-        print(f"  !! Listing crawl was PARTIAL -- refusing to delist anything this cycle. "
-              f"A partial crawl can't tell 'no longer listed' apart from 'just wasn't on the "
-              f"pages we managed to fetch'. Re-run once the crawl completes cleanly, or pass "
-              f"--confirm-mass-delist if you understand the risk.")
+        print("  !! Listing crawl was PARTIAL -- refusing to delist anything this cycle. "
+              "A partial crawl can't tell 'no longer listed' apart from 'just wasn't on the "
+              "pages we managed to fetch'. Re-run once the crawl completes cleanly, or pass "
+              "--confirm-mass-delist if you understand the risk.")
         summary["delisted"] = 0
         summary["delist_skipped_reason"] = "partial_crawl"
         summary["duration_seconds"] = round(time.time() - start, 1)

@@ -92,7 +92,8 @@ def test_scrape_endpoint_returns_the_record(monkeypatch):
     class FakePW:
         def __enter__(self): return self
         def __exit__(self, *a): return False
-    import types, sys
+    import types
+    import sys
     fake_mod = types.ModuleType("playwright.sync_api")
     fake_mod.sync_playwright = lambda: FakePW()
     monkeypatch.setitem(sys.modules, "playwright.sync_api", fake_mod)

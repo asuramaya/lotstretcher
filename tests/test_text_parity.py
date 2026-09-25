@@ -102,9 +102,9 @@ def test_text_stays_inside_the_frames_window():
     changed = np.abs(np.asarray(plain, dtype=np.int16) - np.asarray(with_text, dtype=np.int16)).sum(axis=2) > 0
     assert changed.any(), "no text was painted"
     _, window = core.fit_border(border, w, h, "fit")
-    l, t, r, b = window
+    left, t, r, b = window
     ys, xs = np.where(changed)
-    assert ys.min() >= t and ys.max() < b and xs.min() >= l and xs.max() < r, \
+    assert ys.min() >= t and ys.max() < b and xs.min() >= left and xs.max() < r, \
         f"text spilled outside the window {window}: rows {ys.min()}-{ys.max()}, cols {xs.min()}-{xs.max()}"
 
 
@@ -486,7 +486,8 @@ def test_spotlight_strength_and_spread_are_levers():
     assert corner_lum(hard) < corner_lum(off) * 0.6
     # A tighter spread reaches the corner's dim sooner, so a point halfway
     # out is darker under it than under the default spread.
-    mid = lambda img: sum(img.convert("RGB").load()[80, 80][:3]) / 3
+    def mid(img):
+        return sum(img.convert("RGB").load()[80, 80][:3]) / 3
     assert mid(tight) < mid(hard)
     # The frame op takes the same levers.
     car = (cutout(), 50, 100, 300, 156, 1.0)
@@ -557,11 +558,11 @@ def test_on_a_wide_canvas_a_corner_stack_takes_a_column_not_a_band():
     from lotstretcher.imaging.text import text_window
     w, h = 1920, 1080
     plan = plan_overlays(w, h, VEHICLE, text_options({**CONTROLS, "textPosition": "bl"}))
-    l, t, r, b = text_window((0, 0, w, h), h, plan)
-    assert l > 0 and t == 0 and b == h and r == w
+    left, t, r, b = text_window((0, 0, w, h), h, plan)
+    assert left > 0 and t == 0 and b == h and r == w
     centred = plan_overlays(w, h, VEHICLE, text_options({**CONTROLS, "textPosition": "tc"}))
-    l, t, r, b = text_window((0, 0, w, h), h, centred)
-    assert l == 0 and t > 0
+    left, t, r, b = text_window((0, 0, w, h), h, centred)
+    assert left == 0 and t > 0
     square = plan_overlays(1080, 1080, VEHICLE, text_options({**CONTROLS, "textPosition": "bl"}))
-    l, t, r, b = text_window((0, 0, 1080, 1080), 1080, square)
-    assert l == 0 and b < 1080
+    left, t, r, b = text_window((0, 0, 1080, 1080), 1080, square)
+    assert left == 0 and b < 1080

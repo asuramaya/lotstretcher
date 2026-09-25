@@ -165,7 +165,8 @@ def frame_style(options: dict) -> dict | None:
     wanted = options.get("border") == "line" or options.get("frameStyle") == "line"
     if not wanted:
         return None
-    num = lambda key, default: float(options.get(key) if options.get(key) is not None else default)
+    def num(key, default):
+        return float(options.get(key) if options.get(key) is not None else default)
     return {"kind": "line", "color": options.get("frameColor") or "white",
             "weight": num("frameWeight", 0.008), "inset": num("frameInset", 0.035), "radius": num("frameRadius", 0.02)}
 

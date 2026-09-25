@@ -83,7 +83,8 @@ def test_js_reader_indexes_the_same_library(lib):
                          capture_output=True, text=True, check=True)
     js = json.loads(run.stdout)
     py = library.index(lib)
-    strip = lambda v: {k: v[k] for k in ("bucket", "folder", "card", "files", "images")}
+    def strip(v):
+        return {k: v[k] for k in ("bucket", "folder", "card", "files", "images")}
     assert sorted(map(strip, js["vehicles"]), key=lambda v: v["folder"]) == \
            sorted(map(strip, py["vehicles"]), key=lambda v: v["folder"])
     assert js["buckets"] == py["buckets"]
