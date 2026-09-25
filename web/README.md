@@ -182,6 +182,29 @@ rather than letting it look like the models are just slow.
 `public/_headers` covers production; `dev-server.py` mirrors it. Change
 one, change the other.
 
+## What a first run makes
+
+With nothing changed in the Studio a run makes what the landing shows:
+every exterior in all three shapes (`heroStillFormats.browserDefault`),
+titled with the vehicle and badged with its price when it has one, a
+ground shadow under it, and a portrait clip wherever the browser can
+encode one in hardware (`videoFormats.browserDefault`, WebCodecs).
+Results are grouped by shape.
+
+The first visit downloads the three models (56 MB) as soon as the app
+opens, with a bar in the top strip, and keeps them in the Cache API;
+later visits load them from the device in well under a second. Photos
+are decoded at most 2048 px on the long side
+(`cutout.maxSourceSideBrowser`). The prepare pass logs where its time
+went ("[lotstretcher] prepare timings") and keeps it on `state.timings`.
+
+Tried and measured, not shipped (2026-09-25): ORT's WebGPU build cannot
+run the u2net matte (MaxPool ceil mode) and gains about a millisecond on
+the classifiers for a 22 MB runtime (`bench/gpu`); ORT's proxy worker
+made a prepare slower; on 150 library photos against BiRefNet, u2netp
+(4.6 MB) had four failures where u2net has none, and ISNet at 1024 has
+half the edge error but runs four times slower.
+
 ## Deploying
 
 ```bash

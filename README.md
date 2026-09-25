@@ -496,10 +496,11 @@ a darker shadow.
 
 ### A ground shadow
 
-`--shadow` sets the vehicle down: a soft shadow read off the cutout's
-own silhouette, squashed flat about its lowest opaque row and blurred,
-so the car reads as standing on the backdrop rather than floating over
-it. `--shadow-strength` is its darkness, 0 to 1 (default 0.5). It is
+The shadow is on by default (`--no-shadow` turns it off): a soft shadow
+read off the cutout's own silhouette, squashed flat about its lowest
+opaque row and blurred, so the car reads as standing on the backdrop
+rather than floating over it. `--shadow-strength` is its darkness, 0 to
+1 (default 0.5). It is
 under every car on the stills and the clip, fades with a car
 mid-dissolve, and sits beneath the glow. In the app it is the Light
 group's "Ground shadow" toggle with its darkness slider; `recompose`
@@ -510,6 +511,20 @@ own contact line and faded out over the top of it, as a glossy studio
 floor gives; `--reflection-strength` is its opacity at the floor line
 (default 0.35). It sits under the shadow, so the two together read as
 one floor. The app's Light group has the same toggle and slider.
+
+### Clean edges, one scale, one floor
+
+Every cutout's edge is refined in the core (`refine_cutout`,
+core/src/matting.rs), on the CLI and in the browser alike: a guided
+filter with the photo as guide snaps the alpha to the vehicle's real
+outline, and the rim's colour is re-estimated as foreground alone, so a
+white showroom wall no longer leaves a pale halo on a dark backdrop. A
+car is never drawn taller than a 1.7:1 silhouette would be in the same
+box (`compose.heightCapAspect`), so a head-on shot stands no taller than
+a three-quarter one, and a centred car stands on that silhouette's floor
+line, so a set has its wheels at one height. A saturated orange, amber
+or yellow paint keeps its backdrop stop at a value where it still reads
+as the paint (`palette.warmValueMin`), not brown or olive.
 
 ### The spotlight
 
@@ -546,6 +561,9 @@ lotstretcher URL --title vehicle --price-badge --subtitle "Ask for Alex" \
     --text-position br --text-color white --text-size 0.05
 ```
 
+The title and the price badge are on by default, in the app and on the
+command line alike (`--title none`, `--no-price-badge` to leave them
+off; the badge is only drawn when there is a price).
 `--title vehicle` writes year make model trim from the listing;
 `--title custom` writes `--title-text`; with `--title vehicle`, `--title-text`
 replaces the record's words, so a long trim can be cut to "2024 Mustang GT"
@@ -591,6 +609,23 @@ behind the clip too, unless `--video-flag-background` asks for the
 flag video instead.
 
 ---
+
+### Reading the window sticker
+
+A Ford or Lincoln Monroney sticker is read in the core, on either host:
+the trim (from the year line with the model, body and drivetrain words
+taken out, or from the series: "BADLANDS - 4 PASSENGER", "XLT SERIES",
+the Super Duty's "LARIAT 176\" WB STYLESIDE"), body style, drivetrain,
+engine (a displacement line counts even without the word ENGINE) and
+transmission (from the options when the description block has none),
+colours, equipment and pricing. Every library sticker that names a trim
+agrees with its listing. The sticker's total is what the car cost new:
+in the app it only fills Price for a car marked New (or, with no
+condition stated, a sticker for this model year or later), and a used
+car's post shows it as "Original MSRP". Post copy expands the sticker's
+shorthand ("Lthr Gear Knob/Str Wheel" is "Leather Gear Knob/Steering
+Wheel"), lists the options first and keeps eight standard features a
+column.
 
 ## CLI Reference & Usage
 
