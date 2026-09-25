@@ -63,13 +63,14 @@ function modelUrl(rel) {
  * blocked; then the network (and the HTTP cache) is the fallback. */
 const MODEL_CACHE = `lotstretcher-models-${MODEL_VERSION}`;
 
-async function cachedModel(url, expectedBytes, onProgress) {
+async function cachedModel(url, expectedBytes, onProgress, { keep = true } = {}) {
   let cache = null;
   try {
     if (self.caches) {
       cache = await caches.open(MODEL_CACHE);
       const hit = await cache.match(url);
       if (hit) {
+        if (!keep) { onProgress?.(1); return null; }
         const buf = await hit.arrayBuffer();
         if (!expectedBytes || buf.byteLength === expectedBytes) { onProgress?.(1); return buf; }
         await cache.delete(url);
@@ -84,6 +85,8 @@ async function cachedModel(url, expectedBytes, onProgress) {
       for (const name of await caches.keys()) {
         if (name.startsWith('lotstretcher-models-') && name !== MODEL_CACHE) await caches.delete(name);
       }
+      // Stored: a prefetch need not hold 56MB in memory until it is used.
+      if (!keep) return null;
     } catch { /* storage full or blocked: the model still runs */ }
   }
   return buf;
@@ -124,6 +127,55 @@ async function fetchWithProgress(url, expectedBytes, onProgress) {
   return out.buffer;
 }
 
+/* One download per model, shared by a prefetch and a load: a model the
+ * app started fetching when it opened is not fetched again when the
+ * first photo lands, the load waits on the same request. */
+const downloads = new Map();
+const prefetched = new Map();
+const progressOf = new Map();
+const listeners = new Set();
+
+function emit() {
+  let got = 0; let total = 0;
+  for (const k of Object.keys(MODELS)) {
+    total += MODELS[k].bytes;
+    got += (progressOf.get(k) || 0) * MODELS[k].bytes;
+  }
+  for (const fn of listeners) fn(total ? got / total : 1);
+}
+
+function download(key, keep) {
+  if (!downloads.has(key)) {
+    const spec = MODELS[key];
+    const task = cachedModel(modelUrl(spec.url), spec.bytes, (f) => { progressOf.set(key, f); emit(); }, { keep })
+      .then((buf) => { if (buf) prefetched.set(key, buf); return buf; })
+      .finally(() => downloads.delete(key));
+    downloads.set(key, task);
+  }
+  return downloads.get(key);
+}
+
+/* Whether every model is already on this device (no download ahead). */
+export async function modelsCached() {
+  try {
+    if (!self.caches) return false;
+    const cache = await caches.open(MODEL_CACHE);
+    for (const k of Object.keys(MODELS)) {
+      if (!(await cache.match(modelUrl(MODELS[k].url)))) return false;
+    }
+    return true;
+  } catch { return false; }
+}
+
+/* Start fetching the models into the device's cache without building
+ * sessions (no inference memory is taken until a photo needs it).
+ * `onProgress(fraction)` follows the bytes across all three. */
+export function prefetchModels(onProgress) {
+  if (onProgress) listeners.add(onProgress);
+  const all = Promise.all(Object.keys(MODELS).map((k) => (sessions.has(k) ? null : download(k, !self.caches))));
+  return all.finally(() => { if (onProgress) listeners.delete(onProgress); });
+}
+
 /* Load a model by key. Concurrent callers share one fetch -- the
  * pipeline asks for `scene` on photo 1 and `matte` on photo 1 at nearly
  * the same moment, and downloading 44MB twice would be a real cost. */
@@ -136,7 +188,14 @@ export async function loadModel(key, onProgress) {
 
   const task = (async () => {
     await initRuntime();
-    const buf = await cachedModel(modelUrl(spec.url), spec.bytes, onProgress);
+    let buf = prefetched.get(key) || null;
+    prefetched.delete(key);
+    if (!buf) {
+      // A prefetch may be under way: wait for it, then read the stored copy.
+      if (downloads.has(key)) { if (onProgress) listeners.add(onProgress); await downloads.get(key).catch(() => null); listeners.delete(onProgress); }
+      buf = prefetched.get(key) || await cachedModel(modelUrl(spec.url), spec.bytes, onProgress);
+      prefetched.delete(key);
+    }
     const session = await ort.InferenceSession.create(buf, SESSION_OPTS);
     const entry = { session, spec, inputName: session.inputNames[0] };
     sessions.set(key, entry);

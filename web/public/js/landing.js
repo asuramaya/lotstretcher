@@ -40,3 +40,18 @@ if (compare && range) {
     }, { threshold: 0.6 }).observe(compare);
   }
 }
+
+/* Showing intent to open the app (a pointer over, a finger on, or focus
+ * on a link to it) starts the models downloading into this origin's
+ * cache, so the app is ready sooner. Never on a data saver, and once. */
+let warmed = false;
+function warm() {
+  if (warmed || navigator.connection?.saveData) return;
+  warmed = true;
+  import('./pipeline/runtime.js').then((m) => m.prefetchModels()).catch(() => {});
+}
+for (const a of document.querySelectorAll('a[href="app.html"]')) {
+  a.addEventListener('pointerenter', warm, { once: true });
+  a.addEventListener('touchstart', warm, { once: true, passive: true });
+  a.addEventListener('focus', warm, { once: true });
+}

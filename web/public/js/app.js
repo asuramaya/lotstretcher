@@ -13,7 +13,7 @@ import {
   initConfigFromSpec, LIMITS, IMAGE_EXTS,
   MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE, INTERIOR_LEAN, EXTERIOR_LEAN, FRAME_FILL_MIN_EDGES,
 } from './config.js';
-import { initRuntime, runtime, loadModel, totalBytes } from './pipeline/runtime.js';
+import { initRuntime, runtime, loadModel, totalBytes, prefetchModels, modelsCached } from './pipeline/runtime.js';
 import { classifyScene, classifyAngle, loadLabels } from './pipeline/classify.js';
 import { matte, applyMatte, gateCutout } from './pipeline/matte.js';
 import { composeHero } from './pipeline/compose.js';
@@ -924,6 +924,12 @@ function toggleFormat(kind, key) {
  * preload that starts when the booth is left, so the Look step shows
  * the real vehicle. Returns the exteriors. */
 async function sortAndCut(stages) {
+    /* Where the time goes, per step, summed over the photos: shown in
+     * the stage list and kept on state.timings for the bench page and
+     * automation. */
+    const T = state.timings = { models: 0, decode: 0, scene: 0, matte: 0, cut: 0, angle: 0, interior: 0, photos: 0, exteriors: 0 };
+    const clock = (key, t0) => { T[key] += performance.now() - t0; };
+    let t0 = performance.now();
     await initRuntime();
     $('isolationWarn').classList.toggle('hidden', runtime.isolated);
 
@@ -933,8 +939,9 @@ async function sortAndCut(stages) {
       loadModel('angle'),
       loadModel('matte'),
     ]);
+    clock('models', t0);
     stages[0].state = 'done';
-    stages[0].detail = 'cached for next time';
+    stages[0].detail = `${(T.models / 1000).toFixed(1)} s, kept on this device`;
     stages[1].state = 'active';
     renderStages(stages);
 
@@ -945,10 +952,14 @@ async function sortAndCut(stages) {
       p.status = 'working';
       renderPhotos();
       try {
+        t0 = performance.now();
         const bitmap = await decode(p.blob || p.url);
+        clock('decode', t0);
         p.bitmap = bitmap;
         if (p.userScene) { /* the person said what it is; the model does not argue */ } else {
+        t0 = performance.now();
         const scene = await classifyScene(bitmap);
+        clock('scene', t0);
         p.sceneConf = scene.confidence;
         // Too weak to route on. Keep the photo, do not act on the guess.
         p.scene = scene.confidence >= MIN_SCENE_CONFIDENCE ? scene.label : 'unsure';
@@ -977,7 +988,9 @@ async function sortAndCut(stages) {
       for (const p of state.photos) {
         if (p.scene !== 'interior' || p.status === 'failed') continue;
         try {
+          t0 = performance.now();
           p.interior = enhanceInterior(p.bitmap);
+          clock('interior', t0);
         } catch (e) {
           state.errors.push(`${p.name}: ${e.message || e}`);
         }
@@ -999,8 +1012,12 @@ async function sortAndCut(stages) {
       p.status = 'working';
       renderPhotos();
       try {
+        t0 = performance.now();
         const m = await matte(p.bitmap);
+        clock('matte', t0);
+        t0 = performance.now();
         const cut = applyMatte(p.bitmap, m);
+        clock('cut', t0);
         p.ambiguous = m.ambiguous;
         p.coverage = cut.coverage;
 
@@ -1029,7 +1046,9 @@ async function sortAndCut(stages) {
         } else {
           p.cutout = cut.canvas;
           const cutBitmap = await createImageBitmap(await canvasToBlob(cut.canvas));
+          t0 = performance.now();
           const angle = await classifyAngle(cutBitmap);
+          clock('angle', t0);
           /* Only assert an angle we actually believe. A wheel close-up
            * that slips past the scene classifier scores ~0.33 here, and
            * calling it "front_3q" anyway is precisely the kind of
@@ -1052,7 +1071,11 @@ async function sortAndCut(stages) {
       renderPhotos();
     }
     stages[2].state = 'done';
-    stages[2].detail = `${exteriors.filter((p) => p.cutout).length} cut out`;
+    T.photos = total;
+    T.exteriors = exteriors.length;
+    const each = (ms) => (ms / Math.max(1, exteriors.length) / 1000).toFixed(2);
+    stages[2].detail = `${exteriors.filter((p) => p.cutout).length} cut out · ${each(T.matte + T.cut)} s a photo`;
+    console.info('[lotstretcher] prepare timings (ms)', JSON.stringify(Object.fromEntries(Object.entries(T).map(([k, v]) => [k, Math.round(v)]))));
     stages[3].state = 'active';
     renderStages(stages);
 
@@ -1716,6 +1739,22 @@ function closeLightbox() {
   lightboxItems = [];
 }
 
+/* The first visit downloads the models (56MB) while the person is still
+ * picking photos, not after, and says so in the top bar; later visits
+ * find them on the device and say nothing. Skipped on a data saver:
+ * then they load when the first photo needs them. */
+async function warmModels() {
+  if (navigator.connection?.saveData) return;
+  if (await modelsCached()) return;
+  const label = `Getting ready, first visit only (${(totalBytes() / 1e6).toFixed(0)} MB)`;
+  const quiet = () => state.preparing || state.running;
+  if (!quiet()) topProgress(0, label);
+  try {
+    await prefetchModels((f) => { if (!quiet()) topProgress(f, label); });
+  } catch { /* the first photo will try again */ }
+  if (!quiet()) topProgress(null);
+}
+
 /* ---------- wiring --------------------------------------------------- */
 async function init() {
   // Chrome first: it must not depend on the spec loading, or a spec
@@ -1770,6 +1809,7 @@ async function init() {
     const chosenId = state.options[`${key}Id`];
     state.options[key] = list.find((c) => c.uploadId === chosenId) || legacy || null;
   }
+  warmModels();
   loadDealer();
   $('f-dealer').value = state.dealer.name || '';
   $('f-greeting').value = state.dealer.greeting || '';
