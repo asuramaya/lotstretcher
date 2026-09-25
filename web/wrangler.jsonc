@@ -7,6 +7,14 @@
   "name": "lotstretcher",
   "compatibility_date": "2026-09-22",
 
+  // The site's own name. Custom domains: Cloudflare writes the DNS
+  // records itself when it deploys, so nothing is set by hand.
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "lotstretcher.org", "custom_domain": true },
+    { "pattern": "www.lotstretcher.org", "custom_domain": true }
+  ],
+
   "assets": {
     "directory": "./public",
     // Unknown paths fall back to the landing page rather than a bare
