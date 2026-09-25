@@ -104,7 +104,15 @@ fn to_backdrop(rgb: [u8; 3]) -> (f64, f64, f64) {
     }
     let vmin = spec::f64_at(&["palette", "backdropValueMin"]);
     let vmax = spec::f64_at(&["palette", "backdropValueMax"]);
-    (h, s, vmin + v * (vmax - vmin))
+    let mut out_v = vmin + v * (vmax - vmin);
+    // Orange, amber and yellow darken into brown and olive.
+    let warm = spec::get(&["palette", "warmHueRange"]).as_array().map(|a| (a[0].as_f64().unwrap_or(0.0), a[1].as_f64().unwrap_or(0.0)));
+    if let Some((lo, hi)) = warm {
+        if s > neutral_ceiling && h >= lo && h <= hi {
+            out_v = out_v.max(spec::f64_at(&["palette", "warmValueMin"]));
+        }
+    }
+    (h, s, out_v)
 }
 
 /// (exterior_stop, interior_stop) as backdrop-safe RGB.

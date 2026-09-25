@@ -62,6 +62,11 @@ NEUTRAL_TINT_HUE = 0.60
 NEUTRAL_TINT_SATURATION = 0.30
 BACKDROP_SATURATION_RANGE = (0.28, 0.78)
 
+from lotstretcher import spec as _spec  # noqa: E402
+
+WARM_HUE_RANGE = tuple(_spec.get("palette", "warmHueRange", default=[0.02, 0.19]))
+WARM_VALUE_MIN = float(_spec.get("palette", "warmValueMin", default=0.6))
+
 
 def parse_hex(text: str) -> tuple[int, int, int] | None:
     """"#rrggbb" (or "#rgb") as RGB; None for anything else. Mirrors
@@ -128,6 +133,9 @@ def _to_backdrop(rgb: tuple[int, int, int]) -> tuple[float, float, float]:
         lo, hi = BACKDROP_SATURATION_RANGE
         s = min(max(s, lo), hi)
     v = BACKDROP_VALUE_MIN + v * (BACKDROP_VALUE_MAX - BACKDROP_VALUE_MIN)
+    # Orange, amber and yellow darken into brown and olive (spec palette.warmHueRange).
+    if s > NEUTRAL_SATURATION_CEILING and WARM_HUE_RANGE[0] <= h <= WARM_HUE_RANGE[1]:
+        v = max(v, WARM_VALUE_MIN)
     return h, s, v
 
 

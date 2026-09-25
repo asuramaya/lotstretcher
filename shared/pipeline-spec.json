@@ -337,6 +337,12 @@
       0.28,
       0.78
     ],
+    "warmHueRange": [
+      0.02,
+      0.19
+    ],
+    "warmValueMin": 0.6,
+    "$warmComment": "Orange, amber and yellow darken into brown and olive: a saturated paint in warmHueRange keeps its backdrop stop at or above warmValueMin, so it reads as the paint lit low, not mud.",
     "colorWords": {
       "black": [
         26,

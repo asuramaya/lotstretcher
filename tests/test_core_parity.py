@@ -50,7 +50,8 @@ def mean_abs_diff(a: Image.Image, b: Image.Image) -> float:
 def test_gradient_colors_match_the_palette_module():
     from lotstretcher.imaging.palette import vehicle_gradient_colors
     for ext, inr in [("Agate Black", "Ebony"), ("Antimatter Blue", "Black Onyx"), ("Avalanche", None),
-                     ("Rapid Red Metallic", "Medium Dark Slate"), (None, None)]:
+                     ("Rapid Red Metallic", "Medium Dark Slate"), (None, None),
+                     ("Cyber Orange Metallic Tri-Coat", "Black"), ("Yellow", "Ebony"), ("Gold", None)]:
         assert core.vehicle_gradient_colors(ext, inr) == vehicle_gradient_colors(ext, inr), (ext, inr)
 
 
