@@ -11,7 +11,7 @@
 
 import {
   initConfigFromSpec, LIMITS, IMAGE_EXTS,
-  MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE, INTERIOR_LEAN,
+  MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE, INTERIOR_LEAN, EXTERIOR_LEAN, FRAME_FILL_MIN_EDGES,
 } from './config.js';
 import { initRuntime, runtime, loadModel, totalBytes } from './pipeline/runtime.js';
 import { classifyScene, classifyAngle, loadLabels } from './pipeline/classify.js';
@@ -954,6 +954,10 @@ async function sortAndCut(stages) {
         p.scene = scene.confidence >= MIN_SCENE_CONFIDENCE ? scene.label : 'unsure';
         // A wide cabin shot can land in 'detail' by a hair (spec confidence.interiorLean).
         if (p.scene === 'detail' && (scene.scores.interior || 0) >= INTERIOR_LEAN) { p.scene = 'interior'; p.sceneConf = scene.scores.interior; }
+        // A whole car can land there too (a straight-on rear with the
+        // spare): tried as an exterior, kept only if its cutout clears
+        // the frame (spec confidence.exteriorLean).
+        else if (p.scene === 'detail' && (scene.scores.exterior || 0) >= EXTERIOR_LEAN) { p.scene = 'exterior'; p.onTrial = true; }
         }
       } catch (e) {
         p.status = 'failed';
@@ -999,6 +1003,21 @@ async function sortAndCut(stages) {
         const cut = applyMatte(p.bitmap, m);
         p.ambiguous = m.ambiguous;
         p.coverage = cut.coverage;
+
+        if (p.onTrial) {
+          // A close-up touches the frame's edges; a whole car stands clear.
+          const b = cut.bbox;
+          const W = p.bitmap.width, H = p.bitmap.height;
+          const edges = b ? [b.x / W, b.y / H, (W - b.x - b.w) / W, (H - b.y - b.h) / H].filter((m) => m < 0.03).length : 4;
+          p.onTrial = false;
+          if (edges >= FRAME_FILL_MIN_EDGES) {
+            p.scene = 'detail';
+            p.status = 'sorted';
+            setProgress(0.35 + 0.45 * ((i + 1) / Math.max(1, exteriors.length)));
+            renderPhotos();
+            continue;
+          }
+        }
 
         // Gate BEFORE composing. A confidently-wrong cutout does not look
         // like a failure, it looks like a post.

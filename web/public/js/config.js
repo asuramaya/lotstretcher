@@ -79,6 +79,8 @@ export let MIN_ANGLE_CONFIDENCE = 0;
  * kept but not composed. */
 export let MIN_SCENE_CONFIDENCE = 0;
 export let INTERIOR_LEAN = 1;
+export let EXTERIOR_LEAN = 1;
+export let FRAME_FILL_MIN_EDGES = 2;
 
 export const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'bmp', 'tiff', 'avif'];
 
@@ -102,4 +104,6 @@ export function initConfigFromSpec(get) {
   MIN_ANGLE_CONFIDENCE = get('confidence', 'minAngle');
   MIN_SCENE_CONFIDENCE = get('confidence', 'minScene');
   INTERIOR_LEAN = get('confidence', 'interiorLean');
+  EXTERIOR_LEAN = get('confidence', 'exteriorLean');
+  FRAME_FILL_MIN_EDGES = get('cutout', 'frameFillMinEdges');
 }

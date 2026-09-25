@@ -245,11 +245,17 @@
       "interior close-ups under exterior/ without a cutout, so they trained as 'detail'), and a wide cabin",
       "shot can land there at low margin; when 'detail' wins but interior scores at least this much, the",
       "photo is treated as interior, since a shipped-and-lifted cabin shot beats a dropped one (F-150 check:",
-      "the two cabin shots called detail had interior at 0.49 and 0.37; the banner had 0.24)."
+      "the two cabin shots called detail had interior at 0.49 and 0.37; the banner had 0.24).",
+      "exteriorLean: the same class also swallows some whole-car shots, most often a straight-on rear",
+      "with a spare wheel (Bronco check: the rear scored detail 0.88, exterior 0.11; the real close-ups, a mirror,",
+      "the 4x4 dial and a tyre, scored exterior 0.013, 0.001 and 0.010). When 'detail' wins but exterior scores at",
+      "least this much, the photo is cut out on trial and kept as an exterior only if the cutout clears the frame",
+      "(fewer than cutout.frameFillMinEdges edges touched), which is what a close-up never does."
     ],
     "minAngle": 0.45,
     "minScene": 0.4,
-    "interiorLean": 0.35
+    "interiorLean": 0.35,
+    "exteriorLean": 0.08
   },
   "glow": {
     "$comment": "compose/effects.py::GLOW_COLORS",
