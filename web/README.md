@@ -185,14 +185,24 @@ one, change the other.
 ## Deploying
 
 ```bash
-npx wrangler deploy
+cd web && wrangler deploy      # https://lotstretcher.asuramaya-hq.workers.dev
 ```
 
-Static assets on Cloudflare Workers. In production the 44.2 MB matting
-model moves to R2 (set `MODEL_ORIGIN` in `js/config.js`): Cloudflare caps
-static assets at **25 MiB per file on free and paid plans alike**, so this
-is not a billing question. R2 has zero egress cost, which keeps hosting at
-$0.
+Static assets on Cloudflare Workers, no Worker script (`wrangler.jsonc`).
+The three ONNX models are served from the `lotstretcher-models` R2 bucket
+under `models/` (public dev URL in `MODEL_ORIGIN`, `js/config.js`, with a
+CORS rule allowing GET from any origin so the cross-origin-isolated page
+can fetch them): Cloudflare caps static assets at **25 MiB per file on
+free and paid plans alike**, and the matting model is 44.2 MB. R2 has
+zero egress cost, which keeps hosting at $0. `public/.assetsignore` keeps
+that model and the tooling out of the upload. A new model goes up with
+
+```bash
+wrangler r2 object put lotstretcher-models/models/NAME.onnx --file public/models/NAME.onnx --remote
+```
+
+The CSP in `public/_headers` allows `blob:` media (the clip plays from
+memory) and `self` fonts (the studio fonts double as page fonts).
 
 ## Testing the pipeline
 
