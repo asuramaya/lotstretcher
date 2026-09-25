@@ -185,20 +185,28 @@ one, change the other.
 ## Deploying
 
 ```bash
-cd web && wrangler deploy      # https://lotstretcher.asuramaya-hq.workers.dev
+cd web && wrangler deploy      # https://lotstretcher.org (and www, and the workers.dev name)
 ```
 
-Static assets on Cloudflare Workers, no Worker script (`wrangler.jsonc`).
-The three ONNX models are served from the `lotstretcher-models` R2 bucket
-under `models/` (public dev URL in `MODEL_ORIGIN`, `js/config.js`, with a
-CORS rule allowing GET from any origin so the cross-origin-isolated page
-can fetch them): Cloudflare caps static assets at **25 MiB per file on
-free and paid plans alike**, and the matting model is 44.2 MB. R2 has
-zero egress cost, which keeps hosting at $0. `public/.assetsignore` keeps
-that model and the tooling out of the upload. A new model goes up with
+Static assets on Cloudflare Workers, no Worker script (`wrangler.jsonc`),
+on the custom domains in its `routes`. The three ONNX models are served
+from the `lotstretcher-models` R2 bucket through its custom domain,
+`https://models.lotstretcher.org/models/v1/NAME.onnx` (`MODEL_ORIGIN` and
+`MODEL_VERSION` in `js/config.js`), which Cloudflare caches; the bucket's
+CORS rule allows GET from any origin so the cross-origin-isolated page can
+fetch them. Cloudflare caps static assets at **25 MiB per file on free
+and paid plans alike**, and the matting model is 44.2 MB. R2 has zero
+egress cost, which keeps hosting at $0. `public/.assetsignore` keeps that
+model and the tooling out of the upload. The app keeps the models in the
+Cache API after the first download (cache `lotstretcher-models-v1`).
+
+A model is never overwritten: a changed one goes up under the next
+version, with a year-long immutable cache header, and `MODEL_VERSION`
+moves with it (the app drops the old version's cache):
 
 ```bash
-wrangler r2 object put lotstretcher-models/models/NAME.onnx --file public/models/NAME.onnx --remote
+wrangler r2 object put lotstretcher-models/models/v2/NAME.onnx --file public/models/NAME.onnx \
+  --content-type application/octet-stream --cache-control "public, max-age=31536000, immutable" --remote
 ```
 
 The CSP in `public/_headers` allows `blob:` media (the clip plays from

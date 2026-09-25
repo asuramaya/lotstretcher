@@ -26,12 +26,16 @@ export const MODELS = {
   matte: { url: 'models/matte.onnx', bytes: 44212443, size: 256 },
 };
 
-/* Where the big matting model comes from in production. Cloudflare caps
- * static assets at 25MiB per file on free AND paid plans, so 44.2MB
- * cannot be an asset regardless of billing -- it lives in R2, which has
- * zero egress cost. Same reason handlingtheloop keeps its stem weights
- * on HuggingFace. Empty string = serve from the same origin (dev). */
-export const MODEL_ORIGIN = 'https://pub-23689ab3309342fdbbbc4d7644517eb3.r2.dev/';
+/* Where the models come from in production. Cloudflare caps static
+ * assets at 25MiB per file on free AND paid plans, so the 44.2MB matte
+ * cannot be an asset regardless of billing -- the three models live in
+ * R2 (zero egress) behind the bucket's custom domain, which Cloudflare
+ * caches (the r2.dev address is rate-limited and not for production).
+ * Objects sit under models/<MODEL_VERSION>/ with a year-long immutable
+ * Cache-Control: a new model is a new version, never an overwrite.
+ * Empty origin = serve from the same origin (dev). */
+export const MODEL_ORIGIN = 'https://models.lotstretcher.org/';
+export const MODEL_VERSION = 'v1';
 
 export const ORT_PATH = 'ort/';
 

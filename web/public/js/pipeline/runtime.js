@@ -12,7 +12,7 @@
  *    We detect it and report it rather than letting it look like the
  *    models are just slow. */
 
-import { MODELS, MODEL_ORIGIN, ORT_PATH, MAX_THREADS } from '../config.js';
+import { MODELS, MODEL_ORIGIN, MODEL_VERSION, ORT_PATH, MAX_THREADS } from '../config.js';
 
 let ort = null;
 const sessions = new Map();
@@ -50,7 +50,43 @@ const SESSION_OPTS = {
 };
 
 function modelUrl(rel) {
-  return MODEL_ORIGIN ? new URL(rel, MODEL_ORIGIN).href : rel;
+  if (!MODEL_ORIGIN) return rel;
+  return new URL(rel.replace(/^models\//, `models/${MODEL_VERSION}/`), MODEL_ORIGIN).href;
+}
+
+/* The models are kept in the Cache API after the first download, so a
+ * second visit (or an offline one) starts in a moment instead of pulling
+ * 56MB again. They are the app's own files, not anything of the user's.
+ * The cache name carries the version: a new model version starts a new
+ * cache and the old one is dropped. Every access is guarded, because the
+ * Cache API is missing on insecure origins and can throw when storage is
+ * blocked; then the network (and the HTTP cache) is the fallback. */
+const MODEL_CACHE = `lotstretcher-models-${MODEL_VERSION}`;
+
+async function cachedModel(url, expectedBytes, onProgress) {
+  let cache = null;
+  try {
+    if (self.caches) {
+      cache = await caches.open(MODEL_CACHE);
+      const hit = await cache.match(url);
+      if (hit) {
+        const buf = await hit.arrayBuffer();
+        if (!expectedBytes || buf.byteLength === expectedBytes) { onProgress?.(1); return buf; }
+        await cache.delete(url);
+      }
+    }
+  } catch { cache = null; }
+  const buf = await fetchWithProgress(url, expectedBytes, onProgress);
+  if (cache) {
+    try {
+      await cache.put(url, new Response(buf.slice(0), { headers: { 'Content-Type': 'application/octet-stream' } }));
+      // Older versions' caches are dead weight on a phone.
+      for (const name of await caches.keys()) {
+        if (name.startsWith('lotstretcher-models-') && name !== MODEL_CACHE) await caches.delete(name);
+      }
+    } catch { /* storage full or blocked: the model still runs */ }
+  }
+  return buf;
 }
 
 /* Fetch with byte-accurate progress.
@@ -100,7 +136,7 @@ export async function loadModel(key, onProgress) {
 
   const task = (async () => {
     await initRuntime();
-    const buf = await fetchWithProgress(modelUrl(spec.url), spec.bytes, onProgress);
+    const buf = await cachedModel(modelUrl(spec.url), spec.bytes, onProgress);
     const session = await ort.InferenceSession.create(buf, SESSION_OPTS);
     const entry = { session, spec, inputName: session.inputNames[0] };
     sessions.set(key, entry);
