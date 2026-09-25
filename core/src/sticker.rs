@@ -108,6 +108,28 @@ fn is_upper(s: &str) -> bool {
 
 fn upper(s: &str) -> String { s.to_uppercase() }
 
+/// A word like "5.0L" or "2.3L": an engine line even without the word
+/// ENGINE ("5.0L TI-VCT V8: GT 480HP").
+fn has_displacement(up: &str) -> bool {
+    up.split(|c: char| c.is_whitespace() || c == ':' || c == ',').any(|w| {
+        let b = w.as_bytes();
+        b.len() == 4 && b[0].is_ascii_digit() && b[1] == b'.' && b[2].is_ascii_digit() && b[3] == b'L'
+    })
+}
+
+/// "10-Speed Automatic Trans 1,595.00" among the options, when the
+/// description block names no transmission: the line, price dropped.
+fn transmission_from(lines: &[String]) -> Option<String> {
+    for l in lines {
+        let up = upper(l);
+        if up.contains("-SPEED") && (up.contains("AUTO") || up.contains("MANUAL") || up.contains("TRANS")) {
+            let words: Vec<&str> = l.split_whitespace().filter(|w| !w.chars().all(|c| c.is_ascii_digit() || c == ',' || c == '.')).collect();
+            return Some(words.join(" "));
+        }
+    }
+    None
+}
+
 fn is_word_char(ch: char) -> bool { ch.is_alphanumeric() || ch == '_' }
 
 /// `\bWORD\b` anywhere in `hay`.
@@ -231,7 +253,7 @@ fn parse_overview(words: &[&Word], rows: &[Vec<&Word>], y_tol: f64) -> Overview 
             o.trim_drivetrain = Some(py_title(&text));
         } else if up.contains("PASSENGER") {
             o.seating_capacity = Some(py_title(&text));
-        } else if up.contains("ENGINE") || has_word(&up, "ECOBOOST") {
+        } else if up.contains("ENGINE") || has_word(&up, "ECOBOOST") || has_displacement(&up) {
             o.engine = Some(py_title(&text));
         } else if up.contains("TRANSMISSION") || has_word(&up, "AUTO") || has_word(&up, "MANUAL") {
             o.transmission = Some(py_title(&text));
@@ -567,10 +589,17 @@ pub fn parse_sticker(req: &StickerRequest) -> Sticker {
     for (key, lines) in grid {
         equipment.insert(key, serde_json::Value::Array(lines.into_iter().map(serde_json::Value::String).collect()));
     }
+    let optional_equipment = parse_optional_equipment(&words, &rows, y_tol);
+    let mut overview = overview;
+    if overview.transmission.is_none() {
+        let mut all: Vec<String> = optional_equipment.clone();
+        for v in equipment.values() { if let Some(a) = v.as_array() { all.extend(a.iter().filter_map(|x| x.as_str().map(String::from))); } }
+        overview.transmission = transmission_from(&all);
+    }
     Sticker {
         overview,
         equipment,
-        optional_equipment: parse_optional_equipment(&words, &rows, y_tol),
+        optional_equipment,
         warranties: warranty_raw.iter().filter(|w| !w.trim().is_empty()).map(|w| format_warranty(w)).collect(),
         pricing: parse_pricing(&rows),
         placeholder,

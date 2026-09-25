@@ -120,4 +120,4 @@ pub unsafe extern "C" fn ls_detect_window(border: *const u8, width: usize, heigh
 }
 
 #[no_mangle]
-pub extern "C" fn ls_version() -> u32 { 30 }
+pub extern "C" fn ls_version() -> u32 { 33 }

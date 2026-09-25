@@ -109,6 +109,7 @@ pub fn plan(req: &PlanRequest, arena: &[u8]) -> Result<Plan, String> {
     let accent_margin = spec::f64_at(&["video", "accentMarginFrac"]);
     let min_overflow = spec::f64_at(&["video", "minPanOverflowFrac"]);
     let pan_bars = spec::f64_at(&["video", "panBars"]) as u32;
+    let pan_height = spec::get(&["video", "panHeightFrac"]).as_f64().unwrap_or(0.84);
 
     let mut shots = Vec::with_capacity(req.shots.len());
     for s in &req.shots {
@@ -121,7 +122,10 @@ pub fn plan(req: &PlanRequest, arena: &[u8]) -> Result<Plan, String> {
         let avail_w = (br - bl) as f64 * (1.0 - 2.0 * hero_margin);
         let avail_h = (bb - bt) as f64 * (1.0 - 2.0 * hero_margin);
         let width_constrained = (avail_w / car.width as f64) < (avail_h / car.height as f64);
-        let fill_scale = avail_h / car.height as f64;
+        // A pan fills the height it is given, not the box's whole height:
+        // the push-in and the frame's top need room above the roof.
+        let pan_h = avail_h.min((bb - bt) as f64 * pan_height);
+        let fill_scale = pan_h / car.height as f64;
         let filled_w = car.width as f64 * fill_scale;
         let overflow = filled_w / avail_w - 1.0;
         let is_pan = s.pannable && width_constrained && overflow >= min_overflow;
@@ -130,11 +134,11 @@ pub fn plan(req: &PlanRequest, arena: &[u8]) -> Result<Plan, String> {
         if is_pan {
             let win_w = (br - bl) as f64;
             let x0 = bl as f64;
-            let y0 = if hero_anchor == Anchor::Bottom { bb as f64 - (bb - bt) as f64 * hero_margin - avail_h }
-                     else { bt as f64 + ((bb - bt) as f64 - avail_h) / 2.0 };
-            hero_rect = [x0, y0, win_w, avail_h];
-            pan_draw_w = filled_w; pan_draw_h = avail_h;
-            let big = resize_lanczos(&car, (filled_w.round() as usize).max(1), (avail_h.round() as usize).max(1));
+            let y0 = if hero_anchor == Anchor::Bottom { bb as f64 - (bb - bt) as f64 * hero_margin - pan_h }
+                     else { bt as f64 + ((bb - bt) as f64 - pan_h) / 2.0 };
+            hero_rect = [x0, y0, win_w, pan_h];
+            pan_draw_w = filled_w; pan_draw_h = pan_h;
+            let big = resize_lanczos(&car, (filled_w.round() as usize).max(1), (pan_h.round() as usize).max(1));
             content = crop(&big, 0, 0, (win_w.round() as usize).max(1).min(big.width), big.height);
             let xc = x0 + win_w / 2.0;
             if s.hood_side.as_deref() == Some("right") { pan_x_start = xc - filled_w; pan_x_end = xc; }

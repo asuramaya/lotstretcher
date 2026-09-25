@@ -187,3 +187,17 @@ figure.pic, .vars figure, .shapes figure, .duo figure { margin: 0; }
 footer { padding: var(--s-6) 0 calc(var(--s-7) + var(--safe-b)); border-top: 1px solid var(--line); color: var(--ink-3); }
 footer a { color: var(--ink-2); }
 
+
+/* The clips play, muted, looping, only while on screen (landing.js). */
+.clips video { width: 100%; height: auto; display: block; background: #0b0c0e; }
+@media (min-width: 720px) { .clips video { height: 100%; object-fit: cover; } }
+
+/* The sticker beside what was read off it. */
+.read { display: grid; gap: var(--s-5); align-items: center; margin-top: clamp(var(--s-5), 4vw, var(--s-7)); }
+@media (min-width: 820px) { .read { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); max-width: 980px; margin-inline: auto; } }
+.read .shot { max-width: 460px; margin-inline: auto; width: 100%; }
+.read-card { margin: 0; display: grid; gap: 0; border: 1px solid var(--line); border-radius: var(--r-xl); background: var(--surface); padding: var(--s-5); box-shadow: var(--sh-2); }
+.read-title { font-size: var(--t-lg, 20px); font-weight: 700; letter-spacing: -0.01em; margin-bottom: var(--s-3); }
+.read-card > div:not(.read-title) { display: grid; grid-template-columns: 9.5em 1fr; gap: var(--s-3); padding: var(--s-2) 0; border-top: 1px solid var(--line); }
+.read-card dt { color: var(--ink-3); font-size: var(--t-sm); }
+.read-card dd { margin: 0; font-weight: 600; }

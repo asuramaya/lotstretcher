@@ -24,8 +24,8 @@
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="preload" as="image" href="demo/after.jpg">
-<link rel="preload" as="image" href="demo/before.jpg">
+<link rel="preload" as="image" href="demo/after.webp" imagesrcset="demo/after-sm.webp 450w, demo/after.webp 900w" imagesizes="(min-width: 860px) 440px, 100vw">
+<link rel="preload" as="image" href="demo/before.webp" imagesrcset="demo/before-sm.webp 450w, demo/before.webp 900w" imagesizes="(min-width: 860px) 440px, 100vw">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/landing.css">
@@ -57,12 +57,12 @@
 
     <!-- The product, doing the thing. Drag to compare. -->
     <figure class="compare" id="compare">
-      <img class="cmp-after" src="demo/after.jpg" alt="The same car composed on a backdrop from its paint, titled and priced" width="900" height="900">
+      <img class="cmp-after" src="demo/after.webp" srcset="demo/after-sm.webp 450w, demo/after.webp 900w" sizes="(min-width: 860px) 440px, 100vw" alt="The same photo, the car cut out on a backdrop from its paint, lit, titled and priced" width="900" height="900">
       <div class="cmp-clip" id="cmpClip">
-        <img class="cmp-before" src="demo/before.jpg" alt="A car photographed on the lot" width="900" height="900">
+        <img class="cmp-before" src="demo/before.webp" srcset="demo/before-sm.webp 450w, demo/before.webp 900w" sizes="(min-width: 860px) 440px, 100vw" alt="The dealer's photo as it was taken" width="900" height="900">
       </div>
-      <span class="cmp-tag cmp-tag-l">Lot photo</span>
-      <span class="cmp-tag cmp-tag-r">lotstretcher</span>
+      <span class="cmp-tag cmp-tag-l">Before</span>
+      <span class="cmp-tag cmp-tag-r">After</span>
       <input type="range" id="cmpRange" min="0" max="100" value="50"
              aria-label="Compare before and after">
       <span class="cmp-handle" id="cmpHandle" aria-hidden="true">
@@ -80,14 +80,14 @@
   <div class="shell">
     <h2 class="center-h">One car. Any look.</h2>
     <div class="vars">
-      <figure><img src="demo/var-paint.jpg" alt="" width="720" height="720" loading="lazy"><figcaption>Its own paint</figcaption></figure>
-      <figure><img src="demo/var-showroom.jpg" alt="" width="720" height="720" loading="lazy"><figcaption>Showroom</figcaption></figure>
-      <figure><img src="demo/var-radial.jpg" alt="" width="720" height="720" loading="lazy"><figcaption>Halo</figcaption></figure>
-      <figure><img src="demo/var-horizon.jpg" alt="" width="720" height="720" loading="lazy"><figcaption>Horizon, framed</figcaption></figure>
-      <figure><img src="demo/var-flag.jpg" alt="" width="720" height="720" loading="lazy"><figcaption>Flag</figcaption></figure>
-      <figure><img src="demo/var-showroom-img.jpg" alt="" width="720" height="720" loading="lazy"><figcaption>Stock showroom</figcaption></figure>
-      <figure><img src="demo/var-two-tone.jpg" alt="" width="720" height="720" loading="lazy"><figcaption>Two tones</figcaption></figure>
-      <figure><img src="demo/var-paint-boxed.jpg" alt="" width="720" height="720" loading="lazy"><figcaption>Paint glow</figcaption></figure>
+      <figure><img src="demo/var-paint.webp" srcset="demo/var-paint-sm.webp 360w, demo/var-paint.webp 720w" sizes="(min-width: 720px) 25vw, 50vw" alt="" width="720" height="720" loading="lazy"><figcaption>Its own paint</figcaption></figure>
+      <figure><img src="demo/var-showroom.webp" srcset="demo/var-showroom-sm.webp 360w, demo/var-showroom.webp 720w" sizes="(min-width: 720px) 25vw, 50vw" alt="" width="720" height="720" loading="lazy"><figcaption>Showroom</figcaption></figure>
+      <figure><img src="demo/var-halo.webp" srcset="demo/var-halo-sm.webp 360w, demo/var-halo.webp 720w" sizes="(min-width: 720px) 25vw, 50vw" alt="" width="720" height="720" loading="lazy"><figcaption>Halo</figcaption></figure>
+      <figure><img src="demo/var-light.webp" srcset="demo/var-light-sm.webp 360w, demo/var-light.webp 720w" sizes="(min-width: 720px) 25vw, 50vw" alt="" width="720" height="720" loading="lazy"><figcaption>Light studio</figcaption></figure>
+      <figure><img src="demo/var-flag.webp" srcset="demo/var-flag-sm.webp 360w, demo/var-flag.webp 720w" sizes="(min-width: 720px) 25vw, 50vw" alt="" width="720" height="720" loading="lazy"><figcaption>Flag</figcaption></figure>
+      <figure><img src="demo/var-stock.webp" srcset="demo/var-stock-sm.webp 360w, demo/var-stock.webp 720w" sizes="(min-width: 720px) 25vw, 50vw" alt="" width="720" height="720" loading="lazy"><figcaption>Stock showroom</figcaption></figure>
+      <figure><img src="demo/var-two-tone.webp" srcset="demo/var-two-tone-sm.webp 360w, demo/var-two-tone.webp 720w" sizes="(min-width: 720px) 25vw, 50vw" alt="" width="720" height="720" loading="lazy"><figcaption>Two tones</figcaption></figure>
+      <figure><img src="demo/var-glow.webp" srcset="demo/var-glow-sm.webp 360w, demo/var-glow.webp 720w" sizes="(min-width: 720px) 25vw, 50vw" alt="" width="720" height="720" loading="lazy"><figcaption>Framed, with glow</figcaption></figure>
     </div>
     <p class="center-h xs dim sub">Backdrop, frame, text, light. Each a lever, every one live.</p>
   </div>
@@ -98,9 +98,9 @@
   <div class="shell">
     <h2 class="center-h">Every shape you post.</h2>
     <div class="shapes">
-      <figure class="sq"><img src="demo/shape-square.jpg" alt="" width="900" height="900" loading="lazy"><figcaption>Square</figcaption></figure>
-      <figure class="pt"><img src="demo/shape-portrait.jpg" alt="" width="506" height="900" loading="lazy"><figcaption>Portrait</figcaption></figure>
-      <figure class="hz"><img src="demo/shape-horizontal.jpg" alt="" width="900" height="506" loading="lazy"><figcaption>Horizontal</figcaption></figure>
+      <figure class="sq"><img src="demo/shape-square.webp" srcset="demo/shape-square-sm.webp 450w, demo/shape-square.webp 900w" sizes="(min-width: 860px) 40vw, 90vw" alt="" width="900" height="900" loading="lazy"><figcaption>Square</figcaption></figure>
+      <figure class="pt"><img src="demo/shape-portrait.webp" srcset="demo/shape-portrait-sm.webp 253w, demo/shape-portrait.webp 506w" sizes="(min-width: 860px) 40vw, 90vw" alt="" width="506" height="900" loading="lazy"><figcaption>Portrait</figcaption></figure>
+      <figure class="hz"><img src="demo/shape-horizontal.webp" srcset="demo/shape-horizontal-sm.webp 450w, demo/shape-horizontal.webp 900w" sizes="(min-width: 860px) 55vw, 100vw" alt="" width="900" height="506" loading="lazy"><figcaption>Horizontal</figcaption></figure>
     </div>
   </div>
 </section>
@@ -110,10 +110,10 @@
   <div class="shell">
     <h2 class="center-h">And the clip.</h2>
     <div class="clips">
-      <figure class="shot"><img src="demo/clip-horizontal.jpg" alt="A frame of the horizontal clip: the truck wide across the middle, the shot before and after it at the corners" width="900" height="507" loading="lazy"></figure>
-      <figure class="shot"><img src="demo/clip-portrait.jpg" alt="A frame of the portrait clip: the truck between the shot before and the shot after" width="506" height="900" loading="lazy"></figure>
+      <figure class="shot"><video class="loop" muted loop playsinline preload="none" poster="demo/clip-horizontal.webp" width="960" height="540" aria-label="The horizontal clip: the truck's shots roll through a showroom lineup"><source src="demo/clip-horizontal.mp4" type="video/mp4"></video></figure>
+      <figure class="shot"><video class="loop" muted loop playsinline preload="none" poster="demo/clip-portrait.webp" width="540" height="960" aria-label="The portrait clip: the truck's shots roll through, stacked"><source src="demo/clip-portrait.mp4" type="video/mp4"></video></figure>
     </div>
-    <p class="center-h xs dim sub">Same backdrop and frame as the stills. Every shot rolls through.</p>
+    
   </div>
 </section>
 
@@ -133,10 +133,19 @@
 <section class="block alt">
   <div class="shell">
     <h2 class="center-h">Reads the window sticker.</h2>
-    <figure class="shot paper paper-center">
-      <img src="demo/sticker.jpg" alt="A parsed window sticker" width="800" height="939" loading="lazy">
-    </figure>
-    <p class="center-h xs dim sub">Trim, engine, colours, options. Off the PDF, on your device.</p>
+    <div class="read">
+      <figure class="shot paper"><img src="demo/sticker.webp" alt="The Mustang's window sticker" width="720" height="843" loading="lazy"></figure>
+      <dl class="read-card" aria-label="What the app read off it">
+        <div class="read-title">2024 Ford Mustang GT Premium</div>
+        <div><dt>Body</dt><dd>Coupe</dd></div>
+        <div><dt>Engine</dt><dd>5.0L Ti-VCT V8</dd></div>
+        <div><dt>Transmission</dt><dd>10-Speed Automatic</dd></div>
+        <div><dt>Exterior</dt><dd>Vapor Blue Metallic</dd></div>
+        <div><dt>Interior</dt><dd>Navy Pier Leather-Trimmed</dd></div>
+        <div><dt>Equipment</dt><dd>11 options, 49 standard</dd></div>
+        <div><dt>Original MSRP</dt><dd>$54,100</dd></div>
+      </dl>
+    </div>
   </div>
 </section>
 

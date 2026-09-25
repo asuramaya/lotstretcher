@@ -141,7 +141,10 @@ pub fn conveyor_wide(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
     let ab = wb - r(wh * 0.14);
     let left = (wl, ab - ah, wl + aw, ab);
     let right = (wr - aw, ab - ah, wr, ab);
-    vec![((hl, wt, hl + hw, wb), Anchor::Bottom), (left, Anchor::Bottom), (right, Anchor::Bottom)]
+    // Headroom over the hero: the clip's beat pulse and push grow it, and
+    // a roof must never meet the frame's top edge.
+    let ht = wt + r(wh * 0.08);
+    vec![((hl, ht, hl + hw, wb), Anchor::Bottom), (left, Anchor::Bottom), (right, Anchor::Bottom)]
 }
 
 /// Whichever conveyor suits the frame: stacked once taller than wide,

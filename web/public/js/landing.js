@@ -55,3 +55,19 @@ for (const a of document.querySelectorAll('a[href="app.html"]')) {
   a.addEventListener('touchstart', warm, { once: true, passive: true });
   a.addEventListener('focus', warm, { once: true });
 }
+
+/* The clips: play while on screen, pause off it; a visitor who asked
+ * for less motion gets the poster and the controls instead. */
+const loops = [...document.querySelectorAll('video.loop')];
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (still) {
+  for (const v of loops) v.controls = true;
+} else if ('IntersectionObserver' in window) {
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      const v = e.target;
+      if (e.isIntersecting) { v.preload = 'auto'; v.play().catch(() => {}); } else v.pause();
+    }
+  }, { threshold: 0.25 });
+  for (const v of loops) io.observe(v);
+}

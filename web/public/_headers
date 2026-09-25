@@ -35,3 +35,17 @@
 
 /ort/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Landing and studio media: a day fresh, then served while revalidating.
+# Not immutable, because a redeploy may replace a file under the same name.
+/demo/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/studio/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/vendor/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/icons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

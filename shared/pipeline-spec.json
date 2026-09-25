@@ -111,6 +111,7 @@
     "gradientTurns": 1.0,
     "heroMarginFrac": 0.02,
     "accentMarginFrac": 0.03,
+    "panHeightFrac": 0.84,
     "pulseStrength": 0.035,
     "pulseDecay": 0.3,
     "barsPerLoop": 4,

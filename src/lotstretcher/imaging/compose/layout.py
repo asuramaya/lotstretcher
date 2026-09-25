@@ -281,7 +281,9 @@ def conveyor_wide_layout(window: tuple[int, int, int, int], n_extra: int = 2) ->
     accent_b = wb - round(wh * 0.14)
     left_box = (wl, accent_b - accent_h, wl + accent_w, accent_b)
     right_box = (wr - accent_w, accent_b - accent_h, wr, accent_b)
-    return [((hero_l, wt, hero_l + hero_w, wb), "bottom"), (left_box, "bottom"), (right_box, "bottom")]
+    # Headroom over the hero: the clip's beat pulse and push grow it.
+    hero_t = wt + round(wh * 0.08)
+    return [((hero_l, hero_t, hero_l + hero_w, wb), "bottom"), (left_box, "bottom"), (right_box, "bottom")]
 
 
 def conveyor_for_window(window: tuple[int, int, int, int]):

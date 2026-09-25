@@ -42,6 +42,7 @@ const ACRONYMS = new Set([
   'SLT', 'XSE', 'XLE', 'FWD', 'AWD', 'RWD', '4WD', '2WD', '4X4', '4X2',
   'V6', 'V8', 'V10', 'TDI', 'GTI', 'ABS', 'LED', 'USB', 'AM/FM', 'MSRP', 'VIN',
   'MPG', 'EPA', 'SYNC', 'AC', 'A/C', 'PHEV', 'EV', 'SUV',
+  'TI-VCT', 'VCT', 'GTDI', 'FHEV', 'HEV', 'PFDI', 'HP', 'DOHC',
 ]);
 
 /* Abbreviations the sticker prints that read badly in a post. Kept
@@ -58,6 +59,8 @@ const EXPANSIONS = [
   [/\bMet\b/i, 'Metallic'],
   [/\bMetalic\b/i, 'Metallic'],
   [/\bPkg\b/i, 'Package'],
+  [/\bTrans\b/i, 'Transmission'],
+  [/\bPowerboost\b/i, 'PowerBoost'],
   [/\bW\//i, 'With '],
 ];
 
@@ -67,6 +70,8 @@ function titleCase(s) {
     // A letter straight after a digit is a unit, not a new word: engine
     // displacements must read "2.0L EcoBoost", never "2.0l".
     .replace(/(\d)([a-z])\b/g, (_, d, c) => d + c.toUpperCase())
+    // "480Hp" -> "480HP".
+    .replace(/(\d)hp\b/gi, '$1HP')
     // Restore anything that is an acronym rather than a word.
     .replace(/\b[A-Za-z][A-Za-z0-9/]*\b/g, (w) => (
       ACRONYMS.has(w.toUpperCase()) ? w.toUpperCase() : w
