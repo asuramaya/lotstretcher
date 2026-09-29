@@ -36,7 +36,7 @@ import { renderControls, controlDefaults, controlsToFlags, affectsPreview, rende
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
 import { textOptions, textRequest, frameStyle, shadowStyle, reflectionStyle, spotlightStyle } from './lib/text.js';
-import { normalizeListing, recordFromHtml } from './pipeline/listing.js';
+import { describesVehicle, recordFromHtml } from './pipeline/listing.js';
 import { recordFromText } from './pipeline/vin.js';
 import { LibraryView } from './library/view.js';
 import { HttpSource, DirectorySource } from './library/source.js';
@@ -1928,15 +1928,15 @@ async function init() {
    * with the same reader the scraper uses on the live page. */
   const readListingHtml = (html, label) => {
     const note = $('listingUrlNote');
-    let raw;
-    try { raw = recordFromHtml(html); } catch (e) { note.textContent = String(e.message || e); return false; }
-    if (!raw.payload && !raw.ldCar) {
+    let record;
+    try { record = recordFromHtml(html); } catch (e) { note.textContent = String(e.message || e); return false; }
+    if (!describesVehicle(record)) {
       note.textContent = `No vehicle data in ${label}. Save the page as "Webpage, HTML only" once the listing has fully loaded.`;
       note.className = 'small is-err';
       return false;
     }
     closeSheet('listingSheet');
-    applyVehicle(normalizeListing(raw));
+    applyVehicle(record);
     return true;
   };
   readListingHtmlRef = readListingHtml;

@@ -138,9 +138,10 @@ mileage and photos stay yours to add. **Scan VIN** reads the door-jamb barcode t
 the device (the browser's own barcode detector where it exists, else the vendored ZXing reader in
 `web/public/vendor/zxing`, MIT) and takes the same route. Against a self-hosted server the same field
 reads the whole page. The sheet also takes a saved copy of the page (Ctrl+S, "Webpage, HTML only") or its pasted
-source, for the dealer's own photos and price without a server: `listing.js` is a port of
-`normalize_vehicle()`, and [`tests/test_listing_parity.py`](tests/test_listing_parity.py) runs both
-on one fixture under node and compares every field.
+source, for the dealer's own photos and price without a server: the page is read by the core
+(`core/src/listing.rs`), the same reader `normalize_vehicle()` calls on the page the CLI fetched, and
+[`tests/test_listing_parity.py`](tests/test_listing_parity.py) holds both builds to what the Python
+normaliser gave for six real dealer pages and sixty-odd synthetic ones, field by field, types included.
 
 ### One specification, enforced
 

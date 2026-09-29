@@ -14,12 +14,15 @@ Recipe / irregularity notes (read before changing extraction logic):
   - The embedded blob's key layout has been stable across new/used/EV/truck
     VDPs tested so far; if a future page redesign changes the variable name,
     `extract_analytics_object()` is the one place to add a fallback pattern.
+
+Reading the page into a Vehicle is the core's (core/src/listing.rs), the
+same code the app's saved-page reader calls; this module fetches the page,
+keeps the CMS extractor registry (a validator is Python) and hands the core
+the blob it found.
 """
 from __future__ import annotations
 
 import dataclasses
-import html
-import json
 import re
 import sys
 import time
@@ -38,9 +41,6 @@ USER_AGENT = (
 # The vehicle blob is embedded as the default-parameter value of a JS
 # function call: `jzlGa4AttachListenersToForms(jzlAnalyticsObject = {...})`.
 DEALERINSPIRE_VAR_MARKER = "jzlAnalyticsObject = "
-
-IMAGE_RESIZE_RE = re.compile(r"/resize/\d+x\d+/")
-TARGET_IMAGE_SIZE = "2048x2048"
 
 
 # --------------------------------------------------------------------------
@@ -106,50 +106,12 @@ def fetch_rendered_html(page, url: str, retries: int = 4) -> str:
 
 
 def extract_balanced_json(html: str, marker: str) -> dict | None:
-    """Extract a JSON object embedded at `marker` by matching balanced braces.
+    """The JSON object embedded at `marker`, by matching balanced braces
+    from the first '{' after it (the core's listing.rs::extract_balanced_json;
+    regex can't match nested JSON)."""
+    from lotstretcher import core
 
-    Regex can't reliably match nested JSON, so we scan character-by-character
-    from the first '{' after the marker, tracking string state, until braces
-    balance back to zero.
-    """
-    idx = html.find(marker)
-    if idx == -1:
-        return None
-    start = idx + len(marker)
-    while start < len(html) and html[start] != "{":
-        start += 1
-    if start >= len(html):
-        return None
-
-    depth = 0
-    in_str = False
-    esc = False
-    i = start
-    while i < len(html):
-        c = html[i]
-        if in_str:
-            if esc:
-                esc = False
-            elif c == "\\":
-                esc = True
-            elif c == '"':
-                in_str = False
-        else:
-            if c == '"':
-                in_str = True
-            elif c == "{":
-                depth += 1
-            elif c == "}":
-                depth -= 1
-                if depth == 0:
-                    i += 1
-                    break
-        i += 1
-    blob = html[start:i]
-    try:
-        return json.loads(blob)
-    except json.JSONDecodeError:
-        return None
+    return core.call({"op": "balanced_json", "text": html, "marker": marker})
 
 
 # --------------------------------------------------------------------------
@@ -199,60 +161,6 @@ def extract_analytics_object(html: str) -> tuple[dict | None, str | None]:
         if data and validator(data):
             return data, name
     return None, None
-
-
-CARFAX_LINK_RE = re.compile(r'class="carfax-logo"[^>]*>\s*<a href="([^"]+)"')
-
-
-def extract_carfax_url(html: str) -> str | None:
-    """The Carfax report link, pulled directly from the rendered ".carfax-
-    logo" widget rather than the analytics blob's certifications.carfaxUrl
-    field -- confirmed unreliable on real pages (saw certifications.
-    hasCarfax=false / carfaxUrl=null on a CPO Raptor that visibly has a
-    working Carfax badge in a browser). The widget's own <a href> is the
-    real signal, and only appears once fetch_rendered_html()'s wait for
-    ".carfax-logo a" has resolved -- on an un-waited fetch this reliably
-    returns None even when a report exists, not just missing data."""
-    m = CARFAX_LINK_RE.search(html)
-    return m.group(1) if m else None
-
-
-ONE_OWNER_RE = re.compile(r"\b1[\s-]*owner\b", re.IGNORECASE)
-
-
-def extract_carfax_one_owner(features_structured: dict, main_features: list) -> bool:
-    """Same bug as carfax_url, same fix: certifications.carfaxOneOwner is
-    the same unreliable pre-Carfax-lookup snapshot (confirmed False on
-    EVERY used vehicle checked, including ones that plainly carry a "1
-    OWNER" badge elsewhere on the same page) -- so don't read it.
-
-    What IS reliable: the dealer stamps "1 OWNER" as a literal tag string
-    inside features.featuresStructured (rendered straight into the page's
-    "Main Features" list) whenever Carfax's own report says so. Confirmed
-    on two real vehicles: one shows both "CLEAN CARFAX" and "1 OWNER", a
-    different one shows "CLEAN CARFAX" alone -- so the tag is a genuine
-    per-vehicle signal, not boilerplate every used listing gets. Checked
-    across every category (not just "Main Features") and against
-    main_features too, since a future page layout could move it."""
-    haystacks = main_features + [tag for tags in features_structured.values() for tag in tags]
-    return any(ONE_OWNER_RE.search(tag) for tag in haystacks if isinstance(tag, str))
-
-
-def extract_ldjson_car(html: str) -> dict | None:
-    """Fallback: schema.org Car block. Thinner than the analytics blob but
-    a useful cross-check / fallback for VIN, color, engine, description."""
-    for m in re.finditer(
-        r'<script type="application/ld\+json"[^>]*>(.*?)</script>', html, re.S
-    ):
-        try:
-            data = json.loads(m.group(1))
-        except json.JSONDecodeError:
-            continue
-        graph = data.get("@graph", [data]) if isinstance(data, dict) else data
-        for node in graph:
-            if isinstance(node, dict) and node.get("@type") == "Car":
-                return node
-    return None
 
 
 # --------------------------------------------------------------------------
@@ -319,53 +227,6 @@ class Vehicle:
     warnings: list = dataclasses.field(default_factory=list)
 
 
-def _nonzero(value) -> bool:
-    """True if value is a present, non-zero number/numeric-string.
-    Several dealer.com fields (MPG, price) use "0" as a "not set / not
-    rated" placeholder rather than omitting the key entirely."""
-    if value is None or value == "":
-        return False
-    try:
-        return float(value) != 0
-    except (TypeError, ValueError):
-        return True  # non-numeric, non-empty -- treat as present
-
-
-def g(d: dict | None, *path, default=None):
-    """Safe nested-get: g(d, 'a', 'b') ~= d.get('a', {}).get('b')."""
-    cur = d
-    for key in path:
-        if not isinstance(cur, dict):
-            return default
-        cur = cur.get(key)
-    return cur if cur is not None else default
-
-
-TAG_RE = re.compile(r"<[^>]+>")
-BR_RE = re.compile(r"<br\s*/?>", re.IGNORECASE)
-
-
-def clean_html_text(text: str | None) -> str | None:
-    """Dealer-written descriptions come through with embedded HTML (<br><br>
-    for paragraph breaks, occasional stray tags). Facebook posts are plain
-    text, so turn <br> into real newlines, strip anything else tag-shaped,
-    and unescape entities."""
-    if not text:
-        return text
-    text = BR_RE.sub("\n", text)
-    text = TAG_RE.sub("", text)
-    text = html.unescape(text)
-    text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r"\n{3,}", "\n\n", text)
-    return text.strip()
-
-
-def upsize_image_url(url: str) -> str:
-    if IMAGE_RESIZE_RE.search(url):
-        return IMAGE_RESIZE_RE.sub(f"/resize/{TARGET_IMAGE_SIZE}/", url)
-    return url
-
-
 def vin_from_url(url: str) -> str | None:
     """The VIN segment of a .../vehicle/<VIN>/... VDP URL, or None if the
     URL isn't shaped like one. Used to catch the case where the page we
@@ -379,134 +240,15 @@ def vin_from_url(url: str) -> str | None:
 
 
 def normalize_vehicle(url: str, html: str) -> Vehicle:
-    v = Vehicle(url=url)
-    analytics, cms_name = extract_analytics_object(html)
-    ld_car = extract_ldjson_car(html)
+    """The Vehicle a rendered page describes: the analytics blob a
+    registered extractor finds, the schema.org Car node and the Carfax
+    widget, read by the core (core/src/listing.rs), which documents each
+    field's rule and the page quirks behind them."""
+    from lotstretcher import core
 
-    if analytics is None:
-        v.warnings.append(
-            "Could not find embedded vehicle data blob; "
-            "falling back to schema.org data only, most fields will be empty."
-        )
-
-    payload = g(analytics, "vdp_gtm_payload", default={}) if analytics else {}
-
-    v.vin = payload.get("vin") or g(ld_car, "vehicleIdentificationNumber")
-    v.stock_number = payload.get("stockNumber")
-    v.year = str(payload.get("year")) if payload.get("year") else None
-    v.make = payload.get("make")
-    v.model = payload.get("model")
-    v.trim = payload.get("trim")
-    # `conditions`/`conditions_array` mix real condition with dealer/manufacturer
-    # marketing badges (e.g. "Blue Certified,Certified,Used", or "Gold Certified"
-    # on a vehicle that isn't actually manufacturer/dealer certified) -- so we
-    # derive the label from the boolean flags instead of trusting that string.
-    certs = payload.get("certifications") or {}
-    is_certified = bool(certs.get("certifiedByManufacturer") or certs.get("certifiedByDealer"))
-    if payload.get("used") is False:
-        v.condition = "New"
-    elif payload.get("used") is True:
-        v.condition = "Certified Pre-Owned" if is_certified else "Used"
-    else:
-        conditions = payload.get("conditions_array") or []
-        v.condition = conditions[-1] if conditions else None
-    v.vehicle_status = payload.get("vehicleStatus")
-    v.mileage = payload.get("mileage")
-
-    title_bits = [v.year, v.make, v.model, v.trim]
-    v.title = " ".join(b for b in title_bits if b) or g(ld_car, "name")
-
-    colors = g(payload, "visual", "colors", default={})
-    v.exterior_color_factory = g(colors, "exterior", "factory") or g(ld_car, "color")
-    v.exterior_color_generic = g(colors, "exterior", "generic")
-    v.interior_color = g(colors, "interior", "factory")
-
-    specs = payload.get("specifications") or {}
-    v.engine = specs.get("engine") or g(ld_car, "vehicleEngine", "name")
-    transmission = specs.get("transmission_new") or specs.get("transmission")
-    v.transmission = transmission.strip() if transmission else transmission
-    v.drivetrain = specs.get("drivetrain")
-    v.fuel_type = specs.get("fuelType") or g(ld_car, "fuelType")
-    # "0" city/hwy means "not EPA-rated" (EVs use MPGe, some heavy trucks
-    # aren't rated at all) rather than an actual 0 MPG, so don't surface it.
-    if _nonzero(specs.get("mpgCityLow")) or _nonzero(specs.get("mpgCityHigh")):
-        lo, hi = specs.get("mpgCityLow"), specs.get("mpgCityHigh")
-        v.mpg_city = lo if lo == hi else f"{lo}-{hi}"
-    if _nonzero(specs.get("mpgHighwayLow")) or _nonzero(specs.get("mpgHighwayHigh")):
-        lo, hi = specs.get("mpgHighwayLow"), specs.get("mpgHighwayHigh")
-        v.mpg_highway = lo if lo == hi else f"{lo}-{hi}"
-    body_types = specs.get("vehicleType") or []
-    v.body_type = ", ".join(body_types) if body_types else g(ld_car, "bodyType ") or g(ld_car, "bodyType")
-    v.ev_battery_range = payload.get("evBatteryRange")
-    v.ev_mpge_combined = payload.get("evMpgCombined")
-    v.cab_style = payload.get("cabStyle") or None
-    v.box_length = payload.get("boxLength")
-
-    v.display_price = payload.get("displayPrice") or payload.get("price")
-    if not _nonzero(v.display_price):
-        v.display_price = None
-    for row in payload.get("flattened_pricing") or []:
-        pr = row.get("pricing") or {}
-        label, text = pr.get("Label"), pr.get("Text")
-        if label and text:
-            v.pricing_rows.append({"label": label, "text": text})
-
-    v.dealer_description = clean_html_text(payload.get("dealerDescription") or g(ld_car, "description"))
-    v.dealer_comments = clean_html_text(payload.get("dealerComments")) or None
-
-    features = payload.get("features") or {}
-    v.main_features = features.get("mainFeatures") or []
-    v.features_structured = features.get("featuresStructured") or {}
-    v.options = payload.get("options") or []
-    v.tags = payload.get("tags") or []
-
-    loc = payload.get("location") or {}
-    v.dealer_name = loc.get("name")
-    addr_bits = [loc.get("address1"), loc.get("address2")]
-    city_state_zip = ", ".join(
-        b for b in [loc.get("city"), loc.get("state")] if b
-    )
-    if loc.get("zipCode"):
-        city_state_zip = f"{city_state_zip} {loc['zipCode']}".strip()
-    addr_bits = [b for b in addr_bits if b] + ([city_state_zip] if city_state_zip else [])
-    v.dealer_address = ", ".join(addr_bits) if addr_bits else None
-    v.dealer_phone = loc.get("contactNumber")
-
-    visual = payload.get("visual") or {}
-    combined = visual.get("combinedPhotos")
-    if not combined:
-        combined = (visual.get("dealerPhotos") or []) + (visual.get("stockPhotos") or [])
-    seen = set()
-    for photo in combined:
-        src = photo.get("source") if isinstance(photo, dict) else None
-        if src and src not in seen:
-            seen.add(src)
-            v.photo_urls.append(upsize_image_url(src))
-    if not v.photo_urls:
-        img = g(payload, "visual", "image", "source") or g(ld_car, "image")
-        if img:
-            v.photo_urls.append(upsize_image_url(img))
-
-    for vid in visual.get("dealerVideos") or []:
-        if isinstance(vid, dict) and vid.get("source"):
-            v.video_urls.append(vid["source"])
-        elif isinstance(vid, str):
-            v.video_urls.append(vid)
-
-    expando = payload.get("expando") or {}
-    v.window_sticker_url = expando.get("WindowStickerUrl") or None
-
-    v.carfax_url = extract_carfax_url(html)
-    v.carfax_one_owner = extract_carfax_one_owner(v.features_structured, v.main_features)
-
-    if not v.photo_urls:
-        v.warnings.append("No photos found for this vehicle.")
-    if not v.window_sticker_url:
-        v.warnings.append("No window sticker URL found (common for used vehicles).")
-    if not v.display_price:
-        v.warnings.append("No price found.")
-
-    return v
+    analytics, _cms_name = extract_analytics_object(html)
+    record = core.call({"op": "listing_record", "html": html, "url": url, "analytics": analytics, "extract": False})
+    return Vehicle(**record)
 
 
 # --------------------------------------------------------------------------

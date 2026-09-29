@@ -247,6 +247,10 @@ pub enum Op {
     VinRecord { text: String },
     /// Which shots a layout gets and in what order (select.rs).
     SelectShots(crate::select::SelectRequest),
+    /// A vehicle page's HTML read into the Vehicle record (listing.rs).
+    ListingRecord(crate::listing::ListingRequest),
+    /// The JSON object embedded after `marker` (listing.rs::extract_balanced_json).
+    BalancedJson { text: String, marker: String },
     /// A cutout's same-shot signature (select.rs::shot_signature).
     ShotSignature { image: Slice },
     /// The index of the first `earlier` signature `signature` repeats, or null.
@@ -400,6 +404,8 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
         Op::SelectShots(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::select::select(&req)? }).unwrap()),
         Op::ShotSignature { image } => { let img = slice_image(arena, &image)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::select::shot_signature(&img) }).unwrap()) }
         Op::SameShot { signature, earlier } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::select::same_shot(&signature, &earlier) }).unwrap()),
+        Op::ListingRecord(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::listing::normalize(&req) }).unwrap()),
+        Op::BalancedJson { text, marker } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::listing::extract_balanced_json(&text, &marker) }).unwrap()),
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
             OpResult::Image(crate::spin::blend(&a, &b, t)?)

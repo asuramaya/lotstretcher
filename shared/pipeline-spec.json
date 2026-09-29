@@ -2182,48 +2182,14 @@
   },
   "listing": {
     "_": [
-      "The subset of a DealerInspire vdp_gtm_payload that scrape.normalize_vehicle reads.",
-      "The app's saved-page reader keeps ONLY these keys, so a page read on the device carries what",
-      "the CLI would have used and nothing else. tests/test_listing_parity.py asserts the",
-      "list covers every key normalize_vehicle actually touches."
+      "How a dealer's vehicle page is read (core/src/listing.rs, the CLI's scrape.normalize_vehicle and the app's",
+      "saved-page reader both call it): the analytics blob DealerInspire embeds at analyticsMarker, and every",
+      "/resize/WxH/ segment of a photo address pointed at photoSize."
     ],
     "cms": "dealerinspire",
     "analyticsGlobal": "jzlAnalyticsObject",
     "analyticsMarker": "jzlAnalyticsObject = ",
-    "payloadKeys": [
-      "boxLength",
-      "cabStyle",
-      "certifications",
-      "conditions_array",
-      "dealerComments",
-      "dealerDescription",
-      "displayPrice",
-      "evBatteryRange",
-      "evMpgCombined",
-      "expando",
-      "features",
-      "flattened_pricing",
-      "location",
-      "make",
-      "mileage",
-      "model",
-      "options",
-      "price",
-      "specifications",
-      "stockNumber",
-      "tags",
-      "trim",
-      "used",
-      "vehicleStatus",
-      "vin",
-      "visual",
-      "year"
-    ],
-    "photoUrl": {
-      "resizePattern": "/resize/\\d+x\\d+/",
-      "target": "/resize/2048x2048/"
-    },
-    "descriptionMaxChars": 4000
+    "photoSize": "2048x2048"
   },
   "library": {
     "_": [
