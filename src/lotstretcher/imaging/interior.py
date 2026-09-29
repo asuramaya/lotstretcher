@@ -125,7 +125,9 @@ FEATURE_CONFIRMATION: dict[str, list[str]] = {
     "climate_controls": ["automatic temperature control", "dual climate", "climate control",
                          "air conditioning"],
     "heated_seat_controls": ["heated front seat", "heated seat", "2nd row heated"],
-    "sunroof": ["sunroof", "moonroof"],
+    # "Vista Roof", "Dual-Pane Panoramic Sunroof": a panoramic roof the
+    # listing names without the word sunroof was going uncaptioned.
+    "sunroof": ["sunroof", "moonroof", "panoramic", "vista roof"],
     "leather_seats": ["leather seat", "leather-trimmed", "leather upholstery"],
     "cargo_area": ["cargo", "trunk"],
     "wireless_charging": ["wireless charging"],
@@ -141,6 +143,23 @@ FEATURE_CONFIRMATION: dict[str, list[str]] = {
     "none": [],
 }
 
+# Tried 2026-09-29 against the whole fleet (3,870 interior photos, 208
+# vehicles; CLIP image embeddings cached once, every label set re-scored
+# the same way classify() does) and NOT added. Baseline 774 captions,
+# 3.72 a vehicle. Alone, each moved the total by -13 to +3, and the ones
+# that won photos mostly did it by stealing from labels that were right:
+#   memory_seat_buttons  won 430 photos, 59 captions, net +3: a new sink
+#   third_row            won 112, 21 captions, net -13
+#   power_seat_controls  won 45, 12 captions, net -5
+#   premium_speakers     won 9, 3 captions, all three wrong (an exterior
+#                        rear shot, cupholders, a seat-memory panel)
+#   surround_camera, ventilated_seats, ambient_lighting,
+#   push_button_start    won 10 or fewer photos and captioned none
+# All eight together gave 739. What the fleet's photos show and its
+# listings name is already covered; recall is limited by the photography
+# (most interior shots depict nothing nameable), not by missing labels.
+# Only the sunroof's confirmation words grew (+2, all checked by eye).
+#
 # A gear_selector label was tried here and removed: it confirms against
 # nothing (misc_controls already names a gear selector), and it stole two
 # correct "Steering wheel mounted audio controls" captions off photos with
