@@ -295,6 +295,8 @@
     "$comment": "compose/hero.py and compose/background.py",
     "marginFrac": 0.06,
     "heightCapAspect": 1.7,
+    "tallFloorFrac": 0.9,
+    "$tallComment": "A single car in a window at least 1.3x taller than wide (a story) stands on a box ending tallFloorFrac down the window, bottom-anchored, not centred: centred, a width-limited car floated in the upper half with a band of nothing above the title.",
     "spotlight": {
       "innerRadiusFrac": 0.28,
       "outerRadiusFrac": 0.85,

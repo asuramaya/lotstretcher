@@ -43,6 +43,14 @@ pub fn compute_placement(cw: usize, ch: usize, bx: Box_, margin_frac: f64, ancho
 fn r(x: f64) -> i64 { crate::hsv::round_half_even(x) as i64 }
 
 pub fn single(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
+    let (wl, wt, wr, wb) = window;
+    let (ww, wh) = ((wr - wl) as f64, (wb - wt) as f64);
+    // A story-shaped window: the car stands low, near its words, rather
+    // than centred with a band of backdrop between it and the title.
+    if wh >= ww * 1.3 {
+        let frac = crate::spec::get(&["compose", "tallFloorFrac"]).as_f64().unwrap_or(0.9);
+        return vec![((wl, wt, wr, wt + r(wh * frac)), Anchor::Bottom)];
+    }
     vec![(window, Anchor::Center)]
 }
 

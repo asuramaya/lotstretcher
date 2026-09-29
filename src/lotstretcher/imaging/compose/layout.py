@@ -56,7 +56,15 @@ def single_layout(window: tuple[int, int, int, int], n_extra: int = 0) -> list[t
     "the ground" at the base of the frame, other cars above it), but for a
     solo shot with nothing else in the window it just leaves a lot of dead
     space up top; centered uses the window evenly. n_extra is ignored (kept
-    for a consistent layout-function signature)."""
+    for a consistent layout-function signature). A story-shaped window
+    (1.3x taller than wide) bottom-anchors the car on a box ending
+    compose.tallFloorFrac down it, near its words, instead (core
+    layout.rs::single)."""
+    wl, wt, wr, wb = window
+    ww, wh = wr - wl, wb - wt
+    if wh >= ww * 1.3:
+        frac = float(_spec.get("compose", "tallFloorFrac", default=0.9))
+        return [((wl, wt, wr, wt + round(wh * frac)), "bottom")]
     return [(window, "center")]
 
 
