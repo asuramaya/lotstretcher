@@ -241,7 +241,8 @@ export function prepareClip(cutouts, {
   // A sweep is one backdrop frame for the whole clip, its paint read
   // off the first shot when the names give none; held like a photo.
   if (!bgData && (backdrop === 'sweep' || backdrop === 'radial' || backdrop === 'horizon')) {
-    const kind = { kind: backdrop, seed: `${seed}:${backdrop}`, exterior: generic ? null : exterior, interior: generic ? null : interior, sample: shots[0] ? { $image: 0 } : null, color: backdropColor || null, color2: backdropColor2 || null };
+    const kind = { ...core.call({ op: 'backdrop_spec', kind: backdrop, seed: `${seed}:${backdrop}`, exterior: generic ? null : exterior, interior: generic ? null : interior, color: backdropColor || null, color2: backdropColor2 || null }),
+      sample: shots[0] ? { $image: 0 } : null };
     bgData = core.toImageData(core.call({ op: 'render_frame', width, height, background: kind, cars: [], rgba: true }, shots[0] ? [shots[0].data] : []));
   }
   // The text is planned once inside the canvas (its paint colour read
@@ -259,12 +260,12 @@ export function prepareClip(cutouts, {
     const s = `${seed}:v${i}`;
     let start; let end;
     // Generic means no colour names: the palette is measured off the
-    // cutout's own paint, which is what the core does with no names. A
-    // chosen colour is both stops, as the CLI's clip takes it.
-    const coloured = generic || ['generic', 'sweep', 'radial', 'horizon'].includes(backdrop);
-    const a = coloured ? backdropColor || null : null;
-    const b = coloured ? backdropColor2 || null : null;
-    [start, end] = core.vehicleGradientColors(a || b || (generic ? null : exterior), b || a || (generic ? null : interior), shots[i].data);
+    // cutout's own paint, which is what the core does with no names. The
+    // user's own colours are the stops for a coloured kind (the core's
+    // gradient_names, as the CLI's clip takes them).
+    const [a, b] = core.call({ op: 'gradient_names', kind: generic ? 'generic' : (backdrop || 'vehicle'),
+      exterior: generic ? null : exterior, interior: generic ? null : interior, color: backdropColor || null, color2: backdropColor2 || null });
+    [start, end] = core.vehicleGradientColors(a, b, shots[i].data);
     // The angle is the seed's, as the still's would be.
     const angle = (hashAngle(s));
     return { start, end, angle };

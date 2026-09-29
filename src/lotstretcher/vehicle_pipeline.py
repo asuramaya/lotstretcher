@@ -86,7 +86,8 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
 
     gradient_colors = None
     if hero_opts.video_background is None:
-        ext, inr = gradient_color_names(*colors_from_details(folder), hero_opts.backdrop, hero_opts.backdrop_color)
+        ext, inr = gradient_color_names(*colors_from_details(folder), hero_opts.backdrop, hero_opts.backdrop_color,
+                                        hero_opts.backdrop_color2)
         sample = next(iter(sorted(cutout_dir.glob("*.png"))), None)
         start, end = vehicle_gradient_colors(ext, inr, sample)
         gradient_colors = (random.Random(folder.name).uniform(0, 360), start, end)

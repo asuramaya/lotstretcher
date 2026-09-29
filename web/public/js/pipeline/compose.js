@@ -50,12 +50,11 @@ export function composeHero(cutout, {
     const fitted = coverFit(background, width, height);
     backgroundImage = ctxOf(fitted, { willReadFrequently: true }).getImageData(0, 0, width, height);
     bg = { kind: 'image' };
-  } else if (backdrop === 'sweep' || backdrop === 'radial' || backdrop === 'horizon') {
-    bg = { kind: backdrop, seed: String(seed), exterior: exterior || null, interior: interior || null, color: backdropColor || null, color2: backdropColor2 || null };
-  } else if (generic || backdrop === 'generic') {
-    bg = { kind: 'generic', seed: String(seed), color: backdropColor || null, color2: backdropColor2 || null, angle: backdropAngle ?? null };
   } else {
-    bg = { kind: 'vehicle', seed: String(seed), exterior: exterior || null, interior: interior || null, angle: backdropAngle ?? null };
+    // The request for a generated backdrop is the core's (controls.rs),
+    // the one the CLI's imaging/text.py::backdrop_spec asks it for.
+    bg = core.call({ op: 'backdrop_spec', kind: generic ? 'generic' : (backdrop || 'vehicle'), seed: String(seed),
+      exterior: exterior || null, interior: interior || null, color: backdropColor || null, color2: backdropColor2 || null, angle: backdropAngle ?? null });
   }
   const out = core.composeHero([cutData], width, height, bg, {
     layout: 'single', spotlight, glow, glowColor, glowRadius, glowIntensity, marginFrac, backgroundImage,

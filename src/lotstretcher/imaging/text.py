@@ -236,7 +236,7 @@ def shadow_style(options: dict) -> dict | None:
     return styles(options)["shadow"]
 
 
-BACKDROPS = ("vehicle", "generic", "sweep", "radial", "horizon")
+BACKDROPS = tuple(_spec.get("compose", "backdrops"))
 # The kinds a colour of the user's own applies to; vehicle is the paint's.
 COLOURED_BACKDROPS = tuple(_spec.get("compose", "colouredBackdrops"))
 
@@ -282,31 +282,25 @@ def backdrop_angle(options: dict) -> float | None:
 
 def backdrop_spec(kind: str, seed: str, exterior: str | None, interior: str | None,
                   color: str | None = None, color2: str | None = None, angle: float | None = None) -> dict:
-    """The core's background field for a generated backdrop of `kind`.
-    `color` and `color2` (#rrggbb or colour words) are the stops the
-    coloured kinds draw from; `angle` fixes the linear kinds' direction.
-    The vehicle backdrop takes only the angle."""
-    if kind not in BACKDROPS:
-        raise ValueError(f"unknown backdrop {kind!r}; one of {', '.join(BACKDROPS)}")
-    out: dict = {"kind": kind, "seed": seed}
-    if kind != "generic":
-        out.update(exterior=exterior, interior=interior)
-    if kind in COLOURED_BACKDROPS:
-        if color:
-            out["color"] = color
-        if color2:
-            out["color2"] = color2
-    if kind in ANGLED_BACKDROPS and angle is not None:
-        out["angle"] = float(angle)
-    return out
+    """The core's background field for a generated backdrop of `kind`
+    (core/src/controls.rs): `color` and `color2` (#rrggbb or colour
+    words) are the stops the coloured kinds draw from; `angle` fixes the
+    linear kinds' direction. The vehicle backdrop takes only the angle."""
+    try:
+        return core.call({"op": "backdrop_spec", "kind": kind, "seed": seed, "exterior": exterior, "interior": interior,
+                          "color": color, "color2": color2, "angle": angle})
+    except RuntimeError as e:
+        raise ValueError(str(e).split("failed: ", 1)[-1]) from None
 
 
-def gradient_color_names(exterior: str | None, interior: str | None, kind: str, color: str | None) -> tuple[str | None, str | None]:
-    """The names a turning video gradient reads its stops from: the chosen
-    colour for both when hue bands or a sweep have one, else the paint's."""
-    if color and kind in COLOURED_BACKDROPS:
-        return color, color
-    return exterior, interior
+def gradient_color_names(exterior: str | None, interior: str | None, kind: str, color: str | None,
+                         color2: str | None = None) -> tuple[str | None, str | None]:
+    """The names a turning video gradient reads its two stops from: the
+    chosen colours for a coloured kind (one colour is both stops), else
+    the paint's -- the stops the still's backdrop takes too."""
+    a, b = core.call({"op": "gradient_names", "kind": kind, "exterior": exterior, "interior": interior,
+                      "color": color, "color2": color2})
+    return a, b
 
 
 REFLECTION_STRENGTH = float(_spec.control_default("reflectionStrength", 0.35))

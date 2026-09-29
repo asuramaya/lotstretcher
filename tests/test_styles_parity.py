@@ -67,3 +67,44 @@ def test_where_the_two_had_drifted_the_cli_reading_holds():
     assert T.frame_style({"frameStyle": "line"})["kind"] == "line"
     assert T.spotlight_style({"spotlight": 0}) is False and T.spotlight_style({}) is True
     assert T.text_options({})["title"] == "none" and not T.wants_text(T.text_options({}))
+
+
+def test_backdrop_requests_keep_to_their_kinds():
+    assert T.backdrop_spec("generic", "s", "Red", "Black", "#ff0000", None, 45) == \
+        {"kind": "generic", "seed": "s", "color": "#ff0000", "angle": 45.0}          # no paint names, an angle
+    assert T.backdrop_spec("sweep", "s", "Red", "Black", "#ff0000", "navy", 45) == \
+        {"kind": "sweep", "seed": "s", "exterior": "Red", "interior": "Black", "color": "#ff0000", "color2": "navy"}
+    assert T.backdrop_spec("vehicle", "s", "Red", None, "#ff0000", None, None) == \
+        {"kind": "vehicle", "seed": "s", "exterior": "Red", "interior": None}        # the paint's, never a colour
+    with pytest.raises(ValueError):
+        T.backdrop_spec("bogus", "s", None, None)
+
+
+def test_a_clip_gradient_takes_the_same_stops_as_the_still():
+    assert T.gradient_color_names("Red", "Black", "sweep", "#ff0000", "navy") == ("#ff0000", "navy")
+    assert T.gradient_color_names("Red", "Black", "sweep", "#ff0000") == ("#ff0000", "#ff0000")
+    assert T.gradient_color_names("Red", "Black", "sweep", None, "navy") == ("navy", "navy")
+    assert T.gradient_color_names("Red", "Black", "vehicle", "#ff0000", "navy") == ("Red", "Black")
+
+
+def test_wasm_backdrops_match_native():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    import itertools
+    cases = [{"kind": k, "seed": "s", "exterior": e, "interior": i, "color": c, "color2": c2, "angle": a}
+             for k in ("vehicle", "generic", "sweep", "radial", "horizon") for e, i in ((None, None), ("Red", "Black"))
+             for c, c2 in itertools.product((None, "#ff0000"), (None, "navy")) for a in (None, 30)]
+    native = [[core.call({"op": "backdrop_spec", **c}), core.call({"op": "gradient_names", **{k: v for k, v in c.items() if k not in ("seed", "angle")}})]
+              for c in cases]
+    wasm = REPO / "web" / "public" / "core" / "lotstretcher_core_bg.wasm"
+    script = f"""
+      import fs from 'node:fs';
+      import {{ loadCore, call }} from '{(REPO / 'web' / 'public' / 'js' / 'core.js').as_posix()}';
+      await loadCore(fs.readFileSync('{wasm.as_posix()}'));
+      const cases = JSON.parse(fs.readFileSync(0, 'utf8'));
+      process.stdout.write(JSON.stringify(cases.map((c) => {{ const {{ seed, angle, ...g }} = c;
+        return [call({{ op: 'backdrop_spec', ...c }}), call({{ op: 'gradient_names', ...g }})]; }})));
+    """
+    run = subprocess.run([node, "--input-type=module", "-e", script], input=json.dumps(cases), capture_output=True, text=True, check=True)
+    assert json.loads(run.stdout) == native

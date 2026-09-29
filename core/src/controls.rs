@@ -151,6 +151,48 @@ pub fn backdrop(o: &Value) -> Value {
     json!({"kind": kind, "color": colour("backdropColor"), "color2": colour("backdropColor2"), "angle": angle})
 }
 
+fn in_list(name: &str, kind: &str) -> bool {
+    spec::get(&["compose", name]).as_array().is_some_and(|a| a.iter().any(|v| v.as_str() == Some(kind)))
+}
+
+/// The core's background field for a generated backdrop of `kind`: the
+/// paint's names for every kind but the seeded hue bands, the user's own
+/// stops for the coloured kinds, a fixed direction for the linear ones.
+pub fn backdrop_spec(kind: &str, seed: &str, exterior: &Value, interior: &Value, color: &Value, color2: &Value, angle: &Value) -> Result<Value, String> {
+    if !in_list("backdrops", kind) {
+        let known: Vec<&str> = spec::get(&["compose", "backdrops"]).as_array().into_iter().flatten().filter_map(Value::as_str).collect();
+        return Err(format!("unknown backdrop {kind:?}; one of {}", known.join(", ")));
+    }
+    let mut out = Map::new();
+    out.insert("kind".into(), json!(kind));
+    out.insert("seed".into(), json!(seed));
+    if kind != "generic" {
+        out.insert("exterior".into(), exterior.clone());
+        out.insert("interior".into(), interior.clone());
+    }
+    if in_list("colouredBackdrops", kind) {
+        if truthy(color) { out.insert("color".into(), color.clone()); }
+        if truthy(color2) { out.insert("color2".into(), color2.clone()); }
+    }
+    if in_list("angledBackdrops", kind) {
+        if let Some(a) = angle.as_f64().or_else(|| angle.as_str().and_then(|s| s.trim().parse().ok())) { out.insert("angle".into(), json!(a)); }
+    }
+    Ok(Value::Object(out))
+}
+
+/// The names a turning clip gradient reads its two stops from: the
+/// user's own for a coloured kind (one colour given is both stops),
+/// else the paint's. The same stops the still's backdrop takes; the CLI's
+/// clip used to drop a second colour.
+pub fn gradient_names(kind: &str, exterior: &Value, interior: &Value, color: &Value, color2: &Value) -> (Value, Value) {
+    if in_list("colouredBackdrops", kind) && (truthy(color) || truthy(color2)) {
+        let a = if truthy(color) { color.clone() } else { color2.clone() };
+        let b = if truthy(color2) { color2.clone() } else { color.clone() };
+        return (a, b);
+    }
+    (exterior.clone(), interior.clone())
+}
+
 pub fn styles(o: &Value) -> Value {
     let text = text_options(o);
     json!({

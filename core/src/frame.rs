@@ -261,6 +261,12 @@ pub enum Op {
     Styles { options: serde_json::Value },
     /// Whether a text plan draws anything, and the fonts it needs.
     TextFacts { text: serde_json::Value },
+    /// The background field for a generated backdrop (controls.rs).
+    BackdropSpec { kind: String, seed: String, #[serde(default)] exterior: serde_json::Value, #[serde(default)] interior: serde_json::Value,
+                   #[serde(default)] color: serde_json::Value, #[serde(default)] color2: serde_json::Value, #[serde(default)] angle: serde_json::Value },
+    /// The colour names a clip's turning gradient reads its stops from.
+    GradientNames { kind: String, #[serde(default)] exterior: serde_json::Value, #[serde(default)] interior: serde_json::Value,
+                    #[serde(default)] color: serde_json::Value, #[serde(default)] color2: serde_json::Value },
     /// A named layout's [(box, anchor)] for a window (layout.rs::layout).
     Layout { name: String, window: [i64; 4], n_extra: usize },
     /// Where a (width x height) cutout sits in a box (layout.rs::compute_placement).
@@ -435,6 +441,10 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
         }
         Op::Styles { options } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::controls::styles(&options) }).unwrap()),
         Op::TextFacts { text } => OpResult::Json(serde_json::to_string(&Scalar { value: serde_json::json!({"wants_text": crate::controls::wants_text(&text), "fonts": crate::controls::fonts_in(&text)}) }).unwrap()),
+        Op::BackdropSpec { kind, seed, exterior, interior, color, color2, angle } =>
+            OpResult::Json(serde_json::to_string(&Scalar { value: crate::controls::backdrop_spec(&kind, &seed, &exterior, &interior, &color, &color2, &angle)? }).unwrap()),
+        Op::GradientNames { kind, exterior, interior, color, color2 } =>
+            OpResult::Json(serde_json::to_string(&Scalar { value: crate::controls::gradient_names(&kind, &exterior, &interior, &color, &color2) }).unwrap()),
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
             OpResult::Image(crate::spin::blend(&a, &b, t)?)

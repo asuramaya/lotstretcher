@@ -134,7 +134,7 @@ def main():
         from lotstretcher.imaging.text import gradient_color_names
         ext, inr = colors_from_details(vehicle_folder)
         sample = next(iter(sorted(cutout_dir.glob("*.png"))), None)
-        start, end = vehicle_gradient_colors(*gradient_color_names(ext, inr, args.backdrop, args.backdrop_color), sample)
+        start, end = vehicle_gradient_colors(*gradient_color_names(ext, inr, args.backdrop, args.backdrop_color, args.backdrop_color2), sample)
         gradient_colors = (_random.Random(vehicle_folder.name).uniform(0, 360), start, end)
         if args.backdrop != "vehicle" and background_image is None:
             from lotstretcher.imaging.text import backdrop_spec
