@@ -70,6 +70,9 @@ function availability(control) {
 function expanded(control) {
   const out = [];
   for (const c of control.choices || []) {
+    // A value the command line takes but the app does not offer
+    // (--title custom: the app's Words field does its job).
+    if (c.ui === false) continue;
     if (!c.expand) { out.push(c); continue; }
     const library = assets()[c.expand] || [];
     if (!library.length) { out.push({ ...c, empty: true }); continue; }

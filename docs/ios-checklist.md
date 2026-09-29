@@ -91,11 +91,12 @@ Safari. For each step, note pass, fail, or the message shown.
 - Backdrop tool: tap **Your image** and pick a photo from the camera
   roll. It should appear as its own tile, chosen, and stay after a
   reload; tap its corner × to drop it.
-- Text tool: set **Title** to the vehicle, then drag the words on the
+- Text tool: switch **Show the title** On, then drag the words on the
   stage with a finger to another corner. They should follow as you
   drag and the Text tool's Position should read the corner you let go
-  in; the stage must not scroll while dragging. Then type a **Subtitle**,
-  open the **Subtitle** tab and drag again: only the subtitle should move, and
+  in; the stage must not scroll while dragging, and a tap on the car must
+  not move the words. Then open the **Subtitle** tab, type its **Words**
+  and drag again: only the subtitle should move, and
   its Position grid should light the corner while the title stays put.
   Under Font, pick **Anton**: the words should redraw in it within a
   second or two (the font is fetched on first use, ~170 KB).

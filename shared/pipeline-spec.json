@@ -1101,32 +1101,35 @@
         "controls": [
           {
             "key": "titleMode",
-            "label": "Title",
+            "label": "Show the title",
             "hint": "",
             "type": "select",
             "default": "vehicle",
             "choices": [
               {
                 "value": "none",
-                "label": "No title"
+                "label": "Off"
               },
               {
                 "value": "vehicle",
-                "label": "Year make model"
+                "label": "On",
+                "hint": "The vehicle, or the Words below"
               },
               {
                 "value": "custom",
-                "label": "Your words"
+                "label": "Your words",
+                "ui": false
               }
             ],
             "cli": "--title",
             "tooltip": "A headline on the still, drawn by the core in the studio font",
-            "tab": "all"
+            "tab": "title",
+            "presentation": "segment"
           },
           {
             "key": "titleText",
             "label": "Words",
-            "hint": "",
+            "hint": "Empty: year, make, model and trim",
             "type": "text",
             "default": "",
             "placeholder": "Year make model trim",
@@ -1136,104 +1139,7 @@
             },
             "cli": "--title-text",
             "tooltip": "The title's words. Left empty with Year make model, the vehicle's own; typed, yours, so a long trim can be cut",
-            "tab": "all"
-          },
-          {
-            "key": "subtitle",
-            "label": "Subtitle",
-            "hint": "",
-            "type": "text",
-            "default": "",
-            "placeholder": "Ask for Alex",
-            "cli": "--subtitle",
-            "tooltip": "A subtitle under the title: the trim line, the dealer, who to ask for",
-            "tab": "all"
-          },
-          {
-            "key": "priceBadge",
-            "label": "Price badge",
-            "hint": "",
-            "type": "toggle",
-            "default": true,
-            "cli": "--price-badge",
-            "tooltip": "The post's own price in a pill: MSRP for new, the listed price for used",
-            "tab": "all"
-          },
-          {
-            "key": "textFont",
-            "label": "Font",
-            "hint": "",
-            "type": "select",
-            "dynamic": "fonts",
-            "default": "Lato Bold",
-            "cli": "--text-font",
-            "tab": "all",
-            "tooltip": "The studio font every piece is set in; each piece can take its own",
-            "faces": true
-          },
-          {
-            "key": "textPosition",
-            "label": "Position",
-            "hint": "",
-            "type": "select",
-            "default": "bl",
-            "choices": [
-              {
-                "value": "tl",
-                "label": "Top left"
-              },
-              {
-                "value": "tc",
-                "label": "Top centre"
-              },
-              {
-                "value": "tr",
-                "label": "Top right"
-              },
-              {
-                "value": "bl",
-                "label": "Bottom left"
-              },
-              {
-                "value": "bc",
-                "label": "Bottom centre"
-              },
-              {
-                "value": "br",
-                "label": "Bottom right"
-              }
-            ],
-            "cli": "--text-position",
-            "tooltip": "Where the text sits; the vehicle keeps clear of it",
-            "presentation": "place",
-            "tab": "all"
-          },
-          {
-            "key": "textColor",
-            "label": "Colour",
-            "hint": "",
-            "type": "select",
-            "default": "white",
-            "choices": [
-              {
-                "value": "white",
-                "label": "White"
-              },
-              {
-                "value": "black",
-                "label": "Black"
-              },
-              {
-                "value": "paint",
-                "label": "Paint"
-              }
-            ],
-            "cli": "--text-color",
-            "presentation": "dots",
-            "custom": true,
-            "cliNote": "--text-color takes a name or your own #rrggbb.",
-            "tab": "all",
-            "tooltip": "White with a soft shadow, black, the vehicle's paint on the badge, or your own"
+            "tab": "title"
           },
           {
             "key": "textSize",
@@ -1247,49 +1153,11 @@
             "unit": "fraction",
             "cli": "--text-size",
             "tooltip": "The title's height as a share of the canvas",
-            "tab": "all"
-          },
-          {
-            "key": "textCase",
-            "label": "Case",
-            "hint": "",
-            "type": "select",
-            "presentation": "segment",
-            "default": "as-is",
-            "choices": [
-              {
-                "value": "as-is",
-                "label": "As typed"
-              },
-              {
-                "value": "upper",
-                "label": "UPPER"
-              }
-            ],
-            "cli": "--text-case",
-            "tab": "all",
-            "tooltip": "The words as typed, or set in capitals"
-          },
-          {
-            "key": "textBoxed",
-            "label": "Boxed",
-            "hint": "",
-            "tooltip": "The title and the line on pills, like the price badge",
-            "type": "toggle",
-            "default": false,
-            "cli": "--text-boxed",
-            "tab": "all"
-          },
-          {
-            "key": "textShadow",
-            "label": "Shadow",
-            "hint": "",
-            "tooltip": "A soft shadow under unboxed words",
-            "type": "toggle",
-            "default": true,
-            "cli": "--no-text-shadow",
-            "cliInvert": true,
-            "tab": "all"
+            "tab": "title",
+            "showWhen": {
+              "key": "titleMode",
+              "notEquals": "none"
+            }
           },
           {
             "key": "titleFont",
@@ -1448,108 +1316,15 @@
             "tooltip": "The title on a pill, or bare"
           },
           {
-            "key": "badgeSize",
-            "label": "Size",
-            "hint": "",
-            "type": "range",
-            "default": 0.85,
-            "min": 0.4,
-            "max": 1.4,
-            "step": 0.02,
-            "unit": "fraction",
-            "cli": "--badge-size",
-            "tab": "badge",
-            "showWhen": "priceBadge",
-            "tooltip": "The badge's size as a share of the title's"
-          },
-          {
-            "key": "badgeFont",
-            "label": "Font",
-            "hint": "",
-            "type": "select",
-            "dynamic": "fonts",
-            "same": "Same as all",
-            "default": "same",
-            "cli": "--badge-font",
-            "tab": "badge",
-            "showWhen": "priceBadge",
-            "tooltip": "The price badge's own font",
-            "faces": true
-          },
-          {
-            "key": "badgePosition",
-            "label": "Position",
-            "hint": "",
-            "type": "select",
-            "presentation": "place",
-            "nullable": true,
-            "default": null,
-            "choices": [
-              {
-                "value": null,
-                "label": "Same as all"
-              },
-              {
-                "value": "tl",
-                "label": "Top left"
-              },
-              {
-                "value": "tc",
-                "label": "Top centre"
-              },
-              {
-                "value": "tr",
-                "label": "Top right"
-              },
-              {
-                "value": "bl",
-                "label": "Bottom left"
-              },
-              {
-                "value": "bc",
-                "label": "Bottom centre"
-              },
-              {
-                "value": "br",
-                "label": "Bottom right"
-              }
-            ],
-            "cli": "--badge-position",
-            "tab": "badge",
-            "showWhen": "priceBadge",
-            "tooltip": "The price badge's own corner; pieces sharing a corner stack there"
-          },
-          {
-            "key": "badgeColor",
-            "label": "Colour",
-            "hint": "",
-            "type": "select",
-            "presentation": "dots",
-            "custom": true,
-            "default": "same",
-            "choices": [
-              {
-                "value": "same",
-                "label": "Same as all"
-              },
-              {
-                "value": "white",
-                "label": "White"
-              },
-              {
-                "value": "black",
-                "label": "Black"
-              },
-              {
-                "value": "paint",
-                "label": "Paint"
-              }
-            ],
-            "cli": "--badge-color",
-            "tab": "badge",
-            "showWhen": "priceBadge",
-            "cliNote": "--badge-color takes a name or your own #rrggbb.",
-            "tooltip": "The badge's own colour; Same follows the shared one"
+            "key": "subtitle",
+            "label": "Words",
+            "hint": "Empty: no subtitle",
+            "type": "text",
+            "default": "",
+            "placeholder": "Optional, e.g. Ask for Alex",
+            "cli": "--subtitle",
+            "tooltip": "A subtitle under the title: the trim line, the dealer, who to ask for",
+            "tab": "subtitle"
           },
           {
             "key": "subtitleSize",
@@ -1561,7 +1336,7 @@
             "min": 0.3,
             "max": 1.2,
             "step": 0.02,
-            "unit": "fraction",
+            "unit": "ofTitle",
             "cli": "--subtitle-size",
             "showWhen": "subtitle",
             "tab": "subtitle"
@@ -1706,34 +1481,260 @@
             "tab": "subtitle",
             "showWhen": "subtitle",
             "tooltip": "The line on a pill, or bare"
+          },
+          {
+            "key": "priceBadge",
+            "label": "Show the price",
+            "hint": "",
+            "type": "toggle",
+            "default": true,
+            "cli": "--price-badge",
+            "tooltip": "The post's own price in a pill: MSRP for new, the listed price for used",
+            "tab": "badge"
+          },
+          {
+            "key": "badgeSize",
+            "label": "Size",
+            "hint": "",
+            "type": "range",
+            "default": 0.85,
+            "min": 0.4,
+            "max": 1.4,
+            "step": 0.02,
+            "unit": "ofTitle",
+            "cli": "--badge-size",
+            "tab": "badge",
+            "showWhen": "priceBadge",
+            "tooltip": "The badge's size as a share of the title's"
+          },
+          {
+            "key": "badgeFont",
+            "label": "Font",
+            "hint": "",
+            "type": "select",
+            "dynamic": "fonts",
+            "same": "Same as all",
+            "default": "same",
+            "cli": "--badge-font",
+            "tab": "badge",
+            "showWhen": "priceBadge",
+            "tooltip": "The price badge's own font",
+            "faces": true
+          },
+          {
+            "key": "badgePosition",
+            "label": "Position",
+            "hint": "",
+            "type": "select",
+            "presentation": "place",
+            "nullable": true,
+            "default": null,
+            "choices": [
+              {
+                "value": null,
+                "label": "Same as all"
+              },
+              {
+                "value": "tl",
+                "label": "Top left"
+              },
+              {
+                "value": "tc",
+                "label": "Top centre"
+              },
+              {
+                "value": "tr",
+                "label": "Top right"
+              },
+              {
+                "value": "bl",
+                "label": "Bottom left"
+              },
+              {
+                "value": "bc",
+                "label": "Bottom centre"
+              },
+              {
+                "value": "br",
+                "label": "Bottom right"
+              }
+            ],
+            "cli": "--badge-position",
+            "tab": "badge",
+            "showWhen": "priceBadge",
+            "tooltip": "The price badge's own corner; pieces sharing a corner stack there"
+          },
+          {
+            "key": "badgeColor",
+            "label": "Colour",
+            "hint": "",
+            "type": "select",
+            "presentation": "dots",
+            "custom": true,
+            "default": "same",
+            "choices": [
+              {
+                "value": "same",
+                "label": "Same as all"
+              },
+              {
+                "value": "white",
+                "label": "White"
+              },
+              {
+                "value": "black",
+                "label": "Black"
+              },
+              {
+                "value": "paint",
+                "label": "Paint"
+              }
+            ],
+            "cli": "--badge-color",
+            "tab": "badge",
+            "showWhen": "priceBadge",
+            "cliNote": "--badge-color takes a name or your own #rrggbb.",
+            "tooltip": "The badge's own colour; Same follows the shared one"
+          },
+          {
+            "key": "textFont",
+            "label": "Font",
+            "hint": "",
+            "type": "select",
+            "dynamic": "fonts",
+            "default": "Lato Bold",
+            "cli": "--text-font",
+            "tab": "all",
+            "tooltip": "The studio font every piece is set in; each piece can take its own",
+            "faces": true
+          },
+          {
+            "key": "textPosition",
+            "label": "Position",
+            "hint": "",
+            "type": "select",
+            "default": "bl",
+            "choices": [
+              {
+                "value": "tl",
+                "label": "Top left"
+              },
+              {
+                "value": "tc",
+                "label": "Top centre"
+              },
+              {
+                "value": "tr",
+                "label": "Top right"
+              },
+              {
+                "value": "bl",
+                "label": "Bottom left"
+              },
+              {
+                "value": "bc",
+                "label": "Bottom centre"
+              },
+              {
+                "value": "br",
+                "label": "Bottom right"
+              }
+            ],
+            "cli": "--text-position",
+            "tooltip": "Where the text sits; the vehicle keeps clear of it",
+            "presentation": "place",
+            "tab": "all"
+          },
+          {
+            "key": "textColor",
+            "label": "Colour",
+            "hint": "",
+            "type": "select",
+            "default": "white",
+            "choices": [
+              {
+                "value": "white",
+                "label": "White"
+              },
+              {
+                "value": "black",
+                "label": "Black"
+              },
+              {
+                "value": "paint",
+                "label": "Paint"
+              }
+            ],
+            "cli": "--text-color",
+            "presentation": "dots",
+            "custom": true,
+            "cliNote": "--text-color takes a name or your own #rrggbb.",
+            "tab": "all",
+            "tooltip": "White with a soft shadow, black, the vehicle's paint on the badge, or your own"
+          },
+          {
+            "key": "textCase",
+            "label": "Case",
+            "hint": "",
+            "type": "select",
+            "presentation": "segment",
+            "default": "as-is",
+            "choices": [
+              {
+                "value": "as-is",
+                "label": "As typed"
+              },
+              {
+                "value": "upper",
+                "label": "UPPER"
+              }
+            ],
+            "cli": "--text-case",
+            "tab": "all",
+            "tooltip": "The words as typed, or set in capitals"
+          },
+          {
+            "key": "textBoxed",
+            "label": "Boxed",
+            "hint": "",
+            "tooltip": "The title and the line on pills, like the price badge",
+            "type": "toggle",
+            "default": false,
+            "cli": "--text-boxed",
+            "tab": "all"
+          },
+          {
+            "key": "textShadow",
+            "label": "Shadow",
+            "hint": "",
+            "tooltip": "A soft shadow under unboxed words",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-text-shadow",
+            "cliInvert": true,
+            "tab": "all"
           }
         ],
         "tabs": [
           {
-            "id": "all",
-            "label": "All",
-            "hint": "The levers every piece shares"
-          },
-          {
             "id": "title",
             "label": "Title",
-            "hint": "The title's own levers",
-            "showWhen": {
-              "key": "titleMode",
-              "notEquals": "none"
-            }
+            "hint": "The headline: on or off, its words, its size and look"
           },
           {
             "id": "subtitle",
             "label": "Subtitle",
-            "hint": "The subtitle's own levers",
-            "showWhen": "subtitle"
+            "hint": "A second line under the title"
           },
           {
             "id": "badge",
             "label": "Badge",
-            "hint": "The price badge's own levers",
-            "showWhen": "priceBadge"
+            "hint": "The price in a pill"
+          },
+          {
+            "id": "all",
+            "label": "All pieces",
+            "hint": "The look every piece shares unless its own tab says otherwise"
           }
         ]
       },

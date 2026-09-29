@@ -216,7 +216,7 @@ export function buildDots(control, values, onChange, disabled, thumbFor, choices
     dot.disabled = disabled;
     const art = thumbFor ? thumbFor(control, choice, values, null) : null;
     if (art && art.color) dot.style.background = art.color;
-    else if (choice.value === 'same') { dot.classList.add('dot-same'); dot.textContent = '='; }
+    else if (choice.value === 'same') { dot.classList.add('dot-same'); dot.textContent = 'Same'; }
     else dot.classList.add('is-plain');
     dot.onclick = () => onChange(control.key, choice.value);
     row.appendChild(dot);
@@ -307,6 +307,7 @@ export function formatValue(control, value) {
   if (control.unit === 's') return `${value}s`;
   if (control.unit === 'px') return `${value}px`;
   if (control.unit === 'fraction') return `${Math.round(value * 100)}%`;
+  if (control.unit === 'ofTitle') return `${Math.round(value * 100)}% of title`;
   return String(value);
 }
 

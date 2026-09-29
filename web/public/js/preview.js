@@ -76,24 +76,49 @@ export class Preview {
     this.textTarget = null;
     this.dragPos = null;
     this.dragPiece = null;
+    // The six places, drawn over the stage while a drag is on, the one
+    // the text will land in lit.
+    this.zones = document.createElement('div');
+    this.zones.className = 'stage-zones';
+    this.zones.hidden = true;
+    for (const pos of ['tl', 'tc', 'tr', 'bl', 'bc', 'br']) {
+      const z = document.createElement('i');
+      z.dataset.pos = pos;
+      this.zones.appendChild(z);
+    }
+    this.canvas.parentElement?.appendChild(this.zones);
+    const showZone = (pos) => {
+      this.zones.hidden = pos === null;
+      for (const z of this.zones.children) z.classList.toggle('is-on', z.dataset.pos === pos);
+    };
     this.canvas.addEventListener('pointerdown', (e) => {
       if (!this.hasText()) return;
+      // Only the words themselves are handles: a tap on the car, or a
+      // finger scrolling past the stage, leaves the text where it is.
+      const hit = this.pieceAt(e);
+      if (!hit) return;
       this.canvas.setPointerCapture(e.pointerId);
-      this.dragPiece = this.textTarget ? this.textTarget(this.pieceAt(e)) : null;
+      this.dragPiece = this.textTarget ? this.textTarget(hit) : null;
       this.dragPos = this.positionAt(e);
       this.canvas.classList.add('is-dragging');
+      showZone(this.dragPos);
       e.preventDefault();
     });
     this.canvas.addEventListener('pointermove', (e) => {
-      if (this.dragPos === null) return;
+      if (this.dragPos === null) {
+        // A grab cursor over the words only.
+        if (e.pointerType === 'mouse' && this.hasText()) this.canvas.classList.toggle('over-text', !!this.pieceAt(e));
+        return;
+      }
       const pos = this.positionAt(e);
-      if (pos !== this.dragPos) { this.dragPos = pos; this.onTextPosition?.(pos, true, this.dragPiece); }
+      if (pos !== this.dragPos) { this.dragPos = pos; showZone(pos); this.onTextPosition?.(pos, true, this.dragPiece); }
     });
     const drop = (e) => {
       if (this.dragPos === null) return;
       const pos = this.positionAt(e);
       this.dragPos = null;
       this.canvas.classList.remove('is-dragging');
+      showZone(null);
       this.onTextPosition?.(pos, false, this.dragPiece);
       this.dragPiece = null;
     };
@@ -108,7 +133,7 @@ export class Preview {
   /* Whether the still carries any text, so the stage is draggable. */
   hasText() {
     const o = this.getOptions() || {};
-    return (o.titleMode && o.titleMode !== 'none') || !!o.priceBadge || !!(o.textLine && o.textLine.trim());
+    return (o.titleMode && o.titleMode !== 'none') || !!o.priceBadge || !!(o.subtitle && o.subtitle.trim());
   }
 
   /* The piece under the pointer ("title", "subtitle", "badge") or null:

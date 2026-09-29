@@ -683,7 +683,7 @@ function renderOptions() {
     before: [{ id: 'looks', label: 'Looks', hint: 'One tap, several levers', render: part('looksPart') }],
     after: [{ id: 'output', label: 'Output', hint: 'What a run makes, and the command line', render: part('outputPart') }],
     // Settings supplies the Text tool's default line.
-    placeholders: { subtitle: state.dealer.greeting || null, titleText: vehicleTitleWords() || null },
+    placeholders: { subtitle: state.dealer.greeting ? `Optional, e.g. ${state.dealer.greeting}` : null, titleText: vehicleTitleWords() || null },
     uploads: state.uploads,
     onUpload: addUpload,
     onRemoveUpload: removeUpload,
@@ -1801,6 +1801,9 @@ async function init() {
   // added since the last visit therefore arrives at its spec default
   // rather than undefined.
   state.options = { ...controlDefaults(), ...loadOptions() };
+  // "Your words" is the title's On with the Words field filled now; a
+  // saved custom title keeps its words under the vehicle mode.
+  if (state.options.titleMode === 'custom') state.options.titleMode = 'vehicle';
   // The user's own images, kept on this device: every upload of each
   // kind, and which one is chosen (by id, in the options blob). An
   // image saved by an older build as the single choice joins the list.
@@ -1992,9 +1995,11 @@ async function init() {
     commitOptions();
     preview.update();
   };
+  // What a drag moves: the piece under the pointer when its own tab is
+  // open or it already stands on its own, otherwise the whole stack.
   preview.textTarget = (hit) => {
     const tab = openSubTab('text');
-    if (tab && tab !== 'all') return tab;
+    if (hit && tab === hit) return hit;
     if (hit && state.options[`${hit}Position`]) return hit;
     return null;
   };

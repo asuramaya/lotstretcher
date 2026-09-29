@@ -593,13 +593,17 @@ lotstretcher URL --title vehicle --price-badge --subtitle "0% APR to May" \
     --badge-color paint --subtitle-position tr --subtitle-box on
 ```
 
-The app's Text tool is the same levers, previewed live as you type: an
-All tab for the shared ones and a Title, Subtitle and Badge tab for each
-piece's own, each tab there while its piece is on. The text can be
-dragged on the stage: it snaps to the six positions `--text-position`
-knows, and with a piece's tab open the drag moves that piece alone (a
-piece already placed on its own moves when the pointer lands on it), so
-the lever and the flag still say the same. `recompose` takes them too. The clip carries the same text on
+The app's Text tool is the same levers, previewed live as you type: a
+Title, Subtitle and Badge tab, each holding its piece's words or switch
+and its own look, and an All pieces tab for the look they share (a
+piece's own lever reads Same until it departs from it). The title is Off
+or On, and its Words replace the vehicle's (`--title custom` stays on the
+command line). The words themselves are the handle: dragging them snaps
+to the six positions `--text-position` knows, the six places show while
+the drag is on, and with a piece's tab open the drag moves that piece
+alone (a piece already placed on its own moves when the pointer lands on
+it), so the lever and the flag still say the same. A tap elsewhere on the
+stage leaves the text where it is. `recompose` takes them too. The clip carries the same text on
 every frame, with the conveyor laid out in the room beside it (three
 trucks in the top corners and below on a square, stacked on a portrait,
 a staggered lineup on a wide one, the hero across the front and the
