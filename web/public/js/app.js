@@ -290,9 +290,15 @@ async function addFiles(files, source = 'chosen') {
   images.sort((a, b) => (a.webkitRelativePath || a.name)
     .localeCompare(b.webkitRelativePath || b.name, undefined, { numeric: true }));
 
+  // The same file twice (picked again, or in two folders) is one photo:
+  // a size and content hash each photo keeps settle it.
+  let skipped = 0;
   for (const file of images) {
     if (state.photos.length >= LIMITS.maxPhotos) break;
+    const digest = await fileDigest(file);
+    if (digest && state.photos.some((q) => q.digest === digest)) { skipped++; continue; }
     state.photos.push({
+      digest,
       id: nextId++,
       name: file.name,
       blob: file,
@@ -301,14 +307,25 @@ async function addFiles(files, source = 'chosen') {
       source,
     });
   }
+  state.skippedDuplicates = skipped;
   renderPhotos();
+}
+
+async function fileDigest(file) {
+  try {
+    const buf = await file.arrayBuffer();
+    const h = await crypto.subtle.digest('SHA-256', buf);
+    return `${file.size}:${[...new Uint8Array(h).slice(0, 12)].map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+  } catch { return null; }
 }
 
 function addUrls(text, source = 'links') {
   const urls = text.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+  let skipped = 0;
   for (const url of urls) {
     if (state.photos.length >= LIMITS.maxPhotos) break;
     if (!/^https?:\/\//i.test(url)) continue;
+    if (state.photos.some((q) => q.url === url)) { skipped++; continue; }
     state.photos.push({
       id: nextId++,
       name: url.split('/').pop().split('?')[0] || 'photo',
@@ -318,6 +335,7 @@ function addUrls(text, source = 'links') {
       source,
     });
   }
+  state.skippedDuplicates = skipped;
   renderPhotos();
 }
 
@@ -349,7 +367,8 @@ function renderPhotos() {
   // Where they came from, in the head: "23 from the listing · 4 captured".
   const by = {};
   for (const p of state.photos) by[p.source || 'chosen'] = (by[p.source || 'chosen'] || 0) + 1;
-  setStatus('photosStatus', Object.entries(by).map(([k, c]) => `${c} ${SOURCE_LABEL[k] || k}`).join(' · '), 'ok');
+  const dupes = state.skippedDuplicates ? [`${state.skippedDuplicates} already here, skipped`] : [];
+  setStatus('photosStatus', [...Object.entries(by).map(([k, c]) => `${c} ${SOURCE_LABEL[k] || k}`), ...dupes].join(' · '), 'ok');
   // A changed photo set starts any preparation over, and the sort and
   // cut start on their own once the adding has settled.
   if (state.prepared && state.prepared.key !== photoKey() && !state.preparing) state.prepared = null;
@@ -1055,8 +1074,13 @@ async function sortAndCut(stages) {
         const gate = gateCutout({
           ambiguous: m.ambiguous, coverage: cut.coverage, hasCanvas: !!cut.canvas,
         }, state.options.strictCutouts);
+        const twin = gate.ok ? sameShotAs(cut.canvas, exteriors.slice(0, i)) : null;
         if (!gate.ok) {
           p.rejected = gate.reason;
+        } else if (twin) {
+          // The same shot uploaded twice (re-saved, resized, or pasted
+          // from two links): composed once, not twice.
+          p.rejected = `the same shot as ${twin.name}`;
         } else {
           p.cutout = cut.canvas;
           const cutBitmap = await createImageBitmap(await canvasToBlob(cut.canvas));
@@ -1439,6 +1463,53 @@ function readVehicle() {
     city_tags: $('f-citytags').value.split(',').map((s) => s.trim()).filter(Boolean),
   };
   saveDealer();
+}
+
+/* A cutout's 64-bit difference hash (9x8 grey, over a mid-grey ground so
+ * the transparent surround reads the same in every shot) and its aspect.
+ * Hashing the cut-out car, not the photo: on a dealer's studio photos the
+ * backdrop dominates a whole-photo hash and different angles of one car
+ * sit within a few bits of each other (see imaging/dedupe.py). Measured
+ * with this very hash on 983 pairs of different shots of one car (40
+ * library cars' cutouts), the closest are 15 bits apart (left and right
+ * sides, mirror images); a re-saved copy at 80% size lands within 4. */
+function cutoutSignature(canvas) {
+  if (!canvas) return null;
+  if (canvas.signature) return canvas.signature;
+  // Down in steps with smoothing: straight to 9x8 aliases, and a re-saved
+  // or resized copy of one shot then lands ten bits away from itself.
+  let src = canvas;
+  for (const [w, h] of [[144, 128], [36, 32]]) {
+    const step = makeCanvas(w, h);
+    const sx = ctxOf(step);
+    sx.imageSmoothingQuality = 'high';
+    sx.fillStyle = '#808080'; sx.fillRect(0, 0, w, h);
+    sx.drawImage(src, 0, 0, w, h);
+    src = step;
+  }
+  const c = makeCanvas(9, 8);
+  const x = ctxOf(c, { willReadFrequently: true });
+  x.imageSmoothingQuality = 'high';
+  x.drawImage(src, 0, 0, 9, 8);
+  const d = x.getImageData(0, 0, 9, 8).data;
+  const lum = (i) => d[i * 4] * 0.299 + d[i * 4 + 1] * 0.587 + d[i * 4 + 2] * 0.114;
+  const bits = [];
+  for (let y = 0; y < 8; y++) for (let k = 0; k < 8; k++) bits.push(lum(y * 9 + k) > lum(y * 9 + k + 1) ? 1 : 0);
+  canvas.signature = { bits, aspect: canvas.width / canvas.height };
+  return canvas.signature;
+}
+function sameShotAs(canvas, earlier) {
+  const a = cutoutSignature(canvas);
+  if (!a) return null;
+  for (const q of earlier) {
+    const b = cutoutSignature(q.cutout);
+    if (!b) continue;
+    if (Math.abs(a.aspect - b.aspect) / Math.max(a.aspect, b.aspect) > 0.02) continue;
+    let dist = 0;
+    for (let k = 0; k < 64; k++) dist += a.bits[k] !== b.bits[k];
+    if (dist <= 4) return q;
+  }
+  return null;
 }
 
 /* The run's shots in the CLI's order (spec select): the lead, which is
