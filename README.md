@@ -206,7 +206,13 @@ pdf.js words, and both get the same record, checked on every real sticker in the
 fixtures. The post copy is the core's as well (`build_posts`: the Marketplace post, the Threads post inside
 its cap, the Instagram caption, the hashtags and the audit notes), with `facebook_post.py`, `social_post.py`
 and `copy.js` reduced to hosts that hand in the vehicle and the dealer boilerplate. The VIN decoder and the shot picking are the core's as well
-(`vin_decode`, `vin_record`, `select_shots`). Everything the operator
+(`vin_decode`, `vin_record`, `select_shots`), and so are reading a vehicle page into its record
+(`listing_record`, with an exact port of Python's `html.unescape`), the vendor padding on dealer photos
+(`detect_bars`, `batch_bars`, `detect_banner`), the known-junk pHash (`phash`, `junk_match`), the
+layouts and a car's placement (`layout`, `placement`), and the mapping from the Studio's control values
+to every request field (`styles`, `text_facts`, `backdrop_spec`, `gradient_names`); each replaced a
+Python and a JavaScript version that had drifted, and each has a parity test holding both builds to what
+the deleted code returned. Everything the operator
 ruled into the core is in it; models stay in ONNX Runtime on both sides.
 
 [`tests/test_core_parity.py`](tests/test_core_parity.py) holds the core to the Python it replaced, and is
