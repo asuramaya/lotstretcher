@@ -622,7 +622,10 @@ taken out, or from the series: "BADLANDS - 4 PASSENGER", "XLT SERIES",
 the Super Duty's "LARIAT 176\" WB STYLESIDE"), body style, drivetrain,
 engine (a displacement line counts even without the word ENGINE) and
 transmission (from the options when the description block has none),
-colours, equipment and pricing. Every library sticker that names a trim
+colours, equipment and pricing. Equipment lines are split at the bullet
+Ford prints before each item, so a wrapped line joins the item above it,
+punctuated or not. An expired or unpublished sticker link is recognised
+as a placeholder, not read as an empty sticker. Every library sticker that names a trim
 agrees with its listing. The sticker's total is what the car cost new:
 in the app it only fills Price for a car marked New (or, with no
 condition stated, a sticker for this model year or later), and a used
@@ -630,6 +633,17 @@ car's post shows it as "Original MSRP". Post copy expands the sticker's
 shorthand ("Lthr Gear Knob/Str Wheel" is "Leather Gear Knob/Steering
 Wheel"), lists the options first and keeps eight standard features a
 column.
+
+### Cutout model and shot order
+
+`--cutout-model light` swaps the cutout for u2netp, a small, fast model
+that misses more often (4 of 150 library photos where the standard
+misses none); `standard` is BiRefNet on the command line and u2net in
+the browser, where Light is also a 4.6 MB download instead of 44 MB (the
+app's Pipeline tool). Every host orders the shots the same way (spec
+`select`): the lead, which is the bundle's `hero.png` and the post's
+cover, is the most confident front three-quarter, and the rest walk
+round the car front to rear.
 
 ## CLI Reference & Usage
 

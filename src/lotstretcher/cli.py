@@ -296,6 +296,9 @@ def main():
                               "running locally with gemma4:e2b pulled; quietly skipped (not a failure) "
                               "if that's not available. Writes vehicle_folder/vision-equipment.json. "
                               "See imaging/seat_vision.py.")
+    parser.add_argument("--cutout-model", choices=("standard", "light"), default="standard",
+                         help="standard: BiRefNet, the most reliable cutout. light: u2netp, a small fast "
+                              "model that misses more often (the app's Pipeline > Cutout model lever).")
     parser.add_argument("--no-strict-cutouts", action="store_true",
                          help="Keep every cutout, even ones the rest of the vehicle's gallery doesn't "
                               "vouch for. By default a cutout that matches neither the shape nor the "
@@ -407,6 +410,9 @@ def main():
                               "both almost always mean the listing crawl didn't actually cover the full "
                               "inventory, not that this many vehicles genuinely sold at once.")
     args = parser.parse_args()
+    if args.cutout_model != "standard":
+        from lotstretcher.imaging.cutout import set_cutout_model
+        set_cutout_model(args.cutout_model)
     apply_look(args, parser)
 
     if args.dealer_config:

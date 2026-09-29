@@ -11,7 +11,7 @@
 
 import {
   initConfigFromSpec, LIMITS, IMAGE_EXTS,
-  MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE, INTERIOR_LEAN, EXTERIOR_LEAN, FRAME_FILL_MIN_EDGES, MAX_SOURCE_SIDE,
+  MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE, INTERIOR_LEAN, EXTERIOR_LEAN, FRAME_FILL_MIN_EDGES, MAX_SOURCE_SIDE, modelKeys,
 } from './config.js';
 import { initRuntime, runtime, loadModel, totalBytes, prefetchModels, modelsCached } from './pipeline/runtime.js';
 import { classifyScene, classifyAngle, loadLabels } from './pipeline/classify.js';
@@ -421,7 +421,9 @@ function tagOf(text) { return el('span', 'tile-tag', text); }
 
 /* The angle the classifier gives, as words. */
 const ANGLE_WORDS = { front: 'Front', front_3q: 'Front \u00be', side: 'Side', rear_3q: 'Rear \u00be', rear: 'Rear', hero: 'Hero' };
-function angleLabel(angle) { return ANGLE_WORDS[angle] || angle || 'Hero'; }
+// An angle the model would not commit to reads as a plain exterior, not
+// "Hero" (which the lead shot is, whatever its angle).
+function angleLabel(angle) { return ANGLE_WORDS[angle] || angle || 'Exterior'; }
 
 function renderStages(stages) {
   const list = $('stageList');
@@ -456,7 +458,7 @@ function topProgress(value, text = null) {
 }
 
 function renderResults() {
-  const heroes = state.photos.filter((p) => p.hero);
+  const heroes = walkaround(state.photos.filter((p) => p.hero));
   const interiors = state.photos.filter((p) => p.interior);
 
   // Working: the stages open. Done: one line of what was made, folded.
@@ -949,7 +951,7 @@ async function sortAndCut(stages) {
     await Promise.all([
       loadModel('scene', (f) => setProgress(f * 0.2)),
       loadModel('angle'),
-      loadModel('matte'),
+      loadModel(modelKeys(state.options.cutoutModel)[2]),
     ]);
     clock('models', t0);
     stages[0].state = 'done';
@@ -1025,7 +1027,7 @@ async function sortAndCut(stages) {
       renderPhotos();
       try {
         t0 = performance.now();
-        const m = await matte(p.bitmap);
+        const m = await matte(p.bitmap, null, modelKeys(state.options.cutoutModel)[2]);
         clock('matte', t0);
         t0 = performance.now();
         const cut = applyMatte(p.bitmap, m);
@@ -1097,7 +1099,7 @@ async function sortAndCut(stages) {
 /* What the photos and the options that shape a cut amount to; a
  * preparation is only reused for the same. */
 function photoKey() {
-  return JSON.stringify([state.photos.map((p) => [p.id, p.userScene ? (p.rejected ? 'skip' : p.scene) : null]), state.options.interiors, state.options.cutType]);
+  return JSON.stringify([state.photos.map((p) => [p.id, p.userScene ? (p.rejected ? 'skip' : p.scene) : null]), state.options.interiors, state.options.cutType, state.options.cutoutModel]);
 }
 
 /* The sort-and-cut for the current photos: the preload's, awaited, when
@@ -1117,7 +1119,7 @@ async function prepared(stages) {
 
 function runStages() {
   return [
-    { n: 1, label: 'Loading models', state: 'active', detail: `${(totalBytes() / 1e6).toFixed(0)} MB, first run only` },
+    { n: 1, label: 'Loading models', state: 'active', detail: `${(totalBytes(modelKeys(state.options.cutoutModel)) / 1e6).toFixed(0)} MB, first run only` },
     { n: 2, label: 'Sorting photos', state: '' },
     { n: 3, label: 'Removing backgrounds', state: '' },
     { n: 4, label: 'Composing', state: '' },
@@ -1181,7 +1183,7 @@ async function run() {
 
     // --- pass 3: compose.
     readVehicle();
-    const cut = exteriors.filter((p) => p.cutout);
+    const cut = walkaround(exteriors.filter((p) => p.cutout));
     const formats = state.options.heroFormats.length ? state.options.heroFormats : ['square'];
     const vid = state.vehicle.vin || state.vehicle.stock_number || 'v';
 
@@ -1439,6 +1441,23 @@ function readVehicle() {
   saveDealer();
 }
 
+/* The run's shots in the CLI's order (spec select): the lead, which is
+ * the bundle's hero.png and the post's cover, is the most confident shot
+ * of the first angle in heroPriority; the rest walk round the car front
+ * to rear, each angle's most confident first; unknown angles last, in
+ * the order they came. */
+function walkaround(photos) {
+  const sel = specGet('select') || {};
+  const order = sel.walkaround || [];
+  const rank = (p) => { const i = order.indexOf(p.angle); return i < 0 ? order.length : i; };
+  const sorted = photos.map((p, i) => ({ p, i })).sort((a, b) => rank(a.p) - rank(b.p)
+    || (b.p.angleConf || 0) - (a.p.angleConf || 0) || a.i - b.i).map((x) => x.p);
+  const leadAngle = (sel.heroPriority || []).find((a) => sorted.some((p) => p.angle === a));
+  if (!leadAngle) return sorted;
+  const lead = sorted.find((p) => p.angle === leadAngle);
+  return [lead, ...sorted.filter((p) => p !== lead)];
+}
+
 function bundleName() {
   const t = vehicleTitle(state.vehicle).replace(/\s+/g, '-');
   const id = state.vehicle.stock_number || state.vehicle.vin;
@@ -1467,7 +1486,7 @@ async function downloadBundle() {
   btn.textContent = 'Packaging…';
   try {
     const files = [];
-    const heroes = state.photos.filter((p) => p.hero);
+    const heroes = walkaround(state.photos.filter((p) => p.hero));
 
     for (let i = 0; i < heroes.length; i++) {
       const p = heroes[i];
@@ -1532,7 +1551,7 @@ async function importSticker(source, label) {
     const parsed = await parseSticker(source);
 
     if (parsed.placeholder) {
-      note.textContent = 'That sticker is not published yet (the PDF just says to check back).';
+      note.textContent = 'That PDF holds no sticker: it says the sticker is not published yet or the link has expired.';
       return;
     }
 
@@ -1757,12 +1776,13 @@ function closeLightbox() {
  * then they load when the first photo needs them. */
 async function warmModels() {
   if (navigator.connection?.saveData) return;
-  if (await modelsCached()) return;
-  const label = `Getting ready, first visit only (${(totalBytes() / 1e6).toFixed(0)} MB)`;
+  const keys = modelKeys(state.options.cutoutModel);
+  if (await modelsCached(keys)) return;
+  const label = `Getting ready, first visit only (${(totalBytes(keys) / 1e6).toFixed(0)} MB)`;
   const quiet = () => state.preparing || state.running;
   if (!quiet()) topProgress(0, label);
   try {
-    await prefetchModels((f) => { if (!quiet()) topProgress(f, label); });
+    await prefetchModels((f) => { if (!quiet()) topProgress(f, label); }, keys);
   } catch { /* the first photo will try again */ }
   if (!quiet()) topProgress(null);
 }

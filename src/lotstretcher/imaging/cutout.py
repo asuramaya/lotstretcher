@@ -50,6 +50,14 @@ from dataclasses import dataclass
 from PIL import Image
 
 DEFAULT_MODEL = "birefnet-general"
+# --cutout-model: the app's Pipeline lever, one word for both hosts.
+CUTOUT_MODELS = {"standard": DEFAULT_MODEL, "light": "u2netp"}
+
+
+def set_cutout_model(choice: str) -> None:
+    """Point every later remove_background() at the named model."""
+    global DEFAULT_MODEL
+    DEFAULT_MODEL = CUTOUT_MODELS[choice]
 
 _sessions = {}
 _cuda_libs_loaded = False
@@ -138,7 +146,7 @@ def _margins(bbox: tuple[int, int, int, int], size: tuple[int, int]) -> tuple[fl
     return (left / w, top / h, (w - right) / w, (h - bottom) / h)
 
 
-def remove_background(content: bytes, alpha_threshold: int = 16, model_name: str = DEFAULT_MODEL) -> CutoutResult:
+def remove_background(content: bytes, alpha_threshold: int = 16, model_name: str | None = None) -> CutoutResult:
     """
     Tight close-up/detail shots (e.g. a grille filling the whole frame) give
     the segmentation model nothing to key a foreground/background split off,
@@ -177,7 +185,7 @@ def remove_background(content: bytes, alpha_threshold: int = 16, model_name: str
     from rembg import remove
 
     img = Image.open(io.BytesIO(content)).convert("RGB")
-    result = remove(img, session=_get_session(model_name))  # RGBA
+    result = remove(img, session=_get_session(model_name or DEFAULT_MODEL))  # RGBA
     alpha_arr = np.array(result.split()[-1])
 
     confident_fg = alpha_arr > 200

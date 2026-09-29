@@ -48,7 +48,8 @@ let warmed = false;
 function warm() {
   if (warmed || navigator.connection?.saveData) return;
   warmed = true;
-  import('./pipeline/runtime.js').then((m) => m.prefetchModels()).catch(() => {});
+  Promise.all([import('./pipeline/runtime.js'), import('./config.js')])
+    .then(([m, c]) => m.prefetchModels(null, c.modelKeys('standard'))).catch(() => {});
 }
 for (const a of document.querySelectorAll('a[href="app.html"]')) {
   a.addEventListener('pointerenter', warm, { once: true });

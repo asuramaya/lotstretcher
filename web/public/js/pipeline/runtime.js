@@ -135,9 +135,10 @@ const prefetched = new Map();
 const progressOf = new Map();
 const listeners = new Set();
 
+let progressKeys = Object.keys(MODELS);
 function emit() {
   let got = 0; let total = 0;
-  for (const k of Object.keys(MODELS)) {
+  for (const k of progressKeys) {
     total += MODELS[k].bytes;
     got += (progressOf.get(k) || 0) * MODELS[k].bytes;
   }
@@ -156,11 +157,11 @@ function download(key, keep) {
 }
 
 /* Whether every model is already on this device (no download ahead). */
-export async function modelsCached() {
+export async function modelsCached(keys = Object.keys(MODELS)) {
   try {
     if (!self.caches) return false;
     const cache = await caches.open(MODEL_CACHE);
-    for (const k of Object.keys(MODELS)) {
+    for (const k of keys) {
       if (!(await cache.match(modelUrl(MODELS[k].url)))) return false;
     }
     return true;
@@ -170,9 +171,10 @@ export async function modelsCached() {
 /* Start fetching the models into the device's cache without building
  * sessions (no inference memory is taken until a photo needs it).
  * `onProgress(fraction)` follows the bytes across all three. */
-export function prefetchModels(onProgress) {
+export function prefetchModels(onProgress, keys = Object.keys(MODELS)) {
   if (onProgress) listeners.add(onProgress);
-  const all = Promise.all(Object.keys(MODELS).map((k) => (sessions.has(k) ? null : download(k, !self.caches))));
+  progressKeys = keys;
+  const all = Promise.all(keys.map((k) => (sessions.has(k) ? null : download(k, !self.caches))));
   return all.finally(() => { if (onProgress) listeners.delete(onProgress); });
 }
 

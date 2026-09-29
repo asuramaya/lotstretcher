@@ -24,7 +24,18 @@ export const MODELS = {
    * BiRefNet. Unlike the classifiers this one quantizes cleanly -- it is
    * a plain conv encoder/decoder with no depthwise/HardSwish blocks. */
   matte: { url: 'models/matte.onnx', bytes: 44212443, size: 256 },
+
+  /* Pipeline > Cutout model: Light. u2netp fp32 at its native 320: 4.6MB
+   * against 44MB, ~475 against ~590 ms a matte in the browser, and on
+   * 150 library photos against BiRefNet, 4 misses (IoU < 0.9) where u2net
+   * had none (2026-09-25 bake-off). Its int8 export is broken (IoU 0.22). */
+  matteLight: { url: 'models/matte-light.onnx', bytes: 4574861, size: 320 },
 };
+
+/* The models a run needs: the two classifiers and the chosen matte. */
+export function modelKeys(cutoutModel) {
+  return ['scene', 'angle', cutoutModel === 'light' ? 'matteLight' : 'matte'];
+}
 
 /* Where the models come from in production. Cloudflare caps static
  * assets at 25MiB per file on free AND paid plans, so the 44.2MB matte

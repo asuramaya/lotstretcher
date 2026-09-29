@@ -56,8 +56,8 @@ function toU2netTensor(imageData, size) {
  * the mushy middle -- the same quality gate imaging/cutout.py uses. A
  * high ambiguous fraction means the model could not decide, which in
  * practice means the photo is not a clean single vehicle. */
-export async function matte(bitmap, onProgress) {
-  const { session, spec, inputName } = await loadModel('matte', onProgress);
+export async function matte(bitmap, onProgress, model = 'matte') {
+  const { session, spec, inputName } = await loadModel(model, onProgress);
   const ort = getOrt();
   const size = spec.size;
 

@@ -186,7 +186,8 @@
     "placeholderMarkers": [
       "check back later",
       "has not yet been",
-      "not available"
+      "not available",
+      "has expired"
     ],
     "makes": [
       "FORD",
@@ -2137,6 +2138,29 @@
             "tooltip": "Skip a cutout whose edges came out uncertain"
           },
           {
+            "key": "cutoutModel",
+            "label": "Cutout model",
+            "hint": "",
+            "type": "select",
+            "default": "standard",
+            "choices": [
+              {
+                "value": "standard",
+                "label": "Standard",
+                "hint": "The most reliable cutout"
+              },
+              {
+                "value": "light",
+                "label": "Light",
+                "hint": "A 4.6 MB download instead of 44 MB, for a slow or metered connection; a little less reliable"
+              }
+            ],
+            "cli": "--cutout-model",
+            "presentation": "segment",
+            "cliNote": "--cutout-model standard|light: light is u2netp on either host; standard is each host's own (BiRefNet on the CLI, u2net in the browser).",
+            "tooltip": "Light downloads a tenth of the model and cuts slightly faster, and misses more often (4 of 150 library photos against none)"
+          },
+          {
             "key": "upscale",
             "label": "Upscale cutouts",
             "hint": "",
@@ -2578,5 +2602,29 @@
     "fgFineRadiusFrac": 0.006,
     "edgeLow": 0.12,
     "edgeHigh": 0.88
+  },
+  "select": {
+    "$comment": "imaging/select.py and the browser's run order: the lead (cover) shot is the best of the first angle in heroPriority, the rest follow walkaround, front to rear.",
+    "heroPriority": [
+      "front_3q",
+      "rear_3q",
+      "side",
+      "front",
+      "rear"
+    ],
+    "accentPriority": [
+      "side",
+      "front",
+      "rear_3q",
+      "rear",
+      "front_3q"
+    ],
+    "walkaround": [
+      "front_3q",
+      "front",
+      "side",
+      "rear_3q",
+      "rear"
+    ]
   }
 }

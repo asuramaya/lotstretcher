@@ -12,13 +12,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-HERO_PRIORITY = ["front_3q", "rear_3q", "side", "front", "rear"]
-ACCENT_PRIORITY = ["side", "front", "rear_3q", "rear", "front_3q"]
+from lotstretcher import spec as _spec
+
+HERO_PRIORITY = list(_spec.get("select", "heroPriority"))
+ACCENT_PRIORITY = list(_spec.get("select", "accentPriority"))
 
 # Walkaround order for hero_video.py's animated carousel -- front to rear,
 # 3q angles before straight-on since they're the more flattering of a
 # front/front_3q or rear/rear_3q pair when only one should lead.
-CAROUSEL_ANGLE_ORDER = ["front_3q", "front", "side", "rear_3q", "rear"]
+CAROUSEL_ANGLE_ORDER = list(_spec.get("select", "walkaround"))
 
 
 def load_angles(cutout_dir: Path) -> dict[str, dict]:

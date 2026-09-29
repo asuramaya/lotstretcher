@@ -415,7 +415,7 @@ fn column_key(label: &str) -> &'static str {
     COLUMNS.iter().find(|(l, _)| *l == label).map(|(_, k)| *k).unwrap_or("")
 }
 
-fn parse_equipment_grid(rows: &[Vec<&Word>]) -> (Vec<(String, Vec<String>)>, Vec<String>) {
+fn parse_equipment_grid(rows: &[Vec<&Word>], bullets: &[(f64, f64)], y_tol: f64) -> (Vec<(String, Vec<String>)>, Vec<String>) {
     let header = rows.iter().find(|r| {
         has_all(r, &["EXTERIOR", "INTERIOR", "FUNCTIONAL"]) && r.iter().any(|w| upper(&w.text).contains("SAFETY"))
     });
@@ -453,8 +453,30 @@ fn parse_equipment_grid(rows: &[Vec<&Word>]) -> (Vec<(String, Vec<String>)>, Vec
             warranty_lines = merge_continuations(raw);
             col_rows.retain(|r| r[0].y0 < wy);
         }
-        let lines: Vec<String> = col_rows.iter().map(|r| band_text(r)).filter(|l| !l.trim().is_empty()).collect();
-        let lines = merge_continuations(lines);
+        // Bulleted lines start items: a line with no bullet before its
+        // first word in this column is the one above wrapping, punctuated
+        // or not ("HOTSPOT TELEMATICS MODEM" under "... 4GWI-"). A column
+        // printed without bullets falls back to the punctuation rule.
+        let rows_text: Vec<(bool, String)> = col_rows.iter().filter_map(|r| {
+            let t = band_text(r);
+            if t.trim().is_empty() { return None; }
+            let first_x = r.iter().filter(|w| in_band(w)).map(|w| w.x0).fold(f64::MAX, f64::min);
+            let y = r[0].y0;
+            let bulleted = bullets.iter().any(|&(bx, by)| (by - y).abs() <= y_tol.max(2.0) && bx >= x0 - 12.0 && bx < first_x);
+            Some((bulleted, t))
+        }).collect();
+        let lines = if rows_text.iter().filter(|(b, _)| *b).count() >= 2 {
+            let mut merged: Vec<String> = Vec::new();
+            for (bulleted, t) in rows_text {
+                match merged.last_mut() {
+                    Some(last) if !bulleted => { *last = format!("{last} {t}"); }
+                    _ => merged.push(t),
+                }
+            }
+            merged
+        } else {
+            merge_continuations(rows_text.into_iter().map(|(_, t)| t).collect())
+        };
         grid.push((column_key(label).to_string(), lines.iter().map(|l| py_title(l)).collect()));
     }
     (grid, warranty_lines)
@@ -565,6 +587,30 @@ fn parse_optional_equipment(words: &[&Word], rows: &[Vec<&Word>], y_tol: f64) ->
 
 /// Clean, sorted words: the garbage filter and the (y0, x0) order both
 /// hosts' words go through before anything reads them.
+/// The item bullets a Ford sticker prints before each equipment line
+/// (U+009F in its fonts; a real bullet elsewhere). pdftotext gives the
+/// bullet as a word of its own; pdf.js may glue it to the next word.
+const BULLETS: [char; 4] = ['\u{9f}', '\u{2022}', '\u{f0b7}', '\u{25cf}'];
+
+/// The words with their bullets taken off, and where the bullets were:
+/// a bulleted line starts an item, a line without one continues it.
+fn split_bullets(words: &[Word]) -> (Vec<Word>, Vec<(f64, f64)>) {
+    let mut out = Vec::with_capacity(words.len());
+    let mut bullets = Vec::new();
+    for w in words {
+        let lead = w.text.chars().take_while(|c| BULLETS.contains(c) || c.is_whitespace()).count();
+        if lead == 0 || !w.text.chars().next().map(|c| BULLETS.contains(&c)).unwrap_or(false) { out.push(w.clone()); continue; }
+        bullets.push((w.x0, w.y0));
+        let rest: String = w.text.chars().skip(lead).collect();
+        if !rest.is_empty() {
+            let n = w.text.chars().count().max(1) as f64;
+            let x = w.x0 + (w.x1 - w.x0) * lead as f64 / n;
+            out.push(Word { x0: x, y0: w.y0, x1: w.x1, y1: w.y1, text: rest });
+        }
+    }
+    (out, bullets)
+}
+
 fn prepare(words: &[Word]) -> Vec<&Word> {
     let mut out: Vec<&Word> = words.iter().filter(|w| !is_garbage(&w.text)).collect();
     sort_words(&mut out);
@@ -573,7 +619,8 @@ fn prepare(words: &[Word]) -> Vec<&Word> {
 
 pub fn parse_sticker(req: &StickerRequest) -> Sticker {
     let y_tol = req.y_tol.unwrap_or(1.5);
-    let words = prepare(&req.words);
+    let (clean, bullets) = split_bullets(&req.words);
+    let words = prepare(&clean);
     let rows = group_rows(&words, y_tol);
     let full_text = row_text(&words);
     let lower = full_text.to_lowercase();
@@ -584,7 +631,7 @@ pub fn parse_sticker(req: &StickerRequest) -> Sticker {
         .map(|m| m.as_str().unwrap()).find(|m| up.contains(m)).map(py_title);
 
     let overview = parse_overview(&words, &rows, y_tol);
-    let (grid, warranty_raw) = parse_equipment_grid(&rows);
+    let (grid, warranty_raw) = parse_equipment_grid(&rows, &bullets, y_tol);
     let mut equipment = serde_json::Map::new();
     for (key, lines) in grid {
         equipment.insert(key, serde_json::Value::Array(lines.into_iter().map(serde_json::Value::String).collect()));
