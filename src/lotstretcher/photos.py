@@ -216,6 +216,8 @@ def download_photos(session: requests.Session, v: Vehicle, images_dir: Path,
     # gallery-consensus pass below can demote one without re-reading it.
     cutout_sources: dict[str, tuple[Path, bytes, str]] = {}
     wheel_signatures: list = []
+    cutout_signatures: list[tuple[str, dict]] = []
+    repeated_shots: list[tuple[str, str]] = []
     ext_i = int_i = 0
     for content, ext in downloaded:
         phash = photo_hash(content) if cache_enabled else None
@@ -330,6 +332,21 @@ def download_photos(session: requests.Session, v: Vehicle, images_dir: Path,
                             # information is thrown away that a later step might want back.
                             cropped = cutout.cutout.crop(cutout.bbox)
                             rgba = upscale(cropped, upscale_model) if upscale_cutouts else cropped
+
+                    if quality_ok:
+                        # The same shot twice (a re-save, a resized copy)
+                        # keeps its photo but not a second cutout, so it
+                        # cannot fill two slots of a layout or a clip; the
+                        # browser's run sets the same shot aside by the
+                        # same core signature (select.rs::shot_signature).
+                        signature = core.call({"op": "shot_signature", "image": {"$image": 0}}, [rgba])
+                        twin = core.call({"op": "same_shot", "signature": signature,
+                                          "earlier": [s for _n, s in cutout_signatures]})
+                        if twin is not None:
+                            quality_ok = False
+                            repeated_shots.append((dest.name, cutout_signatures[twin][0]))
+                        else:
+                            cutout_signatures.append((f"{ext_i:02d}.png", signature))
 
                     if quality_ok:
                         cutout_dir.mkdir(parents=True, exist_ok=True)
@@ -484,6 +501,9 @@ def download_photos(session: requests.Session, v: Vehicle, images_dir: Path,
         )
     if cutout_count:
         v.warnings.append(f"Generated {cutout_count} transparent cutout(s).")
+    if repeated_shots:
+        v.warnings.append("Not cut out, the same shot as an earlier one: "
+                          + ", ".join(f"exterior/{a} (as cutout/{b})" for a, b in repeated_shots) + ".")
     if reused_count:
         v.warnings.append(
             f"{reused_count} of {cutout_count} exterior photo(s) are byte-identical to imagery "

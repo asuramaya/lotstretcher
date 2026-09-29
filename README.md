@@ -128,10 +128,11 @@ fetches nothing: a dealer page sits behind a bot challenge that only a real brow
 fetch of one gets a 403, which is why the self-hosted server drives a headless browser). What the
 address and the VIN say on their own is decoded on the device from tables in the spec
 (`vin` in `shared/pipeline-spec.json`): the address's slug gives the year, make and model, the VIN
-its check digit, model year and manufacturer. `lotstretcher/vin.py` and
-`web/public/js/pipeline/vin.js` are the same decoder in both languages, and
-[`tests/test_vin_parity.py`](tests/test_vin_parity.py) holds them to the same answers, including
-every address in the local listings library when one is present. Model and trim are encoded per
+its check digit, model year and manufacturer. The decoder is the core's
+(`core/src/vin.rs`); `lotstretcher/vin.py` and `web/public/js/pipeline/vin.js` are hosts over it, and
+[`tests/test_vin_parity.py`](tests/test_vin_parity.py) holds both builds to the answers the two
+decoders gave before they were deleted, and to every address in the local listings library when one
+is present. Model and trim are encoded per
 manufacturer and need NHTSA's database, which is why the slug carries them here and the price,
 mileage and photos stay yours to add. **Scan VIN** reads the door-jamb barcode through the camera on
 the device (the browser's own barcode detector where it exists, else the vendored ZXing reader in
@@ -198,7 +199,8 @@ pdf.js words, and both get the same record, checked on every real sticker in the
 (114 of them, byte-identical to the Python parser they replaced) and, in the browser, against the same
 fixtures. The post copy is the core's as well (`build_posts`: the Marketplace post, the Threads post inside
 its cap, the Instagram caption, the hashtags and the audit notes), with `facebook_post.py`, `social_post.py`
-and `copy.js` reduced to hosts that hand in the vehicle and the dealer boilerplate. Everything the operator
+and `copy.js` reduced to hosts that hand in the vehicle and the dealer boilerplate. The VIN decoder and the shot picking are the core's as well
+(`vin_decode`, `vin_record`, `select_shots`). Everything the operator
 ruled into the core is in it; models stay in ONNX Runtime on both sides.
 
 [`tests/test_core_parity.py`](tests/test_core_parity.py) holds the core to the Python it replaced, and is
@@ -640,10 +642,17 @@ column.
 that misses more often (4 of 150 library photos where the standard
 misses none); `standard` is BiRefNet on the command line and u2net in
 the browser, where Light is also a 4.6 MB download instead of 44 MB (the
-app's Pipeline tool). Every host orders the shots the same way (spec
-`select`): the lead, which is the bundle's `hero.png` and the post's
-cover, is the most confident front three-quarter, and the rest walk
-round the car front to rear.
+app's Pipeline tool). Every host orders the shots the same way, by the
+core (`core/src/select.rs`, priorities in spec `select`): the lead, which
+is the bundle's `hero.png` and the post's cover, is the most confident
+front three-quarter, and the rest walk round the car front to rear.
+`imaging/select.py` only reads `angles.json` and hands the core the
+shots. The same shot twice (a re-save, a resized copy) gets one cutout on
+both surfaces: the core hashes each cut-out car (`shot_signature`), and a
+shot within 4 bits and 2% of aspect of an earlier one keeps its photo but
+is not cut out again, with a warning naming the pair. Measured on 40
+library cars, different shots of one car are 14 bits apart at the
+closest and copies at 80% and 50% size within 3.
 
 ## CLI Reference & Usage
 

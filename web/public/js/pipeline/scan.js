@@ -7,7 +7,7 @@
  * read off the live preview and never leave the page. A VIN counts only
  * when its check digit holds (pipeline/vin.js). */
 
-import { normalize, checkDigit } from './vin.js';
+import { decode } from './vin.js';
 
 const FORMATS_NATIVE = ['code_39', 'code_128', 'qr_code', 'data_matrix', 'pdf417'];
 const FORMATS_ZXING = ['Code39', 'Code128', 'QRCode', 'DataMatrix', 'PDF417'];
@@ -26,8 +26,8 @@ async function zxingReader() {
 export function vinFromText(text) {
   const raw = String(text || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   for (const candidate of [raw, raw.replace(/^I/, ''), raw.slice(-17)]) {
-    const v = normalize(candidate);
-    if (v.length === 17 && checkDigit(v) === v[8]) return v;
+    const d = decode(candidate);
+    if (d.valid) return d.vin;
   }
   return null;
 }

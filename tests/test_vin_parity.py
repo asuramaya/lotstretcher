@@ -1,22 +1,31 @@
 """The address and the VIN, decoded on the device from the spec's
-tables, the same in Python and JavaScript. When the local listings
-library is present, every address in it must decode to the year, make,
-model and VIN the scraper recorded, since that is the promise the field
-makes with no fetch."""
+tables by the core (core/src/vin.rs), for both surfaces.
+
+lotstretcher/vin.py and web/public/js/pipeline/vin.js used to be the same
+decoder written twice, held together by this test. Both are hosts over
+the core now. tests/fixtures/vin-reference.json holds what the Python
+gave for every case below before it was deleted, and this test holds the
+core to it natively (through the Python host) and in the wasm build
+(through vin.js under node). When the local listings library is present,
+every address in it must also decode to the year, make, model and VIN
+the scraper recorded, since that is the promise the field makes with no
+fetch."""
 from __future__ import annotations
 
 import glob
 import json
 import shutil
 import subprocess
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from lotstretcher import vin
+from lotstretcher import core, vin
+
+pytestmark = pytest.mark.skipif(not core.available(), reason=f"core not built: {core.why_unavailable()}")
 
 REPO = Path(__file__).resolve().parents[1]
+REF = json.loads((REPO / "tests" / "fixtures" / "vin-reference.json").read_text())
 CASES = [
     "3FTTW8HA3TRB41981",
     "1C4RJGAGXRC105682",
@@ -78,25 +87,35 @@ def test_every_address_in_the_local_library_decodes_to_what_the_scraper_saw():
         assert (r["model"] or "").lower() == (d["model"] or "").lower(), d["url"]
 
 
-def test_js_decoder_matches_python():
+def test_native_matches_the_python_it_replaced():
+    for case, expected in REF.items():
+        assert vin.record_from_text(case) == expected["record"], case
+        assert vin.decode(case) == expected["decode"], case
+
+
+def test_the_reference_covers_the_cases():
+    assert set(CASES) <= set(REF)
+
+
+def test_wasm_matches():
     node = shutil.which("node")
     if not node:
-        pytest.skip("node is not installed")
-    spec = REPO / "web" / "public" / "spec" / "pipeline-spec.json"
+        pytest.skip("node is not installed; the wasm side of the parity check cannot run")
+    wasm = REPO / "web" / "public" / "core" / "lotstretcher_core_bg.wasm"
     script = f"""
       import fs from 'node:fs';
-      import {{ loadSpecFrom }} from '{(REPO / 'web' / 'public' / 'js' / 'spec.js').as_posix()}';
+      import {{ loadCore }} from '{(REPO / 'web' / 'public' / 'js' / 'core.js').as_posix()}';
       import {{ recordFromText, decode }} from '{(REPO / 'web' / 'public' / 'js' / 'pipeline' / 'vin.js').as_posix()}';
-      loadSpecFrom(JSON.parse(fs.readFileSync('{spec.as_posix()}', 'utf8')));
-      const cases = {json.dumps(CASES)};
-      process.stdout.write(JSON.stringify(cases.map((c) => [recordFromText(c), decode(c)])));
+      import {{ vinFromText }} from '{(REPO / 'web' / 'public' / 'js' / 'pipeline' / 'scan.js').as_posix()}';
+      await loadCore(fs.readFileSync('{wasm.as_posix()}'));
+      const cases = JSON.parse(fs.readFileSync(0, 'utf8'));
+      const out = Object.fromEntries(cases.map((c) => [c, {{ record: recordFromText(c), decode: decode(c) }}]));
+      out.$scan = [vinFromText('I3FTTW8HA3TRB41981'), vinFromText('3FTTW8HA4TRB41981')];
+      process.stdout.write(JSON.stringify(out));
     """
-    with tempfile.TemporaryDirectory() as d:
-        js = Path(d) / "vin.mjs"
-        js.write_text(script)
-        out = json.loads(subprocess.run([node, str(js)], capture_output=True, text=True, check=True).stdout)
-    for case, (js_record, js_decode) in zip(CASES, out):
-        py_record = vin.record_from_text(case)
-        py_decode = vin.decode(case)
-        assert js_record == py_record, case
-        assert js_decode == py_decode, case
+    run = subprocess.run([node, "--input-type=module", "-e", script], input=json.dumps(list(REF)),
+                         capture_output=True, text=True, check=True)
+    out = json.loads(run.stdout)
+    assert out.pop("$scan") == ["3FTTW8HA3TRB41981", None]
+    for case, expected in REF.items():
+        assert out[case] == expected, case

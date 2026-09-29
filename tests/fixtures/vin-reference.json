@@ -1,0 +1,735 @@
+{
+ "": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "",
+   "warnings": [
+    "A VIN has 17 characters; this has 0."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": null,
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": null,
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "A VIN has 17 characters; this has 0."
+   ],
+   "year": null
+  }
+ },
+ "   ": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "",
+   "warnings": [
+    "A VIN has 17 characters; this has 0."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": null,
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": null,
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "A VIN has 17 characters; this has 0."
+   ],
+   "year": null
+  }
+ },
+ "19XFL2H83TE000559": {
+  "decode": {
+   "country": "United States",
+   "make": "Honda",
+   "valid": true,
+   "vin": "19XFL2H83TE000559",
+   "warnings": [],
+   "year": 2026
+  },
+  "record": {
+   "make": "Honda",
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2026 Honda",
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": "19XFL2H83TE000559",
+   "warnings": [],
+   "year": 2026
+  }
+ },
+ "1C4RJGAGXRC105682": {
+  "decode": {
+   "country": "United States",
+   "make": "Jeep",
+   "valid": true,
+   "vin": "1C4RJGAGXRC105682",
+   "warnings": [],
+   "year": 2024
+  },
+  "record": {
+   "make": "Jeep",
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2024 Jeep",
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": "1C4RJGAGXRC105682",
+   "warnings": [],
+   "year": 2024
+  }
+ },
+ "1FT8W2BT2REC5990O": {
+  "decode": {
+   "country": "United States",
+   "make": "Ford",
+   "valid": false,
+   "vin": "1FT8W2BT2REC59900",
+   "warnings": [
+    "The VIN's check digit does not match; one character is probably mistyped."
+   ],
+   "year": 2024
+  },
+  "record": {
+   "make": "Ford",
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2024 Ford",
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": "1FT8W2BT2REC59900",
+   "warnings": [
+    "The VIN's check digit does not match; one character is probably mistyped."
+   ],
+   "year": 2024
+  }
+ },
+ "2C3CDXBG5NH123456": {
+  "decode": {
+   "country": "Canada",
+   "make": null,
+   "makes": [
+    "Chrysler",
+    "Dodge"
+   ],
+   "valid": false,
+   "vin": "2C3CDXBG5NH123456",
+   "warnings": [
+    "The VIN's check digit does not match; one character is probably mistyped.",
+    "That manufacturer code is Chrysler or Dodge; pick the make."
+   ],
+   "year": 2022
+  },
+  "record": {
+   "make": null,
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2022",
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": "2C3CDXBG5NH123456",
+   "warnings": [
+    "The VIN's check digit does not match; one character is probably mistyped.",
+    "That manufacturer code is Chrysler or Dodge; pick the make."
+   ],
+   "year": 2022
+  }
+ },
+ "3FTTW8HA3TRB4198": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "3FTTW8HA3TRB4198",
+   "warnings": [
+    "A VIN has 17 characters; this has 16."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": null,
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": null,
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "A VIN has 17 characters; this has 16."
+   ],
+   "year": null
+  }
+ },
+ "3FTTW8HA3TRB41981": {
+  "decode": {
+   "country": "Mexico",
+   "make": "Ford",
+   "valid": true,
+   "vin": "3FTTW8HA3TRB41981",
+   "warnings": [],
+   "year": 2026
+  },
+  "record": {
+   "make": "Ford",
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2026 Ford",
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": "3FTTW8HA3TRB41981",
+   "warnings": [],
+   "year": 2026
+  }
+ },
+ "3FTTW8HA4TRB41981": {
+  "decode": {
+   "country": "Mexico",
+   "make": "Ford",
+   "valid": false,
+   "vin": "3FTTW8HA4TRB41981",
+   "warnings": [
+    "The VIN's check digit does not match; one character is probably mistyped."
+   ],
+   "year": 2026
+  },
+  "record": {
+   "make": "Ford",
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2026 Ford",
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": "3FTTW8HA4TRB41981",
+   "warnings": [
+    "The VIN's check digit does not match; one character is probably mistyped."
+   ],
+   "year": 2026
+  }
+ },
+ "3ftt w8ha3trb41981": {
+  "decode": {
+   "country": "Mexico",
+   "make": "Ford",
+   "valid": true,
+   "vin": "3FTTW8HA3TRB41981",
+   "warnings": [],
+   "year": 2026
+  },
+  "record": {
+   "make": "Ford",
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2026 Ford",
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": "3FTTW8HA3TRB41981",
+   "warnings": [],
+   "year": 2026
+  }
+ },
+ "HTTPS://a.test/vehicle/3FTTW8HA3TRB41981": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSATESTVEH1CLE3FTTW8HA3TRB41981",
+   "warnings": [
+    "A VIN has 17 characters; this has 34."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": "Ford",
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2026 Ford",
+   "trim": null,
+   "url": "HTTPS://a.test/vehicle/3FTTW8HA3TRB41981",
+   "video_urls": [],
+   "vin": "3FTTW8HA3TRB41981",
+   "warnings": [],
+   "year": 2026
+  }
+ },
+ "SALxyz": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "SALXYZ",
+   "warnings": [
+    "A VIN has 17 characters; this has 6."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": null,
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": null,
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "A VIN has 17 characters; this has 6."
+   ],
+   "year": null
+  }
+ },
+ "WBA": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "WBA",
+   "warnings": [
+    "A VIN has 17 characters; this has 3."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": null,
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": null,
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "A VIN has 17 characters; this has 3."
+   ],
+   "year": null
+  }
+ },
+ "http://x.test/2024-Ford/": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPXTEST2024F0RD",
+   "warnings": [
+    "The VIN's check digit does not match; one character is probably mistyped.",
+    "The manufacturer code HTT is not one the app knows; type the make."
+   ],
+   "year": 2032
+  },
+  "record": {
+   "make": "Ford",
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2024 Ford",
+   "trim": null,
+   "url": "http://x.test/2024-Ford/",
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "No VIN in that address; only what its words say was read."
+   ],
+   "year": 2024
+  }
+ },
+ "https://": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPS",
+   "warnings": [
+    "A VIN has 17 characters; this has 5."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": null,
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": null,
+   "trim": null,
+   "url": "https://",
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "No VIN in that address; only what its words say was read."
+   ],
+   "year": null
+  }
+ },
+ "https://a.test/2019": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSATEST2019",
+   "warnings": [
+    "A VIN has 17 characters; this has 14."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": null,
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2019",
+   "trim": null,
+   "url": "https://a.test/2019",
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "No VIN in that address; only what its words say was read."
+   ],
+   "year": 2019
+  }
+ },
+ "https://a.test/cars/certified-pre-owned-2019-bmw-x5-xdrive40i-sugar-land-tx": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSATESTCARSCERT1F1EDPRE0WNED2019BMWX5XDR1VE401SUGARLANDTX",
+   "warnings": [
+    "A VIN has 17 characters; this has 60."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": "BMW",
+   "model": "X5 Xdrive40i Sugar",
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2019 BMW X5 Xdrive40i Sugar",
+   "trim": null,
+   "url": "https://a.test/cars/certified-pre-owned-2019-bmw-x5-xdrive40i-sugar-land-tx",
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "No VIN in that address; only what its words say was read."
+   ],
+   "year": 2019
+  }
+ },
+ "https://a.test/p/Used%202020%20Toyota%20Tacoma": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSATESTPUSED20202020T0Y0TA20TAC0MA",
+   "warnings": [
+    "A VIN has 17 characters; this has 37."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": "Used 2020 toyota tacoma",
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "Used 2020 toyota tacoma",
+   "trim": null,
+   "url": "https://a.test/p/Used%202020%20Toyota%20Tacoma",
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "No VIN in that address; only what its words say was read."
+   ],
+   "year": null
+  }
+ },
+ "https://a.test/vehicle/3FTTW8HA3TRB41981/new-2026-ford-bronco-sport-badlands-4wd/?x=1#y": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSATESTVEH1CLE3FTTW8HA3TRB41981NEW2026F0RDBR0NC0SP0RTBADLANDS4WDX1Y",
+   "warnings": [
+    "A VIN has 17 characters; this has 70."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": "Ford",
+   "model": "Bronco Sport Badlands 4wd",
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2026 Ford Bronco Sport Badlands 4wd",
+   "trim": null,
+   "url": "https://a.test/vehicle/3FTTW8HA3TRB41981/new-2026-ford-bronco-sport-badlands-4wd/?x=1#y",
+   "video_urls": [],
+   "vin": "3FTTW8HA3TRB41981",
+   "warnings": [],
+   "year": 2026
+  }
+ },
+ "https://a.test/vehicle/JTJAAAAA1SX000000/": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSATESTVEH1CLEJTJAAAAA1SX000000",
+   "warnings": [
+    "A VIN has 17 characters; this has 34."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": "Lexus",
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2025 Lexus",
+   "trim": null,
+   "url": "https://a.test/vehicle/JTJAAAAA1SX000000/",
+   "video_urls": [],
+   "vin": "JTJAAAAA1SX000000",
+   "warnings": [],
+   "year": 2025
+  }
+ },
+ "https://dealer.example/inventory/new-2025-honda-civic-sport-houston-tx/": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSDEALEREXAMPLE1NVENT0RYNEW2025H0NDAC1V1CSP0RTH0UST0NTX",
+   "warnings": [
+    "A VIN has 17 characters; this has 58."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": "Honda",
+   "model": "Civic Sport",
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2025 Honda Civic Sport",
+   "trim": null,
+   "url": "https://dealer.example/inventory/new-2025-honda-civic-sport-houston-tx/",
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "No VIN in that address; only what its words say was read."
+   ],
+   "year": 2025
+  }
+ },
+ "https://dealer.example/used/": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSDEALEREXAMPLEUSED",
+   "warnings": [
+    "A VIN has 17 characters; this has 22."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": null,
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": null,
+   "trim": null,
+   "url": "https://dealer.example/used/",
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "No VIN in that address; only what its words say was read."
+   ],
+   "year": null
+  }
+ },
+ "https://www.tomballford.com/vehicle/1FT8W2BT2REC59903/Used-2024-Ford-F--250SD-Tomball-TX/": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSWWWT0MBALLF0RDC0MVEH1CLE1FT8W2BT2REC59903USED2024F0RDF250SDT0MBALLTX",
+   "warnings": [
+    "A VIN has 17 characters; this has 73."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": "Ford",
+   "model": "F-250SD",
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2024 Ford F-250SD",
+   "trim": null,
+   "url": "https://www.tomballford.com/vehicle/1FT8W2BT2REC59903/Used-2024-Ford-F--250SD-Tomball-TX/",
+   "video_urls": [],
+   "vin": "1FT8W2BT2REC59903",
+   "warnings": [],
+   "year": 2024
+  }
+ },
+ "https://www.tomballford.com/vehicle/3FTTW8HA3TRB41981/2026-Ford-Maverick-Tomball-TX/": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSWWWT0MBALLF0RDC0MVEH1CLE3FTTW8HA3TRB419812026F0RDMAVER1CKT0MBALLTX",
+   "warnings": [
+    "A VIN has 17 characters; this has 71."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": "Ford",
+   "model": "Maverick",
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2026 Ford Maverick",
+   "trim": null,
+   "url": "https://www.tomballford.com/vehicle/3FTTW8HA3TRB41981/2026-Ford-Maverick-Tomball-TX/",
+   "video_urls": [],
+   "vin": "3FTTW8HA3TRB41981",
+   "warnings": [],
+   "year": 2026
+  }
+ },
+ "https://www.tomballford.com/vehicle/7SVAAABAXSX056413/Used-2026-Toyota-Grand_Highlander_Hybrid-Tomball-TX/": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSWWWT0MBALLF0RDC0MVEH1CLE7SVAAABAXSX056413USED2026T0Y0TAGRANDH1GHLANDERHYBR1DT0MBALLTX",
+   "warnings": [
+    "A VIN has 17 characters; this has 90."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": "Toyota",
+   "model": "Grand Highlander Hybrid",
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2026 Toyota Grand Highlander Hybrid",
+   "trim": null,
+   "url": "https://www.tomballford.com/vehicle/7SVAAABAXSX056413/Used-2026-Toyota-Grand_Highlander_Hybrid-Tomball-TX/",
+   "video_urls": [],
+   "vin": "7SVAAABAXSX056413",
+   "warnings": [],
+   "year": 2026
+  }
+ },
+ "https://www.tomballford.com/vehicle/JTJAAAAA1SX000000/Used-2024-Lexus-NX-Tomball-TX/": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "HTTPSWWWT0MBALLF0RDC0MVEH1CLEJTJAAAAA1SX000000USED2024LEXUSNXT0MBALLTX",
+   "warnings": [
+    "A VIN has 17 characters; this has 70."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": "Lexus",
+   "model": "NX",
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": "2024 Lexus NX",
+   "trim": null,
+   "url": "https://www.tomballford.com/vehicle/JTJAAAAA1SX000000/Used-2024-Lexus-NX-Tomball-TX/",
+   "video_urls": [],
+   "vin": "JTJAAAAA1SX000000",
+   "warnings": [],
+   "year": 2024
+  }
+ },
+ "ioq": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "100",
+   "warnings": [
+    "A VIN has 17 characters; this has 3."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": null,
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": null,
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "A VIN has 17 characters; this has 3."
+   ],
+   "year": null
+  }
+ },
+ "not a vin at all": {
+  "decode": {
+   "country": null,
+   "make": null,
+   "valid": false,
+   "vin": "N0TAV1NATALL",
+   "warnings": [
+    "A VIN has 17 characters; this has 12."
+   ],
+   "year": null
+  },
+  "record": {
+   "make": null,
+   "model": null,
+   "photo_urls": [],
+   "pricing_rows": [],
+   "title": null,
+   "trim": null,
+   "url": null,
+   "video_urls": [],
+   "vin": null,
+   "warnings": [
+    "A VIN has 17 characters; this has 12."
+   ],
+   "year": null
+  }
+ }
+}

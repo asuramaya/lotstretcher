@@ -241,6 +241,16 @@ pub enum Op {
     ParseSticker(crate::sticker::StickerRequest),
     PanelSplitX { words: Vec<crate::sticker::Word>, #[serde(default)] y_tol: Option<f64> },
     BuildPosts(crate::copy::CopyRequest),
+    /// What a VIN says on its own (vin.rs::decode).
+    VinDecode { text: String },
+    /// What a pasted address or VIN fills (vin.rs::record_from_text).
+    VinRecord { text: String },
+    /// Which shots a layout gets and in what order (select.rs).
+    SelectShots(crate::select::SelectRequest),
+    /// A cutout's same-shot signature (select.rs::shot_signature).
+    ShotSignature { image: Slice },
+    /// The index of the first `earlier` signature `signature` repeats, or null.
+    SameShot { signature: crate::select::Signature, earlier: Vec<crate::select::Signature> },
     /// A font's bytes, kept under a name; `data` is a 1-channel slice of
     /// the arena (width = byte count, height 1).
     LoadFont { name: String, data: Slice },
@@ -385,6 +395,11 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
             OpResult::Json(serde_json::to_string(&Scalar { value: v }).unwrap())
         }
         Op::BuildPosts(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::copy::build_posts(&req) }).unwrap()),
+        Op::VinDecode { text } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::vin::decode(&text) }).unwrap()),
+        Op::VinRecord { text } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::vin::record_from_text(&text) }).unwrap()),
+        Op::SelectShots(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::select::select(&req)? }).unwrap()),
+        Op::ShotSignature { image } => { let img = slice_image(arena, &image)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::select::shot_signature(&img) }).unwrap()) }
+        Op::SameShot { signature, earlier } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::select::same_shot(&signature, &earlier) }).unwrap()),
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
             OpResult::Image(crate::spin::blend(&a, &b, t)?)

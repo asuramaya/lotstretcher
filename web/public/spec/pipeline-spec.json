@@ -2627,6 +2627,11 @@
       "side",
       "rear_3q",
       "rear"
-    ]
+    ],
+    "sameShot": {
+      "$comment": "Two cutouts are one shot (a re-save, a resized copy) when their core difference hashes (select.rs::shot_signature) are this few bits apart and their aspects this close. Measured on 40 library cars' cutouts: 983 pairs of different shots of one car are 14 bits apart at the closest (mirror-image sides); 586 copies resized to 80% and 50% land within 3.",
+      "maxBits": 4,
+      "maxAspectDiff": 0.02
+    }
   }
 }

@@ -1465,68 +1465,37 @@ function readVehicle() {
   saveDealer();
 }
 
-/* A cutout's 64-bit difference hash (9x8 grey, over a mid-grey ground so
- * the transparent surround reads the same in every shot) and its aspect.
- * Hashing the cut-out car, not the photo: on a dealer's studio photos the
- * backdrop dominates a whole-photo hash and different angles of one car
- * sit within a few bits of each other (see imaging/dedupe.py). Measured
- * with this very hash on 983 pairs of different shots of one car (40
- * library cars' cutouts), the closest are 15 bits apart (left and right
- * sides, mirror images); a re-saved copy at 80% size lands within 4. */
+/* A cutout's same-shot signature, from the core (select.rs::
+ * shot_signature, the one the CLI's photos.py checks): a difference hash
+ * of the cut-out car over mid grey, and its aspect. Kept on the canvas,
+ * since every later shot is checked against it. */
 function cutoutSignature(canvas) {
   if (!canvas) return null;
-  if (canvas.signature) return canvas.signature;
-  // Down in steps with smoothing: straight to 9x8 aliases, and a re-saved
-  // or resized copy of one shot then lands ten bits away from itself.
-  let src = canvas;
-  for (const [w, h] of [[144, 128], [36, 32]]) {
-    const step = makeCanvas(w, h);
-    const sx = ctxOf(step);
-    sx.imageSmoothingQuality = 'high';
-    sx.fillStyle = '#808080'; sx.fillRect(0, 0, w, h);
-    sx.drawImage(src, 0, 0, w, h);
-    src = step;
+  if (!canvas.signature) {
+    const pixels = ctxOf(canvas, { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height);
+    canvas.signature = coreCall({ op: 'shot_signature', image: { $image: 0 } }, [pixels]);
   }
-  const c = makeCanvas(9, 8);
-  const x = ctxOf(c, { willReadFrequently: true });
-  x.imageSmoothingQuality = 'high';
-  x.drawImage(src, 0, 0, 9, 8);
-  const d = x.getImageData(0, 0, 9, 8).data;
-  const lum = (i) => d[i * 4] * 0.299 + d[i * 4 + 1] * 0.587 + d[i * 4 + 2] * 0.114;
-  const bits = [];
-  for (let y = 0; y < 8; y++) for (let k = 0; k < 8; k++) bits.push(lum(y * 9 + k) > lum(y * 9 + k + 1) ? 1 : 0);
-  canvas.signature = { bits, aspect: canvas.width / canvas.height };
   return canvas.signature;
 }
+/* The earlier photo this cutout repeats (a re-save, a resized copy), by
+ * the spec's select.sameShot bounds, or null. */
 function sameShotAs(canvas, earlier) {
-  const a = cutoutSignature(canvas);
-  if (!a) return null;
-  for (const q of earlier) {
-    const b = cutoutSignature(q.cutout);
-    if (!b) continue;
-    if (Math.abs(a.aspect - b.aspect) / Math.max(a.aspect, b.aspect) > 0.02) continue;
-    let dist = 0;
-    for (let k = 0; k < 64; k++) dist += a.bits[k] !== b.bits[k];
-    if (dist <= 4) return q;
-  }
-  return null;
+  const signature = cutoutSignature(canvas);
+  const kept = earlier.filter((q) => q.cutout);
+  if (!signature || !kept.length) return null;
+  const i = coreCall({ op: 'same_shot', signature, earlier: kept.map((q) => cutoutSignature(q.cutout)) });
+  return i === null ? null : kept[i];
 }
 
-/* The run's shots in the CLI's order (spec select): the lead, which is
- * the bundle's hero.png and the post's cover, is the most confident shot
- * of the first angle in heroPriority; the rest walk round the car front
- * to rear, each angle's most confident first; unknown angles last, in
- * the order they came. */
+/* The run's shots in the CLI's order, decided by the core
+ * (core/src/select.rs, the code imaging/select.py calls): the lead,
+ * which is the bundle's hero.png and the post's cover, is the most
+ * confident shot of the first angle in the spec's heroPriority; the rest
+ * walk round the car front to rear, each angle's most confident first;
+ * angles the order does not know come last. */
 function walkaround(photos) {
-  const sel = specGet('select') || {};
-  const order = sel.walkaround || [];
-  const rank = (p) => { const i = order.indexOf(p.angle); return i < 0 ? order.length : i; };
-  const sorted = photos.map((p, i) => ({ p, i })).sort((a, b) => rank(a.p) - rank(b.p)
-    || (b.p.angleConf || 0) - (a.p.angleConf || 0) || a.i - b.i).map((x) => x.p);
-  const leadAngle = (sel.heroPriority || []).find((a) => sorted.some((p) => p.angle === a));
-  if (!leadAngle) return sorted;
-  const lead = sorted.find((p) => p.angle === leadAngle);
-  return [lead, ...sorted.filter((p) => p !== lead)];
+  const shots = photos.map((p, i) => ({ name: String(i), angle: p.angle || '', confidence: p.angleConf || 0 }));
+  return coreCall({ op: 'select_shots', mode: 'walkaround', shots }).shots.map((s) => photos[Number(s.name)]);
 }
 
 function bundleName() {
