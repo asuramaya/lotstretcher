@@ -52,20 +52,31 @@ from pathlib import Path
 import imagehash
 from PIL import Image
 
+from lotstretcher import spec as _spec
+
 DEFAULT_TEMPLATES_DIR = Path(__file__).parent / "templates"
-DEFAULT_THRESHOLD = 8  # max Hamming distance (out of 64 bits) to count as a match
+# Max Hamming distance (out of 64 bits) to count as a match.
+DEFAULT_THRESHOLD = int(_spec.get("listing", "junk", "threshold"))
 
 
 class JunkFilter:
-    def __init__(self, templates_dir: Path = DEFAULT_TEMPLATES_DIR, threshold: int = DEFAULT_THRESHOLD):
+    """Known junk graphics, matched by the core's pHash (core/src/phash.rs),
+    the same test the browser's run applies. The default templates are the
+    spec's (listing.junk, the hashes of the files in templates/, which
+    tests/test_junk_parity.py recomputes); a `templates_dir` of your own is
+    hashed here, by the same core code."""
+
+    def __init__(self, templates_dir: Path | None = None, threshold: int = DEFAULT_THRESHOLD):
         self.threshold = threshold
-        self.templates: list[tuple[str, imagehash.ImageHash]] = []
-        if templates_dir.is_dir():
+        self.templates: list[tuple[str, str]] = []
+        if templates_dir is None:
+            self.templates = [(t["name"], t["phash"]) for t in _spec.get("listing", "junk", "templates", default=[])]
+        elif templates_dir.is_dir():
             for path in sorted(templates_dir.glob("*")):
                 if path.suffix.lower() not in (".jpg", ".jpeg", ".png", ".webp"):
                     continue
                 try:
-                    self.templates.append((path.name, _hash_image(Image.open(path))))
+                    self.templates.append((path.name, _core_phash(Image.open(path))))
                 except Exception:
                     continue
 
@@ -74,13 +85,19 @@ class JunkFilter:
         if not self.templates:
             return False, None
         try:
-            h = _hash_image(Image.open(io.BytesIO(content)))
+            h = int(_core_phash(Image.open(io.BytesIO(content))), 16)
         except Exception:
             return False, None
         for name, template_hash in self.templates:
-            if h - template_hash <= self.threshold:
+            if bin(h ^ int(template_hash, 16)).count("1") <= self.threshold:
                 return True, name
         return False, None
+
+
+def _core_phash(img: Image.Image) -> str:
+    from lotstretcher import core
+
+    return core.call({"op": "phash", "image": {"$image": 0}}, [img.convert("RGB")])
 
 
 def _hash_image(img: Image.Image) -> imagehash.ImageHash:

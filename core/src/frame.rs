@@ -261,6 +261,10 @@ pub enum Op {
     Styles { options: serde_json::Value },
     /// Whether a text plan draws anything, and the fonts it needs.
     TextFacts { text: serde_json::Value },
+    /// imagehash's pHash of an image, 16 hex digits (phash.rs).
+    Phash { image: Slice },
+    /// The spec's junk template a pHash matches, by name, or null.
+    JunkMatch { hash: String },
     /// The background field for a generated backdrop (controls.rs).
     BackdropSpec { kind: String, seed: String, #[serde(default)] exterior: serde_json::Value, #[serde(default)] interior: serde_json::Value,
                    #[serde(default)] color: serde_json::Value, #[serde(default)] color2: serde_json::Value, #[serde(default)] angle: serde_json::Value },
@@ -445,6 +449,8 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
             OpResult::Json(serde_json::to_string(&Scalar { value: crate::controls::backdrop_spec(&kind, &seed, &exterior, &interior, &color, &color2, &angle)? }).unwrap()),
         Op::GradientNames { kind, exterior, interior, color, color2 } =>
             OpResult::Json(serde_json::to_string(&Scalar { value: crate::controls::gradient_names(&kind, &exterior, &interior, &color, &color2) }).unwrap()),
+        Op::Phash { image } => { let img = slice_image(arena, &image)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::phash::phash(&img) }).unwrap()) }
+        Op::JunkMatch { hash } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::phash::junk_match(&hash) }).unwrap()),
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
             OpResult::Image(crate::spin::blend(&a, &b, t)?)

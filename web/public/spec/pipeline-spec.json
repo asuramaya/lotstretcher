@@ -2198,7 +2198,25 @@
     "cms": "dealerinspire",
     "analyticsGlobal": "jzlAnalyticsObject",
     "analyticsMarker": "jzlAnalyticsObject = ",
-    "photoSize": "2048x2048"
+    "photoSize": "2048x2048",
+    "junk": {
+      "$comment": "Known junk graphics a dealer mixes into galleries (core/src/phash.rs; imaging/dedupe.py records why only flat, full-bleed graphics may be templates). A photo within `threshold` bits of a template's pHash is dropped on both surfaces. The hashes are the core's own, of the files in src/lotstretcher/imaging/templates/; tests/test_junk_parity.py recomputes them.",
+      "threshold": 8,
+      "templates": [
+        {
+          "name": "tomball-ford-blue-certified-card.jpg",
+          "phash": "ab2b292b2b292b6d"
+        },
+        {
+          "name": "tomball-ford-just-arrived-photos-coming-soon.jpg",
+          "phash": "b1c5947e48f125cb"
+        },
+        {
+          "name": "tomball-ford-reviews-card.jpg",
+          "phash": "8eeb17cea1801ef8"
+        }
+      ]
+    }
   },
   "library": {
     "_": [

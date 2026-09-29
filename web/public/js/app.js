@@ -989,7 +989,13 @@ async function sortAndCut(stages) {
         const bitmap = await decode(p.blob || p.url, MAX_SOURCE_SIDE);
         clock('decode', t0);
         p.bitmap = bitmap;
-        if (p.userScene) { /* the person said what it is; the model does not argue */ } else {
+        // A dealer's known junk graphic (a reviews card, "photos coming
+        // soon") is set aside before anything looks at it, by the core's
+        // pHash against the spec's templates, as the CLI's photos.py does.
+        const junk = p.userScene ? null
+          : coreCall({ op: 'junk_match', hash: coreCall({ op: 'phash', image: { $image: 0 } }, [pixelsOf(bitmap)]) });
+        if (junk) { p.rejected = `a dealer's stock graphic (${junk.replace(/\.[a-z]+$/, '')})`; p.scene = 'unsure'; }
+        else if (p.userScene) { /* the person said what it is; the model does not argue */ } else {
         t0 = performance.now();
         // Only the classification view loses a dealer's saturated banner
         // (core letterbox.rs, as the CLI's evaluate_photo does); the photo
@@ -1023,7 +1029,7 @@ async function sortAndCut(stages) {
     // core, at its own size, the same treatment the CLI's bundle/interior
     // gets. No cutout, no compositing: rembg cannot cut out a cabin.
     if (state.options.interiors) {
-      const inside = state.photos.filter((p) => p.scene === 'interior' && p.status !== 'failed');
+      const inside = state.photos.filter((p) => p.scene === 'interior' && !p.rejected && p.status !== 'failed');
       // A vendor's flat letterbox bars come off first, at the size most of
       // the batch agrees on (core letterbox.rs, as the CLI's photos.py
       // does): one vendor pads a whole gallery alike, and a photo whose own
