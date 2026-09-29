@@ -125,7 +125,7 @@ def test_glow_matches_python():
 
 
 @pytest.mark.parametrize("layout", ["single", "corners", "quad", "conveyor", "conveyor_stack", "conveyor_wide"])
-def test_layouts_match_python(layout):
+def test_every_layout_slot_receives_its_car(layout):
     from lotstretcher.imaging.compose.layout import LAYOUTS, conveyor_for_window
     window = {"conveyor_stack": (0, 0, 1080, 1920), "conveyor_wide": (0, 0, 1920, 900)}.get(layout, (0, 0, 1254, 1254))
     fn = conveyor_for_window(window) if layout == "conveyor" else LAYOUTS[layout]

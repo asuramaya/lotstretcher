@@ -257,6 +257,10 @@ pub enum Op {
     DetectBanner { image: Slice },
     /// The batch-consensus [top, bottom] from each photo's detect_bars.
     BatchBars { bars: Vec<(usize, usize)> },
+    /// A named layout's [(box, anchor)] for a window (layout.rs::layout).
+    Layout { name: String, window: [i64; 4], n_extra: usize },
+    /// Where a (width x height) cutout sits in a box (layout.rs::compute_placement).
+    Placement { width: usize, height: usize, #[serde(rename = "box")] bx: [i64; 4], margin_frac: f64, anchor: crate::layout::Anchor },
     /// A cutout's same-shot signature (select.rs::shot_signature).
     ShotSignature { image: Slice },
     /// The index of the first `earlier` signature `signature` repeats, or null.
@@ -415,6 +419,16 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
         Op::DetectBars { image } => { let img = slice_image(arena, &image)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::letterbox::detect_bars(&img) }).unwrap()) }
         Op::DetectBanner { image } => { let img = slice_image(arena, &image)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::letterbox::detect_banner(&img) }).unwrap()) }
         Op::BatchBars { bars } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::letterbox::batch_bars(&bars) }).unwrap()),
+        Op::Layout { name, window, n_extra } => {
+            let [l, t, r, b] = window;
+            let slots: Vec<([i64; 4], crate::layout::Anchor)> = crate::layout::layout(&name, (l, t, r, b), n_extra)?
+                .into_iter().map(|((l, t, r, b), a)| ([l, t, r, b], a)).collect();
+            OpResult::Json(serde_json::to_string(&Scalar { value: slots }).unwrap())
+        }
+        Op::Placement { width, height, bx, margin_frac, anchor } => {
+            let p = crate::layout::compute_placement(width, height, (bx[0], bx[1], bx[2], bx[3]), margin_frac, anchor);
+            OpResult::Json(serde_json::to_string(&Scalar { value: p }).unwrap())
+        }
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
             OpResult::Image(crate::spin::blend(&a, &b, t)?)

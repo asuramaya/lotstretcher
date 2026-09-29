@@ -1,11 +1,15 @@
-//! Where each cutout goes (port of compose/layout.py).
+//! Where each cutout goes: the named layouts, hero first, and the
+//! placement of a cutout in its box. Both hosts call these (ops `layout`
+//! and `placement`); compose/layout.py is a thin wrapper over them.
 
 /// (left, top, right, bottom)
 pub type Box_ = (i64, i64, i64, i64);
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Anchor { Center, Bottom }
 
+#[derive(serde::Serialize)]
 pub struct Placement { pub x: i64, pub y: i64, pub w: usize, pub h: usize }
 
 /// Scale a (cw x ch) cutout to fit `bx` minus a margin; centred
@@ -42,6 +46,12 @@ pub fn compute_placement(cw: usize, ch: usize, bx: Box_, margin_frac: f64, ancho
 
 fn r(x: f64) -> i64 { crate::hsv::round_half_even(x) as i64 }
 
+/// Just one car, filling the window. Centered rather than bottom-anchored -- bottom-anchoring reads
+/// right for the quad layout's hero (standing on "the ground" at the base of the frame, other cars
+/// above it), but for a solo shot with nothing else in the window it just leaves a lot of dead
+/// space up top; centered uses the window evenly. n_extra is ignored (kept for a consistent layout-
+/// function signature). A story-shaped window (1.3x taller than wide) bottom-anchors the car on a
+/// box ending compose.tallFloorFrac down it, near its words, instead.
 pub fn single(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
     let (wl, wt, wr, wb) = window;
     let (ww, wh) = ((wr - wl) as f64, (wb - wt) as f64);
@@ -54,6 +64,17 @@ pub fn single(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
     vec![(window, Anchor::Center)]
 }
 
+/// Hero fills the window (bottom-anchored) below the two corner accents; up to 2 smaller accent
+/// shots tucked into the top corners.
+///
+/// Corner placement (rather than e.g. side-by-side thirds) keeps the hero the clear focal point at
+/// full size instead of shrinking everything to fit -- accents read as supporting angles, not equal
+/// billing.
+///
+/// Hero's box is bounded to start below the corner accents (not the full window) -- see quad's
+/// docstring for why: a hero that isn't always the same wide/low 3/4 shot (e.g. the clip's
+/// carousel, which cycles through every angle) can be tall enough, scaled to fill the window, to
+/// visually paint over the accents above it if its box isn't actually bounded away from theirs.
 pub fn corners(window: Box_, n_extra: usize) -> Vec<(Box_, Anchor)> {
     let (wl, wt, wr, wb) = window;
     let (ww, wh) = ((wr - wl) as f64, (wb - wt) as f64);
@@ -67,6 +88,21 @@ pub fn corners(window: Box_, n_extra: usize) -> Vec<(Box_, Anchor)> {
     out
 }
 
+/// Hero at the bottom + 3 fixed accent slots: front in the top-left corner, rear/back in the top-
+/// right corner, and a wide strip for a full side profile filling the gap between them. Always 4
+/// slots regardless of n_extra -- pair with imaging/select.py::pick_for_quad to hand compose_hero()
+/// the [hero, front, back, side] car order this expects.
+///
+/// Hero's box stops just below the accent row instead of spanning the full window.
+/// compose_placement() only guarantees a car fits inside its OWN box -- it doesn't know or care
+/// about any other box's content, and compose_hero() paints the hero last (on top), so a hero box
+/// that overlaps the accent boxes lets a sufficiently tall hero visually cover them. That's
+/// invisible for a still image (the hero is always the same wide/low 3/4 shot, which is naturally
+/// short enough not to reach the accent row even when the box was the full window) -- but the clip
+/// cycles the hero through every angle, including squarer ones (a straight rear shot, a wheel money
+/// shot) that DO reach that high once scaled to fill a same-sized box. Bounding the hero box itself
+/// is the fix that works regardless of which shot ends up in it, rather than special-casing "unless
+/// it's this angle."
 pub fn quad(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
     let (wl, wt, wr, wb) = window;
     let (ww, wh) = ((wr - wl) as f64, (wb - wt) as f64);
@@ -89,6 +125,31 @@ const CONVEYOR_MAX_HERO_ASPECT: f64 = 2.1;
 const CONVEYOR_HERO_ASPECT: f64 = 1.55;
 const CONVEYOR_ACCENT_ASPECT: f64 = 1.75;
 
+/// Hero + 2 top-corner accents for the clip's 3-slot conveyor.
+///
+/// Same idea as corners_layout, retuned for a frame where all three slots are ALWAYS occupied --
+/// corners_layout has to look right with 0, 1, or 2 accents and with a hero that may be the only
+/// thing on screen, so it leaves generous air. Here the video was measurably empty: 832px of
+/// content in a 1046px window (20% dead), with the worst gap 236px of bare background between a
+/// short accent and the hero.
+///
+/// Two changes, each aimed at one measured cause: - Boxes are bigger (0.46w x 0.34h vs 0.40 x 0.30)
+/// and the row gap tighter, so the accents themselves occupy more of the top band. - The hero box
+/// takes everything below that band; the clip pairs this with a much smaller inset than the still
+/// pipeline's (see HERO_MARGIN_FRAC), since a video frame is viewed briefly and wants to read big,
+/// where a still is looked at.
+///
+/// Accents stay CENTER-anchored. Bottom-anchoring them was tried, and it does close the gap to the
+/// hero -- a wide side profile only fills 174px of a 356px box, so dropping it to a shared baseline
+/// with the other accent cut the worst gap from 236px to 73px. But it reads wrong: a short wide
+/// shot pinned to the bottom of an invisible box looks like it's sinking, with all of its slack
+/// stacked above it, while centering splits the slack evenly and reads as deliberate letterboxing.
+/// Note this only affects wide/short shots -- an accent that fills its box height (a wheel, a
+/// straight-on front) lands within ~1px either way, so this is not a general "align everything"
+/// knob.
+///
+/// n_extra is accepted for signature compatibility and ignored -- the conveyor is always exactly
+/// hero + 2.
 pub fn conveyor(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
     let (wl, wt, wr, wb) = window;
     let (ww, wh) = ((wr - wl) as f64, (wb - wt) as f64);
@@ -103,6 +164,26 @@ pub fn conveyor(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
     vec![((hero_l, hero_top, hero_l + hero_w, wb), Anchor::Bottom), (left, Anchor::Center), (right, Anchor::Center)]
 }
 
+/// The same 3-slot conveyor, stacked instead of side-by-side, for a window taller than it is wide.
+///
+/// conveyor_layout cannot be reused on a vertical frame. Measured on a 1080x1920 canvas it produces
+/// a 0.87:1 hero box and 0.76:1 accent boxes -- portrait boxes, which is the worst possible shape
+/// for an object whose median aspect is 1.80:1. A median vehicle fills 48% of that hero box and 42%
+/// of an accent. The frame isn't badly composed, it's mostly empty.
+///
+/// So the accents move above and below the hero rather than sitting in its top corners. The
+/// important detail is that they must also be NARROWER than the hero: everything in a tall frame is
+/// width- constrained, so three full-width slots would draw the vehicle at exactly the same size in
+/// all three and the hero/accent hierarchy would vanish entirely. 0.62 width keeps roughly the same
+/// accent-to-hero size ratio the square layout has (0.46/1.0).
+///
+/// Boxes are sized to the content's aspect rather than to equal shares of the height, and whatever
+/// height is left over becomes air between them -- a tall composition wants that spacing, and
+/// sizing the boxes to fill the frame is what produced the 48% number above.
+///
+/// Slot order matches conveyor_layout's [hero, outgoing, incoming], so the clip's animation is
+/// unchanged: a shot fades in at the BOTTOM accent, grows into the hero, shrinks into the TOP
+/// accent and fades out. The travel reads upward, which suits a vertical frame.
 pub fn conveyor_stack(window: Box_, _n_extra: usize) -> Vec<(Box_, Anchor)> {
     let (wl, wt, wr, wb) = window;
     let (ww, wh) = (wr - wl, wb - wt);
@@ -171,6 +252,8 @@ pub fn layout(name: &str, window: Box_, n_extra: usize) -> Result<Vec<(Box_, Anc
         "corners" => corners(window, n_extra),
         "quad" => quad(window, n_extra),
         "conveyor" => conveyor_for_window(window, n_extra),
+        // The corners-style conveyor itself, whatever the window's shape.
+        "conveyor_plain" => conveyor(window, n_extra),
         "conveyor_stack" => conveyor_stack(window, n_extra),
         "conveyor_wide" => conveyor_wide(window, n_extra),
         other => return Err(format!("unknown layout {other:?}")),
