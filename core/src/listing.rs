@@ -31,7 +31,7 @@ fn yes() -> bool { true }
 
 // ---------- Python's rules ---------------------------------------------
 
-fn truthy(v: &Value) -> bool {
+pub(crate) fn truthy(v: &Value) -> bool {
     match v {
         Value::Null => false,
         Value::Bool(b) => *b,

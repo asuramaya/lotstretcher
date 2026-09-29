@@ -18,6 +18,23 @@ from lotstretcher.imaging.assets import ASSETS_DIR
 DEFAULT_FONT = "Lato Bold"
 
 
+def _plain(options: dict | None) -> dict:
+    """The control values a JSON request can carry (a Path, say, cannot)."""
+    return {k: v for k, v in (options or {}).items() if isinstance(v, (str, int, float, bool, list, dict, type(None)))}
+
+
+def styles(options: dict | None) -> dict:
+    """The Studio's control values (app keys) as every field the core's
+    requests take -- text, border_style, spotlight, shadow, reflection,
+    backdrop -- decided by the core (core/src/controls.rs), the same
+    mapping the browser's lib/text.js asks it for."""
+    return core.call({"op": "styles", "options": _plain(options)})
+
+
+def _text_facts(text: dict) -> dict:
+    return core.call({"op": "text_facts", "text": _plain(text)})
+
+
 def _font_files() -> dict[str, str]:
     """name -> file under assets/, from the manifest: the same list the
     studio ships (web/build-studio.py), so the CLI and the app offer the
@@ -164,15 +181,10 @@ def controls_from_frame_style_args(args) -> dict:
 
 def frame_style(options: dict) -> dict | None:
     """The app's frame controls as the core's border_style, or None when
-    no drawn frame is asked for. The app's Frame picker says "line" in
-    its `border` value; the CLI says --frame-style line."""
-    wanted = options.get("border") == "line" or options.get("frameStyle") == "line"
-    if not wanted:
-        return None
-    def num(key, default):
-        return float(options.get(key) if options.get(key) is not None else default)
-    return {"kind": "line", "color": options.get("frameColor") or "white",
-            "weight": num("frameWeight", 0.008), "inset": num("frameInset", 0.035), "radius": num("frameRadius", 0.02)}
+    no drawn frame is asked for (the app's Frame picker says "line" in its
+    `border` value; the CLI says --frame-style line). The core's
+    controls.rs, like every mapping below."""
+    return styles(options)["border_style"]
 
 
 def add_spotlight_args(parser) -> None:
@@ -198,17 +210,10 @@ def spotlight_style(options: dict) -> bool | dict:
     """The app's spotlight controls as what the core takes: False when
     off, True when on with the measured dim and the spec's spread, else
     {"strength", "spread"} with whichever levers are set."""
-    if not options.get("spotlight", True):
-        return False
-    out = {}
-    for key, name in (("spotStrength", "strength"), ("spotSpread", "spread")):
-        value = options.get(key)
-        if value is not None and value != "":
-            out[name] = float(value)
-    return out or True
+    return styles(options)["spotlight"]
 
 
-SHADOW_STRENGTH = 0.5
+SHADOW_STRENGTH = float(_spec.control_default("shadowStrength", 0.5))
 
 
 def add_shadow_args(parser) -> None:
@@ -228,15 +233,12 @@ def controls_from_shadow_args(args) -> dict:
 def shadow_style(options: dict) -> dict | None:
     """The app's shadow controls as the core's `shadow` field, or None
     when no shadow is asked for."""
-    if not options.get("shadow"):
-        return None
-    strength = options.get("shadowStrength")
-    return {"strength": float(strength if strength is not None else SHADOW_STRENGTH)}
+    return styles(options)["shadow"]
 
 
 BACKDROPS = ("vehicle", "generic", "sweep", "radial", "horizon")
 # The kinds a colour of the user's own applies to; vehicle is the paint's.
-COLOURED_BACKDROPS = ("generic", "sweep", "radial", "horizon")
+COLOURED_BACKDROPS = tuple(_spec.get("compose", "colouredBackdrops"))
 
 
 def add_backdrop_arg(parser) -> None:
@@ -260,31 +262,22 @@ def add_backdrop_arg(parser) -> None:
 
 
 def backdrop_color(options: dict) -> str | None:
-    """The app's chosen backdrop colour, or None: only the hue bands and
-    the sweep take one; the vehicle backdrop is computed from the paint."""
-    if options.get("backdrop") not in COLOURED_BACKDROPS:
-        return None
-    color = (options.get("backdropColor") or "").strip()
-    return color or None
+    """The app's chosen backdrop colour, or None: only the coloured kinds
+    take one; the vehicle backdrop is computed from the paint."""
+    return styles(options)["backdrop"]["color"]
 
 
 def backdrop_color2(options: dict) -> str | None:
     """The second chosen stop, or None."""
-    if options.get("backdrop") not in COLOURED_BACKDROPS:
-        return None
-    color = (options.get("backdropColor2") or "").strip()
-    return color or None
+    return styles(options)["backdrop"]["color2"]
 
 
-ANGLED_BACKDROPS = ("vehicle", "generic")
+ANGLED_BACKDROPS = tuple(_spec.get("compose", "angledBackdrops"))
 
 
 def backdrop_angle(options: dict) -> float | None:
     """A fixed direction for the linear backdrops, or None (seeded)."""
-    if options.get("backdrop") not in ANGLED_BACKDROPS:
-        return None
-    angle = options.get("backdropAngle")
-    return float(angle) if angle is not None and angle != "" else None
+    return styles(options)["backdrop"]["angle"]
 
 
 def backdrop_spec(kind: str, seed: str, exterior: str | None, interior: str | None,
@@ -316,7 +309,7 @@ def gradient_color_names(exterior: str | None, interior: str | None, kind: str, 
     return exterior, interior
 
 
-REFLECTION_STRENGTH = 0.35
+REFLECTION_STRENGTH = float(_spec.control_default("reflectionStrength", 0.35))
 
 
 def add_reflection_args(parser) -> None:
@@ -335,10 +328,7 @@ def controls_from_reflection_args(args) -> dict:
 def reflection_style(options: dict) -> dict | None:
     """The app's reflection controls as the core's `reflection` field, or
     None when none is asked for."""
-    if not options.get("reflection"):
-        return None
-    strength = options.get("reflectionStrength")
-    return {"strength": float(strength if strength is not None else REFLECTION_STRENGTH)}
+    return styles(options)["reflection"]
 
 
 def controls_from_text_args(args) -> dict:
@@ -365,55 +355,21 @@ def controls_from_text_args(args) -> dict:
     }
 
 
-PIECE_LEVERS = ("font", "position", "color", "case", "box")
-
-
 def piece_style(options: dict, piece: str) -> dict:
     """One piece's own levers (app keys titleFont, titlePosition, ...)
     as the core's PieceStyle: only what departs from the shared lever.
     "same", "" and None all mean the shared one."""
-    out: dict = {}
-    for lever in PIECE_LEVERS:
-        value = options.get(f"{piece}{lever.title()}")
-        if value in (None, "", "same"):
-            continue
-        if lever == "box":
-            out["boxed"] = value == "on" or value is True
-        else:
-            out[lever] = value
-    return out
+    return styles(options)["text"][f"{piece}_style"]
 
 
 def text_options(options: dict) -> dict:
     """The Text controls (app keys) as the core's plan fields."""
-    return {
-        "font": options.get("textFont") or DEFAULT_FONT,
-        "badge_size": float(options.get("badgeSize") if options.get("badgeSize") is not None else 0.85),
-        "title_style": piece_style(options, "title"),
-        "badge_style": piece_style(options, "badge"),
-        "subtitle_style": piece_style(options, "subtitle"),
-        "title": options.get("titleMode") or "none",
-        "custom_title": options.get("titleText") or None,
-        "price_badge": bool(options.get("priceBadge", False)),
-        "subtitle": options.get("subtitle") or None,
-        "position": options.get("textPosition") or "bl",
-        "color": options.get("textColor") or "white",
-        "size": float(options.get("textSize") if options.get("textSize") is not None else 0.05),
-        "case": options.get("textCase") or "as-is",
-        "boxed": bool(options.get("textBoxed", False)),
-        "shadow": bool(options.get("textShadow", True)) if options.get("textShadow") is not None else True,
-        "subtitle_size": float(options.get("subtitleSize") if options.get("subtitleSize") is not None else 0.62),
-    }
+    return styles(options)["text"]
 
 
 def fonts_in(text: dict) -> list[str]:
     """Every font the plan draws with: the shared one and each piece's own."""
-    names = [text.get("font") or DEFAULT_FONT]
-    for piece in PIECES:
-        own = (text.get(f"{piece}_style") or {}).get("font")
-        if own and own not in names:
-            names.append(own)
-    return names
+    return _text_facts(text)["fonts"]
 
 
 def ensure_fonts(text: dict) -> str:
@@ -424,7 +380,7 @@ def ensure_fonts(text: dict) -> str:
 
 
 def wants_text(text: dict) -> bool:
-    return text.get("title", "none") != "none" or bool(text.get("price_badge")) or bool(text.get("subtitle"))
+    return _text_facts(text)["wants_text"]
 
 
 def text_request(vehicle: dict | None, text: dict) -> dict | None:

@@ -1,5 +1,5 @@
-/* Text on the still: the browser side of core/src/text.rs, the twin of
- * imaging/text.py. The core rasterises and places the words; this
+/* Text on the still: the browser side of core/src/text.rs, as
+ * imaging/text.py is the CLI's. The core rasterises and places the words; this
  * module fetches the studio font once and turns the Text controls plus
  * the vehicle record into the overlay plan for one canvas size. */
 
@@ -37,55 +37,29 @@ export function fontReady(name = DEFAULT_FONT) { return loaded.has(name); }
  * needs to draw the same text. */
 export function loadedFonts() { return Object.fromEntries(bytes); }
 
-/* The Text controls (app keys) as the core's plan fields; the same
- * mapping as imaging/text.py::text_options. */
-export function textOptions(o) {
-  return {
-    font: o.textFont || DEFAULT_FONT,
-    badge_size: o.badgeSize != null ? Number(o.badgeSize) : 0.85,
-    title_style: pieceStyle(o, 'title'),
-    badge_style: pieceStyle(o, 'badge'),
-    subtitle_style: pieceStyle(o, 'subtitle'),
-    title: o.titleMode || 'none',
-    custom_title: o.titleText || null,
-    price_badge: !!o.priceBadge,
-    subtitle: o.subtitle || null,
-    position: o.textPosition || 'bl',
-    color: o.textColor || 'white',
-    size: o.textSize != null ? Number(o.textSize) : 0.05,
-    case: o.textCase || 'as-is',
-    boxed: !!o.textBoxed,
-    shadow: o.textShadow == null ? true : !!o.textShadow,
-    subtitle_size: o.subtitleSize != null ? Number(o.subtitleSize) : 0.62,
-  };
+/* The Studio's control values as every field the core's requests take
+ * (text, border_style, spotlight, shadow, reflection, backdrop), decided
+ * by the core (core/src/controls.rs), the same mapping the CLI's
+ * imaging/text.py asks it for. */
+export function styles(o) {
+  const plain = {};
+  for (const [k, v] of Object.entries(o || {})) if (v === null || typeof v !== 'object' || Array.isArray(v)) plain[k] = v;
+  return core.call({ op: 'styles', options: plain });
 }
+
+/* The Text controls (app keys) as the core's plan fields. */
+export function textOptions(o) { return styles(o).text; }
 
 export const PIECES = ['title', 'subtitle', 'badge'];
-const PIECE_LEVERS = ['font', 'position', 'color', 'case', 'box'];
 
 /* One piece's own levers (titleFont, titlePosition, ...) as the core's
- * PieceStyle: only what departs from the shared lever; "same", "" and
- * null all mean the shared one. The twin of imaging/text.py::piece_style. */
-export function pieceStyle(o, piece) {
-  const out = {};
-  for (const lever of PIECE_LEVERS) {
-    const v = o[`${piece}${lever[0].toUpperCase()}${lever.slice(1)}`];
-    if (v == null || v === '' || v === 'same') continue;
-    if (lever === 'box') out.boxed = v === 'on' || v === true;
-    else out[lever] = v;
-  }
-  return out;
-}
+ * PieceStyle: only what departs from the shared lever. */
+export function pieceStyle(o, piece) { return styles(o).text[`${piece}_style`]; }
+
+const facts = (text) => core.call({ op: 'text_facts', text });
 
 /* Every font the plan draws with: the shared one and each piece's own. */
-export function fontsIn(text) {
-  const names = [text.font || DEFAULT_FONT];
-  for (const p of PIECES) {
-    const own = text[`${p}_style`]?.font;
-    if (own && !names.includes(own)) names.push(own);
-  }
-  return names;
-}
+export function fontsIn(text) { return facts(text).fonts; }
 
 async function ensureFonts(text) {
   await Promise.all(fontsIn(text).map((n) => ensureFont(n)));
@@ -99,42 +73,13 @@ function fontsReady(text, onReady) {
   return false;
 }
 
-/* The app's frame controls as the core's border_style, or null: the
- * same mapping as imaging/text.py::frame_style. */
-export function frameStyle(o) {
-  if (o.border !== 'line') return null;
-  const num = (k, d) => (o[k] != null ? Number(o[k]) : d);
-  return { kind: 'line', color: o.frameColor || 'white', weight: num('frameWeight', 0.008), inset: num('frameInset', 0.035), radius: num('frameRadius', 0.02) };
-}
+/* The drawn frame, spotlight, shadow and reflection fields (see styles). */
+export function frameStyle(o) { return styles(o).border_style; }
+export function spotlightStyle(o) { return styles(o).spotlight; }
+export function shadowStyle(o) { return styles(o).shadow; }
+export function reflectionStyle(o) { return styles(o).reflection; }
 
-/* The app's spotlight controls as what the core takes: false when off,
- * true when on with the measured dim, else {strength, spread} with the
- * levers set. The twin of imaging/text.py::spotlight_style. */
-export function spotlightStyle(o) {
-  if (o.spotlight === false) return false;
-  const out = {};
-  if (o.spotStrength != null && o.spotStrength !== '') out.strength = Number(o.spotStrength);
-  if (o.spotSpread != null && o.spotSpread !== '') out.spread = Number(o.spotSpread);
-  return Object.keys(out).length ? out : true;
-}
-
-/* The app's shadow controls as the core's `shadow` field, or null: the
- * same mapping as imaging/text.py::shadow_style. */
-export function shadowStyle(o) {
-  if (!o.shadow) return null;
-  return { strength: o.shadowStrength != null ? Number(o.shadowStrength) : 0.5 };
-}
-
-/* The app's reflection controls as the core's `reflection` field, or
- * null: the same mapping as imaging/text.py::reflection_style. */
-export function reflectionStyle(o) {
-  if (!o.reflection) return null;
-  return { strength: o.reflectionStrength != null ? Number(o.reflectionStrength) : 0.35 };
-}
-
-export function wantsText(text) {
-  return text.title !== 'none' || !!text.price_badge || !!text.subtitle;
-}
+export function wantsText(text) { return facts(text).wants_text; }
 
 /* The Text controls and the vehicle as one compose field, with the font
  * loaded, or null when no text is asked for (so a run without text

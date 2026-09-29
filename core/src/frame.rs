@@ -257,6 +257,10 @@ pub enum Op {
     DetectBanner { image: Slice },
     /// The batch-consensus [top, bottom] from each photo's detect_bars.
     BatchBars { bars: Vec<(usize, usize)> },
+    /// The Studio's control values as the requests' fields (controls.rs).
+    Styles { options: serde_json::Value },
+    /// Whether a text plan draws anything, and the fonts it needs.
+    TextFacts { text: serde_json::Value },
     /// A named layout's [(box, anchor)] for a window (layout.rs::layout).
     Layout { name: String, window: [i64; 4], n_extra: usize },
     /// Where a (width x height) cutout sits in a box (layout.rs::compute_placement).
@@ -429,6 +433,8 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
             let p = crate::layout::compute_placement(width, height, (bx[0], bx[1], bx[2], bx[3]), margin_frac, anchor);
             OpResult::Json(serde_json::to_string(&Scalar { value: p }).unwrap())
         }
+        Op::Styles { options } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::controls::styles(&options) }).unwrap()),
+        Op::TextFacts { text } => OpResult::Json(serde_json::to_string(&Scalar { value: serde_json::json!({"wants_text": crate::controls::wants_text(&text), "fonts": crate::controls::fonts_in(&text)}) }).unwrap()),
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
             OpResult::Image(crate::spin::blend(&a, &b, t)?)
