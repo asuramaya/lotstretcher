@@ -2599,5 +2599,16 @@
       "maxBits": 4,
       "maxAspectDiff": 0.02
     }
+  },
+  "letterbox": {
+    "$comment": "Vendor padding on dealer photos (core/src/letterbox.rs; imaging/letterbox.py records the real misses behind each number). Bars: the sharpest row jump within maxBarFrac of an edge, at least minJump in luminance, with everything before it flatter than maxPreJumpStd, and at least minBarPx. Banner: rows in from an edge where at least bannerMinFraction of the pixels are more saturated than bannerSaturation and their hue spread (IQR, degrees) is under bannerMaxHueIqr, at least bannerMinPx.",
+    "maxBarFrac": 0.2,
+    "minBarPx": 8,
+    "minJump": 60,
+    "maxPreJumpStd": 8,
+    "bannerSaturation": 0.35,
+    "bannerMinFraction": 0.5,
+    "bannerMaxHueIqr": 6.0,
+    "bannerMinPx": 12
   }
 }

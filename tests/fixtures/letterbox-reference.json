@@ -1,0 +1,86 @@
+{
+ "white_top_40": {
+  "bars": [
+   40,
+   0
+  ],
+  "banner": [
+   0,
+   0
+  ]
+ },
+ "white_top_40b": {
+  "bars": [
+   40,
+   0
+  ],
+  "banner": [
+   0,
+   0
+  ]
+ },
+ "white_both_24": {
+  "bars": [
+   24,
+   24
+  ],
+  "banner": [
+   0,
+   0
+  ]
+ },
+ "fade_top": {
+  "bars": [
+   0,
+   0
+  ],
+  "banner": [
+   0,
+   0
+  ]
+ },
+ "plain": {
+  "bars": [
+   0,
+   0
+  ],
+  "banner": [
+   0,
+   0
+  ]
+ },
+ "pink_banner": {
+  "bars": [
+   0,
+   0
+  ],
+  "banner": [
+   28,
+   0
+  ]
+ },
+ "red_wrap_banner": {
+  "bars": [
+   0,
+   0
+  ],
+  "banner": [
+   28,
+   0
+  ]
+ },
+ "colourful": {
+  "bars": [
+   0,
+   0
+  ],
+  "banner": [
+   0,
+   0
+  ]
+ },
+ "$batch": [
+  40,
+  24
+ ]
+}

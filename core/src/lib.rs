@@ -38,6 +38,7 @@ pub mod frame_style;
 pub mod vin;
 pub mod select;
 pub mod listing;
+pub mod letterbox;
 mod entities;
 
 #[cfg(not(target_arch = "wasm32"))]

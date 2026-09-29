@@ -991,7 +991,12 @@ async function sortAndCut(stages) {
         p.bitmap = bitmap;
         if (p.userScene) { /* the person said what it is; the model does not argue */ } else {
         t0 = performance.now();
-        const scene = await classifyScene(bitmap);
+        // Only the classification view loses a dealer's saturated banner
+        // (core letterbox.rs, as the CLI's evaluate_photo does); the photo
+        // itself keeps it. Measured on the 413 library photos with one: the
+        // scene model was right on 409 raw and 411 stripped, none worse.
+        const [bt, bb] = coreCall({ op: 'detect_banner', image: { $image: 0 } }, [pixelsOf(bitmap)]);
+        const scene = await classifyScene(cropRows(bitmap, bt, bb));
         clock('scene', t0);
         p.sceneConf = scene.confidence;
         // Too weak to route on. Keep the photo, do not act on the guess.
@@ -1018,11 +1023,21 @@ async function sortAndCut(stages) {
     // core, at its own size, the same treatment the CLI's bundle/interior
     // gets. No cutout, no compositing: rembg cannot cut out a cabin.
     if (state.options.interiors) {
-      for (const p of state.photos) {
-        if (p.scene !== 'interior' || p.status === 'failed') continue;
+      const inside = state.photos.filter((p) => p.scene === 'interior' && p.status !== 'failed');
+      // A vendor's flat letterbox bars come off first, at the size most of
+      // the batch agrees on (core letterbox.rs, as the CLI's photos.py
+      // does): one vendor pads a whole gallery alike, and a photo whose own
+      // edge fades too gradually to find still gets the batch's crop.
+      t0 = performance.now();
+      const bars = inside.map((p) => {
+        try { return coreCall({ op: 'detect_bars', image: { $image: 0 } }, [pixelsOf(p.bitmap)]); } catch { return [0, 0]; }
+      });
+      const [top, bottom] = inside.length ? coreCall({ op: 'batch_bars', bars }) : [0, 0];
+      clock('interior', t0);
+      for (const p of inside) {
         try {
           t0 = performance.now();
-          p.interior = enhanceInterior(p.bitmap);
+          p.interior = enhanceInterior(cropRows(p.bitmap, top, bottom));
           clock('interior', t0);
         } catch (e) {
           state.errors.push(`${p.name}: ${e.message || e}`);
@@ -1463,6 +1478,24 @@ function readVehicle() {
     city_tags: $('f-citytags').value.split(',').map((s) => s.trim()).filter(Boolean),
   };
   saveDealer();
+}
+
+/* A bitmap or canvas as RGBA ImageData, for a core op that measures it. */
+function pixelsOf(source) {
+  const c = makeCanvas(source.width, source.height);
+  const x = ctxOf(c, { willReadFrequently: true });
+  x.drawImage(source, 0, 0);
+  return x.getImageData(0, 0, c.width, c.height);
+}
+
+/* `source` with `top` and `bottom` rows cut off, or `source` itself when
+ * there is nothing to cut. */
+function cropRows(source, top, bottom) {
+  const h = source.height - top - bottom;
+  if ((!top && !bottom) || h < 1) return source;
+  const c = makeCanvas(source.width, h);
+  ctxOf(c).drawImage(source, 0, top, source.width, h, 0, 0, source.width, h);
+  return c;
 }
 
 /* A cutout's same-shot signature, from the core (select.rs::

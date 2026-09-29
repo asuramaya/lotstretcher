@@ -50,6 +50,14 @@ from __future__ import annotations
 
 from PIL import Image
 
+from lotstretcher import core
+
+# Flat bars (spec letterbox): the sharpest single-row luminance jump
+# within maxBarFrac of the edge counts only if it is at least minJump
+# (the BMW bar->content jump measured ~217; a natural gradient near an
+# edge is nowhere close) and everything before it is flatter than
+# maxPreJumpStd; bars under minBarPx could be a flat sky or ceiling strip.
+
 # A SECOND kind of vendor padding, needing a different signal entirely.
 # Tomball Ford bakes a saturated pink banner into the top (and a contact
 # block into the bottom) of its studio shots. detect_bars() is blind to it
@@ -78,7 +86,7 @@ from PIL import Image
 #     banner rows      frac 0.65-1.00   hue IQR 0.0-1.4
 #     photo content    frac 0.13        hue IQR 11-15
 #
-# Hence the two conditions below: a banner row is mostly saturated AND
+# Hence the two conditions (spec letterbox.banner*): a banner row is mostly saturated AND
 # essentially monochromatic. Real photo content that happens to be
 # colourful (a red car filling frame) fails the second test, because paint
 # under real lighting spreads its hue far wider than 6 degrees.
@@ -89,101 +97,24 @@ from PIL import Image
 # classifications on the full set, because on a photo with no banner it is
 # just deleting real content. Measuring the band means a photo without one
 # is returned untouched.
-BANNER_SATURATION = 0.35  # above this counts as a "strongly coloured" pixel
-BANNER_MIN_FRACTION = 0.5  # share of the row that must be strongly coloured
-BANNER_MAX_HUE_IQR = 6.0  # degrees; banner rows measured 0.0-1.4, content 11+
-BANNER_MIN_PX = 12  # thinner than this isn't worth cropping
-
-MIN_BAR_PX = 8  # ignore anything thinner than this -- could just be a
-                 # coincidentally flat sky/ceiling strip at a real photo edge
-MAX_BAR_FRAC = 0.20  # never search past this fraction of the image height
-MIN_JUMP = 60  # minimum single-row luminance jump to count as a real edge
-               # (the BMW bar->content jump measured ~217; a natural photo
-               # gradient near an edge is nowhere close to this)
-MAX_PRE_JUMP_STD = 8  # how flat (luminance std-dev) everything before the
-                       # jump must be to trust it as a genuine solid bar
 
 
-def _row_luminance(arr) -> "np.ndarray":
-    """Perceptual luminance per row (mean over the row's width) for an
-    HxWx3 uint8 array -- one scalar per row."""
-    import numpy as np
-    rgb = arr.astype(np.float64)
-    lum = rgb[..., 0] * 0.299 + rgb[..., 1] * 0.587 + rgb[..., 2] * 0.114
-    return lum.mean(axis=1)
-
-
-def _find_edge(row_lum, max_bar: int) -> int:
-    import numpy as np
-
-    window = row_lum[: max_bar + 1]
-    if len(window) < 2:
-        return 0
-    diffs = np.abs(np.diff(window))
-    jump_idx = int(diffs.argmax())
-    if diffs[jump_idx] < MIN_JUMP:
-        return 0  # no sufficiently sharp transition in range -- no bar
-    if window[: jump_idx + 1].std() > MAX_PRE_JUMP_STD:
-        return 0  # what's before the jump isn't flat enough to be a bar
-    return jump_idx + 1
+def _measure(op: str, img: Image.Image) -> tuple[int, int]:
+    top, bottom = core.call({"op": op, "image": {"$image": 0}}, [img.convert("RGB")])
+    return top, bottom
 
 
 def detect_bars(img: Image.Image) -> tuple[int, int]:
     """Returns (top_px, bottom_px) of detected solid-color padding, each
-    0 if no bar (below MIN_BAR_PX) was found on that edge."""
-    import numpy as np
-
-    arr = np.asarray(img.convert("RGB"))
-    h = arr.shape[0]
-    max_bar = int(h * MAX_BAR_FRAC)
-
-    row_lum = _row_luminance(arr)
-    top = _find_edge(row_lum, max_bar)
-    bottom = _find_edge(row_lum[::-1], max_bar)
-
-    return (top if top >= MIN_BAR_PX else 0), (bottom if bottom >= MIN_BAR_PX else 0)
-
-
-def _banner_rows(hue, sat, max_bar: int) -> int:
-    """How many rows in from this edge are banner, walking inward until a
-    row fails. Contiguous by design: the band touches the frame edge, so a
-    gap means the banner ended and real content began."""
-    import numpy as np
-
-    count = 0
-    for r in range(min(max_bar, len(sat))):
-        strong = sat[r] > BANNER_SATURATION
-        if strong.mean() < BANNER_MIN_FRACTION:
-            break
-        hues = hue[r][strong]
-        if len(hues) < 10:
-            break
-        spread = float(np.percentile(hues, 75) - np.percentile(hues, 25))
-        # Hue is circular, so a band sitting near the 0/360 wrap reads as a
-        # huge spread when it is actually tight. Re-measure rotated half a
-        # turn and keep whichever is smaller.
-        rotated = (hues + 180.0) % 360.0
-        spread = min(spread, float(np.percentile(rotated, 75) - np.percentile(rotated, 25)))
-        if spread > BANNER_MAX_HUE_IQR:
-            break
-        count = r + 1
-    return count
+    0 if no bar (below the spec's minBarPx) was found on that edge."""
+    return _measure("detect_bars", img)
 
 
 def detect_banner(img: Image.Image) -> tuple[int, int]:
     """Returns (top_px, bottom_px) of a saturated single-hue dealer banner,
-    each 0 if that edge doesn't have one. See the constants above for the
+    each 0 if that edge doesn't have one. See the notes above for the
     measured signal and the real miss that motivated it."""
-    import numpy as np
-
-    hsv = np.asarray(img.convert("HSV"), dtype=np.float64)
-    hue = hsv[..., 0] * (360.0 / 255.0)
-    sat = hsv[..., 1] / 255.0
-    max_bar = int(hsv.shape[0] * MAX_BAR_FRAC)
-
-    top = _banner_rows(hue, sat, max_bar)
-    bottom = _banner_rows(hue[::-1], sat[::-1], max_bar)
-    return (top if top >= BANNER_MIN_PX else 0), (bottom if bottom >= BANNER_MIN_PX else 0)
+    return _measure("detect_banner", img)
 
 
 def strip_banner(img: Image.Image) -> Image.Image:
@@ -197,19 +128,12 @@ def strip_banner(img: Image.Image) -> Image.Image:
 
 
 def detect_batch_bars(images: list[Image.Image]) -> tuple[int, int]:
-    """Run detect_bars() across a batch of photos from the same
-    vehicle/gallery and return the most common non-zero (top, bottom) --
-    more reliable than trusting any single image, since a real vendor bar
-    is a fixed size across the whole batch even on photos where THIS
-    image's own transition is too gradual for detect_bars() to find
-    cleanly. Returns (0, 0) if no image in the batch showed a clear bar."""
-    from collections import Counter
-
-    results = [detect_bars(img) for img in images]
-    tops = Counter(t for t, _ in results if t)
-    bottoms = Counter(b for _, b in results if b)
-    top = tops.most_common(1)[0][0] if tops else 0
-    bottom = bottoms.most_common(1)[0][0] if bottoms else 0
+    """The most common non-zero (top, bottom) over a batch of photos from
+    the same vehicle/gallery -- more reliable than trusting any single
+    image, since a real vendor bar is a fixed size across the whole batch
+    even on photos where THIS image's own transition is too gradual to
+    find cleanly. (0, 0) if no image in the batch showed a clear bar."""
+    top, bottom = core.call({"op": "batch_bars", "bars": [list(detect_bars(img)) for img in images]})
     return top, bottom
 
 

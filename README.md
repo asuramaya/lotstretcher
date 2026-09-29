@@ -190,7 +190,10 @@ than once per frame. Measured on a real five-shot vehicle at 1254²: a glowing c
 21 ms, byte-identical; the whole 26 s clip's frames 84 s to 42 s. In the browser a 720² three-shot conveyor
 renders in about 4 s for a 9.6 s clip. Interior photos are the core's too (`enhance_interior`: the
 capped white balance from bright near-neutral pixels, then the highlight-holding exposure lift), so the
-browser now writes the same `interior/` set the CLI's bundle carries, at the photo's own size. The wheel
+browser now writes the same `interior/` set the CLI's bundle carries, at the photo's own size, with a
+vendor's flat letterbox bars cropped off first at the size most of the gallery agrees on
+(`detect_bars`, `batch_bars`; `detect_banner` finds the saturated dealer banner the CLI strips before
+classifying). The wheel
 money shot's mask arithmetic is the core's as well (`mask_stats`, `cutout_from_mask`, `duplicate_score`:
 bounds, 8-connected blobs, the dominance, width and angle gates, the crop, the duplicate check); the
 models that make the masks, CLIPSeg and SAM2, stay in the CLI, which is why wheel shots are a server

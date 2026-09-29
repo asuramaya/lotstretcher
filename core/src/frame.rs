@@ -251,6 +251,12 @@ pub enum Op {
     ListingRecord(crate::listing::ListingRequest),
     /// The JSON object embedded after `marker` (listing.rs::extract_balanced_json).
     BalancedJson { text: String, marker: String },
+    /// [top, bottom] px of flat letterbox padding (letterbox.rs).
+    DetectBars { image: Slice },
+    /// [top, bottom] px of a saturated single-hue dealer banner.
+    DetectBanner { image: Slice },
+    /// The batch-consensus [top, bottom] from each photo's detect_bars.
+    BatchBars { bars: Vec<(usize, usize)> },
     /// A cutout's same-shot signature (select.rs::shot_signature).
     ShotSignature { image: Slice },
     /// The index of the first `earlier` signature `signature` repeats, or null.
@@ -406,6 +412,9 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
         Op::SameShot { signature, earlier } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::select::same_shot(&signature, &earlier) }).unwrap()),
         Op::ListingRecord(req) => OpResult::Json(serde_json::to_string(&Scalar { value: crate::listing::normalize(&req) }).unwrap()),
         Op::BalancedJson { text, marker } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::listing::extract_balanced_json(&text, &marker) }).unwrap()),
+        Op::DetectBars { image } => { let img = slice_image(arena, &image)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::letterbox::detect_bars(&img) }).unwrap()) }
+        Op::DetectBanner { image } => { let img = slice_image(arena, &image)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::letterbox::detect_banner(&img) }).unwrap()) }
+        Op::BatchBars { bars } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::letterbox::batch_bars(&bars) }).unwrap()),
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
             OpResult::Image(crate::spin::blend(&a, &b, t)?)
