@@ -26,6 +26,9 @@ const assetImage = (kind, name, onReady) => imageNow(kind, name, onReady);
 
 
 
+/* A lever's number, or null for the spec's default. */
+const numOrNull = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
+
 export class Preview {
   /* `host` holds #previewCanvas, #previewSamples and #estimates.
    * `getOptions()` returns the live options; `getVehicle()` the form's
@@ -398,12 +401,12 @@ export class Preview {
       : o.backdrop === 'asset' && o.background ? assetImage('backgrounds', o.background, () => this.update()) : null;
     const style = frameStyle(o);
     const key = JSON.stringify([width, height, seed, o.backdrop, o.backdropColor, o.backdropColor2, spotlightStyle(o), subject.exterior, subject.interior, cutouts.length, text,
-      background ? `${o.backdrop}:${o.background || o.customBackground?.name || ''}` : null, style]);
+      background ? `${o.backdrop}:${o.background || o.customBackground?.name || ''}` : null, style, o.videoPush, o.videoCrossfade]);
     if (key !== this.clipKey) {
       this.clip = prepareClip(cutouts, {
         width, height, seed: `${seed}:video`, exterior: subject.exterior, interior: subject.interior,
         generic: o.backdrop === 'generic', backdrop: o.backdrop, backdropColor: o.backdropColor || null, backdropColor2: o.backdropColor2 || null, spotlight: spotlightStyle(o), text, background, frameStyle: style,
-        vehicle: subject.vehicle,
+        vehicle: subject.vehicle, push: numOrNull(o.videoPush), crossfade: numOrNull(o.videoCrossfade),
       });
       this.clipKey = key;
     }

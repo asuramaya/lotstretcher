@@ -179,6 +179,8 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
         video_duration_s=float(options["videoDuration"]) if options.get("videoDuration") else None,
         video_bpm=float(options["videoBpm"]) if options.get("videoBpm") else None,
         video_budget_mb=float(options["videoBudgetMb"]) if options.get("videoBudgetMb") else None,
+        video_push=float(options["videoPush"]) if options.get("videoPush") not in (None, "") else None,
+        video_crossfade=float(options["videoCrossfade"]) if options.get("videoCrossfade") not in (None, "") else None,
     )
     if opts.enabled:
         if wants_photo:

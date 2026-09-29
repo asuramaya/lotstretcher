@@ -24,7 +24,7 @@ from lotstretcher.imaging.compose import render_hero_video
 from lotstretcher.imaging.compose.hero_video import (BARS_PER_LOOP, DEFAULT_BPM, DEFAULT_VIDEO_FORMAT,
                                           VIDEO_FORMATS)
 from lotstretcher.imaging.select import order_for_conveyor_start, pick_all_for_carousel
-from lotstretcher.imaging.text import (add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
+from lotstretcher.imaging.text import (add_short_clip_args, add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args, frame_style,
                                        reflection_style, shadow_style, spotlight_style, controls_from_spotlight_args, text_options)
@@ -107,6 +107,7 @@ def main():
     parser.add_argument("--bpm", type=float, default=None,
                          help=f"Tempo driving the bar/beat grid when silent (default: {DEFAULT_BPM:g}, which "
                               "reproduces the scored version's exact cadence).")
+    add_short_clip_args(parser)
     parser.add_argument("--nvenc", action="store_true",
                          help="Encode on the GPU (h264_nvenc). Only the encode moves; the frame compositing is CPU either way, so expect a modest win.")
     parser.add_argument("--out", help="Output path (default: <vehicle_folder>/bundle/hero-video.mp4)")
@@ -147,8 +148,8 @@ def main():
         audio_path, bars_per_loop = None, BARS_PER_LOOP
 
     carousel = pick_all_for_carousel(cutout_dir, wheel_dir=wheel_dir)
-    if len(carousel) < 3:
-        sys.exit(f"Need at least 3 usable cutouts for the conveyor, found {len(carousel)} in {cutout_dir}")
+    if not carousel:
+        sys.exit(f"No usable cutouts to animate in {cutout_dir}")
     carousel = order_for_conveyor_start(carousel, cutout_dir)
     carousel_paths = [p for p, _label in carousel]
     carousel_labels = [label for _p, label in carousel]
@@ -193,14 +194,20 @@ def render_one(fmt, args, vehicle_folder, border_path, background_video, gradien
         reflection=reflection_style(controls_from_reflection_args(args)),
         backdrop_spec=getattr(args, "backdrop_spec", None),
         encoder="h264_nvenc" if args.nvenc else "libx264",
+        push=args.video_push,
+        crossfade=args.video_crossfade,
     )
 
     print(f"Saved [{fmt} {spec['canvas'][0]}x{spec['canvas'][1]}]: "
           f"{report['out_path']} ({report['file_size_mb']} MB)")
     print(f"  duration: {report['duration_s']}s @ {report['fps']}fps ({report['total_frames']} frames)")
-    print(f"  conveyor: {report['n_shots']} shots over {report['carousel_period_s']}s/pass, "
-          f"bar={report['bar_dwell_s']}s (audio loop {report['audio_loop_s']}s / {report['bars_per_loop']} bars), "
-          f"beat={report['beat_s']}s, transition={report['transition_s']}s")
+    if report.get("mode") == "push":
+        print(f"  push: {report['n_shots']} shot(s) over {report['carousel_period_s']}s/pass, "
+              f"push {report['push']:g}, crossfade {report['crossfade_s']:g}s")
+    else:
+        print(f"  conveyor: {report['n_shots']} shots over {report['carousel_period_s']}s/pass, "
+              f"bar={report['bar_dwell_s']}s (audio loop {report['audio_loop_s']}s / {report['bars_per_loop']} bars), "
+              f"beat={report['beat_s']}s, transition={report['transition_s']}s")
     print(f"  backdrop: {report['backdrop']}, frame: {'yes' if report['framed'] else 'none'}, "
           f"clock: {report['clock']}")
     print(f"  shot order: {', '.join(report['shot_order'])}")

@@ -1986,11 +1986,7 @@
             "max": 0.2,
             "step": 0.01,
             "cli": "--video-push",
-            "surfaces": [
-              "browser"
-            ],
-            "cliNote": "The CLI's video is beat-synced: shot motion is driven by the audio bar, not by a fixed push. There is no equivalent flag to map to.",
-            "tooltip": "How far each shot scales across its dwell",
+            "tooltip": "How far each shot scales across its dwell, in a clip of one or two shots (three or more ride the conveyor)",
             "tab": "motion"
           },
           {
@@ -2004,11 +2000,7 @@
             "step": 0.1,
             "unit": "s",
             "cli": "--video-crossfade",
-            "surfaces": [
-              "browser"
-            ],
-            "cliNote": "The CLI transitions on the bar via the conveyor morph (TRANSITION_FRAC), so a crossfade duration has no meaning there.",
-            "tooltip": "Seconds of blend between shots",
+            "tooltip": "Seconds of blend between shots, in a clip of one or two shots (three or more ride the conveyor)",
             "tab": "motion"
           },
           {

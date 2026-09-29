@@ -76,7 +76,7 @@ from lotstretcher.imaging.dedupe import DEFAULT_TEMPLATES_DIR, JunkFilter
 from lotstretcher.listing import expand_listing_url, is_vdp_url
 from lotstretcher.local_source import is_local_source, load_local_vehicle, local_vehicle_key
 from lotstretcher.scrape import USER_AGENT, vin_from_url
-from lotstretcher.imaging.text import (add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
+from lotstretcher.imaging.text import (add_short_clip_args, add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
                                        controls_from_spotlight_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args)
@@ -256,6 +256,8 @@ def controls_from_args(args) -> dict:
         "videoDuration": args.video_duration,
         "videoFps": args.video_fps,
         "videoBpm": args.video_bpm,
+        "videoPush": args.video_push,
+        "videoCrossfade": args.video_crossfade,
         "videoBudgetMb": args.video_budget_mb,
         "interiors": not args.no_interiors and not args.no_photo_sort,
         "interiorCaptions": args.interior_captions,
@@ -374,6 +376,7 @@ def main():
     parser.add_argument("--video-bpm", type=float, default=None, metavar="BPM",
                          help="Tempo the cuts and pulse follow when there is no music (default: the "
                               "spec's defaultBpm). With --video-music the track's own bars set the clock.")
+    add_short_clip_args(parser)
     parser.add_argument("--video-budget-mb", type=float, default=None, metavar="MB",
                          help="Bitrate is chosen to fill this file size. Default: each format's own budget "
                               "from the spec.")

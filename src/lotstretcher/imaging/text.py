@@ -187,6 +187,18 @@ def frame_style(options: dict) -> dict | None:
     return styles(options)["border_style"]
 
 
+def add_short_clip_args(parser) -> None:
+    """The flags for a clip of one or two shots, which the conveyor (three
+    or more) cannot fill: each shot holds the frame with a slow push, and
+    the next crossfades in (core carousel.rs's push mode)."""
+    parser.add_argument("--video-push", type=float, default=None, metavar="FRACTION",
+                        help="How far each shot scales across its dwell in a clip of one or two shots, 0-0.2 "
+                             f"(default: {_spec.control_default('videoPush', 0.06)}).")
+    parser.add_argument("--video-crossfade", type=float, default=None, metavar="SECONDS",
+                        help="Seconds of blend between the shots of a clip of one or two shots "
+                             f"(default: {_spec.control_default('videoCrossfade', 0.5)}).")
+
+
 def add_spotlight_args(parser) -> None:
     """The spotlight's flags, shared by the CLIs: off, a chosen strength
     in place of the measured dim, and a spread for the pool of light."""

@@ -1,8 +1,13 @@
-//! The conveyor choreography (port of the scheduling and geometry half
-//! of hero_video.py). Pure arithmetic over a plan the host asks for once
-//! and hands back each frame; every pixel then goes through
+//! A clip's choreography. Pure arithmetic over a plan the host asks for
+//! once and hands back each frame; every pixel then goes through
 //! frame::render_frame. Both video hosts share this, so the browser's
 //! clip and the CLI's are the same edit.
+//!
+//! Three shots or more ride the conveyor (left, hero, right, morphing on
+//! the bar). One or two cannot fill it: those hold the window one at a
+//! time with a slow push across each dwell and a crossfade between them
+//! (the `push` mode), which the browser used to draw on its own while the
+//! CLI rendered no clip at all.
 
 use serde::{Deserialize, Serialize};
 
@@ -46,6 +51,13 @@ pub struct PlanRequest {
     pub window: Option<[i64; 4]>,
     #[serde(default)]
     pub bars_per_loop: Option<u32>,
+    /// How far a shot scales across its dwell in the push mode (spec
+    /// control videoPush when absent).
+    #[serde(default)]
+    pub push: Option<f64>,
+    /// Seconds of blend between shots in the push mode (videoCrossfade).
+    #[serde(default)]
+    pub crossfade: Option<f64>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -66,12 +78,28 @@ pub struct ShotPlan {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Plan {
+    /// "conveyor" or "push".
+    #[serde(default = "conveyor_mode")]
+    pub mode: String,
+    #[serde(default)]
+    pub push: f64,
+    #[serde(default)]
+    pub crossfade: f64,
     pub shots: Vec<ShotPlan>,
     pub schedule: Vec<[f64; 2]>,
     pub period: f64,
     pub dwell: f64,
     pub transition_s: f64,
     pub beat_s: f64,
+}
+
+fn conveyor_mode() -> String { "conveyor".into() }
+
+fn control_default(key: &str) -> f64 {
+    spec::get(&["controls", "groups"]).as_array().into_iter().flatten()
+        .flat_map(|g| g.get("controls").and_then(|c| c.as_array()).into_iter().flatten())
+        .find(|c| c.get("key").and_then(|k| k.as_str()) == Some(key))
+        .and_then(|c| c.get("default")).and_then(|d| d.as_f64()).unwrap_or(0.0)
 }
 
 /// (dwell, transition_s, beat_s) from the loop's own length.
@@ -100,6 +128,9 @@ pub fn plan(req: &PlanRequest, arena: &[u8]) -> Result<Plan, String> {
         None => match &border { Some(b) => detect_window(b)?, None => (0, 0, w as i64, h as i64) },
     };
     let border = border.as_deref();
+    if req.shots.len() < 3 {
+        return push_plan(req, arena, window, border);
+    }
     let boxes = conveyor_for_window(window, 2);
     let (hero_box, hero_anchor) = boxes[0];
     let (left_box, left_anchor) = boxes[1];
@@ -166,7 +197,69 @@ pub fn plan(req: &PlanRequest, arena: &[u8]) -> Result<Plan, String> {
     let mut schedule = Vec::new();
     let mut t = 0.0;
     for s in &shots { let d = dwell * s.bars as f64; schedule.push([t, d]); t += d; }
-    Ok(Plan { shots, schedule, period: t, dwell, transition_s, beat_s })
+    Ok(Plan { mode: conveyor_mode(), push: 0.0, crossfade: 0.0, shots, schedule, period: t, dwell, transition_s, beat_s })
+}
+
+/// One or two shots: each holds the whole window (placed as a still's
+/// single car is, on the same floor line), for an equal share of one loop.
+fn push_plan(req: &PlanRequest, arena: &[u8], window: Box_, border: Option<&Image>) -> Result<Plan, String> {
+    let backdrop = slice_image(arena, &req.backdrop)?;
+    let margin = spec::f64_at(&["video", "heroMarginFrac"]);
+    let mut shots = Vec::with_capacity(req.shots.len());
+    for s in &req.shots {
+        let car = slice_image(arena, &s.image)?;
+        let (fit, rect) = place(&car, window, Anchor::Center, border, margin);
+        let [x, y, rw, rh] = rect;
+        let (x0, y0) = (x.round().max(0.0) as usize, y.round().max(0.0) as usize);
+        let x1 = ((x + rw).round() as usize).min(backdrop.width);
+        let y1 = ((y + rh).round() as usize).min(backdrop.height);
+        let region = crop(&backdrop, x0.min(x1), y0.min(y1), (x1 - x0.min(x1)).max(1), (y1 - y0.min(y1)).max(1));
+        shots.push(ShotPlan {
+            hero_rect: rect, hero_fit_rect: rect, left_rect: rect, right_rect: rect,
+            center: [x + rw / 2.0, y + rh / 2.0], dim: compute_dim_strength(&region, &fit),
+            is_pan: false, pan_draw_w: 0.0, pan_draw_h: 0.0, pan_x_start: 0.0, pan_x_end: 0.0, bars: 1,
+        });
+    }
+    let bars = req.bars_per_loop.unwrap_or(spec::f64_at(&["video", "barsPerLoop"]) as u32);
+    let (dwell, _, beat_s) = timing(req.audio_loop_s, bars);
+    let per = (bars / shots.len().max(1) as u32).max(1);
+    let mut schedule = Vec::new();
+    let mut t = 0.0;
+    for s in shots.iter_mut() { s.bars = per; let d = dwell * per as f64; schedule.push([t, d]); t += d; }
+    Ok(Plan {
+        mode: "push".into(),
+        push: req.push.unwrap_or_else(|| control_default("videoPush")),
+        crossfade: req.crossfade.unwrap_or_else(|| control_default("videoCrossfade")),
+        shots, schedule, period: t, dwell, transition_s: 0.0, beat_s,
+    })
+}
+
+fn ease_in_out(t: f64) -> f64 { if t < 0.5 { 2.0 * t * t } else { 1.0 - (-2.0 * t + 2.0).powi(2) / 2.0 } }
+
+/// A push-mode frame: the shot pushed in by how far through its dwell it
+/// is, the one before it fading out over the first `crossfade` seconds
+/// (not before the very first shot, and at most 45% of a dwell).
+fn push_frame(plan: &Plan, t: f64) -> FrameOut {
+    let n = plan.shots.len();
+    let pos = t % plan.period;
+    let idx = plan.schedule.iter().position(|[s, d]| pos < s + d).unwrap_or(n - 1);
+    let [start, dur] = plan.schedule[idx];
+    let within = pos - start;
+    let at = |i: usize, progress: f64| {
+        let s = &plan.shots[i];
+        scaled_about(s.hero_fit_rect, s.center, 1.0 + plan.push * ease_in_out(progress.clamp(0.0, 1.0)))
+    };
+    let fade = plan.crossfade.min(dur * 0.45);
+    let mut cars = vec![];
+    if fade > 0.0 && within < fade && (idx > 0 || t >= plan.period) {
+        let k = within / fade;
+        let prev = (idx + n - 1) % n;
+        cars.push(FrameCarOut { shot: prev, rect: at(prev, 1.0), alpha: 1.0 - k });
+        cars.push(FrameCarOut { shot: idx, rect: at(idx, within / dur), alpha: k });
+    } else {
+        cars.push(FrameCarOut { shot: idx, rect: at(idx, within / dur), alpha: 1.0 });
+    }
+    FrameOut { hero: idx, cars }
 }
 
 fn ease_out(t: f64) -> f64 { 1.0 - (1.0 - t).powi(2) }
@@ -192,6 +285,9 @@ pub struct FrameOut { pub hero: usize, pub cars: Vec<FrameCarOut> }
 
 /// The cars to draw at time `t`, in draw order (accents first, hero last).
 pub fn frame(plan: &Plan, t: f64) -> FrameOut {
+    if plan.mode == "push" {
+        return push_frame(plan, t);
+    }
     let n = plan.shots.len();
     let pos = t % plan.period;
     let mut idx = n - 1;

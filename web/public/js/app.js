@@ -1376,6 +1376,8 @@ async function run() {
             frameStyle: frameStyle(state.options),
             shadow: shadowStyle(state.options), reflection: reflectionStyle(state.options),
             vehicle: state.vehicle,
+            // One or two shots are a push with crossfades (core carousel.rs).
+            push: state.options.videoPush ?? null, crossfade: state.options.videoCrossfade ?? null,
             onProgress: (f) => setProgress(0.85 + 0.15 * f),
           };
           const shots = cut.map((p) => p.cutout);

@@ -1,23 +1,12 @@
 /* Hero video, rendered and encoded in the tab.
  *
- * This is an HONEST SUBSET of imaging/compose/hero_video.py, not a port
- * of it. That module is 976 lines of music-synced carousel: beat
- * detection against an audio loop, a four-way conveyor morph, GPU
- * compositing, ffmpeg/NVENC encoding. None of that survives contact with
- * a browser, and pretending otherwise would produce something worse than
- * a simpler thing done properly.
- *
- * What IS kept, because it is what makes the CLI's video read as
- * deliberate rather than as a slideshow:
- *
- *   - the backdrop gradient rotating a full turn across the video
- *     (GRADIENT_TURNS = 1.0). A static gradient behind a moving car
- *     reads as a still image with a car twitching on it.
- *   - a slow push on each shot, so no frame is ever static.
- *   - crossfades between shots rather than cuts.
- *
- * What is NOT here and is not pretended: audio, beat sync, the conveyor
- * morph, multi-car layouts. The CLI remains the way to get those.
+ * The choreography is the core's (core/src/carousel.rs), the one the
+ * CLI's hero_video.py renders from: three shots or more ride the
+ * conveyor (left, hero, right, morphing on the bar), one or two hold the
+ * frame each with a slow push and a crossfade between them (the Push and
+ * Crossfade levers). The backdrop gradient turns a full circle across
+ * the clip either way, so no frame is ever static. What the browser does
+ * not have is music: its clock is the spec's default tempo.
  *
  * Encoding is WebCodecs, measured at 3-4x realtime during the research
  * loop, with software encode only 16% slower than hardware. */
@@ -31,11 +20,8 @@ const MUXER_URL = '../../vendor/mp4/mp4-muxer.mjs';
 export const DEFAULT_FPS = 30;
 export const DEFAULT_DURATION_S = 8;
 
-/* Ported from hero_video.py. */
+/* The backdrop turns a full circle across the clip, as the CLI's does. */
 const GRADIENT_TURNS = 1.0;
-const HERO_MARGIN_FRAC = 0.08;
-const PUSH_STRENGTH = 0.06;      // how far a shot scales over its dwell
-const CROSSFADE_S = 0.5;
 
 /* H.264 codec strings, most capable first.
  *
@@ -88,7 +74,6 @@ function bitrateFor(width, height) {
   return Math.round(Math.min(12e6, Math.max(3e6, pixels * 4.5)));
 }
 
-const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2);
 
 /* An RGBA core image as RGB, for the ops that measure a backdrop. */
 function rgbOf(img) {
@@ -140,7 +125,7 @@ class ScaledCache {
   clear() { for (const id of this.map.values()) core.release(id); this.map.clear(); }
 }
 
-/* The conveyor: the CLI's edit, from the same core choreography. */
+/* One frame of the core's plan (conveyor or push): the CLI's edit. */
 function drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, palette, spotlight, plan, scaled, glow, overlays }) {
   const fo = core.call({ op: 'carousel_frame', plan, t });
   const hero = plan.shots[fo.hero];
@@ -161,54 +146,6 @@ function drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, p
   ctx.putImageData(out, 0, 0);
 }
 
-/* Fewer than three shots cannot fill a conveyor (the CLI renders no clip
- * then); the browser keeps a plain push with crossfades for those. */
-function drawFrame(ctx, prepared, { width, height, shots, t, duration, palette, spotlight, glow, overlays, window: win }) {
-  const perShot = duration / shots.length;
-  const index = Math.min(shots.length - 1, Math.floor(t / perShot));
-  const local = (t - index * perShot) / perShot;
-
-  // Rotating rather than looping: a generated backdrop has no seam to
-  // hide, so it can just keep turning, as the CLI's does.
-  const pal = palette[index % palette.length];
-  const angle = pal.angle + GRADIENT_TURNS * 360 * (t / duration);
-  const [background, backgroundImage] = backdropFor(prepared, angle, pal);
-
-  // The push fills the window (the canvas, less the text's band).
-  const [wl, wt, wr, wb] = win || [0, 0, width, height];
-  const ww = wr - wl;
-  const wh = wb - wt;
-  const cars = [];
-  const place = (shot, alpha, progress) => {
-    if (alpha <= 0) return;
-    const availW = ww * (1 - 2 * HERO_MARGIN_FRAC);
-    const availH = wh * (1 - 2 * HERO_MARGIN_FRAC);
-    const base = Math.min(availW / shot.width, availH / shot.height);
-    // A slow push across the dwell so no frame is ever static.
-    const scale = base * (1 + PUSH_STRENGTH * easeInOut(progress));
-    const w = shot.width * scale;
-    const h = shot.height * scale;
-    cars.push({ image: shot.id, x: wl + (ww - w) / 2, y: wt + (wh - h) / 2, w, h, alpha });
-  };
-
-  const fadeFrac = Math.min(0.45, CROSSFADE_S / perShot);
-  if (local < fadeFrac && index > 0) {
-    const k = local / fadeFrac;
-    place(shots[index - 1], 1 - k, 1);
-    place(shots[index], k, local);
-  } else {
-    place(shots[index], 1, local);
-  }
-
-  const out = core.renderFrame(cars, width, height, background, {
-    backgroundImage, border: prepared.frameId ?? null,
-    spotlight: spotlight ? { cx: wl + ww / 2, cy: wt + wh / 2, dim: shots[index].dim ?? 1, strength: spotlight.strength ?? null, spread: spotlight.spread ?? null } : null,
-    resample: 'bilinear', overlays,
-    ...glow,
-  });
-  ctx.putImageData(out, 0, 0);
-}
-
 /* Everything a clip needs before its first frame: each shot's pixels
  * and spotlight dim, one palette per shot, and, for three or more
  * shots, the conveyor plan from the core. Split out so the Look pane's
@@ -223,6 +160,8 @@ export function prepareClip(cutouts, {
   background = null,          // a canvas: a stock or the user's photo behind the clip, cover-fitted
   frameStyle = null,          // lib/text.js::frameStyle: a frame the core draws at the clip's size
   vehicle = null,             // the record, for the frame's "paint" colour name
+  push = null,                // one or two shots: how far each scales across its dwell (videoPush)
+  crossfade = null,           // one or two shots: seconds of blend between them (videoCrossfade)
 } = {}) {
   const explicitDuration = duration !== null;
   if (duration === null) duration = DEFAULT_DURATION_S;
@@ -270,30 +209,12 @@ export function prepareClip(cutouts, {
     const angle = (hashAngle(s));
     return { start, end, angle };
   });
-  // A chosen strength needs no measurement; the dim is the core's from it.
-  if (spotlight && spotlight.strength == null) {
-    for (const shot of shots) {
-      const availW = width * (1 - 2 * HERO_MARGIN_FRAC);
-      const availH = height * (1 - 2 * HERO_MARGIN_FRAC);
-      const scale = Math.min(availW / shot.width, availH / shot.height);
-      const w = Math.max(1, Math.round(shot.width * scale));
-      const h = Math.max(1, Math.round(shot.height * scale));
-      const scaled = core.call({ op: 'resize', image: { $image: 0 }, width: w, height: h }, [shot.data]);
-      // The dim is measured against what sits behind the car: the photo
-      // where there is one, the gradient otherwise.
-      const bg = bgData
-        ? rgbOf(core.call({ op: 'resize', image: { $image: 0 }, width: w, height: h, bilinear: true }, [{ width, height, channels: 4, data: bgData.data }]))
-        : core.call({ op: 'linear_gradient', width: w, height: h, angle: palette[0].angle, start: palette[0].start, end: palette[0].end });
-      shot.dim = core.call({ op: 'dim_strength', background: { $image: 0 }, car: { $image: 1 } },
-        [{ width: w, height: h, channels: 3, data: bg.data }, { width: w, height: h, channels: 4, data: scaled.data }]);
-    }
-  }
-
-  // Three or more shots: the conveyor, planned by the core exactly as
-  // the CLI's is. The clock is the spec's default tempo, since the
-  // browser has no music to sync to.
+  // The choreography, planned by the core exactly as the CLI's is (the
+  // conveyor for three shots or more, a push with crossfades below
+  // that), with the spotlight dims measured in it. The clock is the
+  // spec's default tempo, since the browser has no music to sync to.
   let plan = null;
-  if (shots.length >= 3) {
+  if (shots.length) {
     const v = specGet('video');
     const loopS = v.barsPerLoop * v.beatsPerBar * 60 / v.defaultBpm;
     const bg = bgData
@@ -302,7 +223,7 @@ export function prepareClip(cutouts, {
     plan = core.call({
       op: 'carousel_plan', width, height, backdrop: { $image: 0 },
       shots: shots.map((sh, i) => ({ image: { $image: i + 1 }, pannable: (angles?.[i] || null) === v.panAngleLabel, hood_side: null })),
-      audio_loop_s: loopS, window,
+      audio_loop_s: loopS, window, push, crossfade,
     }, [{ width, height, channels: 3, data: bg.data }, ...shots.map((sh) => sh.data)]);
     if (!explicitDuration) duration = plan.period;
   }
@@ -331,8 +252,7 @@ export function drawClipFrame(ctx, prepared, t, { spotlight = true, glow = false
   const heldFrame = own && prepared.frame && prepared.frameId === undefined;
   if (heldFrame) prepared.frameId = core.retain(prepared.frame);
   try {
-    if (plan) drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, palette, spotlight, plan, scaled: cache, glow: halo, overlays });
-    else drawFrame(ctx, prepared, { width, height, shots, t, duration, palette, spotlight, glow: halo, overlays, window });
+    drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, palette, spotlight, plan, scaled: cache, glow: halo, overlays });
   } finally {
     if (own) {
       cache.clear();
@@ -402,6 +322,8 @@ export async function renderHeroVideoHere(cutouts, {
   background = null,          // a canvas behind the clip (a stock or the user's photo); the gradient otherwise
   frameStyle = null,          // a frame the core draws at the clip's size, when there is no frame art
   vehicle = null,
+  push = null,                // a clip of one or two shots: videoPush
+  crossfade = null,           // and videoCrossfade
   onProgress = null,
   signal = null,
 } = {}) {
@@ -453,7 +375,7 @@ export async function renderHeroVideoHere(cutouts, {
       : new Promise((resolve) => { drained = resolve; })
   );
 
-  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, backdrop, backdropColor, backdropColor2, spotlight, duration: explicitDuration ? duration : null, text, background, frameStyle, vehicle });
+  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, backdrop, backdropColor, backdropColor2, spotlight, duration: explicitDuration ? duration : null, text, background, frameStyle, vehicle, push, crossfade });
   const { shots, palette, plan } = prepared;
   duration = prepared.duration;
 

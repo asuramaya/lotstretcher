@@ -181,7 +181,9 @@ spotlight, cars at rectangles with alphas, glow, border), and so does the choreo
 bar-locked schedule, pan geometry, beat pulse and transitions (`carousel_plan` / `carousel_frame`), and
 the spin's placement, hold and cross-dissolve schedule (`spin_plan` / `spin_frame`). The CLI's
 `hero_video.py` and `spin.py` and the browser's `video.js` supply only cutouts, labels and a clock, so the
-browser's conveyor is the CLI's edit.
+browser's conveyor is the CLI's edit. A vehicle with only one or two usable shots cannot fill a conveyor;
+it gets a clip anyway on both surfaces, each shot holding the frame on the still's floor line with a slow
+push, the next crossfading in (`--video-push`, `--video-crossfade`, the Push and Crossfade levers).
 
 A host can also keep images *resident* in the core (`retain` / `release`) and name them by id: the video
 hosts retain their cutouts, scaled cars, layers and flag frames once, so a frame request carries no

@@ -362,7 +362,8 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        backdrop_spec: dict | None = None,
                        encoder: str = "libx264",
                        hood_sides: dict[str, str] | None = None,
-                       target_duration_s: float | None = None) -> dict:
+                       target_duration_s: float | None = None,
+                       push: float | None = None, crossfade: float | None = None) -> dict:
     """
     carousel_paths: the FULL shot library, in conveyor order (see
     imaging/select.py::pick_all_for_carousel() -- deliberately not deduped
@@ -378,8 +379,11 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     if layout != "conveyor" or n_accents != 2:
         raise ValueError("the conveyor is a 3-slot design (left/hero/right) -- layout must be "
                           f"'conveyor' with n_accents=2, got layout={layout!r} n_accents={n_accents!r}")
-    if len(carousel_paths) < 3:
-        raise ValueError("need at least 3 shots for a left/hero/right conveyor")
+    if not carousel_paths:
+        raise ValueError("no shots to animate")
+    # One or two shots cannot fill the conveyor; the core plans those as a
+    # push with crossfades instead (carousel.rs), the clip the browser
+    # renders for them too. `push` and `crossfade` shape that mode only.
 
     if background_video is None and background_image is None and gradient_colors is None:
         raise ValueError("need a background_video, a background_image or gradient_colors to draw a backdrop")
@@ -475,6 +479,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
         "shots": [{"image": {"$image": first_car + i}, "pannable": pannable, "hood_side": side}
                   for i, (pannable, side) in enumerate(sides)],
         "audio_loop_s": audio_loop_s, "bars_per_loop": bars_per_loop, "window": list(window),
+        "push": push, "crossfade": crossfade,
     }, images)
     shots = plan["shots"]
     schedule, carousel_period = [tuple(x) for x in plan["schedule"]], plan["period"]
@@ -616,6 +621,9 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
         "fps": fps,
         "total_frames": total_frames,
         "n_shots": n,
+        "mode": plan.get("mode", "conveyor"),
+        "push": plan.get("push"),
+        "crossfade_s": plan.get("crossfade"),
         "shot_order": [p.name for p in carousel_paths],
         "pan_shots": {carousel_paths[i].name: f"hood {sides[i][1]} -> slides "
                                               f"{'right' if s['pan_x_end'] > s['pan_x_start'] else 'left'}, {s['bars']} bars"

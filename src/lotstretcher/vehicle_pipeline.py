@@ -70,7 +70,7 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
 
     cutout_dir = folder / "images" / "exterior" / "cutout"
     carousel = pick_all_for_carousel(cutout_dir, wheel_dir=folder / "images" / "exterior" / "wheels")
-    if len(carousel) < 3:
+    if not carousel:
         return None
     carousel = order_for_conveyor_start(carousel, cutout_dir)
 
@@ -104,6 +104,8 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         canvas_size=spec["canvas"],
         budget_mb=hero_opts.video_budget_mb or spec["budget_mb"],
         **({"bpm": hero_opts.video_bpm} if hero_opts.video_bpm else {}),
+        push=hero_opts.video_push,
+        crossfade=hero_opts.video_crossfade,
         glow=hero_opts.glow,
         glow_color=hero_opts.glow_color,
         glow_radius=hero_opts.glow_radius,
@@ -155,6 +157,10 @@ class HeroOptions:
     # and each format's own size budget.
     video_bpm: float | None = None
     video_budget_mb: float | None = None
+    # --video-push / --video-crossfade: a clip of one or two shots (the
+    # conveyor needs three); None means the spec's control defaults.
+    video_push: float | None = None
+    video_crossfade: float | None = None
     video_background: Path | None = None
     video_audio: Path | None = None
     video_bars_per_loop: int = 4
