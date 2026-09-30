@@ -7,13 +7,13 @@ process_vehicle() looped over a URL list.
 from __future__ import annotations
 
 import dataclasses
-import random
 import json
 from pathlib import Path
 
 import requests
 
 import lotstretcher.manifest as fetch_manifest
+from lotstretcher import core
 from lotstretcher.facebook_post import build_facebook_post, check_pricing_consistency, explain_facebook_post
 from lotstretcher.social_post import build_instagram_caption, build_threads_post
 from lotstretcher.imaging.compose import compose_interiors, compose_vehicle, compose_wheel_shots
@@ -90,7 +90,7 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
                                         hero_opts.backdrop_color2)
         sample = next(iter(sorted(cutout_dir.glob("*.png"))), None)
         start, end = vehicle_gradient_colors(ext, inr, sample)
-        gradient_colors = (random.Random(folder.name).uniform(0, 360), start, end)
+        gradient_colors = (core.call({"op": "seeded_angle", "seed": folder.name}), start, end)
 
     return render_hero_video(
         background_video=hero_opts.video_background,

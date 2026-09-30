@@ -84,19 +84,6 @@ function rgbOf(img) {
   return { width: img.width, height: img.height, channels: 3, data };
 }
 
-/* Draw one frame.
- *
- * Shots crossfade, and the backdrop rotates independently of them, so
- * the motion never stops even at a shot boundary. */
-/* One frame, every pixel from the core. The choreography (which shot,
- * how far through its dwell, the push and the crossfade) is decided
- * here; the backdrop, spotlight, scaling and compositing are the core's,
- * the same code the CLI's frames come from. */
-function hashAngle(str) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-  return (h % 36000) / 100;
-}
 
 /* Scaled cars, resident in the core and memoized on size, as the CLI's
  * are (hero_video.py::_scaled): a pan slides one bitmap and the beat
@@ -206,7 +193,7 @@ export function prepareClip(cutouts, {
       exterior: generic ? null : exterior, interior: generic ? null : interior, color: backdropColor || null, color2: backdropColor2 || null });
     [start, end] = core.vehicleGradientColors(a, b, shots[i].data);
     // The angle is the seed's, as the still's would be.
-    const angle = (hashAngle(s));
+    const angle = core.call({ op: 'seeded_angle', seed: s });
     return { start, end, angle };
   });
   // The choreography, planned by the core exactly as the CLI's is (the

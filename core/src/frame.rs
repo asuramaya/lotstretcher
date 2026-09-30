@@ -263,6 +263,8 @@ pub enum Op {
     TextFacts { text: serde_json::Value },
     /// imagehash's pHash of an image, 16 hex digits (phash.rs).
     Phash { image: Slice },
+    /// The seeded direction, 0-360 degrees, a clip's turning backdrop starts from (prng.rs).
+    SeededAngle { seed: String },
     /// The spec's junk template a pHash matches, by name, or null.
     JunkMatch { hash: String },
     /// The background field for a generated backdrop (controls.rs).
@@ -451,6 +453,7 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
             OpResult::Json(serde_json::to_string(&Scalar { value: crate::controls::gradient_names(&kind, &exterior, &interior, &color, &color2) }).unwrap()),
         Op::Phash { image } => { let img = slice_image(arena, &image)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::phash::phash(&img) }).unwrap()) }
         Op::JunkMatch { hash } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::phash::junk_match(&hash) }).unwrap()),
+        Op::SeededAngle { seed } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::prng::Rng::from_seed(&seed).uniform(0.0, 360.0) }).unwrap()),
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
             OpResult::Image(crate::spin::blend(&a, &b, t)?)

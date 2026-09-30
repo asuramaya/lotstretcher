@@ -55,3 +55,29 @@ def test_no_push_and_no_crossfade_hold_still():
     b = core.call({"op": "carousel_frame", "plan": plan, "t": 4.7})
     c = core.call({"op": "carousel_frame", "plan": plan, "t": 4.81})
     assert a["cars"] == b["cars"] and len(c["cars"]) == 1 and c["hero"] == 1
+
+
+def test_a_clip_turns_from_the_same_seeded_angle_on_both_builds():
+    """The turning backdrop's starting direction comes from the core's one
+    seeded generator (prng.rs); the CLI used Python's random.Random and the
+    browser an FNV hash of its own."""
+    import json
+    import shutil
+    import subprocess
+    from pathlib import Path
+
+    seeds = ["2021-Ford-Bronco-Badlands-MLA63326", "v1:video:square:v0", ""]
+    native = [core.call({"op": "seeded_angle", "seed": s}) for s in seeds]
+    assert all(0 <= a < 360 for a in native) and len(set(native)) == 3
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    repo = Path(__file__).resolve().parents[1]
+    script = f"""
+      import fs from 'node:fs';
+      import {{ loadCore, call }} from '{(repo / 'web' / 'public' / 'js' / 'core.js').as_posix()}';
+      await loadCore(fs.readFileSync('{(repo / 'web' / 'public' / 'core' / 'lotstretcher_core_bg.wasm').as_posix()}'));
+      process.stdout.write(JSON.stringify({json.dumps(seeds)}.map((seed) => call({{ op: 'seeded_angle', seed }}))));
+    """
+    run = subprocess.run([node, "--input-type=module", "-e", script], capture_output=True, text=True, check=True)
+    assert json.loads(run.stdout) == native

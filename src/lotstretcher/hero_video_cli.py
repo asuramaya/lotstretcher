@@ -19,6 +19,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from lotstretcher import core
 from lotstretcher.imaging import assets
 from lotstretcher.imaging.compose import render_hero_video
 from lotstretcher.imaging.compose.hero_video import (BARS_PER_LOOP, DEFAULT_BPM, DEFAULT_VIDEO_FORMAT,
@@ -130,13 +131,12 @@ def main():
     if background_video is None:
         # (base_angle, start, end) -- the renderer spins base_angle over
         # the run, so only the seeded starting angle is decided here.
-        import random as _random
         from lotstretcher.imaging.palette import colors_from_details, vehicle_gradient_colors
         from lotstretcher.imaging.text import gradient_color_names
         ext, inr = colors_from_details(vehicle_folder)
         sample = next(iter(sorted(cutout_dir.glob("*.png"))), None)
         start, end = vehicle_gradient_colors(*gradient_color_names(ext, inr, args.backdrop, args.backdrop_color, args.backdrop_color2), sample)
-        gradient_colors = (_random.Random(vehicle_folder.name).uniform(0, 360), start, end)
+        gradient_colors = (core.call({"op": "seeded_angle", "seed": vehicle_folder.name}), start, end)
         if args.backdrop != "vehicle" and background_image is None:
             from lotstretcher.imaging.text import backdrop_spec
             args.backdrop_spec = backdrop_spec(args.backdrop, vehicle_folder.name, ext, inr, args.backdrop_color,

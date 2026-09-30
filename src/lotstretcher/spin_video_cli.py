@@ -11,10 +11,10 @@ and why.
 from __future__ import annotations
 
 import argparse
-import random
 import sys
 from pathlib import Path
 
+from lotstretcher import core
 from lotstretcher.imaging.compose import render_spin_video
 from lotstretcher.imaging.compose.spin import DEFAULT_BUDGET_MB, DEFAULT_CANVAS_SIZE, MIN_ANCHORS
 from lotstretcher.imaging.palette import colors_from_details, vehicle_gradient_colors
@@ -42,7 +42,7 @@ def main():
     ext, inr = colors_from_details(vehicle_folder)
     sample = next(iter(sorted(cutout_dir.glob("*.png"))), None)
     start, end = vehicle_gradient_colors(ext, inr, sample)
-    gradient_colors = (random.Random(vehicle_folder.name).uniform(0, 360), start, end)
+    gradient_colors = (core.call({"op": "seeded_angle", "seed": vehicle_folder.name}), start, end)
 
     report = render_spin_video(
         cutout_dir, out_path, gradient_colors,
