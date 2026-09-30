@@ -323,7 +323,9 @@ def download_photos(session: requests.Session, v: Vehicle, images_dir: Path,
                         quality_ok = True
                         reused_count += 1
                     else:
-                        cutout = remove_background(content)
+                        # --no-strict-cutouts keeps every cutout: the quality
+                        # gate stands down too, as the app's lever does.
+                        cutout = remove_background(content, strict=strict_cutouts)
                         quality_ok = cutout.quality_ok
                         if quality_ok:
                             # Saved transparent and cropped tight to the visible pixels (not

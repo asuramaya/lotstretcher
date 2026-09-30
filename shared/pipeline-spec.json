@@ -2147,7 +2147,7 @@
             "default": true,
             "cli": "--no-strict-cutouts",
             "cliInvert": true,
-            "tooltip": "Skip a cutout whose edges came out uncertain"
+            "tooltip": "Skip a cutout whose edges came out uncertain, or a close-up that fills the frame"
           },
           {
             "key": "cutoutModel",

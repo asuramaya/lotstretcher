@@ -302,7 +302,9 @@ def main():
                          help="standard: BiRefNet, the most reliable cutout. light: u2netp, a small fast "
                               "model that misses more often (the app's Pipeline > Cutout model lever).")
     parser.add_argument("--no-strict-cutouts", action="store_true",
-                         help="Keep every cutout, even ones the rest of the vehicle's gallery doesn't "
+                         help="Keep every cutout: the quality gate (uncertain edges, a frame-filling "
+                              "close-up, a subject too small) stands down, and so does the gallery check, "
+                              "which keeps even ones the rest of the vehicle's gallery doesn't "
                               "vouch for. By default a cutout that matches neither the shape nor the "
                               "paint of its siblings is dropped and its photo moved to images/interior/ "
                               "-- that catches a shot taken through the windshield or one that cut out "

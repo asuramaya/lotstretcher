@@ -140,7 +140,7 @@ class CutoutResult:
     fills_frame: bool        # True if the foreground touches (near enough) all four edges
 
 
-def remove_background(content: bytes, model_name: str | None = None) -> CutoutResult:
+def remove_background(content: bytes, model_name: str | None = None, strict: bool = True) -> CutoutResult:
     """
     Tight close-up/detail shots (e.g. a grille filling the whole frame) give
     the segmentation model nothing to key a foreground/background split off,
@@ -183,7 +183,7 @@ def remove_background(content: bytes, model_name: str | None = None) -> CutoutRe
     # The gate is the core's (core/src/gate.rs), read off this full-size
     # alpha before refinement, the same one the browser's run applies.
     from lotstretcher import core
-    gate = core.call({"op": "cutout_gate", "alpha": {"$image": 0}}, [result.split()[-1]])
+    gate = core.call({"op": "cutout_gate", "strict": strict, "alpha": {"$image": 0}}, [result.split()[-1]])
     bbox = tuple(gate["bbox"]) if gate["bbox"] else None
     coverage, ambiguous_fraction = gate["coverage"], gate["ambiguous"]
     fills_frame, quality_ok = gate["fills_frame"], gate["ok"]
