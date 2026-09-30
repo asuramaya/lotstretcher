@@ -265,6 +265,8 @@ pub enum Op {
     Phash { image: Slice },
     /// The seeded direction, 0-360 degrees, a clip's turning backdrop starts from (prng.rs).
     SeededAngle { seed: String },
+    /// Whether a cutout is good enough to compose (gate.rs), from its full-size alpha.
+    CutoutGate { alpha: Slice, #[serde(default = "yes")] strict: bool },
     /// The spec's junk template a pHash matches, by name, or null.
     JunkMatch { hash: String },
     /// The background field for a generated backdrop (controls.rs).
@@ -301,6 +303,8 @@ pub enum Op {
 fn mask_threshold(t: Option<u8>) -> u8 {
     t.unwrap_or_else(|| (spec::f64_at(&["wheel", "maskThreshold"]) * 255.0) as u8)
 }
+
+fn yes() -> bool { true }
 
 pub enum OpResult { Image(Image), Json(String) }
 
@@ -454,6 +458,7 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
         Op::Phash { image } => { let img = slice_image(arena, &image)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::phash::phash(&img) }).unwrap()) }
         Op::JunkMatch { hash } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::phash::junk_match(&hash) }).unwrap()),
         Op::SeededAngle { seed } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::prng::Rng::from_seed(&seed).uniform(0.0, 360.0) }).unwrap()),
+        Op::CutoutGate { alpha, strict } => { let a = slice_image(arena, &alpha)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::gate::cutout_gate(&a, strict) }).unwrap()) }
         Op::Blend { a, b, t } => {
             let (a, b) = (slice_image(arena, &a)?, slice_image(arena, &b)?);
             OpResult::Image(crate::spin::blend(&a, &b, t)?)

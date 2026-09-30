@@ -126,7 +126,7 @@ MAX_AMBIGUOUS_FRACTION = _spec.get("cutout", "maxAmbiguousFraction")  # above th
 # body close-ups, not whole-car shots. FRAME_FILL_MIN_EDGES=2 sits in the
 # untouched gap between the legitimate 1-edge cases and the confirmed-bad
 # 3-edge cases, so it catches the bug with zero observed false positives.
-FRAME_FILL_MARGIN_THRESHOLD = 0.03
+FRAME_FILL_MARGIN_THRESHOLD = _spec.get("cutout", "frameFillMargin")
 FRAME_FILL_MIN_EDGES = _spec.get("cutout", "frameFillMinEdges")
 
 
@@ -140,13 +140,7 @@ class CutoutResult:
     fills_frame: bool        # True if the foreground touches (near enough) all four edges
 
 
-def _margins(bbox: tuple[int, int, int, int], size: tuple[int, int]) -> tuple[float, float, float, float]:
-    left, top, right, bottom = bbox
-    w, h = size
-    return (left / w, top / h, (w - right) / w, (h - bottom) / h)
-
-
-def remove_background(content: bytes, alpha_threshold: int = 16, model_name: str | None = None) -> CutoutResult:
+def remove_background(content: bytes, model_name: str | None = None) -> CutoutResult:
     """
     Tight close-up/detail shots (e.g. a grille filling the whole frame) give
     the segmentation model nothing to key a foreground/background split off,
@@ -181,29 +175,22 @@ def remove_background(content: bytes, alpha_threshold: int = 16, model_name: str
     both without over-triggering -- see the constant's own comment for the
     calibration data.
     """
-    import numpy as np
     from rembg import remove
 
     img = Image.open(io.BytesIO(content)).convert("RGB")
     result = remove(img, session=_get_session(model_name or DEFAULT_MODEL))  # RGBA
-    alpha_arr = np.array(result.split()[-1])
 
-    confident_fg = alpha_arr > 200
-    confident_bg = alpha_arr < 20
-    ambiguous_fraction = 1.0 - (confident_fg.sum() + confident_bg.sum()) / alpha_arr.size
-
-    mask = alpha_arr > alpha_threshold
-    bbox = Image.fromarray(mask).getbbox()
-    coverage = float(mask.sum()) / mask.size if bbox is not None else 0.0
-    fills_frame = bbox is not None and sum(
-        1 for m in _margins(bbox, img.size) if m < FRAME_FILL_MARGIN_THRESHOLD
-    ) >= FRAME_FILL_MIN_EDGES
-    quality_ok = bbox is not None and ambiguous_fraction <= MAX_AMBIGUOUS_FRACTION and not fills_frame
+    # The gate is the core's (core/src/gate.rs), read off this full-size
+    # alpha before refinement, the same one the browser's run applies.
+    from lotstretcher import core
+    gate = core.call({"op": "cutout_gate", "alpha": {"$image": 0}}, [result.split()[-1]])
+    bbox = tuple(gate["bbox"]) if gate["bbox"] else None
+    coverage, ambiguous_fraction = gate["coverage"], gate["ambiguous"]
+    fills_frame, quality_ok = gate["fills_frame"], gate["ok"]
 
     # The gates above read the model's own alpha; what gets composed has
     # its edge snapped to the photo and the background taken out of the
     # rim's colour (core/src/matting.rs), the same step the browser runs.
-    from lotstretcher import core
     if core.available():
         result = core.call({"op": "refine_cutout", "image": {"$image": 0}}, [result]).copy()
 

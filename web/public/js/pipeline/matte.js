@@ -15,9 +15,7 @@
 import { loadModel, getOrt } from './runtime.js';
 import { resizeTo, imageDataOf, makeCanvas, ctxOf } from '../lib/imageio.js';
 import { available as coreAvailable, call as coreCall, toImageData } from '../core.js';
-import {
-  ALPHA_THRESHOLD, MAX_AMBIGUOUS_FRACTION, MIN_COVERAGE, MAX_COVERAGE,
-} from '../config.js';
+import { ALPHA_THRESHOLD } from '../config.js';
 
 /* u2net's own normalisation, which is NOT ImageNet's.
  * From rembg's u2net session: the image is divided by its own max, then
@@ -51,11 +49,9 @@ function toU2netTensor(imageData, size) {
 
 /* Produce an alpha matte for `bitmap`.
  *
- * Returns { alpha, size, ambiguous } where alpha is a Float32Array of
- * size*size in [0,1], and ambiguous is the fraction of pixels sitting in
- * the mushy middle -- the same quality gate imaging/cutout.py uses. A
- * high ambiguous fraction means the model could not decide, which in
- * practice means the photo is not a clean single vehicle. */
+ * Returns { alpha, size } where alpha is a Float32Array of size*size in
+ * [0,1]. Whether it is good enough is the core's gate (gateCutout), read
+ * off the matte stretched to the photo's size. */
 export async function matte(bitmap, onProgress, model = 'matte') {
   const { session, spec, inputName } = await loadModel(model, onProgress);
   const ort = getOrt();
@@ -86,18 +82,14 @@ export async function matte(bitmap, onProgress, model = 'matte') {
   const span = (ma - mi) || 1;
 
   const alpha = new Float32Array(n);
-  let ambiguous = 0;
-  for (let i = 0; i < n; i++) {
-    const a = (raw[i] - mi) / span;
-    alpha[i] = a;
-    if (a > 0.1 && a < 0.9) ambiguous++;
-  }
+  for (let i = 0; i < n; i++) alpha[i] = (raw[i] - mi) / span;
 
-  return { alpha, size, ambiguous: ambiguous / n };
+  return { alpha, size };
 }
 
 /* Apply an alpha matte to a bitmap at full source resolution, crop to
- * the visible pixels, and return { canvas, bbox, coverage }.
+ * the visible pixels, and return { canvas, bbox, coverage, matteAlpha }
+ * (the stretched matte the gate reads, one byte a pixel).
  *
  * The crop matters downstream: compute_placement() in layout.py expects
  * a cutout already trimmed to its visible pixels, and scales it to fill
@@ -129,7 +121,9 @@ export function applyMatte(bitmap, { alpha, size }) {
   fctx.drawImage(bitmap, 0, 0);
   const img = fctx.getImageData(0, 0, W, H);
 
-  for (let i = 0; i < W * H; i++) img.data[i * 4 + 3] = mask[i * 4];
+  // The stretched matte, one byte a pixel, is what the gate reads.
+  const matteAlpha = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) { img.data[i * 4 + 3] = mask[i * 4]; matteAlpha[i] = mask[i * 4]; }
 
   /* The stretched matte is soft for several pixels and carries the old
    * background's colour in that rim (a pale halo on a dark backdrop).
@@ -154,7 +148,7 @@ export function applyMatte(bitmap, { alpha, size }) {
     }
   }
 
-  if (maxX < 0) return { canvas: null, bbox: null, coverage: 0 };
+  if (maxX < 0) return { canvas: null, bbox: null, coverage: 0, matteAlpha, width: W, height: H };
 
   fctx.putImageData(out, 0, 0);
 
@@ -166,34 +160,19 @@ export function applyMatte(bitmap, { alpha, size }) {
     canvas: cut,
     bbox: { x: minX, y: minY, w: cw, h: ch },
     coverage: opaque / (W * H),
+    matteAlpha, width: W, height: H,
   };
 }
 
-/* Is this cutout good enough to compose?
- *
- * A confidently-wrong cutout is worse than none at all, because it does
- * not look like a failure: it looks like a post. These are the same
- * gates imaging/cutout.py applies, and they were previously computed
- * here and then ignored.
- *
- * Returns { ok, reason } where reason is phrased for a person. */
-export function gateCutout({ ambiguous, coverage, hasCanvas }, strict = true) {
-  if (!hasCanvas) {
-    // No subject at all is a hard failure, not a strictness question:
-    // there is literally nothing to compose.
-    return { ok: false, reason: 'no vehicle found in this photo' };
-  }
-  // --no-strict-cutouts: compose whatever the matte produced. Off by
-  // default, and the CLI defaults the same way.
-  if (!strict) return { ok: true, reason: null };
-  if (ambiguous > MAX_AMBIGUOUS_FRACTION) {
-    return { ok: false, reason: `edges too uncertain (${(ambiguous * 100).toFixed(1)}% ambiguous)` };
-  }
-  if (coverage < MIN_COVERAGE) {
-    return { ok: false, reason: 'subject too small to be the vehicle' };
-  }
-  if (coverage > MAX_COVERAGE) {
-    return { ok: false, reason: 'background not separated' };
-  }
-  return { ok: true, reason: null };
+/* Is this cutout good enough to compose? The core's gate (gate.rs), the
+ * one the CLI's imaging/cutout.py applies, on the model's matte at the
+ * photo's size before any refinement: ambiguous edges, a close-up that
+ * fills the frame, a subject too small or a background not separated.
+ * Off (`strict` false) keeps only the hard failure, no subject at all.
+ * Returns { ok, reason, ambiguous, coverage, fills_frame, bbox }, the
+ * reason phrased for a person. */
+export function gateCutout(cut, strict = true) {
+  if (!cut.matteAlpha) return { ok: false, reason: 'no vehicle found in this photo', fills_frame: false };
+  return coreCall({ op: 'cutout_gate', strict, alpha: { $image: 0 } },
+    [{ width: cut.width, height: cut.height, channels: 1, data: cut.matteAlpha }]);
 }

@@ -239,7 +239,8 @@
     "frameFillMinEdges": 2,
     "minCoverage": 0.02,
     "maxCoverage": 0.92,
-    "maxSourceSideBrowser": 2048
+    "maxSourceSideBrowser": 2048,
+    "frameFillMargin": 0.03
   },
   "confidence": {
     "$comment": [

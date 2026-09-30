@@ -11,7 +11,7 @@
 
 import {
   initConfigFromSpec, LIMITS, IMAGE_EXTS,
-  MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE, INTERIOR_LEAN, EXTERIOR_LEAN, FRAME_FILL_MIN_EDGES, MAX_SOURCE_SIDE, modelKeys,
+  MIN_ANGLE_CONFIDENCE, MIN_SCENE_CONFIDENCE, INTERIOR_LEAN, EXTERIOR_LEAN, MAX_SOURCE_SIDE, modelKeys,
 } from './config.js';
 import { initRuntime, runtime, loadModel, totalBytes, prefetchModels, modelsCached } from './pipeline/runtime.js';
 import { classifyScene, classifyAngle, loadLabels } from './pipeline/classify.js';
@@ -1072,16 +1072,17 @@ async function sortAndCut(stages) {
         t0 = performance.now();
         const cut = applyMatte(p.bitmap, m);
         clock('cut', t0);
-        p.ambiguous = m.ambiguous;
-        p.coverage = cut.coverage;
+        // The core's gate (gate.rs), as the CLI's cutout.py applies it.
+        const gate = gateCutout(cut, state.options.strictCutouts);
+        cut.matteAlpha = null;
+        p.ambiguous = gate.ambiguous;
+        p.coverage = gate.coverage;
 
         if (p.onTrial) {
-          // A close-up touches the frame's edges; a whole car stands clear.
-          const b = cut.bbox;
-          const W = p.bitmap.width, H = p.bitmap.height;
-          const edges = b ? [b.x / W, b.y / H, (W - b.x - b.w) / W, (H - b.y - b.h) / H].filter((m) => m < 0.03).length : 4;
+          // On trial (a whole car the scene model called a detail): a
+          // close-up touches the frame's edges, a whole car stands clear.
           p.onTrial = false;
-          if (edges >= FRAME_FILL_MIN_EDGES) {
+          if (gate.fills_frame) {
             p.scene = 'detail';
             p.status = 'sorted';
             setProgress(0.35 + 0.45 * ((i + 1) / Math.max(1, exteriors.length)));
@@ -1090,11 +1091,6 @@ async function sortAndCut(stages) {
           }
         }
 
-        // Gate BEFORE composing. A confidently-wrong cutout does not look
-        // like a failure, it looks like a post.
-        const gate = gateCutout({
-          ambiguous: m.ambiguous, coverage: cut.coverage, hasCanvas: !!cut.canvas,
-        }, state.options.strictCutouts);
         const twin = gate.ok ? sameShotAs(cut.canvas, exteriors.slice(0, i)) : null;
         if (!gate.ok) {
           p.rejected = gate.reason;
