@@ -109,7 +109,7 @@ def find_one(category: str, name_or_tag: str) -> Path:
 
 
 def resolve_arg(category: str, value: str | None, default_name: str | None = None) -> Path:
-    """CLI-friendly asset lookup shared by lotstretcher.py and compose_cli.py: an
+    """CLI-friendly asset lookup shared by cli.py and compose_cli.py: an
     exact name, a tag, or unset. Unset falls back to `default_name` (e.g.
     "American Flag") if that entry exists, else the first entry in the
     manifest -- so composing still works with zero flags even before a

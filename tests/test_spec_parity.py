@@ -120,7 +120,7 @@ def test_browser_loads_the_same_spec_file():
 
 
 @pytest.mark.parametrize("js_file, must_read", [
-    ("options.js", ["heroStillFormats", "videoFormats", "glow"]),
+    ("options.js", ["heroStillFormats", "videoFormats", "controls"]),
     ("config.js", ["cutout", "confidence"]),
 ])
 def test_browser_modules_read_the_spec(js_file, must_read):

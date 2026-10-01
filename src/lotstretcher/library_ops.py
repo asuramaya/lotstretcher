@@ -96,7 +96,7 @@ def resolve_recompose_options(options: dict) -> dict:
         "border_path": border_path,
         "hero_formats": tuple(dict.fromkeys(formats)),
         "style": {
-            "glow": bool(options.get("glow", True)),
+            "glow": bool(options.get("glow", False)),
             "glow_color": options.get("glowColor") or "white",
             "glow_radius": int(options.get("glowRadius") or 24),
             "glow_intensity": float(options.get("glowIntensity") or 0.75),
@@ -151,7 +151,7 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
 
     opts = HeroOptions(
         enabled=bool(options.get("hero", True)),
-        glow=bool(options.get("glow", True)),
+        glow=bool(options.get("glow", False)),
         glow_color=options.get("glowColor") or "white",
         glow_radius=int(options.get("glowRadius") or 24),
         glow_intensity=float(options.get("glowIntensity") or 0.75),

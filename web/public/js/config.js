@@ -67,23 +67,9 @@ export const NORM_STD = [0.229, 0.224, 0.225];
  * evaluates to before that runs. */
 export let ALPHA_THRESHOLD = 16;
 
-/* Quality gates. A matte that fails one of these is not composed, because
- * a confidently-wrong cutout is worse than no cutout: it goes out as a
- * post. Values follow imaging/cutout.py. */
-
-/* Fraction of pixels stranded between "background" and "foreground". A
- * clean vehicle photo measures ~0.017; anything above this means the
- * model could not decide, which in practice means the frame is not one
- * clean vehicle. */
-export let MAX_AMBIGUOUS_FRACTION = 0;
-
-/* How much of the frame the cutout occupies. Below the floor there is no
- * real subject (a sky shot, a badge close-up); above the ceiling the
- * "cutout" is most of the frame, which is what happens when matting
- * fails open and keeps the background. */
-export let MIN_COVERAGE = 0;
+/* The quality gates themselves (ambiguity, coverage, frame fill) are
+ * the core's (gate.rs, pipeline/matte.js::gateCutout). */
 export let MAX_SOURCE_SIDE = 2048;
-export let MAX_COVERAGE = 0;
 
 /* Below this, the angle is reported as unknown rather than asserted.
  * A wheel close-up that slips past the scene classifier scores ~0.33
@@ -96,7 +82,6 @@ export let MIN_ANGLE_CONFIDENCE = 0;
 export let MIN_SCENE_CONFIDENCE = 0;
 export let INTERIOR_LEAN = 1;
 export let EXTERIOR_LEAN = 1;
-export let FRAME_FILL_MIN_EDGES = 2;
 
 export const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'bmp', 'tiff', 'avif'];
 
@@ -114,13 +99,9 @@ export const LIMITS = {
  * file, is the source of truth. */
 export function initConfigFromSpec(get) {
   ALPHA_THRESHOLD = get('cutout', 'alphaThreshold');
-  MAX_AMBIGUOUS_FRACTION = get('cutout', 'maxAmbiguousFraction');
-  MIN_COVERAGE = get('cutout', 'minCoverage');
   MAX_SOURCE_SIDE = get('cutout', 'maxSourceSideBrowser') || 0;
-  MAX_COVERAGE = get('cutout', 'maxCoverage');
   MIN_ANGLE_CONFIDENCE = get('confidence', 'minAngle');
   MIN_SCENE_CONFIDENCE = get('confidence', 'minScene');
   INTERIOR_LEAN = get('confidence', 'interiorLean');
   EXTERIOR_LEAN = get('confidence', 'exteriorLean');
-  FRAME_FILL_MIN_EDGES = get('cutout', 'frameFillMinEdges');
 }

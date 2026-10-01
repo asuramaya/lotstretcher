@@ -1,7 +1,7 @@
 """
 Per-vehicle orchestration: fetch the page, normalize it, download photos
 and the window sticker, compose the hero/framed images, write the post and
-the manifest record. lotstretcher.py's main() is just the CLI wrapper around
+the manifest record. cli.py's main() is just the CLI wrapper around
 process_vehicle() looped over a URL list.
 """
 from __future__ import annotations
@@ -131,12 +131,12 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
 @dataclasses.dataclass
 class HeroOptions:
     """Bundles compose_vehicle()'s asset/style knobs so process_vehicle()
-    doesn't grow another handful of positional params -- see lotstretcher.py's
+    doesn't grow another handful of positional params -- see cli.py's
     --background/--border/--no-hero/--glow* flags for where these come from."""
     enabled: bool = True
     # background_path/border_path None means "generated gradient" and
     # "frameless" -- the defaults since the shared flag backdrop and the
-    # contact-info frame both caused posting problems. lotstretcher.py's
+    # contact-info frame both caused posting problems. cli.py's
     # --photo-background/--frame put them back.
     background_path: Path | None = None
     border_path: Path | None = None
@@ -175,7 +175,7 @@ class HeroOptions:
     interiors: bool = True
     # Text on a listing photo is a merchandising call, not an image-
     # processing one, so the default output is the corrected photograph
-    # and nothing else. lotstretcher.py's --interior-captions turns it back on.
+    # and nothing else. cli.py's --interior-captions turns it back on.
     interior_captions: bool = False
     interior_classifier: object | None = None
     # Local-vision front-seat-config extraction (imaging/seat_vision.py) --
@@ -185,9 +185,9 @@ class HeroOptions:
     # returns None quietly if Ollama isn't reachable), but the DEFAULT
     # being off is a deliberate choice on top of that, same reasoning as
     # interior_captions: an extra ~10s/vehicle and a new local-model
-    # dependency shouldn't turn on silently. lotstretcher.py's --vision-seat-check.
+    # dependency shouldn't turn on silently. cli.py's --vision-seat-check.
     vision_seat_check: bool = False
-    glow: bool = True
+    glow: bool = False
     glow_color: str = "white"
     glow_radius: int = 24
     glow_intensity: float = 0.75

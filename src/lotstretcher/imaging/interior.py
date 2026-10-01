@@ -339,31 +339,6 @@ def assign_callouts(subjects: list[tuple[str, str, float]], features: list[str])
     return assigned
 
 
-def process_interior(path: Path, features: list[str],
-                      classifier: InteriorSubjectClassifier | None) -> tuple[Image.Image, dict]:
-    """(image, {subject, confidence, callout}) for one interior photo.
-    Always returns an image -- the exposure fix is unconditional, the
-    callout is not."""
-    content = Path(path).read_bytes()
-    img = enhance_exposure(Image.open(path))
-    info: dict = {"subject": None, "confidence": None, "callout": None}
-
-    if classifier is None or not features:
-        return img, info
-
-    result = classifier.classify(content)
-    info["subject"], info["confidence"] = result.label, round(result.confidence, 3)
-    if result.label in ABSTAIN_LABELS or result.confidence < DEPICTION_CONFIDENCE_THRESHOLD:
-        return img, info
-
-    callout = confirm_feature(result.label, features)
-    if not callout:
-        return img, info
-
-    info["callout"] = callout
-    return draw_callout(img, callout), info
-
-
 def process_gallery(interior_dir, out_dir, vehicle: dict,
                      classifier: InteriorSubjectClassifier | None = None,
                      captions: bool = False) -> list[dict]:

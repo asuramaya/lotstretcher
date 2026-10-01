@@ -97,7 +97,6 @@ to disk as an intermediate PNG sequence.
 """
 from __future__ import annotations
 
-import math
 import statistics
 import subprocess
 from pathlib import Path
@@ -350,7 +349,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        fps: float = DEFAULT_FPS, canvas_size: tuple[int, int] = DEFAULT_CANVAS_SIZE,
                        loops: int | None = None, budget_mb: float = 50.0, layout: str = "conveyor", n_accents: int = 2,
                        bars_per_loop: int = BARS_PER_LOOP,
-                       glow: bool = True, glow_color=DEFAULT_GLOW_COLOR,
+                       glow: bool = False, glow_color=DEFAULT_GLOW_COLOR,
                        glow_radius: int = 24, glow_intensity: float = 0.75,
                        spotlight: bool | dict = True,
                        border_fit: str = "slice",
@@ -481,7 +480,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
         "push": push, "crossfade": crossfade,
     }, images)
     shots = plan["shots"]
-    schedule, carousel_period = [tuple(x) for x in plan["schedule"]], plan["period"]
+    carousel_period = plan["period"]
     # The timing is the plan's: dwell (one bar), the morph's length and
     # the beat, all from the loop's own measured length.
     dwell, transition_s, beat_s = plan["dwell"], plan["transition_s"], plan["beat_s"]

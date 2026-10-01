@@ -9,7 +9,7 @@ vehicles already on disk, WITHOUT re-scraping or re-cutting anything.
 Composition depends on assets that change independently of the vehicle
 data -- swap the border, retune a layout, and every bundle on disk is
 suddenly stale while the expensive parts (scrape, cutouts, wheel
-segmentation, upscaling) are still perfectly good. lotstretcher.py can only
+segmentation, upscaling) are still perfectly good. cli.py can only
 recompose by re-running the whole pipeline against the live site, which
 re-downloads photos and re-runs the models for a change that touches
 neither. This runs the exact same compose_vehicle()/compose_wheel_shots()
@@ -22,12 +22,11 @@ root is safe.
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
 from lotstretcher.imaging import assets
-from lotstretcher.imaging.text import (add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
+from lotstretcher.imaging.text import (add_glow_args, add_backdrop_arg, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
                                        controls_from_spotlight_args, spotlight_style,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args, frame_style,
@@ -51,11 +50,7 @@ def main():
     parser.add_argument("root", help="A listings root, or a single vehicle folder")
     parser.add_argument("--background", help="Background name or tag (default: American Flag)")
     parser.add_argument("--border", help="Border name or tag (default: first in the manifest)")
-    parser.add_argument("--no-glow", action="store_true")
-    parser.add_argument("--glow-color", default="white", type=color_choice(("white", "blue", "gold", "red")), metavar="COLOR",
-                         help="The glow's colour: white, blue, gold, red, or your own as #rrggbb (default: white).")
-    parser.add_argument("--glow-radius", type=int, default=24)
-    parser.add_argument("--glow-intensity", type=float, default=0.75)
+    add_glow_args(parser)
     parser.add_argument("--photo-background", action="store_true",
                          help="Use the shared background photo asset instead of the default per-image gradient. "
                               "A single shared backdrop across every post is what got flagged, so this is "
@@ -86,7 +81,7 @@ def main():
     parser.add_argument("--prune-foreign", action="store_true",
                          help="Before recomposing, drop any cutout the rest of the vehicle's gallery "
                               "doesn't vouch for and move its photo to images/interior/. Applies the "
-                              "same check lotstretcher.py now runs during a scrape to folders captured before "
+                              "same check cli.py now runs during a scrape to folders captured before "
                               "it existed. See imaging/gallery.py.")
     parser.add_argument("--resweep", action="store_true",
                          help="Before recomposing, re-run current classification against every photo "
@@ -99,7 +94,7 @@ def main():
                               "regenerate hero videos afterward for any vehicle this changes.")
     parser.add_argument("--calibrate", action="store_true",
                          help="Re-derive the cutout-consensus threshold from the galleries on disk and "
-                              "write <root>/cutout-calibration.json, which --prune-foreign and lotstretcher.py "
+                              "write <root>/cutout-calibration.json, which --prune-foreign and cli.py "
                               "then use instead of the built-in default. Worth re-running after the "
                               "photo vendor changes. See imaging/gallery.py::calibrate.")
     parser.add_argument("--dry-run", action="store_true", help="List what would be rebuilt and exit")
@@ -202,7 +197,7 @@ def main():
         "background_path": background_path,
         "border_path": border_path,
         "hero_formats": hero_formats,
-        "style": dict(glow=not args.no_glow, glow_color=args.glow_color,
+        "style": dict(glow=args.glow, glow_color=args.glow_color,
                       glow_radius=args.glow_radius, glow_intensity=args.glow_intensity,
                       gradient=gradient, border_fit=args.frame_fit,
                       text=text_options(controls_from_text_args(args)),

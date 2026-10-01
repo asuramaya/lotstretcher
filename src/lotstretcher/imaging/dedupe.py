@@ -185,21 +185,6 @@ def _connect(out_root: Path) -> sqlite3.Connection:
     return conn
 
 
-def _mean_pixel_diff(a: Path, b: Path) -> float:
-    """Mean absolute per-pixel difference, or inf if either can't be read.
-    Only ever called on an exact-hash candidate, so this is cheap."""
-    import numpy as np
-
-    try:
-        ia = Image.open(a).convert("RGB")
-        ib = Image.open(b).convert("RGB")
-    except Exception:
-        return float("inf")
-    if ia.size != ib.size:
-        ib = ib.resize(ia.size)
-    return float(np.abs(np.asarray(ia, dtype=np.float64) - np.asarray(ib, dtype=np.float64)).mean())
-
-
 def blob_path(out_root: Path, phash: str) -> Path:
     """Where a content-addressed cutout copy for this hash lives -- shared
     across every vehicle whose photo hashes to it, so N vehicles sharing
@@ -304,15 +289,3 @@ def record_photo(out_root: Path, folder: str, filename: str, phash: str, categor
             pass
 
 
-def gallery_hashes(exterior_dir: Path) -> dict[str, str]:
-    """{filename: phash} for one vehicle's exterior photos. Kept for any
-    external/debugging use; download_photos() no longer needs this --
-    it hashes and records each photo as it's downloaded, via
-    lookup_cached_photo()/record_photo() above."""
-    out = {}
-    for path in sorted(Path(exterior_dir).glob("*.jpg")):
-        try:
-            out[path.name] = _hash_str(Image.open(path))
-        except Exception:
-            continue
-    return out

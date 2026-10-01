@@ -34,18 +34,6 @@ from __future__ import annotations
 from lotstretcher.facebook_post import posts_for
 from lotstretcher.scrape import Vehicle
 
-THREADS_LIMIT = 500
-# Instagram cuts the caption here with a "... more" link. Everything that
-# has to be read without a tap must fit inside it.
-INSTAGRAM_VISIBLE = 125
-# Below this, the odometer is delivery mileage and saying it out loud
-# reads as odd rather than informative. Keyed on the number rather than
-# on condition=="New" so a new-but-high-mileage demo still shows its miles.
-DELIVERY_MILEAGE_CEILING = 100
-MAX_HASHTAGS = 14
-# Past this a tag stops being searchable and starts looking like a mistake.
-MAX_TAG_LENGTH = 28
-
 
 def build_hashtags(v: Vehicle) -> list[str]:
     """Tags derived from what was scraped, most specific first, so that

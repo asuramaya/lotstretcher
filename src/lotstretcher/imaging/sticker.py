@@ -5,10 +5,10 @@ interior/functional/safety), optional equipment, pricing, and factory
 warranties.
 
 Only works when a real sticker exists -- used vehicles and pre-publish new
-vehicles commonly have none (lotstretcher.py already detects and skips the
+vehicles commonly have none (cli.py already detects and skips the
 "please check back later" placeholder PDF before this module ever runs).
 Callers must have a fallback to the site's own JSON feature blob for that
-case; see lotstretcher.py's window-sticker download path.
+case; see cli.py's window-sticker download path.
 
 Extraction is via `pdftotext -bbox` (word-level coordinates), not `-layout`
 text or xml.etree: the coordinates are what let us tell the 4 equipment

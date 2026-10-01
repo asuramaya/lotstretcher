@@ -17,10 +17,9 @@ import { get as specGet } from '../spec.js';
 
 const MUXER_URL = '../../vendor/mp4/mp4-muxer.mjs';
 
-export const DEFAULT_FPS = 30;
-
-/* The backdrop turns a full circle across the clip, as the CLI's does. */
-const GRADIENT_TURNS = 1.0;
+/* The browser's frame rate unless the Frame rate lever says otherwise
+ * (spec video.fpsBrowser). */
+const defaultFps = () => specGet('video').fpsBrowser;
 
 /* H.264 codec strings, most capable first.
  *
@@ -46,7 +45,7 @@ export function isSupported() {
 /* The first codec this browser will encode at this size.
  * Returns null when none will, which is a real outcome on some devices
  * and has to be reported rather than thrown past. */
-export async function pickCodec(width, height, fps = DEFAULT_FPS) {
+export async function pickCodec(width, height, fps = defaultFps()) {
   if (typeof VideoEncoder === 'undefined') return null;
   for (const codec of CODEC_CANDIDATES) {
     const config = {
@@ -116,7 +115,8 @@ function drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, p
   const fo = core.call({ op: 'carousel_frame', plan, t });
   const hero = plan.shots[fo.hero];
   const pal = palette[0];
-  const angle = pal.angle + GRADIENT_TURNS * 360 * (t / duration);
+  // The backdrop turns as the CLI's does (spec video.gradientTurns).
+  const angle = pal.angle + specGet('video').gradientTurns * 360 * (t / duration);
   const [background, backgroundImage] = backdropFor(prepared, angle, pal);
   const cars = fo.cars.map((c) => {
     const w = Math.max(1, Math.round(c.rect[2]));
@@ -283,7 +283,7 @@ export function setVideoThreads(n) { lastThreads = n; }
 export async function renderHeroVideoHere(cutouts, {
   width = 1254,
   height = 1254,
-  fps = DEFAULT_FPS,
+  fps = defaultFps(),
   seed = 'lotstretcher',
   angles = null,              // per-cutout angle labels; only the spec's pan angle pans
   exterior = null,

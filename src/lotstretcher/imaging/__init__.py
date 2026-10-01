@@ -1,6 +1,6 @@
 """
 Image-processing pipeline for downloaded vehicle photos, kept separate from
-the scraping logic in lotstretcher.py so stages can be developed/tested in isolation
+the scraping logic in cli.py so stages can be developed/tested in isolation
 and new ones added without touching the scraper.
 
 Modules:
@@ -19,7 +19,7 @@ Modules:
                  which can dominate CLIP's holistic scene score on an
                  otherwise-real exterior shot).
 
-lotstretcher.py wires dedupe.py + pipeline.py + classify.py + cutout.py together in
+cli.py wires dedupe.py + pipeline.py + classify.py + cutout.py together in
 download_photos() to sort each vehicle's gallery into images/exterior/ and
 images/interior/, with white-background cutouts saved alongside originals
 in images/exterior/cutout/ wherever the quality gate allows.

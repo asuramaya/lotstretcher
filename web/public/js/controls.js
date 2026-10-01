@@ -124,21 +124,6 @@ export function shownBy(control, values) {
   return values[cond.key] === cond.equals;
 }
 
-/* The chosen entry of a select, if it is a static one. */
-function chosen(control, value) {
-  return (control.choices || []).find((c) => c.value === value);
-}
-
-
-
-
-
-
-
-
-
-
-
 /* Tiles instead of a <select>: each choice shows what it is (a gradient,
  * a stock photo, a frame, a colour) through `thumbFor`, supplied by the
  * app. A choice with `file` is the user's own image: its tile shows the
@@ -327,7 +312,6 @@ function icon(id) {
  * every edit. Returns `{ id, label, badge }` for the panel's head. */
 let activeTab = null;
 const subTab = {};       // a tabbed group's open tab, by group id
-export function openTool(id) { activeTab = id; }
 /* The open sub-tab of a tabbed group (Text: all | title | badge | line),
  * so the stage knows which piece a drag moves. */
 export function openSubTab(groupId) { return subTab[groupId] || null; }
@@ -584,10 +568,12 @@ export function controlsToFlags(values) {
         // the command reads as what to run with it on disk.
         if (value && control.cli) flags.push(`${control.cli} "${value.name || 'image.png'}"`);
       } else if (control.type === 'toggle') {
-        // An inverted flag (--no-glow) is emitted when the value is OFF;
-        // a plain flag when it is ON.
-        if (control.cliInvert && !value) flags.push(control.cli);
-        else if (!control.cliInvert && value) flags.push(control.cli);
+        // An inverted flag (--no-spotlight) is emitted when the value is
+        // OFF; a plain flag when it is ON, and its --no- form when it is
+        // off against an on default (--no-shadow, --no-price-badge).
+        if (control.cliInvert) { if (!value) flags.push(control.cli); }
+        else if (value) flags.push(control.cli);
+        else if (control.default) flags.push(control.cli.replace(/^--/, '--no-'));
       } else if (!isDefault && control.cli) {
         // Quote anything with a space, or the echo is not pasteable:
         // --border Generic Dealer Frame reads as three arguments. A

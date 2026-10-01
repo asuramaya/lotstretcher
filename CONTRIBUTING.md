@@ -6,7 +6,7 @@ Thank you for your interest in contributing to **lotstretcher**!
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/your-org/lotstretcher.git
+   git clone https://github.com/asuramaya/lotstretcher.git
    cd lotstretcher
    ```
 
@@ -25,7 +25,8 @@ Thank you for your interest in contributing to **lotstretcher**!
 ## Project Guidelines
 
 - **One App, Two Hosts**: the browser client in `web/` is the *same files* whether `lotstretcher.org` serves it from a CDN or `lotstretcher-serve` mounts it locally. There is no second build and no "server edition" of the UI. A fix lands in both at once, and a control added to one appears in the other because it is the other. What differs is **capabilities, not code**: the app asks its host `/capabilities` and unlocks what that host can actually do, so gated features (scraping, inventory sync, batch, GPU upscaling) live in the same source as everything else and are switched off when a browser is on its own. Add a control to the UI and to the CLI in the same change; they are two doors onto one pipeline.
-- **One Specification**: two implementations (Python and JavaScript) are unavoidable; two specifications are not. Every constant both sides need lives in `shared/pipeline-spec.json` and is READ by both, through `src/lotstretcher/spec.py` and `web/public/js/spec.js`. Never retype a value into the other language. `tests/test_spec_parity.py` enforces this and will fail if a format size reappears as a literal in `options.js`. After editing the spec, run `python3 web/sync-spec.py`.
+- **One Core**: logic both surfaces need is written once, in the Rust core (`core/`), which Python loads natively (`src/lotstretcher/core.py`) and the browser loads as wasm (`web/public/js/core.js`). The Python and JavaScript around it are hosts: files, models, the DOM. Moving a piece into the core deletes its Python and JavaScript copies in the same commit, with a parity test holding both builds to what the deleted code returned.
+- **One Specification**: every constant both sides need lives in `shared/pipeline-spec.json` and is READ by both, through `src/lotstretcher/spec.py` and `web/public/js/spec.js`, and the core embeds it at build time. Never retype a value into another language. `tests/test_spec_parity.py` enforces this. After editing the spec run `python3 web/sync-spec.py`, then rebuild the core: `cd core && cargo build --release` (or `tests/test_core_parity.py` and friends are skipped) and `bash web/build-core.sh` (commit the wasm). A change to the core also bumps `core/src/ffi.rs::ls_version` and `core/src/wasm.rs::version`.
 - **No Admin UI On The Self-Hosted Side**: the browser client above is a deliberate, separate product surface. That is *not* an invitation to bolt dashboards, admin panels, or management consoles onto the CLI or server mode, nor to add vector search / RAG layers. An API surface for programmatic integration is a different thing from an operator UI, and the self-hosted side stays headless.
 - **Resilient Scraping**: Dealership websites are dynamic and frequently sit behind Cloudflare challenges. Scrapers must fail gracefully without throwing uncaught exceptions on missing optional fields.
 - **Dealer-Agnostic Core**: Keep core post generators and composition logic dealer-agnostic via `dealer_config.py`. Never hardcode dealership-specific names, addresses, or phone numbers in library modules.

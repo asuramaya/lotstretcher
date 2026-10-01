@@ -61,10 +61,6 @@ NEUTRAL_TINT_HUE = 0.60
 NEUTRAL_TINT_SATURATION = 0.30
 BACKDROP_SATURATION_RANGE = (0.28, 0.78)
 
-from lotstretcher import spec as _spec  # noqa: E402
-
-WARM_HUE_RANGE = tuple(_spec.get("palette", "warmHueRange", default=[0.02, 0.19]))
-WARM_VALUE_MIN = float(_spec.get("palette", "warmValueMin", default=0.6))
 
 
 def parse_hex(text: str) -> tuple[int, int, int] | None:

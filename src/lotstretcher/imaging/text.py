@@ -225,6 +225,26 @@ def spotlight_style(options: dict) -> bool | dict:
     return styles(options)["spotlight"]
 
 
+GLOW_COLOR_NAMES = tuple(_spec.get("glow", "colors"))
+
+
+def add_glow_args(parser) -> None:
+    """The glow's flags, shared by the CLIs, with the Studio's defaults."""
+    radius, intensity = _spec.control_default("glowRadius", 24), _spec.control_default("glowIntensity", 0.75)
+    parser.add_argument("--glow", action=argparse.BooleanOptionalAction, default=bool(_spec.control_default("glow", False)),
+                        help="A halo behind the vehicle's cutout (default: off).")
+    parser.add_argument("--glow-color", default=_spec.control_default("glowColor", "white"),
+                        type=color_choice(GLOW_COLOR_NAMES), metavar="COLOR",
+                        help=f"The glow's colour: {', '.join(GLOW_COLOR_NAMES)}, or your own as #rrggbb (default: white).")
+    parser.add_argument("--glow-radius", type=int, default=radius, help=f"Glow blur radius in pixels (default: {radius}).")
+    parser.add_argument("--glow-intensity", type=float, default=intensity, help=f"Glow opacity, 0-1 (default: {intensity}).")
+
+
+def controls_from_glow_args(args) -> dict:
+    return {"glow": bool(args.glow), "glowColor": args.glow_color, "glowRadius": args.glow_radius,
+            "glowIntensity": args.glow_intensity}
+
+
 SHADOW_STRENGTH = float(_spec.control_default("shadowStrength", 0.5))
 
 
@@ -368,13 +388,6 @@ def controls_from_text_args(args) -> dict:
         "subtitleFont": args.subtitle_font, "subtitlePosition": args.subtitle_position, "subtitleColor": args.subtitle_color,
         "subtitleCase": args.subtitle_case, "subtitleBox": args.subtitle_box,
     }
-
-
-def piece_style(options: dict, piece: str) -> dict:
-    """One piece's own levers (app keys titleFont, titlePosition, ...)
-    as the core's PieceStyle: only what departs from the shared lever.
-    "same", "" and None all mean the shared one."""
-    return styles(options)["text"][f"{piece}_style"]
 
 
 def text_options(options: dict) -> dict:

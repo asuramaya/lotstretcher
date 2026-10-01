@@ -7,7 +7,7 @@ import argparse
 import pytest
 
 from lotstretcher import looks, spec
-from lotstretcher.imaging.text import (add_backdrop_arg, add_frame_style_args, add_reflection_args, add_shadow_args,
+from lotstretcher.imaging.text import (add_backdrop_arg, add_glow_args, add_frame_style_args, add_reflection_args, add_shadow_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args)
 
@@ -15,10 +15,7 @@ from lotstretcher.imaging.text import (add_backdrop_arg, add_frame_style_args, a
 def parser():
     p = argparse.ArgumentParser()
     p.add_argument("--no-spotlight", action="store_true")
-    p.add_argument("--no-glow", action="store_true")
-    p.add_argument("--glow-color", default="white")
-    p.add_argument("--glow-radius", type=int, default=24)
-    p.add_argument("--glow-intensity", type=float, default=0.75)
+    add_glow_args(p)
     p.add_argument("--frame", action="store_true")
     add_frame_style_args(p)
     add_shadow_args(p)
@@ -62,7 +59,7 @@ def test_look_applies_and_typed_flags_win():
     touched = looks.apply_look(args, p, argv)
     assert args.shadow is True and args.shadow_strength == 0.55
     assert args.reflection is True and args.reflection_strength == 0.35
-    assert args.no_glow is True and args.no_spotlight is False and args.frame_style == "none"
+    assert args.glow is False and args.no_spotlight is False and args.frame_style == "none"
     assert "shadow" in touched
     assert controls_from_shadow_args(args)["shadowStrength"] == 0.55
 

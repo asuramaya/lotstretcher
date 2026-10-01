@@ -201,7 +201,3 @@ def remove_background(content: bytes, model_name: str | None = None, strict: boo
     )
 
 
-def composite_on_white(cutout: Image.Image) -> Image.Image:
-    bg = Image.new("RGB", cutout.size, (255, 255, 255))
-    bg.paste(cutout, mask=cutout.split()[-1])
-    return bg

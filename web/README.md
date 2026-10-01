@@ -272,11 +272,10 @@ wheel money shots (CLIPSeg and SAM2 have no browser build), and library
 management beyond reading a folder. The app's capabilities list names
 each one and why. The self-hosted server is never less than this page.
 
-## The untested risk
+## On a phone
 
-Every number here was measured in desktop Chromium. **No iPhone, iPad or
-Safari of any kind has been tested at any point.** Safari runs
-JavaScriptCore, not V8, and the WebKit per-page memory ceiling against
-the measured ~466 MB floor is the open question. It should fit. That is
-an inference, not an observation. [`docs/ios-checklist.md`](../docs/ios-checklist.md)
-is the ten-minute test to run on a real device.
+Every number here was measured in desktop Chromium. The live site has
+since been run on a real iPhone (2026-09-29), so the WebKit memory
+ceiling against the measured ~466 MB floor holds in practice;
+[`docs/ios-checklist.md`](../docs/ios-checklist.md) is the ten-minute
+test to repeat on another device.

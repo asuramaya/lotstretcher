@@ -1,7 +1,7 @@
 """
 Auto-select hero + accent photos for imaging/compose from a vehicle's
 images/exterior/cutout/angles.json (see classify.py's AngleClassifier and
-lotstretcher.py's download_photos, which writes that file).
+cli.py's download_photos, which writes that file).
 
 The picking itself is the core's (core/src/select.rs, op `select_shots`),
 the same code that orders the browser's run; this module reads

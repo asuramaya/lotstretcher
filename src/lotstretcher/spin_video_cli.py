@@ -23,7 +23,7 @@ from lotstretcher.vehicle_pipeline import video_output_path
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("vehicle_folder", help="A folder produced by lotstretcher.py (contains images/exterior/cutout/)")
+    parser.add_argument("vehicle_folder", help="A folder the lotstretcher command produced (contains images/exterior/cutout/)")
     parser.add_argument("--budget-mb", type=float, default=DEFAULT_BUDGET_MB,
                         help=f"Target max file size in MB (default: {DEFAULT_BUDGET_MB:g})")
     parser.add_argument("--nvenc", action="store_true",
@@ -35,7 +35,7 @@ def main():
     vehicle_folder = Path(args.vehicle_folder)
     cutout_dir = vehicle_folder / "images" / "exterior" / "cutout"
     if not cutout_dir.is_dir():
-        sys.exit(f"No cutouts found at {cutout_dir} -- did you run lotstretcher.py on this vehicle yet?")
+        sys.exit(f"No cutouts found at {cutout_dir} -- did you run lotstretcher on this vehicle yet?")
 
     out_path = Path(args.out) if args.out else video_output_path(vehicle_folder, "spin")
 

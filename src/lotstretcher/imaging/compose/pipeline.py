@@ -74,7 +74,7 @@ def hero_still_name(fmt: str) -> str:
 
 
 def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_path: Path | None,
-                     glow: bool = True, glow_color: str = "white",
+                     glow: bool = False, glow_color: str = "white",
                      glow_radius: int = 24, glow_intensity: float = 0.75,
                      gradient: bool = False, exterior_color: str | None = None,
                      interior_color: str | None = None,
@@ -184,7 +184,7 @@ def compose_interiors(interior_dir: Path, out_dir: Path, vehicle: dict,
 
 
 def compose_wheel_shots(wheel_cutout_dir: Path, out_dir: Path, background_path, border_path: Path | None,
-                         glow: bool = True, glow_color: str = "white",
+                         glow: bool = False, glow_color: str = "white",
                          glow_radius: int = 24, glow_intensity: float = 0.75,
                          gradient: bool = False, exterior_color: str | None = None,
                          interior_color: str | None = None,

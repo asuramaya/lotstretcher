@@ -25,7 +25,7 @@ from lotstretcher.imaging.compose import render_hero_video
 from lotstretcher.imaging.compose.hero_video import (BARS_PER_LOOP, DEFAULT_BPM, DEFAULT_VIDEO_FORMAT,
                                           VIDEO_FORMATS)
 from lotstretcher.imaging.select import order_for_conveyor_start, pick_all_for_carousel
-from lotstretcher.imaging.text import (add_short_clip_args, add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
+from lotstretcher.imaging.text import (add_glow_args, add_short_clip_args, add_backdrop_arg, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args, frame_style,
                                        reflection_style, shadow_style, spotlight_style, controls_from_spotlight_args, text_options)
@@ -59,7 +59,7 @@ def resolve_audio(value: str | None) -> tuple[Path, int]:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("vehicle_folder", help="A folder produced by lotstretcher.py (contains images/exterior/cutout/)")
+    parser.add_argument("vehicle_folder", help="A folder the lotstretcher command produced (contains images/exterior/cutout/)")
     parser.add_argument("--background-video", help="Video name/tag from assets/manifest.json, or a path "
                                                     "(default: American Flag Waving)")
     parser.add_argument("--audio", help="Audio name/tag from assets/manifest.json, or a path (default: Its Mine). "
@@ -80,11 +80,7 @@ def main():
                          help="Target max file size in MB. Defaults to the format's own budget "
                               "(square 50, the others 66 -- the 50MB cap is Marketplace's and "
                               "does not apply to Reels/Shorts/TikTok).")
-    parser.add_argument("--no-glow", action="store_true")
-    parser.add_argument("--glow-color", default="white", type=color_choice(("white", "blue", "gold", "red")), metavar="COLOR",
-                         help="The glow's colour: white, blue, gold, red, or your own as #rrggbb (default: white).")
-    parser.add_argument("--glow-radius", type=int, default=24)
-    parser.add_argument("--glow-intensity", type=float, default=0.75)
+    add_glow_args(parser)
     parser.add_argument("--flag-background", action="store_true",
                          help="Use the backdrop video clip instead of the default rotating vehicle-color gradient.")
     parser.add_argument("--frame", action="store_true",
@@ -119,7 +115,7 @@ def main():
     cutout_dir = vehicle_folder / "images" / "exterior" / "cutout"
     wheel_dir = vehicle_folder / "images" / "exterior" / "wheels"
     if not cutout_dir.is_dir():
-        sys.exit(f"No cutouts found at {cutout_dir} -- did you run lotstretcher.py on this vehicle yet?")
+        sys.exit(f"No cutouts found at {cutout_dir} -- did you run lotstretcher on this vehicle yet?")
 
     border_path = resolve_asset_arg("borders", args.border) if args.frame else None
     background_video = resolve_asset_arg(
@@ -180,7 +176,7 @@ def render_one(fmt, args, vehicle_folder, border_path, background_video, gradien
         canvas_size=spec["canvas"],
         loops=args.loops,
         budget_mb=args.budget_mb if args.budget_mb is not None else spec["budget_mb"],
-        glow=not args.no_glow,
+        glow=args.glow,
         glow_color=args.glow_color,
         glow_radius=args.glow_radius,
         glow_intensity=args.glow_intensity,

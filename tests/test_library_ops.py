@@ -22,7 +22,7 @@ from lotstretcher.server import jobs
 def test_defaults_match_the_recompose_cli():
     r = library_ops.resolve_recompose_options({})
     assert r["background_path"] is None and r["border_path"] is None
-    assert r["style"] == {"glow": True, "glow_color": "white", "glow_radius": 24,
+    assert r["style"] == {"glow": False, "glow_color": "white", "glow_radius": 24,
                           "glow_intensity": 0.75, "gradient": True, "border_fit": "slice",
                           "text": {"title": "none", "custom_title": None, "price_badge": False, "subtitle": None,
                                    "position": "bl", "color": "white", "size": 0.05,

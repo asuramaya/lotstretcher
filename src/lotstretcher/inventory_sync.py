@@ -25,8 +25,8 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
-from lotstretcher.manifest import already_fetched, dedup_key, find_delisted, load_manifest, record_fetch
-from lotstretcher.listing import expand_listing_url, is_vdp_url
+from lotstretcher.manifest import already_fetched, dedup_key, find_delisted, load_manifest
+from lotstretcher.listing import expand_listing_url
 from lotstretcher.scrape import vin_from_url
 from lotstretcher.vehicle_pipeline import process_vehicle, HeroOptions
 from lotstretcher.imaging.interior import InteriorSubjectClassifier
@@ -52,7 +52,7 @@ VIDEO_WORKERS = min(3, os.cpu_count() or 1)
 # slow video queue grow unboundedly across a 150-vehicle run.
 MAX_INFLIGHT_VEHICLES = 2
 
-# Matches lotstretcher.py's own argparse defaults -- inventory_sync.py doesn't
+# Matches cli.py's own argparse defaults -- inventory_sync.py doesn't
 # expose every knob cli.py does (this is the cron-friendly, opinionated
 # path, not the fully-configurable one), it just needs to call
 # process_vehicle() with the same sane defaults a plain `lotstretcher <url>` run
@@ -63,7 +63,7 @@ UPSCALE_MODEL = "swinir"
 import requests
 from playwright.sync_api import sync_playwright
 
-# Sanity threshold on the delist step, ported from lotstretcher.py's --sync guard
+# Sanity threshold on the delist step, ported from cli.py's --sync guard
 # (decision this exists to prevent -- confirmed real incident, not
 # hypothetical: a listing crawl that silently returned fewer vehicles than
 # the site actually has -- a network blip, a stale/cached page, or a

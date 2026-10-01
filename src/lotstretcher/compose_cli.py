@@ -7,7 +7,7 @@ everything -- just point it at a vehicle folder:
 
 Only override what you actually want to change:
 
-    compose_cli.py <vehicle-folder> --background american-flag --layout corners --no-glow
+    compose_cli.py <vehicle-folder> --background american-flag --layout corners --glow
 
 See what's available before picking:
 
@@ -22,6 +22,7 @@ from pathlib import Path
 from lotstretcher.imaging import assets
 from lotstretcher.imaging.compose import LAYOUTS, compose_hero
 from lotstretcher.imaging.select import pick_for_layout
+from lotstretcher.imaging.text import add_glow_args
 
 
 def list_assets():
@@ -36,7 +37,7 @@ def list_assets():
 def resolve_asset_arg(category: str, value: str | None) -> Path:
     """CLI wrapper around assets.resolve_arg() that exits with a clear
     message instead of raising -- defaults to "American Flag" for
-    backgrounds so this matches lotstretcher.py's own default when unset."""
+    backgrounds so this matches cli.py's own default when unset."""
     default_name = "American Flag" if category == "backgrounds" else None
     try:
         return assets.resolve_arg(category, value, default_name=default_name)
@@ -47,18 +48,14 @@ def resolve_asset_arg(category: str, value: str | None) -> Path:
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("vehicle_folder", nargs="?",
-                         help="A folder produced by lotstretcher.py (contains images/exterior/cutout/)")
+                         help="A folder the lotstretcher command produced (contains images/exterior/cutout/)")
     parser.add_argument("--background", help="Background name or tag (default: American Flag)")
     parser.add_argument("--border", help="Border name or tag (default: first available)")
     parser.add_argument("--layout", default="quad", choices=list(LAYOUTS),
                          help="single: just the hero. corners: hero + up to 2 corner accents. "
-                              "quad: hero + front/back/side accents (default -- matches lotstretcher.py's "
+                              "quad: hero + front/back/side accents (default -- matches the lotstretcher command's "
                               "automatic pipeline).")
-    parser.add_argument("--no-glow", action="store_true", help="Disable the glow behind each car cutout "
-                                                                 "(on by default, matches lotstretcher.py)")
-    parser.add_argument("--glow-color", default="white", choices=["white", "blue", "gold", "red"])
-    parser.add_argument("--glow-radius", type=int, default=24, help="Glow blur radius in pixels (default: 24)")
-    parser.add_argument("--glow-intensity", type=float, default=0.75, help="Glow opacity, 0-1 (default: 0.75)")
+    add_glow_args(parser)
     parser.add_argument("--out", help="Output path (default: <vehicle_folder>/bundle/hero-<layout>.png)")
     parser.add_argument("--list-assets", action="store_true", help="List available backgrounds/borders and exit")
     args = parser.parse_args()
@@ -73,7 +70,7 @@ def main():
     vehicle_folder = Path(args.vehicle_folder)
     cutout_dir = vehicle_folder / "images" / "exterior" / "cutout"
     if not cutout_dir.is_dir():
-        sys.exit(f"No cutouts found at {cutout_dir} -- did you run lotstretcher.py on this vehicle yet?")
+        sys.exit(f"No cutouts found at {cutout_dir} -- did you run lotstretcher on this vehicle yet?")
 
     background_path = resolve_asset_arg("backgrounds", args.background)
     border_path = resolve_asset_arg("borders", args.border)
@@ -88,7 +85,7 @@ def main():
         border_path=border_path,
         car_paths=car_paths,
         layout=args.layout,
-        glow=not args.no_glow,
+        glow=args.glow,
         glow_color=args.glow_color,
         glow_radius=args.glow_radius,
         glow_intensity=args.glow_intensity,

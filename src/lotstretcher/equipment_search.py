@@ -139,7 +139,6 @@ def compile_query(nl_query: str) -> SearchFilter:
     for trim in _TRIM_WORDS:
         if re.search(rf"\b{re.escape(trim)}\b", words_lower):
             filt.model_terms.append(trim)
-    model_re = re.compile(r"\b([a-z]?-?\d{2,3}(?:sd)?|[a-z]{2,}(?:-\d{3})?)\b", re.IGNORECASE)
     # Common body-style/model tokens worth keeping as-is if present (F-150,
     # F-250, Bronco, Explorer, ...) -- anything alphanumeric that isn't a
     # stopword and isn't already captured as a trim word.

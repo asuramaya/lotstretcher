@@ -11,12 +11,10 @@ weights; server mode is a different front door onto the same pipeline.
 """
 from __future__ import annotations
 
-import io
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import requests
-from PIL import Image
 
 CUT_TYPES = ("complete", "normal", "blur", "none")
 DEFAULT_CANVAS_SIZE = (1254, 1254)
@@ -89,7 +87,6 @@ def process_image(content: bytes, out_dir: Path, out_name: str,
 
     from ..imaging import assets
     from ..imaging.compose import compose_hero
-    from ..imaging.palette import vehicle_gradient_colors
 
     background_path = None
     if scene_id:

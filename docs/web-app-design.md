@@ -1,6 +1,9 @@
 # lotstretcher.org — Browser Client Design
 
-**Status:** design, not built. **Domain:** `lotstretcher.org` (registered, Cloudflare).
+**Status:** the original design (September 2026), kept for its reasoning. It is built and live at
+`lotstretcher.org`, and the built app departs from it in places (file names, model sizes, the Rust core,
+no bring-your-own-key tier); `README.md` and `web/README.md` describe what exists. The iPhone risk below
+was settled on 2026-09-29: the live site runs on a real iPhone.
 
 This document specifies the free, static, entirely client-side surface of lotstretcher.
 It is the companion to the self-hosted CLI/server surface described in `README.md`

@@ -17,13 +17,18 @@ use serde_json::{json, Map, Value};
 const PIECES: [&str; 3] = ["title", "subtitle", "badge"];
 const PIECE_LEVERS: [&str; 5] = ["font", "position", "color", "case", "box"];
 
-/// controls.groups[].controls[key].default.
-fn default(key: &str) -> Value {
+/// controls.groups[].controls[key].
+fn control(key: &str) -> Value {
     spec::get(&["controls", "groups"]).as_array().into_iter().flatten()
         .flat_map(|g| g.get("controls").and_then(Value::as_array).into_iter().flatten())
         .find(|c| c.get("key").and_then(Value::as_str) == Some(key))
-        .and_then(|c| c.get("default").cloned())
+        .cloned()
         .unwrap_or(Value::Null)
+}
+
+/// controls.groups[].controls[key].default.
+fn default(key: &str) -> Value {
+    control(key).get("default").cloned().unwrap_or(Value::Null)
 }
 
 fn get<'a>(o: &'a Value, key: &str) -> &'a Value { o.get(key).unwrap_or(&Value::Null) }
@@ -158,7 +163,16 @@ fn in_list(name: &str, kind: &str) -> bool {
 /// The core's background field for a generated backdrop of `kind`: the
 /// paint's names for every kind but the seeded hue bands, the user's own
 /// stops for the coloured kinds, a fixed direction for the linear ones.
+/// The Backdrop control's picture choices (Stock, Your image) whose
+/// picture is missing: the paint's gradient, as the CLI has always drawn
+/// it. Unset is the paint's too. Any other unknown kind is an error.
+fn picture_choice(kind: &str) -> bool {
+    kind.is_empty() || control("backdrop").get("choices").and_then(Value::as_array).into_iter().flatten()
+        .any(|c| c.get("value").and_then(Value::as_str) == Some(kind) && c.get("tab").and_then(Value::as_str) == Some("image"))
+}
+
 pub fn backdrop_spec(kind: &str, seed: &str, exterior: &Value, interior: &Value, color: &Value, color2: &Value, angle: &Value) -> Result<Value, String> {
+    let kind = if picture_choice(kind) { "vehicle" } else { kind };
     if !in_list("backdrops", kind) {
         let known: Vec<&str> = spec::get(&["compose", "backdrops"]).as_array().into_iter().flatten().filter_map(Value::as_str).collect();
         return Err(format!("unknown backdrop {kind:?}; one of {}", known.join(", ")));
@@ -221,6 +235,14 @@ mod tests {
         assert_eq!(s["spotlight"], true);
         assert_eq!(s["border_style"], Value::Null);
         assert_eq!(s["text"]["size"], 0.05);
+    }
+
+    #[test]
+    fn a_missing_picture_is_the_paint_and_a_typo_is_an_error() {
+        let n = Value::Null;
+        assert_eq!(backdrop_spec("asset", "s", &n, &n, &n, &n, &n).unwrap()["kind"], "vehicle");
+        assert_eq!(backdrop_spec("", "s", &n, &n, &n, &n, &n).unwrap()["kind"], "vehicle");
+        assert!(backdrop_spec("neon", "s", &n, &n, &n, &n, &n).is_err());
     }
 
     #[test]

@@ -43,7 +43,7 @@ The general exterior cutout gallery lands at a median ~1.1x scale in the
 composite -- only ~4% of cutouts get scaled past 2x, the range where 4x SR
 starts to visibly beat plain Lanczos. Below that, the model's own tiled
 pass costs 8-32s per image for a difference that isn't there. That's why
---upscale (lotstretcher.py) stays off by default for that gallery -- there's no
+--upscale (cli.py) stays off by default for that gallery -- there's no
 fabricated evidence it helps, and real evidence (this measurement) that it
 mostly doesn't.
 
@@ -58,7 +58,6 @@ both numbers above are empirical, not assumed.
 """
 from __future__ import annotations
 
-import io
 from pathlib import Path
 
 WEIGHTS_DIR = Path(__file__).parent / "weights"
@@ -121,7 +120,7 @@ def _upscale_tensor_tiled(model, arr: "torch.Tensor") -> "torch.Tensor":
 
     A single un-tiled pass over a 960x720 image needs a multi-GB peak
     allocation (confirmed: OOM'd at ~2.6GB with CLIP + BiRefNet already
-    resident in the same process's GPU memory during a real lotstretcher.py run,
+    resident in the same process's GPU memory during a real cli.py run,
     despite working fine in isolation). Each tile is padded with
     TILE_PAD pixels of surrounding context so the model has something to
     work with at the tile edges, then that padding is cropped back out of

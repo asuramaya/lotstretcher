@@ -185,12 +185,25 @@ COMPOSITION_FLAGS = {
     # Composition flags the CLI offers that the spec must represent. Kept
     # explicit rather than derived: cli.py also carries scraping, sync and
     # output-path flags, none of which are composition controls.
-    "--no-glow", "--glow-color", "--glow-radius", "--glow-intensity",
+    "--glow", "--glow-color", "--glow-radius", "--glow-intensity",
     "--no-hero", "--frame", "--border", "--background", "--photo-background",
     "--no-interiors", "--no-photo-sort", "--no-strict-cutouts", "--upscale",
     "--video-music", "--nvenc", "--video-flag-background", "--video-bpm", "--video-budget-mb",
     "--video-fps", "--no-spotlight", "--margin-frac",
 }
+
+
+def test_the_cli_with_no_flags_is_the_studio_with_no_changes():
+    """A flag's default is its control's default, so a bare command and an
+    untouched Studio make the same thing. Glow was on in the CLI and off
+    in the Studio until this test."""
+    from lotstretcher.cli import build_parser, controls_from_args
+
+    values = controls_from_args(build_parser().parse_args([]))
+    differ = {c["key"]: (values[c["key"]], c["default"]) for c in CONTROLS
+              if "cli" in surfaces(c) and c["key"] in values and "default" in c
+              and values[c["key"]] is not None and values[c["key"]] != c["default"]}
+    assert not differ, f"CLI default != Studio default (cli, spec): {differ}"
 
 
 def test_every_cli_flag_is_read():

@@ -1,33 +1,13 @@
-/* Processing options, kept at parity with the CLI and server surfaces.
- *
- * Names and defaults deliberately track their counterparts so the two
- * surfaces stay comparable:
- *
- *   heroFormats   <- cli.py --hero-format / HERO_STILL_FORMATS
- *   videoFormats  <- cli.py --video-format / VIDEO_FORMATS
- *   strictCutouts <- cli.py --no-strict-cutouts (inverted)
- *   glow*         <- cli.py --no-glow / --glow-color / --glow-radius
- *                    / --glow-intensity
- *   cutType       <- server ImageSubmission.cut_type
- *   sceneId       <- server ImageSubmission.scene_id
- *   interiors     <- cli.py --no-interiors
- *   photoSort     <- cli.py --no-photo-sort
- *
- * Anything the browser cannot do is absent rather than present and
- * inert: no --upscale (SwinIR/Real-ESRGAN are far too heavy for a tab),
- * no --frame/--border/--background (those need an asset library, which
- * is Tier 1), no --nvenc, no scraping flags. */
+/* Processing options: every Studio control's value, keyed as in
+ * shared/pipeline-spec.json's controls block (which names each one's
+ * CLI flag), plus the shapes to make and the cut type. Defaults are the
+ * spec's, so the browser and a bare CLI command start from the same. */
 
 import { get, formats as specFormats } from './spec.js';
 
-/* Formats, glow colours and cut types all come from
- * shared/pipeline-spec.json, the same file src/lotstretcher/spec.py
- * reads. They used to be JavaScript literals retyped from the Python,
- * which is the precise drift this indirection exists to prevent. */
+/* The shapes, from the spec (src/lotstretcher/spec.py reads the same). */
 export let HERO_FORMATS = {};
 export let VIDEO_FORMATS = {};
-export let GLOW_COLORS = [];
-export let CUT_TYPES = {};
 
 /* Called once after loadSpec(). Everything above is empty until then,
  * so nothing can read a stale default by accident. */
@@ -38,53 +18,18 @@ export function initFromSpec() {
   VIDEO_FORMATS = Object.fromEntries(
     Object.entries(specFormats('videoFormats'))
       .map(([k, f]) => [k, { size: f.size, label: f.label, note: f.note, budgetMb: f.budgetMb }]));
-  GLOW_COLORS = Object.keys(get('glow', 'colors'));
-  CUT_TYPES = Object.fromEntries(get('cutTypes', 'browserExposed').map((k) => [k, {
-    complete: 'Cut out and compose',
-    none: 'Sort only, no cutouts',
-  }[k] || k]));
-
+  for (const group of get('controls', 'groups')) {
+    for (const control of group.controls) DEFAULTS[control.key] = control.default;
+  }
   DEFAULTS.heroFormats = [...(get('heroStillFormats', 'browserDefault') || [get('heroStillFormats', 'default')])];
   /* A clip only where the browser can encode one in hardware. */
   const clip = get('videoFormats', 'browserDefault') || [];
   DEFAULTS.videoFormats = (typeof VideoEncoder !== 'undefined') ? [...clip] : [];
-  DEFAULTS.glowColor = get('glow', 'default');
-  DEFAULTS.glowRadius = get('glow', 'radius');
-  DEFAULTS.glowIntensity = get('glow', 'intensity');
-  DEFAULTS.margin = get('compose', 'marginFrac');
 }
 
-export const DEFAULTS = {
-  heroFormats: ['square'],
-  videoFormats: [],
-  cutType: 'complete',
-
-  photoSort: true,
-  interiors: true,
-
-  /* The quality gates. Inverted from the CLI's --no-strict-cutouts so
-   * the safe value is the truthy one; off means compose everything the
-   * matte produces, however badly it went. */
-  strictCutouts: true,
-
-  spotlight: true,
-  glow: false,
-  glowColor: 'white',
-  glowRadius: 24,
-  glowIntensity: 0.75,
-  // shadow comes from the spec's control default (controlDefaults).
-  shadowStrength: 0.5,
-  reflection: false,
-  reflectionStrength: 0.35,
-
-  /* Backdrop source. 'vehicle' measures the car's own paint (the CLI and
-   * server default); 'generic' is the seeded hue-band gradient used when
-   * there is no colour to read. */
-  backdrop: 'vehicle',
-
-  margin: 0.06,          // compose/hero.py margin_frac
-  threads: 0,            // 0 = auto (capped at MAX_THREADS)
-};
+/* Filled from the spec by initFromSpec; cutType 'none' is the server's
+ * classify-only mode (sort the photos, compose nothing). */
+export const DEFAULTS = { heroFormats: ['square'], videoFormats: [], cutType: 'complete' };
 
 const KEY = 'lotstretcher.options';
 
@@ -129,41 +74,4 @@ export function saveOptions(options) {
 export function resetOptions() {
   try { localStorage.removeItem(KEY); } catch { /* ignore */ }
   return { ...DEFAULTS };
-}
-
-/* A one-line summary for the header, so the current configuration is
- * visible without opening the pane. */
-export function summarise(o) {
-  const bits = [];
-  bits.push(o.heroFormats.map((f) => HERO_FORMATS[f]?.label || f).join(' + ') || 'no stills');
-  if (o.videoFormats.length) bits.push(`${o.videoFormats.length} video`);
-  if (o.cutType === 'none') bits.push('sort only');
-  if (!o.strictCutouts) bits.push('gates off');
-  if (o.glow) bits.push(`${o.glowColor} glow`);
-  return bits.join(' · ');
-}
-
-/* The equivalent CLI invocation for the current options.
- *
- * Shown in the UI because the two surfaces are the same pipeline, and
- * someone who outgrows the tab should be able to see exactly what to run
- * instead. It also keeps this file honest: a control with no CLI
- * counterpart is immediately obvious here. */
-export function toCliFlags(o) {
-  const flags = [];
-  for (const f of o.heroFormats) flags.push(`--hero-format ${f}`);
-  for (const f of o.videoFormats) flags.push(`--video-format ${f}`);
-  if (!o.videoFormats.length) flags.push('--no-video');
-  if (o.cutType === 'none') flags.push('--no-hero');
-  if (!o.photoSort) flags.push('--no-photo-sort');
-  if (!o.interiors) flags.push('--no-interiors');
-  if (!o.strictCutouts) flags.push('--no-strict-cutouts');
-  if (o.glow) {
-    if (o.glowColor !== DEFAULTS.glowColor) flags.push(`--glow-color ${o.glowColor}`);
-    if (o.glowRadius !== DEFAULTS.glowRadius) flags.push(`--glow-radius ${o.glowRadius}`);
-    if (o.glowIntensity !== DEFAULTS.glowIntensity) flags.push(`--glow-intensity ${o.glowIntensity}`);
-  } else {
-    flags.push('--no-glow');
-  }
-  return `lotstretcher ./photos ${flags.join(' ')}`.replace(/\s+/g, ' ').trim();
 }

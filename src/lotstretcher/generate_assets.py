@@ -8,7 +8,7 @@ Usage:
         --name "Futuristic Showroom" --tags showroom sci-fi
 
 Each run is exactly one paid Recraft API call ($0.035 at the default model).
-Nothing here runs as a side effect of lotstretcher.py -- generation is always an
+Nothing here runs as a side effect of cli.py -- generation is always an
 explicit, separate step.
 """
 from __future__ import annotations

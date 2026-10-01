@@ -2,8 +2,8 @@
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Interface: CLI](https://img.shields.io/badge/interface-CLI-informational.svg)](#cli-command-reference)
-[![Tests](https://img.shields.io/badge/tests-624%20passed-brightgreen.svg)](tests/)
+[![Interface: CLI](https://img.shields.io/badge/interface-CLI-informational.svg)](#cli-reference--usage)
+[![Tests](https://img.shields.io/badge/tests-pytest%20%2B%20cargo-brightgreen.svg)](tests/)
 
 **lotstretcher** automates the workflow of turning a vehicle listing from a dealership website
 into polished, platform-specific social-media posts and high-converting marketing visuals -- stretching one
@@ -162,7 +162,10 @@ and kept on the device.
 [`tests/test_spec_parity.py`](tests/test_spec_parity.py) enforces it, including the cases the
 indirection alone can't cover: it compares the remaining Python literals against the spec, greps the
 JavaScript for any module that goes back to hardcoding, and fails outright if a format size reappears as
-a literal in `options.js`.
+a literal in `options.js`. [`tests/test_control_parity.py`](tests/test_control_parity.py) holds the
+Studio's levers to the CLI's flags: every control names a flag that exists, every composition flag has a
+control, and a bare `lotstretcher` command starts from the Studio's untouched defaults (glow off, shadow
+and price badge on), so the same settings make the same thing on either surface.
 
 ### The Rust core
 
@@ -211,7 +214,7 @@ and `copy.js` reduced to hosts that hand in the vehicle and the dealer boilerpla
 (`listing_record`, with an exact port of Python's `html.unescape`), the vendor padding on dealer photos
 (`detect_bars`, `batch_bars`, `detect_banner`), the known-junk pHash (`phash`, `junk_match`), the
 layouts and a car's placement (`layout`, `placement`), and the mapping from the Studio's control values
-to every request field (`styles`, `text_facts`, `backdrop_spec`, `gradient_names`); each replaced a
+to every request field (`styles`, `text_facts`, `backdrop_spec`, `gradient_stops`); each replaced a
 Python and a JavaScript version that had drifted, and each has a parity test holding both builds to what
 the deleted code returned. Everything the operator
 ruled into the core is in it; models stay in ONNX Runtime on both sides.
@@ -282,7 +285,7 @@ Process a single vehicle listing:
 lotstretcher "https://www.tomballford.com/vehicle/1HGCY1F24SA035661/Used-2025-Honda-Accord-Tomball-TX/"
 ```
 
-Output lands in the current working directory under `new/` or `used/`, bucketed by condition. Each vehicle folder contains structured data, source assets, and finished marketing deliverables:
+Output lands in `~/Documents/listings` (or `--out DIR`) under `new/` or `used/`, bucketed by condition. Each vehicle folder contains structured data, source assets, and finished marketing deliverables:
 
 ```
 <year>-<make>-<model>-<trim>-<stock>/
@@ -302,8 +305,9 @@ Output lands in the current working directory under `new/` or `used/`, bucketed 
     ├── hero-video-vertical.mp4   # 9:16 vertical video (Instagram Reels / TikTok / Shorts)
     ├── hero-video-horizontal.mp4 # 16:9 widescreen video (YouTube)
     ├── framed/                   # Every exterior cutout framed individually
-    ├── window-sticker-a.png      # Readable window sticker slide A
-    ├── window-sticker-b.png      # Readable window sticker slide B
+    ├── interior/                 # The cabin photos, neutralised and lifted
+    ├── window-sticker-1a.png     # Readable window sticker, panel A (one pair per sticker page)
+    ├── window-sticker-1b.png     # Readable window sticker, panel B
     ├── facebook.txt              # Ready-to-paste Facebook Marketplace listing text
     ├── instagram.txt             # Hook-first caption + targeted hashtags
     └── threads.txt               # Character-capped Threads post

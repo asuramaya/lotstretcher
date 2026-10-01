@@ -645,7 +645,7 @@
       "",
       "Fields: key (the option name both sides use), type, default,",
       "cli (the flag it maps to), cliInvert (the flag DISABLES it, as",
-      "--no-glow does), surfaces (where it applies), requires (a host",
+      "--no-spotlight does), surfaces (where it applies), requires (a host",
       "capability it needs), unit/min/max/step for ranges.",
       "",
       "A control may be browser-only (surfaces without 'cli'), but ONLY with a cliNote saying why. That keeps the exemption visible instead of letting 'no flag yet' quietly become permanent divergence.",
@@ -1812,8 +1812,7 @@
             "hint": "",
             "type": "toggle",
             "default": false,
-            "cli": "--no-glow",
-            "cliInvert": true,
+            "cli": "--glow",
             "tooltip": "Halo behind the cutout",
             "tab": "glow"
           },

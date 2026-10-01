@@ -24,15 +24,15 @@ import { decode, makeCanvas, ctxOf, canvasToBlob } from './lib/imageio.js';
 import { makeZip, deliver } from './lib/zip.js';
 import * as OPTS from './options.js';
 import {
-  loadOptions, saveOptions, resetOptions, toCliFlags, initFromSpec, serialisable,
+  loadOptions, saveOptions, resetOptions, initFromSpec, serialisable,
 } from './options.js';
 import { store, blobToCanvas } from './lib/store.js';
 import { loadSpec, get as specGet } from './spec.js';
-import { loadCore, version as coreVersion, threadCount as coreThreads, enhanceInterior, renderFrame as coreRenderFrame, drawFrame as coreDrawFrame, call as coreCall, toImageData as coreToImageData, vehicleGradientColors as coreVehicleGradientColors } from './core.js';
+import { loadCore, version as coreVersion, enhanceInterior, renderFrame as coreRenderFrame, drawFrame as coreDrawFrame, call as coreCall, toImageData as coreToImageData, vehicleGradientColors as coreVehicleGradientColors } from './core.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { Preview } from './preview.js';
-import { loadCapabilities, can, host, isSelfHosted, whyUnavailable } from './host.js';
-import { renderControls, controlDefaults, controlsToFlags, affectsPreview, renderLooks, openSubTab } from './controls.js';
+import { loadCapabilities, can, isSelfHosted, whyUnavailable } from './host.js';
+import { renderControls, controlsToFlags, affectsPreview, renderLooks, openSubTab } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
 import { textOptions, textRequest, frameStyle, shadowStyle, reflectionStyle, spotlightStyle } from './lib/text.js';
@@ -67,14 +67,6 @@ const state = {
 
 let nextId = 1;
 let preview = null;
-
-/* The run button lives in the header and again at the foot of the Look
- * pane; one function keeps them agreeing. */
-function setRunEnabled(on) {
-  $('runBtn').disabled = !on;
-  const b = null;
-  if (b) b.disabled = !on;
-}
 
 /* The rail is a checklist: a step is ticked once it has what it needs.
  * Called from every render that can change that. */
@@ -271,8 +263,24 @@ function go(pane) {
   renderSteps();
 }
 
-function openSheet(id) { $(id).hidden = false; }
-function closeSheet(id) { $(id).hidden = true; }
+/* A sheet takes the focus while it is open and gives it back when it
+ * closes; whatever it started (the VIN camera) stops on its 'close'. */
+let sheetOpener = null;
+function openSheet(id) {
+  sheetOpener = document.activeElement;
+  $(id).hidden = false;
+  // The dialog itself, not its first field: that would raise a phone's keyboard.
+  const body = $(id).querySelector('.sheet-body');
+  if (body) { body.tabIndex = -1; body.focus(); }
+}
+function closeSheet(id) {
+  const sheet = $(id);
+  if (sheet.hidden) return;
+  sheet.hidden = true;
+  sheet.dispatchEvent(new Event('close'));
+  sheetOpener?.focus?.();
+  sheetOpener = null;
+}
 
 /* ---------- adding photos ------------------------------------------ */
 function isImageName(name) {
@@ -340,19 +348,24 @@ function addUrls(text, source = 'links') {
 }
 
 function removePhoto(id) {
+  if (state.running) return;
   const i = state.photos.findIndex((p) => p.id === id);
   if (i < 0) return;
   const p = state.photos[i];
   if (p.blob && p.thumb) URL.revokeObjectURL(p.thumb);
   state.photos.splice(i, 1);
+  state.skippedDuplicates = 0;
   renderPhotos();
 }
 
 function clearPhotos() {
+  if (state.running) return;
   for (const p of state.photos) if (p.blob && p.thumb) URL.revokeObjectURL(p.thumb);
   state.photos = [];
   state.done = false;
   state.posts = null;
+  state.videos = null;
+  state.skippedDuplicates = 0;
   renderPhotos();
   renderResults();
 }
@@ -380,7 +393,7 @@ function renderPhotos() {
   // With photos in, the drop zone folds to one row of ways to add more.
   $('dropzone').classList.toggle('has-photos', n > 0);
   $('pickBtn').textContent = n > 0 ? 'Add more' : 'Add photos';
-  setRunEnabled(n > 0 && !state.running);
+  $('runBtn').disabled = !(n > 0 && !state.running);
   renderSteps();
 
   const warn = $('warnBox');
@@ -607,38 +620,6 @@ function renderResults() {
   }
 }
 
-
-function toggleRow(label, hint, checked, onChange) {
-  const row = el('div', 'opt');
-  const text = el('div', 'opt-text');
-  text.append(el('strong', null, label), el('span', null, hint));
-  const sw = el('label', 'switch');
-  const input = document.createElement('input');
-  input.type = 'checkbox';
-  input.checked = checked;
-  input.setAttribute('aria-label', label);
-  input.onchange = () => onChange(input.checked);
-  sw.append(input, el('i'));
-  row.append(text, sw);
-  return row;
-}
-
-function selectRow(label, hint, value, choices, onChange) {
-  const row = el('div', 'opt');
-  const text = el('div', 'opt-text');
-  text.append(el('strong', null, label), el('span', null, hint));
-  const sel = document.createElement('select');
-  sel.className = 'field';
-  for (const c of choices) {
-    const o = document.createElement('option');
-    o.value = c; o.textContent = c;
-    if (c === value) o.selected = true;
-    sel.appendChild(o);
-  }
-  sel.onchange = () => onChange(sel.value);
-  row.append(text, sel);
-  return row;
-}
 
 /* The vehicle's own title, as the Text tool's Words field shows it
  * empty: year make model trim, whichever are filled. */
@@ -956,7 +937,11 @@ function toggleFormat(kind, key) {
  * exteriors (and lift the interiors). Shared by a run and by the
  * preload that starts when the booth is left, so the Look step shows
  * the real vehicle. Returns the exteriors. */
-async function sortAndCut(stages) {
+async function sortAndCut(stages, errors) {
+  // The photos as they were when the sort began: one added, removed or
+  // cleared meanwhile changes the key, and the result is not reused.
+  const photos = [...state.photos];
+  try {
     /* Where the time goes, per step, summed over the photos: shown in
      * the stage list and kept on state.timings for the bench page and
      * automation. */
@@ -979,9 +964,14 @@ async function sortAndCut(stages) {
     renderStages(stages);
 
     // --- pass 1: scene. Runs on every photo, so it is the hot path.
-    const total = state.photos.length;
+    const total = photos.length;
     for (let i = 0; i < total; i++) {
-      const p = state.photos[i];
+      const p = photos[i];
+      // What an earlier sort or run made of it does not carry over; only
+      // a person's own word on the scene (and a skip) does.
+      Object.assign(p, { cutout: null, angle: null, angleConf: null, angleUncertain: false, onTrial: false,
+        interior: null, error: null, hero: null, heroes: null, ambiguous: null, coverage: null });
+      if (p.rejected !== true || !p.userScene) p.rejected = false;
       p.status = 'working';
       renderPhotos();
       try {
@@ -995,7 +985,11 @@ async function sortAndCut(stages) {
         const junk = p.userScene ? null
           : coreCall({ op: 'junk_match', hash: coreCall({ op: 'phash', image: { $image: 0 } }, [pixelsOf(bitmap)]) });
         if (junk) { p.rejected = `a dealer's stock graphic (${junk.replace(/\.[a-z]+$/, '')})`; p.scene = 'unsure'; }
-        else if (p.userScene) { /* the person said what it is; the model does not argue */ } else {
+        else if (p.userScene) { /* the person said what it is; the model does not argue */ }
+        // Sorting off (the CLI's --no-photo-sort): every photo is tried as
+        // an exterior, and the cutout gate keeps what is a whole vehicle.
+        else if (!state.options.photoSort) { p.scene = 'exterior'; }
+        else {
         t0 = performance.now();
         // Only the classification view loses a dealer's saturated banner
         // (core letterbox.rs, as the CLI's evaluate_photo does); the photo
@@ -1017,7 +1011,7 @@ async function sortAndCut(stages) {
       } catch (e) {
         p.status = 'failed';
         p.error = String(e.message || e);
-        state.errors.push(`${p.name}: ${p.error}`);
+        errors.push(`${p.name}: ${p.error}`);
       }
       if (p.status !== 'failed') p.status = 'sorted';
       setProgress(0.2 + 0.15 * ((i + 1) / total));
@@ -1029,7 +1023,7 @@ async function sortAndCut(stages) {
     // core, at its own size, the same treatment the CLI's bundle/interior
     // gets. No cutout, no compositing: rembg cannot cut out a cabin.
     if (state.options.interiors) {
-      const inside = state.photos.filter((p) => p.scene === 'interior' && !p.rejected && p.status !== 'failed');
+      const inside = photos.filter((p) => p.scene === 'interior' && !p.rejected && p.status !== 'failed');
       // A vendor's flat letterbox bars come off first, at the size most of
       // the batch agrees on (core letterbox.rs, as the CLI's photos.py
       // does): one vendor pads a whole gallery alike, and a photo whose own
@@ -1046,7 +1040,7 @@ async function sortAndCut(stages) {
           p.interior = enhanceInterior(cropRows(p.bitmap, top, bottom));
           clock('interior', t0);
         } catch (e) {
-          state.errors.push(`${p.name}: ${e.message || e}`);
+          errors.push(`${p.name}: ${e.message || e}`);
         }
       }
     }
@@ -1054,7 +1048,7 @@ async function sortAndCut(stages) {
     // photos, compose nothing.
     const exteriors = state.options.cutType === 'none'
       ? []
-      : state.photos.filter((p) => p.scene === 'exterior' && !p.rejected);
+      : photos.filter((p) => p.scene === 'exterior' && !p.rejected);
     stages[1].detail = `${exteriors.length} exterior, ${total - exteriors.length} other`;
     stages[2].state = 'active';
     renderStages(stages);
@@ -1119,7 +1113,7 @@ async function sortAndCut(stages) {
         }
       } catch (e) {
         p.error = String(e.message || e);
-        state.errors.push(`${p.name}: ${p.error}`);
+        errors.push(`${p.name}: ${p.error}`);
       }
       p.status = p.cutout ? 'cut' : 'failed';
       setProgress(0.35 + 0.45 * ((i + 1) / Math.max(1, exteriors.length)));
@@ -1135,27 +1129,45 @@ async function sortAndCut(stages) {
     renderStages(stages);
 
     return exteriors;
+  } finally {
+    // The decoded sources are the largest thing held, and nothing needs
+    // them once the cutouts and interiors exist.
+    for (const p of photos) { p.bitmap?.close?.(); p.bitmap = null; }
+  }
 }
 
 /* What the photos and the options that shape a cut amount to; a
  * preparation is only reused for the same. */
 function photoKey() {
-  return JSON.stringify([state.photos.map((p) => [p.id, p.userScene ? (p.rejected ? 'skip' : p.scene) : null]), state.options.interiors, state.options.cutType, state.options.cutoutModel]);
+  return JSON.stringify([state.photos.map((p) => [p.id, p.userScene ? (p.rejected ? 'skip' : p.scene) : null]), state.options.interiors, state.options.cutType, state.options.cutoutModel, state.options.photoSort]);
 }
 
 /* The sort-and-cut for the current photos: the preload's, awaited, when
  * it is for these photos; started here otherwise. */
 async function prepared(stages) {
+  // A preload for photos that have since changed finishes first: two
+  // sorts on the same photos would close each other's bitmaps.
+  if (state.preparing && state.prepared?.key !== photoKey()) await state.prepared?.promise.catch(() => {});
   const key = photoKey();
-  if (state.prepared?.key === key) {
-    const exteriors = await state.prepared.promise;
+  const prep = state.prepared;
+  if (prep?.key === key) {
+    const exteriors = await prep.promise;
+    state.errors.push(...(prep.errors || []));
     for (const st of stages.slice(0, 3)) st.state = 'done';
-    Object.assign(stages[0], state.prepared.stages[0]); Object.assign(stages[1], state.prepared.stages[1]); Object.assign(stages[2], state.prepared.stages[2]);
+    Object.assign(stages[0], prep.stages[0]); Object.assign(stages[1], prep.stages[1]); Object.assign(stages[2], prep.stages[2]);
     stages[3].state = 'active';
     renderStages(stages);
     return exteriors;
   }
-  return sortAndCut(stages);
+  // The run's own sort is a preparation too, so the preload that
+  // follows the run does not do it all again.
+  const errors = [];
+  const promise = sortAndCut(stages, errors);
+  state.prepared = { key, promise, stages, errors };
+  promise.catch(() => { if (state.prepared?.promise === promise) state.prepared = null; });
+  const exteriors = await promise;
+  state.errors.push(...errors);
+  return exteriors;
 }
 
 function runStages() {
@@ -1180,14 +1192,13 @@ function preload() {
   renderStages(stages);
   setProgress(0);
   state.preparing = true;
-  state.errors = [];
   topProgress(0, `Sorting and cutting out ${state.photos.length} photo${state.photos.length === 1 ? '' : 's'}…`);
   renderSteps();
+  const errors = [];
   const promise = (async () => {
     try {
-      return await sortAndCut(stages);
+      return await sortAndCut(stages, errors);
     } finally {
-      for (const p of state.photos) { p.bitmap?.close?.(); p.bitmap = null; }
       state.preparing = false;
       topProgress(null);
       renderPhotos();
@@ -1196,7 +1207,7 @@ function preload() {
       if (preview?.getUserCutout?.()) { preview.current = 'yours'; preview.renderSamples(); preview.update(); preview.onSubjectChange?.(); }
     }
   })();
-  state.prepared = { key, promise, stages };
+  state.prepared = { key, promise, stages, errors };
   promise.catch((e) => { state.prepared = null; console.warn('preload failed:', e); });
 }
 
@@ -1206,8 +1217,9 @@ async function run() {
   state.done = false;
   state.runStart = performance.now();
   let cw = null;   // the run's core worker, ended in `finally`
-  if (state.prepared?.key !== photoKey()) state.errors = [];
-  setRunEnabled(false);
+  state.errors = [];
+  setVideoThreads(0);
+  $('runBtn').disabled = true;
   go('results');
   topProgress(0, 'Processing…');
   $('progressSection').hidden = false;
@@ -1227,6 +1239,9 @@ async function run() {
     const cut = walkaround(exteriors.filter((p) => p.cutout));
     const formats = state.options.heroFormats.length ? state.options.heroFormats : ['square'];
     const vid = state.vehicle.vin || state.vehicle.stock_number || 'v';
+    // Nothing an earlier run made is shown or bundled with this one's.
+    for (const p of state.photos) { p.hero = null; p.heroes = null; }
+    state.videos = null;
 
     // Only when the user actually switched a server-only control on. A
     // self-hosted user who changed nothing still composes locally, which
@@ -1380,6 +1395,7 @@ async function run() {
             vehicle: state.vehicle,
             // One or two shots are a push with crossfades (core carousel.rs).
             push: state.options.videoPush ?? null, crossfade: state.options.videoCrossfade ?? null,
+            fps: Number(state.options.videoFps) || undefined,
             onProgress: (f) => setProgress(0.85 + 0.15 * f),
           };
           const shots = cut.map((p) => p.cutout);
@@ -1411,7 +1427,11 @@ async function run() {
 
     if (state.errors.length) {
       const b = el('div', 'banner banner-err');
-      b.append(el('div', null, `${state.errors.length} photo(s) could not be processed: ${state.errors[0]}`));
+      // Photos that failed and things that fell back alike: each said once.
+      const n = state.errors.length;
+      b.append(el('div', null, n === 1 ? state.errors[0] : `${n} problems:`));
+      if (n > 1) for (const m of state.errors.slice(0, 6)) b.append(el('div', null, `· ${m}`));
+      if (n > 6) b.append(el('div', null, `and ${n - 6} more`));
       $('stageList').appendChild(b);
     }
   } catch (e) {
@@ -1420,12 +1440,9 @@ async function run() {
     $('stageList').appendChild(b);
   } finally {
     cw?.terminate();
-    // Free the decoded source bitmaps. They are the largest thing we
-    // hold and nothing downstream needs them once cutouts exist.
-    for (const p of state.photos) { p.bitmap?.close?.(); p.bitmap = null; }
     state.running = false;
     topProgress(null);
-    setRunEnabled(state.photos.length > 0);
+    $('runBtn').disabled = !state.photos.length;
     renderPhotos();
     renderResults();
     // A cut-out vehicle of the user's own is now a preview subject.
@@ -1812,7 +1829,8 @@ function canvasItem(canvas, name, tag, save, quality = 0.92) {
   let url = null;
   return {
     name, tag, save,
-    src: async () => { if (!url) { url = URL.createObjectURL(await canvasToBlob(canvas, 'image/jpeg', quality)); made.add(url); } return url; },
+    // Encoded again once the box has closed and revoked the last one.
+    src: async () => { if (!made.has(url)) { url = URL.createObjectURL(await canvasToBlob(canvas, 'image/jpeg', quality)); made.add(url); } return url; },
   };
 }
 function openLightbox(items, i) {
@@ -1897,7 +1915,7 @@ async function init() {
   // Spec defaults first, then anything this device saved. A control
   // added since the last visit therefore arrives at its spec default
   // rather than undefined.
-  state.options = { ...controlDefaults(), ...loadOptions() };
+  state.options = loadOptions();
   // "Your words" is the title's On with the Words field filled now; a
   // saved custom title keeps its words under the vehicle mode.
   if (state.options.titleMode === 'custom') state.options.titleMode = 'vehicle';
@@ -1936,10 +1954,10 @@ async function init() {
   }
   for (const sheet of document.querySelectorAll('.sheet')) {
     // Click the scrim (but not the body) to dismiss.
-    sheet.onclick = (e) => { if (e.target === sheet) sheet.hidden = true; };
+    sheet.onclick = (e) => { if (e.target === sheet) closeSheet(sheet.id); };
   }
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') for (const s of document.querySelectorAll('.sheet')) s.hidden = true;
+    if (e.key === 'Escape') for (const s of document.querySelectorAll('.sheet')) closeSheet(s.id);
   });
 
   $('pickBtn').onclick = () => $('fileInput').click();
@@ -2144,6 +2162,7 @@ async function init() {
     if (!navigator.mediaDevices?.getUserMedia) { $('scanInput').click(); return; }
     openSheet('scanSheet');
     $('scanStatus').textContent = 'Starting the camera…';
+    scanAbort?.abort();
     scanAbort = new AbortController();
     try {
       const { scanVin } = await import('./pipeline/scan.js');
@@ -2153,7 +2172,9 @@ async function init() {
       $('scanStatus').textContent = /NotAllowed|Permission/i.test(String(e)) ? 'The camera was refused. A photo of the barcode works too.' : String(e.message || e);
     }
   };
-  $('scanCancel').onclick = () => { scanAbort?.abort(); closeSheet('scanSheet'); };
+  // However the sheet closes (Cancel, Escape, the scrim), the camera stops.
+  $('scanSheet').addEventListener('close', () => scanAbort?.abort());
+  $('scanCancel').onclick = () => closeSheet('scanSheet');
   $('scanPhotoBtn').onclick = () => { scanAbort?.abort(); $('scanInput').click(); };
   $('scanInput').onchange = async (e) => {
     const f = e.target.files?.[0];

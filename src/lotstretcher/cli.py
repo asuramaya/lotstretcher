@@ -76,8 +76,8 @@ from lotstretcher.imaging.dedupe import DEFAULT_TEMPLATES_DIR, JunkFilter
 from lotstretcher.listing import expand_listing_url, is_vdp_url
 from lotstretcher.local_source import is_local_source, load_local_vehicle, local_vehicle_key
 from lotstretcher.scrape import USER_AGENT, vin_from_url
-from lotstretcher.imaging.text import (add_short_clip_args, add_backdrop_arg, color_choice, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
-                                       controls_from_spotlight_args,
+from lotstretcher.imaging.text import (add_short_clip_args, add_backdrop_arg, add_glow_args, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
+                                       controls_from_glow_args, controls_from_spotlight_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args)
 from lotstretcher.library_ops import hero_options_from_controls
@@ -228,10 +228,7 @@ def controls_from_args(args) -> dict:
     read, so a new flag cannot be accepted and silently ignored."""
     return {
         "hero": not args.no_hero,
-        "glow": not args.no_glow,
-        "glowColor": args.glow_color,
-        "glowRadius": args.glow_radius,
-        "glowIntensity": args.glow_intensity,
+        **controls_from_glow_args(args),
         **controls_from_spotlight_args(args),
         "margin": args.margin_frac,
         "backdrop": "asset" if (args.photo_background or args.background) else args.backdrop,
@@ -264,7 +261,7 @@ def controls_from_args(args) -> dict:
     }
 
 
-def main():
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("urls", nargs="*", help="Vehicle detail page URL(s)")
     parser.add_argument("--file", help="Text file with one VDP URL per line")
@@ -378,13 +375,7 @@ def main():
     parser.add_argument("--video-budget-mb", type=float, default=None, metavar="MB",
                          help="Bitrate is chosen to fill this file size. Default: each format's own budget "
                               "from the spec.")
-    parser.add_argument("--no-glow", action="store_true", help="Disable the glow behind composed car cutouts")
-    parser.add_argument("--glow-color", default="white", type=color_choice(("white", "blue", "gold", "red")), metavar="COLOR",
-                         help="The glow's colour: white, blue, gold, red, or your own as #rrggbb (default: white).")
-    parser.add_argument("--glow-radius", type=int, default=24,
-                         help="Glow blur radius in pixels (default: 24)")
-    parser.add_argument("--glow-intensity", type=float, default=0.75,
-                         help="Glow opacity, 0-1 (default: 0.75)")
+    add_glow_args(parser)
     parser.add_argument("--dealer-config",
                          help="Path to a JSON dealer-config file (overrides env vars and defaults)")
     parser.add_argument("--list-assets", action="store_true",
@@ -410,6 +401,11 @@ def main():
                               "listing crawl itself being interrupted partway through. Off by default -- "
                               "both almost always mean the listing crawl didn't actually cover the full "
                               "inventory, not that this many vehicles genuinely sold at once.")
+    return parser
+
+
+def main():
+    parser = build_parser()
     args = parser.parse_args()
     if args.cutout_model != "standard":
         from lotstretcher.imaging.cutout import set_cutout_model
