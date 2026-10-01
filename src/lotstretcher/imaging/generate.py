@@ -25,6 +25,9 @@ from pathlib import Path
 
 import requests
 
+from lotstretcher.imaging import assets
+
+
 def _find_root_dir() -> Path:
     curr = Path(__file__).resolve()
     for parent in curr.parents:
@@ -35,8 +38,10 @@ def _find_root_dir() -> Path:
 
 ROOT = _find_root_dir()
 ENV_PATH = ROOT / ".env"
-ASSETS_DIR = ROOT / "assets"
-MANIFEST_PATH = ASSETS_DIR / "manifest.json"
+# The library the app and the CLI read (honours LOTSTRETCHER_ASSETS_DIR),
+# so a generated backdrop lands where it will be found.
+ASSETS_DIR = assets.ASSETS_DIR
+MANIFEST_PATH = assets.MANIFEST_PATH
 
 API_URL = "https://external.api.recraft.ai/v1/images/generations"
 DEFAULT_MODEL = "recraftv4_1"

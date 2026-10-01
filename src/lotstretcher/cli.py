@@ -75,7 +75,7 @@ from lotstretcher.imaging.interior import InteriorSubjectClassifier
 from lotstretcher.imaging.dedupe import DEFAULT_TEMPLATES_DIR, JunkFilter
 from lotstretcher.listing import expand_listing_url, is_vdp_url
 from lotstretcher.local_source import is_local_source, load_local_vehicle, local_vehicle_key
-from lotstretcher.scrape import USER_AGENT, vin_from_url
+from lotstretcher.scrape import USER_AGENT
 from lotstretcher.imaging.text import (add_short_clip_args, add_backdrop_arg, add_glow_args, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
                                        controls_from_glow_args, controls_from_spotlight_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
@@ -135,41 +135,6 @@ def expand_urls(raw_urls: list[str], headed: bool) -> tuple[list[str], list[str]
     seen2 = set()
     listing_urls_out = [u for u in from_listing if not (u in seen2 or seen2.add(u))]
     return all_urls, listing_urls_out, listing_complete
-
-
-def resolve_video_formats(requested: list[str] | None) -> tuple[str, ...]:
-    """Which aspects to render. All three by default -- the same edit
-    blocked for each frame shape, so one scrape covers Marketplace, Reels
-    and YouTube without a second pass. Costs roughly 3x the render time
-    (~3.5min vs ~1.2min per vehicle on GPU), so narrow it with
-    --video-format square when that matters."""
-    from lotstretcher.imaging.compose.hero_video import VIDEO_FORMATS
-
-    if not requested:
-        return tuple(VIDEO_FORMATS)
-    if "all" in requested:
-        return tuple(VIDEO_FORMATS)
-    unknown = [f for f in requested if f not in VIDEO_FORMATS]
-    if unknown:
-        sys.exit(f"Unknown --video-format {unknown[0]!r}; choose from {', '.join(VIDEO_FORMATS)} or 'all'")
-    return tuple(dict.fromkeys(requested))
-
-
-def resolve_hero_formats(requested: list[str] | None) -> tuple[str, ...]:
-    """Hero still shapes. Square (Marketplace) plus 9:16 portrait (the
-    same shape as the vertical video, so a still and a clip pair up) by
-    default; horizontal is asked for."""
-    from lotstretcher.imaging.compose.pipeline import HERO_STILL_FORMATS
-
-    if not requested:
-        return ("square", "portrait")
-    if "all" in requested:
-        return tuple(HERO_STILL_FORMATS)
-    unknown = [f for f in requested if f not in HERO_STILL_FORMATS]
-    if unknown:
-        sys.exit(f"Unknown --hero-format {unknown[0]!r}; choose from "
-                 f"{', '.join(HERO_STILL_FORMATS)} or 'all'")
-    return tuple(dict.fromkeys(requested))
 
 
 def _read_summary_fields(folder: Path) -> dict:
@@ -242,8 +207,10 @@ def controls_from_args(args) -> dict:
         **controls_from_frame_style_args(args),
         **controls_from_shadow_args(args),
         **controls_from_reflection_args(args),
-        "videoFormats": [] if args.no_video else list(resolve_video_formats(args.video_format)),
-        "heroFormats": list(resolve_hero_formats(args.hero_format)),
+        # Unset is each one's default and "all" is every shape; both, and a
+        # name that is not a shape, are hero_options_from_controls' to read.
+        "videoFormats": [] if args.no_video else args.video_format,
+        "heroFormats": args.hero_format,
         "videoMusic": args.video_music,
         "videoFlagBackground": args.video_flag_background,
         "nvenc": args.nvenc,
@@ -589,7 +556,8 @@ def main():
         # and to what an earlier sync has not already flagged.
         from lotstretcher.library_ops import mark_delisted
 
-        live_vins = {vin_from_url(u) for u in listing_derived_urls} - {None}
+        # The manifest's own reading of a URL's VIN, so the two sides match.
+        live_vins = {fetch_manifest.extract_vin_from_url(u) for u in listing_derived_urls} - {None}
         delisted, active = fetch_manifest.delist_candidates(
             out_root, live_vins, fetch_manifest.crawled_buckets(listing_derived_urls))
         # Pointing --sync at a narrow or filtered listing makes the rest of

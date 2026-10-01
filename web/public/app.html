@@ -316,7 +316,7 @@
     <div class="sheet-grip"></div>
     <div class="sheet-head"><h3 style="flex:1">Paste image URLs</h3></div>
     <div class="sheet-content">
-      <textarea class="field mono" id="urlInput" rows="7" spellcheck="false"
+      <textarea class="field mono" id="urlInput" rows="7" spellcheck="false" autocapitalize="off" aria-label="Image links, one per line"
         placeholder="Paste image links, one per line; they are added as you paste"></textarea>
       <p class="xs dim" style="margin-top:var(--s-3)">Fetched straight from the dealer's CDN to this device. One that refuses cross-origin reads shows as unreachable.</p>
     </div>
@@ -332,8 +332,8 @@
     <div class="sheet-grip"></div>
     <div class="sheet-head"><h3 style="flex:1">From a listing</h3></div>
     <div class="sheet-content">
-      <textarea class="field mono" id="listingUrlInput" rows="4" spellcheck="false" autocapitalize="characters"
-        placeholder=""></textarea>
+      <textarea class="field mono" id="listingUrlInput" rows="4" spellcheck="false" autocapitalize="off" aria-label="A listing link, its page, or a VIN"
+        placeholder="Paste the vehicle page address, a VIN, or the page source"></textarea>
       <div class="row wrap" style="gap:var(--s-3);margin-top:var(--s-3);align-items:center">
         <button class="btn btn-primary btn-sm" id="listingFileBtn">Load HTML</button>
         <span class="spin" id="listingBusy" hidden aria-label="Reading"></span>
@@ -376,7 +376,7 @@
     <div class="sheet-grip"></div>
     <div class="sheet-head"><h3 style="flex:1">Window sticker URL</h3></div>
     <div class="sheet-content">
-      <textarea class="field mono" id="stickerUrlInput" rows="4" spellcheck="false"
+      <textarea class="field mono" id="stickerUrlInput" rows="4" spellcheck="false" autocapitalize="off" aria-label="Window sticker PDF link"
         placeholder="Paste the sticker PDF link; it is read as you paste"></textarea>
       <p class="xs dim" style="margin-top:var(--s-3)">Fetched straight to this device and parsed here. Ford's sticker host allows it; a host that refuses cross-origin reads is reported.</p>
     </div>

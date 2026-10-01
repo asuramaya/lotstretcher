@@ -51,6 +51,23 @@ def dedup_key(url: str) -> str:
     return f"vin:{vin}" if vin else f"url:{_normalize_url(url)}"
 
 
+def vehicle_record(folder: Path) -> dict:
+    """A vehicle folder's scraped record (details.json) as a plain dict;
+    {} if unreadable. Older files nest it under "vehicle"."""
+    try:
+        data = json.loads((Path(folder) / "details.json").read_text())
+    except (OSError, ValueError):
+        return {}
+    return data.get("vehicle", data)
+
+
+def vehicle_colors(folder: Path) -> tuple[str | None, str | None]:
+    """(exterior, interior) colour names from the record, the factory name
+    first; Nones mean "measure the paint off the cutout instead"."""
+    v = vehicle_record(folder)
+    return (v.get("exterior_color_factory") or v.get("exterior_color")), v.get("interior_color")
+
+
 def _manifest_path(out_root: Path) -> Path:
     return Path(out_root) / MANIFEST_FILENAME
 

@@ -17,6 +17,7 @@ import json
 from pathlib import Path
 
 from lotstretcher import spec as _spec
+from lotstretcher.manifest import vehicle_colors as _vehicle_colors, vehicle_record  # noqa: F401 (re-exported)
 from lotstretcher.imaging import assets
 from lotstretcher.imaging.compose import compose_interiors, compose_vehicle, compose_wheel_shots
 from lotstretcher.imaging.text import (BACKDROPS, backdrop_angle, backdrop_color, backdrop_color2, frame_style, reflection_style,
@@ -60,21 +61,10 @@ def find_vehicle_folders(root: Path) -> list[Path]:
                   if p.is_dir())
 
 
-def vehicle_record(folder: Path) -> dict:
-    """The scraped Vehicle record as a plain dict; {} if unreadable."""
-    try:
-        data = json.loads((folder / "details.json").read_text())
-    except (OSError, ValueError):
-        return {}
-    return data.get("vehicle", data)
-
-
 def vehicle_colors(folder: Path) -> dict:
-    """{exterior_color, interior_color} from details.json. Nones mean
-    "measure the paint off the cutout instead"."""
-    v = vehicle_record(folder)
-    return {"exterior_color": v.get("exterior_color_factory") or v.get("exterior_color"),
-            "interior_color": v.get("interior_color")}
+    """{exterior_color, interior_color} from details.json (manifest.vehicle_colors)."""
+    exterior, interior = _vehicle_colors(folder)
+    return {"exterior_color": exterior, "interior_color": interior}
 
 
 def stock_border(options: dict) -> str | None:

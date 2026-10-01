@@ -26,9 +26,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from lotstretcher.manifest import (MAX_DELIST_FRACTION, already_fetched, crawled_buckets, dedup_key, delist_candidates,
-                                   load_manifest)
+                                   extract_vin_from_url, load_manifest)
 from lotstretcher.listing import expand_listing_url
-from lotstretcher.scrape import vin_from_url
 from lotstretcher.vehicle_pipeline import process_vehicle, HeroOptions
 from lotstretcher.imaging.interior import InteriorSubjectClassifier
 from lotstretcher.imaging.dedupe import DEFAULT_TEMPLATES_DIR, JunkFilter
@@ -325,7 +324,8 @@ def run_sync(config: dict, dry_run: bool = False, headed: bool = False,
                               f"from {result['source_photo']})")
 
     # Step 3: detect delisted vehicles
-    live_vins = {vin_from_url(u) for u in urls} - {None}
+    # The manifest's own reading of a URL's VIN, so the two sides match.
+    live_vins = {extract_vin_from_url(u) for u in urls} - {None}
     now = time.strftime("%Y-%m-%dT%H:%M:%S%z")
 
     # Scoped to the buckets this crawl covered and to what is still active

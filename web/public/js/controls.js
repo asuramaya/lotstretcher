@@ -400,7 +400,7 @@ export function renderControls(host, values, onChange, opts = {}) {
         const b = el('button', 'seg', t.label);
         b.type = 'button';
         b.setAttribute('role', 'tab');
-        b.setAttribute('aria-pressed', String(t.id === tab));
+        b.setAttribute('aria-selected', String(t.id === tab));
         b.title = t.hint || '';
         b.onclick = () => { subTab[group.id] = t.id; if (opts.onOpen) opts.onOpen(group.id, { keep: true }); else renderControls(host, values, onChange, opts); };
         seg.appendChild(b);

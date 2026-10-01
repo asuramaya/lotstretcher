@@ -35,8 +35,9 @@ Usage:
 from __future__ import annotations
 
 import csv
-import json
 from pathlib import Path
+
+from lotstretcher.manifest import vehicle_record
 
 MAX_IMAGES = 20
 
@@ -63,14 +64,6 @@ CONDITION_TO_STATE = {
 }
 
 
-def _vehicle_record(folder: Path) -> dict:
-    try:
-        data = json.loads((folder / "details.json").read_text())
-    except (OSError, ValueError):
-        return {}
-    return data.get("vehicle", data)
-
-
 def _clean_price(display_price) -> int | None:
     """display_price on disk is whatever type the dealer's own raw
     payload happened to store it as -- a bare number for this dealer, but
@@ -87,7 +80,7 @@ def vehicle_to_row(folder: Path) -> dict | None:
     """One feed row for one vehicle folder, or None if it's missing the
     two fields nothing downstream can work without (price, at least one
     photo) -- mirrors the one hard requirement every source agreed on."""
-    v = _vehicle_record(folder)
+    v = vehicle_record(folder)
     if not v:
         return None
     if v.get("delisted_at"):

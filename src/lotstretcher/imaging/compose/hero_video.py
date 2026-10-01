@@ -347,7 +347,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        audio_path: Path | None, out_path: Path, carousel_labels: list[str] | None = None,
                        gradient_colors: tuple | None = None, bpm: float = DEFAULT_BPM,
                        fps: float = DEFAULT_FPS, canvas_size: tuple[int, int] = DEFAULT_CANVAS_SIZE,
-                       loops: int | None = None, budget_mb: float = 50.0, layout: str = "conveyor", n_accents: int = 2,
+                       budget_mb: float = 50.0, layout: str = "conveyor", n_accents: int = 2,
                        bars_per_loop: int = BARS_PER_LOOP,
                        glow: bool = False, glow_color=DEFAULT_GLOW_COLOR,
                        glow_radius: int = 24, glow_intensity: float = 0.75,
@@ -369,8 +369,8 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     everything). carousel_labels is currently unused by the conveyor
     itself (kept for API compatibility / future use) since slot
     membership is now pure positional adjacency, not a diversity search.
-    loops: how many audio loops long the video runs (audio duration is
-    probed, not assumed -- see probe_duration_s()).
+    The clip is one full pass of the shots: its length follows the
+    photos, never a setting (operator ruling 2026-09-30).
 
     Returns a small report dict (duration, bitrate, timing) for logging.
     """
@@ -417,7 +417,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     # The audio used to be the clock as well as the soundtrack. Without
     # it, a bar is derived from bpm instead, so every downstream timing
     # (cut, transition, pump) is unchanged in kind -- only its source
-    # moves. `loops` still means "how many loop-lengths long", scored or not.
+    # moves.
     if audio_path is not None:
         audio_loop_s = probe_duration_s(audio_path)
     else:
@@ -497,9 +497,8 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     # has nothing new to show after that, and a run that stops there
     # can't strand a vehicle's last angles off the end (the old
     # loops-of-audio length was set by the soundtrack, which knows
-    # nothing about how many photos this vehicle has). `loops` still
-    # forces the old audio-driven length when given.
-    total_seconds = carousel_period if loops is None else audio_loop_s * loops
+    # nothing about how many photos this vehicle has).
+    total_seconds = carousel_period
 
     total_frames = round(total_seconds * fps)
     total_seconds = total_frames / fps  # snap to an exact frame count
@@ -618,9 +617,6 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                                               f"{'right' if s['pan_x_end'] > s['pan_x_start'] else 'left'}, {s['bars']} bars"
                        for i, s in enumerate(shots) if s["is_pan"]},
         "carousel_period_s": round(carousel_period, 2),
-        # Frame-rounding can leave total_seconds a hair under the
-        # period; only flag a pass that is really cut short.
-        "carousel_incomplete": carousel_period > total_seconds + 0.5 / fps,
         "audio_loop_s": round(audio_loop_s, 3),
         "bars_per_loop": bars_per_loop,
         "clock": "audio" if audio_path is not None else f"{bpm:g} bpm",

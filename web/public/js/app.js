@@ -39,15 +39,10 @@ import { textOptions, textRequest, spotlightStyle, stillOptions, clipOptions, st
 import { describesVehicle, recordFromHtml } from './pipeline/listing.js';
 import { recordFromText } from './pipeline/vin.js';
 import { LibraryView } from './library/view.js';
+import { el } from './lib/widgets.js';
 import { HttpSource, DirectorySource } from './library/source.js';
 
 const $ = (id) => document.getElementById(id);
-const el = (tag, cls, text) => {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text != null) n.textContent = text;
-  return n;
-};
 
 const state = {
   pane: 'booth',
@@ -428,15 +423,17 @@ function renderPhotos() {
     tile.appendChild(img);
 
     // The sort is a suggestion: the tag is a button that corrects it.
-    const tag = p.unreachable ? null : p.rejected ? tagOf('skipped') : p.scene ? tagOf(p.angle ? `${p.scene} · ${angleLabel(p.angle)}` : p.scene) : null;
+    const said = p.unreachable ? null : p.rejected ? 'skipped' : p.scene ? (p.angle ? `${p.scene} · ${angleLabel(p.angle)}` : p.scene) : null;
+    const tag = said ? el('button', 'tile-tag tile-tag-btn', said) : null;
     if (tag) {
-      tag.classList.add('tile-tag-btn');
+      tag.type = 'button';
+      tag.setAttribute('aria-label', `${p.name}: ${said}. Change`);
       if (p.userScene) tag.classList.add('is-user');
       tag.title = 'Wrong? Tap to change';
       tag.onclick = (e) => { e.stopPropagation(); if (!state.running) pickScene(p, tag); };
       tile.appendChild(tag);
     }
-    tile.onclick = () => openLightbox(boothItems(), state.photos.indexOf(p));
+    openable(tile, img, `Open ${p.name}`, () => openLightbox(boothItems(), state.photos.indexOf(p)));
 
     if (!state.running) {
       const x = el('button', 'tile-x', '×');
@@ -449,6 +446,17 @@ function renderPhotos() {
 }
 
 function tagOf(text) { return el('span', 'tile-tag', text); }
+
+/* A tile opens on a click anywhere on it; its picture is what a
+ * keyboard reaches and opens with Enter or Space, so the tile's own
+ * buttons (the scene tag, the ×) stay separate controls. */
+function openable(tile, pic, label, open) {
+  tile.onclick = open;
+  pic.tabIndex = 0;
+  pic.setAttribute('role', 'button');
+  pic.setAttribute('aria-label', label);
+  pic.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+}
 
 /* The angle the classifier gives, as words. */
 const ANGLE_WORDS = { front: 'Front', front_3q: 'Front \u00be', side: 'Side', rear_3q: 'Rear \u00be', rear: 'Rear', hero: 'Hero' };
@@ -555,7 +563,7 @@ function renderResults() {
     interiorHost.appendChild(tile);
   }
   const interiorItems = interiors.map((p) => canvasItem(p.interior, p.name, 'interior', () => saveInterior(p)));
-  [...interiorHost.children].forEach((tile, i) => { tile.onclick = () => openLightbox(interiorItems, i); });
+  [...interiorHost.children].forEach((tile, i) => openable(tile, tile.querySelector('img'), `Open interior ${interiors[i].name}`, () => openLightbox(interiorItems, i)));
 
   // One tile per still, grouped by shape: a row of squares, a row of
   // portraits, a row of horizontals, each tile in its own proportions,
@@ -591,7 +599,7 @@ function renderResults() {
       tile.append(pic, tagOf(angleLabel(p.angle)));
       stillItems.push(canvasItem(canvas, `${p.name} \u00b7 ${label}`, angleLabel(p.angle), () => saveOne(p, fmt)));
       const at = stillItems.length - 1;
-      tile.onclick = () => openLightbox(stillItems, at);
+      openable(tile, img, `Open ${label} still from ${p.name}`, () => openLightbox(stillItems, at));
       row.appendChild(tile);
     }
     group.append(row);
@@ -1469,7 +1477,7 @@ function readVehicle() {
   // Spec fields come from the sticker and have no form input; carry them
   // across the rebuild rather than losing them on every run.
   const carried = {};
-  for (const k of ['engine', 'transmission', 'drivetrain', 'seating']) {
+  for (const k of EXTRA_KEYS) {
     if (state.vehicle?.[k]) carried[k] = state.vehicle[k];
   }
   /* The record is scrape.Vehicle-shaped, because the copy builders are
@@ -1652,7 +1660,7 @@ async function downloadBundle() {
  * The CLI shells out to poppler for this; in the browser pdf.js supplies
  * the same positioned text. Loaded lazily, so the 1.7MB costs nothing
  * unless someone actually uses it. */
-async function importSticker(source, label) {
+async function importSticker(source) {
   const note = $('stickerNote');
   $('stickerRow').classList.remove('is-ok');
   note.textContent = 'Reading the PDF...';
@@ -1672,9 +1680,13 @@ async function importSticker(source, label) {
     };
     let filled = 0;
     // The sticker's total is the price only when the car is sold new.
+    // Taken as new on its model year alone, the condition says so too:
+    // the post copy (core copy.rs) reads only the stated condition, and
+    // would otherwise write a sticker price up as a used car's.
     if (fields.msrp && stickerPriceApplies($('f-cond').value, fields.year || $('f-year').value)) {
       fields.price = fields.msrp;
       map.price = 'f-price';
+      if (!$('f-cond').value) $('f-cond').value = 'New';
     }
     for (const [key, id] of Object.entries(map)) {
       // Never overwrite something the user typed themselves.
@@ -1684,7 +1696,7 @@ async function importSticker(source, label) {
      * optional equipment and the spec lines feed the post copy, and
      * there is nowhere on the form to put them. */
     state.sticker = parsed;
-    for (const k of ['engine', 'transmission', 'drivetrain', 'seating']) {
+    for (const k of EXTRA_KEYS) {
       if (parsed[k]) state.vehicle[k] = parsed[k];
     }
 
@@ -1773,7 +1785,7 @@ function applyVehicle(v) {
   if (v.dealer_name && !$('f-dealer').value.trim()) $('f-dealer').value = v.dealer_name;
   if (v.dealer_address && !$('f-address').value.trim()) $('f-address').value = v.dealer_address;
   readVehicle();
-  for (const k of ['engine', 'transmission', 'drivetrain']) {
+  for (const k of EXTRA_KEYS) {
     if (v[k]) state.vehicle[k] = v[k];
   }
   state.listing = v;
@@ -1790,7 +1802,7 @@ function applyVehicle(v) {
   /* A sticker link is read straight away: it carries the option list
    * and MSRP the analytics blob does not, and typed fields are never
    * overwritten by it. */
-  if (v.window_sticker_url) importSticker(v.window_sticker_url, 'the sticker');
+  if (v.window_sticker_url) importSticker(v.window_sticker_url);
   go('booth');
 }
 
@@ -1816,6 +1828,9 @@ function pickScene(p, anchor) {
     menu.appendChild(b);
   }
   anchor.parentElement.appendChild(menu);
+  // A keyboard lands on the first choice; Escape puts it back on the tag.
+  menu.querySelector('button')?.focus();
+  menu.onkeydown = (e) => { if (e.key === 'Escape') { e.stopPropagation(); menu.remove(); anchor.focus(); } };
   const away = (e) => { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('pointerdown', away, true); } };
   setTimeout(() => document.addEventListener('pointerdown', away, true), 0);
 }
@@ -1985,9 +2000,6 @@ async function init() {
     // page; the site decodes the address and the VIN on this device.
     // One box. What it holds decides what happens: an address, a VIN,
     // or the page's own source pasted in (Ctrl+U, select all, copy).
-    $('listingUrlInput').placeholder = can('scrape')
-      ? 'Paste the vehicle page address, a VIN, or the page source'
-      : 'Paste the vehicle page address, a VIN, or the page source';
     $('listingHint').textContent = can('scrape')
       ? 'Or load the page you saved from the listing.'
       : 'For the photos and the price too: on the listing press Ctrl+U, select all, copy, and paste that here; or save the page (Ctrl+S, "HTML only") and load it.';
@@ -2076,14 +2088,14 @@ async function init() {
   $('stickerInput').onchange = async (e) => {
     const f = e.target.files[0];
     e.target.value = '';
-    if (f) importSticker(await f.arrayBuffer(), f.name);
+    if (f) importSticker(await f.arrayBuffer());
   };
   const takeSticker = () => {
     const url = $('stickerUrlInput').value.trim();
     if (!url) return;
     $('stickerUrlInput').value = '';
     closeSheet('stickerSheet');
-    importSticker(url, 'the sticker');
+    importSticker(url);
   };
   $('stickerUrlGo').onclick = takeSticker;
   $('stickerUrlInput').addEventListener('paste', () => setTimeout(takeSticker, 0));

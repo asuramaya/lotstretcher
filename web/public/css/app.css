@@ -270,7 +270,8 @@
   padding: 4px var(--s-2); font-size: 10px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.tile-tag-btn { cursor: pointer; border: 0; }
+.tile-tag-btn { cursor: pointer; border: 0; font-family: inherit; }
+.tile img[role="button"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tile-tag-btn.is-user { background: var(--accent); color: #000; }
 .scene-menu {
   position: absolute; left: var(--s-2); top: 30px; z-index: 6;
@@ -623,7 +624,7 @@ body:has(.lightbox:not([hidden])) .nav { visibility: hidden; }
   min-height: 28px; padding: 0 var(--s-3); border-radius: var(--r-full);
   font-size: var(--t-xs); font-weight: 650;
 }
-.seg[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--sh-1); }
+.seg[aria-pressed="true"], .seg[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--sh-1); }
 #previewScrub { width: 100%; max-width: 360px; accent-color: var(--accent); }
 #previewScrub[hidden] { display: none; }
 /* The shapes: tap the chip to see one, tick it to make it. */
@@ -790,7 +791,7 @@ body:has(.lightbox:not([hidden])) .nav { visibility: hidden; }
    never as words inside one pill. */
 .seg-wrap { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; background: transparent; border-radius: 0; }
 .seg-wrap .seg { background: var(--surface-3); min-height: 32px; padding: 0 var(--s-4); }
-.seg-wrap .seg[aria-pressed="true"] { background: var(--ink); color: var(--bg); box-shadow: none; }
+.seg-wrap .seg[aria-pressed="true"], .seg-wrap .seg[aria-selected="true"] { background: var(--ink); color: var(--bg); box-shadow: none; }
 .seg-wrap .seg:hover:not([aria-pressed="true"]) { color: var(--ink); }
 /* A lever row keeps its words: the widget takes what it needs and the
    label wraps rather than clips; a slider with an Auto button stacks

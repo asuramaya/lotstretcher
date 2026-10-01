@@ -66,9 +66,6 @@ def main():
                                          "Must be a seamless loop of a whole number of bars -- the manifest entry's "
                                          "`bars` is what the beat math divides by.")
     parser.add_argument("--border", help="Border name or tag (default: first available)")
-    parser.add_argument("--loops", type=int, default=None,
-                         help="Force the length to N audio-loop lengths. Default is one full pass of the "
-                              "vehicle's shot library, however long that takes.")
     parser.add_argument("--format", default=DEFAULT_VIDEO_FORMAT,
                          choices=[*VIDEO_FORMATS, "all"],
                          help="Frame shape. " + "; ".join(
@@ -174,7 +171,6 @@ def render_one(fmt, args, vehicle_folder, border_path, background_video, gradien
         bpm=args.bpm or DEFAULT_BPM,
         out_path=out_path,
         canvas_size=spec["canvas"],
-        loops=args.loops,
         budget_mb=args.budget_mb if args.budget_mb is not None else spec["budget_mb"],
         glow=args.glow,
         glow_color=args.glow_color,
@@ -209,9 +205,6 @@ def render_one(fmt, args, vehicle_folder, border_path, background_video, gradien
     print(f"  shot order: {', '.join(report['shot_order'])}")
     for name, how in report["pan_shots"].items():
         print(f"  pan: {name} -- {how}")
-    if report["carousel_incomplete"]:
-        print(f"  NOTE: conveyor period ({report['carousel_period_s']}s) exceeds the video length "
-              f"({report['duration_s']}s) -- not every shot gets shown; raise --loops.")
     audio_note = f" + {128}kbps audio" if report["clock"] == "audio" else " (silent)"
     print(f"  bitrate: {report['bitrate_kbps']}kbps video{audio_note}")
 

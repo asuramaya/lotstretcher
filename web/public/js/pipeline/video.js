@@ -139,9 +139,10 @@ function drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, p
 export function prepareClip(cutouts, {
   width = specGet('canvas', 'default')[0], height = specGet('canvas', 'default')[1], seed = 'lotstretcher', angles = null,
   exterior = null, interior = null, generic = false, spotlight = true,
-  backdrop = null,            // the generated backdrop's kind: a sweep is drawn once and held like a photo
+  backdrop = null,            // the generated backdrop's kind: any but the paint's is drawn once and held like a photo
   backdropColor = null,       // #rrggbb: the coloured backdrops' first stop, rather than the paint's
   backdropColor2 = null,      // the second stop
+  backdropAngle = null,       // degrees: a held linear backdrop's direction, else seeded
   text = null,                // lib/text.js::textRequest; the still's text on every frame
   background = null,          // a canvas: a stock or the user's photo behind the clip, cover-fitted
   frameStyle = null,          // lib/text.js::frameStyle: a frame the core draws at the clip's size
@@ -164,11 +165,15 @@ export function prepareClip(cutouts, {
     const data = ctxOf(cut, { willReadFrequently: true }).getImageData(0, 0, cut.width, cut.height);
     return { width: cut.width, height: cut.height, data, dim: 1.0 };
   });
-  // A sweep is one backdrop frame for the whole clip, its paint read
-  // off the first shot when the names give none; held like a photo.
-  if (!bgData && (backdrop === 'sweep' || backdrop === 'radial' || backdrop === 'horizon')) {
-    const kind = { ...core.call({ op: 'backdrop_spec', kind: backdrop, seed: `${seed}:${backdrop}`, exterior: generic ? null : exterior, interior: generic ? null : interior, color: backdropColor || null, color2: backdropColor2 || null }),
-      sample: shots[0] ? { $image: 0 } : null };
+  // Every generated backdrop but the paint's is one frame for the whole
+  // clip, its paint read off the first shot when the names give none,
+  // and held like a photo, as the CLI's vehicle_pipeline holds it; the
+  // paint's gradient turns. A picture kind without its picture is the
+  // paint's (core backdrop_spec).
+  const held = bgData ? null : core.call({ op: 'backdrop_spec', kind: generic ? 'generic' : (backdrop || 'vehicle'), seed: `${seed}:${backdrop}`,
+    exterior: generic ? null : exterior, interior: generic ? null : interior, color: backdropColor || null, color2: backdropColor2 || null, angle: backdropAngle ?? null });
+  if (held && held.kind !== 'vehicle') {
+    const kind = { ...held, sample: shots[0] ? { $image: 0 } : null };
     bgData = core.toImageData(core.call({ op: 'render_frame', width, height, background: kind, cars: [], rgba: true }, shots[0] ? [shots[0].data] : []));
   }
   // The text is planned once inside the canvas (its paint colour read
@@ -289,9 +294,10 @@ export async function renderHeroVideoHere(cutouts, {
   exterior = null,
   interior = null,
   generic = false,
-  backdrop = null,            // the generated backdrop's kind; a sweep is one held frame
+  backdrop = null,            // the generated backdrop's kind; any but the paint's is one held frame
   backdropColor = null,
   backdropColor2 = null,
+  backdropAngle = null,
   spotlight = true,
   // The glow halo behind each car, as the CLI's --glow-* flags set it.
   // Memoized per scaled car inside the core, so it costs one blur per
@@ -357,7 +363,7 @@ export async function renderHeroVideoHere(cutouts, {
       : new Promise((resolve) => { drained = resolve; })
   );
 
-  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, backdrop, backdropColor, backdropColor2, spotlight, text, background, frameStyle, vehicle, push, crossfade });
+  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, backdrop, backdropColor, backdropColor2, backdropAngle, spotlight, text, background, frameStyle, vehicle, push, crossfade });
   const { shots, palette, plan } = prepared;
   const duration = prepared.duration;
 

@@ -100,7 +100,7 @@ export function stillOptions(o) {
   };
 }
 export function clipOptions(o) {
-  const { borderStyle, borderFit, marginFrac, backdropAngle, ...rest } = stillOptions(o);
+  const { borderStyle, borderFit, marginFrac, ...rest } = stillOptions(o);
   return { ...rest, frameStyle: borderStyle, push: numOrNull(o.videoPush), crossfade: numOrNull(o.videoCrossfade), fps: numOrNull(o.videoFps) ?? undefined };
 }
 

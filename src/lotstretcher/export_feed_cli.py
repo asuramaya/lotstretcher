@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 from lotstretcher.export_feed import build_rows, write_csv
-from lotstretcher.recompose_cli import find_vehicle_folders, vehicle_record
+from lotstretcher.library_ops import find_vehicle_folders, vehicle_record
 
 
 def main():

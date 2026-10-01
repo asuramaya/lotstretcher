@@ -19,11 +19,11 @@ wrong marker would silently skip exactly those.
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
 from lotstretcher.facebook_post import build_facebook_post
+from lotstretcher.manifest import vehicle_record
 from lotstretcher.scrape import Vehicle
 from lotstretcher.social_post import build_instagram_caption, build_threads_post
 
@@ -44,11 +44,9 @@ def load_vehicle(folder: Path) -> Vehicle | None:
     """The scraped record back into a Vehicle. Unknown keys are dropped
     rather than raising: details.json also carries derived audit fields
     (_facebook_post_notes) and may predate a field being added."""
-    try:
-        raw = json.loads((folder / "details.json").read_text())
-    except (OSError, ValueError):
+    raw = vehicle_record(folder)
+    if not raw:
         return None
-    raw = raw.get("vehicle", raw)
     fields = set(Vehicle.__dataclass_fields__)
     return Vehicle(**{k: val for k, val in raw.items() if k in fields})
 

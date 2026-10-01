@@ -34,8 +34,7 @@ from lotstretcher.imaging.text import (add_glow_args, add_backdrop_arg, add_fram
 # The rebuild itself lives in library_ops so the server's
 # POST /library/.../recompose runs the identical path.
 from lotstretcher.looks import add_look_arg, apply_look
-from lotstretcher.library_ops import (find_vehicle_folders, recompose_folder,  # noqa: F401
-                                      resolve_recompose_options, vehicle_colors, vehicle_record)
+from lotstretcher.library_ops import find_vehicle_folders, recompose_folder
 
 
 def resolve_asset_arg(category: str, value: str | None, default_name: str | None = None) -> Path:

@@ -136,15 +136,8 @@ def vehicle_gradient_colors(exterior: str | None, interior: str | None,
 
 
 def colors_from_details(vehicle_folder) -> tuple[str | None, str | None]:
-    """(exterior, interior) color names from a vehicle folder's
-    details.json. Shared by the still and video composers so "where do
-    the colors come from" has one answer. Missing/unreadable yields
-    (None, None), which vehicle_gradient_colors() handles by measuring
-    the paint off a cutout instead."""
-    import json
-    try:
-        data = json.loads((Path(vehicle_folder) / "details.json").read_text())
-    except (OSError, ValueError):
-        return None, None
-    v = data.get("vehicle", data)
-    return (v.get("exterior_color_factory") or v.get("exterior_color")), v.get("interior_color")
+    """(exterior, interior) colour names from a vehicle folder's record
+    (manifest.vehicle_colors), shared by the still and video composers;
+    (None, None) has vehicle_gradient_colors() measure the paint instead."""
+    from lotstretcher.manifest import vehicle_colors
+    return vehicle_colors(vehicle_folder)

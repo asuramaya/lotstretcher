@@ -362,7 +362,7 @@ export class Preview {
     const background = o.backdrop === 'custom' ? o.customBackground || null
       : o.backdrop === 'asset' && o.background ? imageNow('backgrounds', o.background, () => this.update()) : null;
     const style = frameStyle(o);
-    const key = JSON.stringify([width, height, seed, o.backdrop, o.backdropColor, o.backdropColor2, spotlightStyle(o), subject.exterior, subject.interior, cutouts.length, text,
+    const key = JSON.stringify([width, height, seed, o.backdrop, o.backdropColor, o.backdropColor2, o.backdropAngle, spotlightStyle(o), subject.exterior, subject.interior, cutouts.length, text,
       background ? `${o.backdrop}:${o.background || o.customBackground?.name || ''}` : null, style, o.videoPush, o.videoCrossfade]);
     if (key !== this.clipKey) {
       this.clip = prepareClip(cutouts, {

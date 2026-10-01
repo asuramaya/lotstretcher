@@ -12,16 +12,11 @@
 
 import { get } from '../spec.js';
 import { DirectorySource } from './source.js';
+import { el } from '../lib/widgets.js';
 
 /* Cards per page of the library grid. */
 const PAGE = 24;
 
-const el = (tag, cls, text) => {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text != null) n.textContent = text;
-  return n;
-};
 
 function money(v) {
   if (v === null || v === undefined || v === '') return null;
