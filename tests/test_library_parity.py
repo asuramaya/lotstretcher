@@ -30,7 +30,7 @@ def test_pipeline_writes_the_spec_names(name):
 def test_post_files_are_named_by_the_spec():
     """The post files take their names from the spec on both surfaces."""
     assert '_spec.get("library", "bundle", "posts")' in PIPELINE
-    assert "bundle.posts[platform]" in (REPO / "web" / "public" / "js" / "app.js").read_text()
+    assert "bundle.posts[platform]" in (REPO / "web" / "public" / "js" / "lib" / "bundle.js").read_text()
 
 
 def test_video_names_follow_the_pipeline_rule():

@@ -12,13 +12,13 @@ import json
 import pytest
 
 from lotstretcher import vehicle_pipeline
-from lotstretcher.scrape import DEALERINSPIRE_VAR_MARKER
+from lotstretcher.scrape import JAZEL_VAR_MARKER
 
 VIN = "1FTVW1EL0PWG12345"
 
 
 def page_with(payload: dict) -> str:
-    return f"<html><script>{DEALERINSPIRE_VAR_MARKER}{json.dumps({'vdp_gtm_payload': payload})};</script></html>"
+    return f"<html><script>{JAZEL_VAR_MARKER}{json.dumps({'vdp_gtm_payload': payload})};</script></html>"
 
 
 @pytest.fixture

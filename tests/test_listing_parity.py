@@ -8,7 +8,7 @@ the last schema.org Car node, capped the description and treated an
 empty list as present). tests/fixtures/listing-reference.json holds
 what the Python normalize_vehicle returned before its body was deleted,
 for the six real pages in scrape_fixtures/, a synthetic page shaped
-like a real DealerInspire blob with the traps the rules exist for ("0"
+like a real Jazel blob with the traps the rules exist for ("0"
 MPG meaning unrated, badges in conditions_array, a price of 0, HTML and
 entities in the description, resize URLs to upsize), and sixty mutations
 of it. This test holds the Python host and the wasm build under node to
@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 
 from lotstretcher import core
-from lotstretcher.scrape import DEALERINSPIRE_VAR_MARKER, extract_balanced_json, normalize_vehicle
+from lotstretcher.scrape import JAZEL_VAR_MARKER, extract_balanced_json, normalize_vehicle
 
 pytestmark = pytest.mark.skipif(not core.available(), reason=f"core not built: {core.why_unavailable()}")
 
@@ -83,15 +83,15 @@ def test_wasm_matches():
 def test_analytics_global_matches_the_marker():
     """scrape.py's registry finds the blob by its assignment text; the
     core's own reader scans for the same text, from the spec."""
-    assert DEALERINSPIRE_VAR_MARKER.strip().rstrip("=").strip() == SPEC["listing"]["analyticsGlobal"]
-    assert SPEC["listing"]["analyticsMarker"] == DEALERINSPIRE_VAR_MARKER
+    assert JAZEL_VAR_MARKER.strip().rstrip("=").strip() == SPEC["listing"]["analyticsGlobal"]
+    assert SPEC["listing"]["analyticsMarker"] == JAZEL_VAR_MARKER
 
 
 def test_braces_and_quotes_inside_strings_do_not_end_the_blob():
     blob = {"vdp_gtm_payload": {"vin": "1FTEW1EP0PKD71397", "dealerDescription": "a } in \"quotes\" {"},
             "other": {"brace": "}"}}
     html = f"<script>f(jzlAnalyticsObject = {json.dumps(blob)});</script>"
-    assert extract_balanced_json(html, DEALERINSPIRE_VAR_MARKER) == blob
+    assert extract_balanced_json(html, JAZEL_VAR_MARKER) == blob
     assert extract_balanced_json(html, "nothing") is None
 
 

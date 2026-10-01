@@ -2178,10 +2178,9 @@
   "listing": {
     "_": [
       "How a dealer's vehicle page is read (core/src/listing.rs, the CLI's scrape.normalize_vehicle and the app's",
-      "saved-page reader both call it): the analytics blob DealerInspire embeds at analyticsMarker, and every",
+      "saved-page reader both call it): the analytics blob Jazel (FordDirect's dealer platform) embeds at analyticsMarker, and every",
       "/resize/WxH/ segment of a photo address pointed at photoSize."
     ],
-    "cms": "dealerinspire",
     "analyticsGlobal": "jzlAnalyticsObject",
     "analyticsMarker": "jzlAnalyticsObject = ",
     "photoSize": "2048x2048",

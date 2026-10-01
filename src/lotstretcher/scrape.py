@@ -40,7 +40,7 @@ USER_AGENT = (
 
 # The vehicle blob is embedded as the default-parameter value of a JS
 # function call: `jzlGa4AttachListenersToForms(jzlAnalyticsObject = {...})`.
-DEALERINSPIRE_VAR_MARKER = "jzlAnalyticsObject = "
+JAZEL_VAR_MARKER = "jzlAnalyticsObject = "
 
 
 # --------------------------------------------------------------------------
@@ -132,7 +132,7 @@ def register_extractor(name: str, marker: str, validator: callable) -> None:
     """Register a CMS-specific extractor for the analytics blob.
 
     Args:
-        name: Human-readable CMS name (e.g. "dealerinspire").
+        name: Human-readable CMS name (e.g. "jazel").
         marker: The JS variable marker string to search for in the HTML.
         validator: A callable(raw_dict) -> bool that returns True if the
                    extracted JSON looks like a real vehicle blob for this CMS.
@@ -140,12 +140,12 @@ def register_extractor(name: str, marker: str, validator: callable) -> None:
     _EXTRACTORS.append((name, marker, validator))
 
 
-def _dealerinspire_validator(data: dict) -> bool:
-    """DealerInspire sites embed a blob with a vdp_gtm_payload key."""
+def _jazel_validator(data: dict) -> bool:
+    """Jazel sites (FordDirect's dealer platform) embed a blob with a vdp_gtm_payload key."""
     return bool(data and "vdp_gtm_payload" in data)
 
 
-register_extractor("dealerinspire", DEALERINSPIRE_VAR_MARKER, _dealerinspire_validator)
+register_extractor("jazel", JAZEL_VAR_MARKER, _jazel_validator)
 
 
 def extract_analytics_object(html: str) -> tuple[dict | None, str | None]:
@@ -153,7 +153,7 @@ def extract_analytics_object(html: str) -> tuple[dict | None, str | None]:
 
     Returns:
         (data, cms_name) where data is the parsed JSON dict and cms_name is
-        the name of the extractor that matched (e.g. "dealerinspire").
+        the name of the extractor that matched (e.g. "jazel").
         (None, None) if no extractor matched.
     """
     for name, marker, validator in _EXTRACTORS:

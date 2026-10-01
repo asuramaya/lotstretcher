@@ -1,0 +1,74 @@
+/* The lightbox: one image at full size, and the next.
+ * Items are {src, name, tag, cors, save}: `src` a URL or a function
+ * making one (a result's canvas is encoded only when looked at), `save`
+ * an action for the Save button. The booth's photos and the run's
+ * stills and interiors all open here. */
+
+import { canvasToBlob } from './imageio.js';
+
+const $ = (id) => document.getElementById(id);
+let lightboxItems = [];
+let lightboxAt = -1;
+const made = new Set();   // object URLs this box made, revoked on close
+export function canvasItem(canvas, name, tag, save, quality = 0.92) {
+  let url = null;
+  return {
+    name, tag, save,
+    // Encoded again once the box has closed and revoked the last one.
+    src: async () => { if (!made.has(url)) { url = URL.createObjectURL(await canvasToBlob(canvas, 'image/jpeg', quality)); made.add(url); } return url; },
+  };
+}
+export function openLightbox(items, i) {
+  if (!items.length) return;
+  lightboxItems = items;
+  lightboxAt = Math.max(0, Math.min(i, items.length - 1));
+  $('lightbox').hidden = false;
+  showLightbox();
+}
+async function showLightbox() {
+  const at = lightboxAt;
+  const item = lightboxItems[at];
+  if (!item) { closeLightbox(); return; }
+  const img = $('lightboxImg');
+  if (item.cors) img.crossOrigin = 'anonymous'; else img.removeAttribute('crossorigin');
+  const src = typeof item.src === 'function' ? await item.src() : item.src;
+  if (at !== lightboxAt) return;   // stepped on while encoding
+  img.src = src;
+  img.alt = item.name;
+  $('lightboxCap').textContent = `${at + 1} of ${lightboxItems.length} · ${item.name}${item.tag ? ` · ${item.tag}` : ''}`;
+  $('lightboxSave').hidden = !item.save;
+  $('lightboxSave').onclick = (e) => { e.stopPropagation(); item.save?.(); };
+  $('lightboxPrev').disabled = at === 0;
+  $('lightboxNext').disabled = at === lightboxItems.length - 1;
+}
+function stepLightbox(d) { if ($('lightbox').hidden) return; lightboxAt = Math.max(0, Math.min(lightboxAt + d, lightboxItems.length - 1)); showLightbox(); }
+function closeLightbox() {
+  $('lightbox').hidden = true;
+  $('lightboxImg').removeAttribute('src');
+  for (const u of made) URL.revokeObjectURL(u);
+  made.clear();
+  lightboxItems = [];
+}
+
+/* Close, step, swipe and keys; once, at start-up. */
+export function wireLightbox() {
+  $('lightboxClose').onclick = closeLightbox;
+  $('lightboxPrev').onclick = (e) => { e.stopPropagation(); stepLightbox(-1); };
+  $('lightboxNext').onclick = (e) => { e.stopPropagation(); stepLightbox(1); };
+  $('lightbox').onclick = (e) => { if (e.target === $('lightbox')) closeLightbox(); };
+  window.addEventListener('keydown', (e) => {
+    if ($('lightbox').hidden) return;
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') stepLightbox(-1);
+    else if (e.key === 'ArrowRight') stepLightbox(1);
+  });
+  // A swipe on the photo steps it.
+  let touchX = null;
+  $('lightbox').addEventListener('touchstart', (e) => { touchX = e.touches[0]?.clientX ?? null; }, { passive: true });
+  $('lightbox').addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const dx = (e.changedTouches[0]?.clientX ?? touchX) - touchX;
+    touchX = null;
+    if (Math.abs(dx) > 40) stepLightbox(dx < 0 ? 1 : -1);
+  });
+}

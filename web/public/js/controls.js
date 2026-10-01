@@ -16,7 +16,7 @@
 import { get } from './spec.js';
 import { can, isSelfHosted } from './host.js';
 import { assets } from './lib/delegate.js';
-import { el, buildToggle, buildSelect, buildText, buildColor, buildRange, buildSegment, buildPlace, buildDots, buildFile, pickImage, formatValue } from './lib/widgets.js';
+import { el, buildToggle, buildSelect, buildText, buildColor, buildRange, buildSegment, buildPlace, buildDots, buildFile, pickImage } from './lib/widgets.js';
 
 
 /* Why a choice cannot be taken on this host, or null. */

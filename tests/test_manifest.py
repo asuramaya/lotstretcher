@@ -44,7 +44,7 @@ def _write_manifest(tmp_path: Path, data: dict = SAMPLE_MANIFEST) -> None:
 
 
 def test_extract_vin_from_url() -> None:
-    """VIN extracted from a standard DealerInspire VDP URL."""
+    """VIN extracted from a standard Jazel VDP URL."""
     url = "https://www.tomballford.com/vehicle/1HGCY1F24SA123456/used/"
     assert fetch_manifest.extract_vin_from_url(url) == "1HGCY1F24SA123456"
 

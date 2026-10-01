@@ -1,11 +1,11 @@
 """Tests for the pluggable CMS extractor registry."""
 
 
-def test_dealerinspire_extractor_registered() -> None:
-    """The DealerInspire extractor is registered by default."""
+def test_jazel_extractor_registered() -> None:
+    """The Jazel extractor is registered by default."""
     from lotstretcher.scrape import _EXTRACTORS
     names = [name for name, _, _ in _EXTRACTORS]
-    assert "dealerinspire" in names
+    assert "jazel" in names
 
 
 def test_extract_balanced_json_valid() -> None:
@@ -33,13 +33,13 @@ def test_extract_balanced_json_no_match() -> None:
 
 def test_extract_analytics_object_returns_cms_name() -> None:
     """extract_analytics_object returns (data, cms_name)."""
-    from lotstretcher.scrape import extract_analytics_object, DEALERINSPIRE_VAR_MARKER
-    # Craft a fake blob that matches DealerInspire"s validator
+    from lotstretcher.scrape import extract_analytics_object, JAZEL_VAR_MARKER
+    # Craft a fake blob that matches the Jazel validator
     payload = '{"vdp_gtm_payload": {"vin": "1HGCY1F24SA123456"}}'
-    html = "<script>" + DEALERINSPIRE_VAR_MARKER + payload + "</script>"
+    html = "<script>" + JAZEL_VAR_MARKER + payload + "</script>"
     data, cms = extract_analytics_object(html)
     assert data is not None
-    assert cms == "dealerinspire"
+    assert cms == "jazel"
     assert data["vdp_gtm_payload"]["vin"] == "1HGCY1F24SA123456"
 
 

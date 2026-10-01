@@ -1,5 +1,5 @@
 //! A vehicle page's HTML read into the record the CLI's `Vehicle`
-//! dataclass holds: the analytics blob DealerInspire embeds, the
+//! dataclass holds: the analytics blob Jazel (FordDirect's dealer platform) embeds, the
 //! schema.org Car node, and the Carfax widget's link.
 //!
 //! This replaces scrape.py::normalize_vehicle's body and the browser's
@@ -7,7 +7,7 @@
 //! (a headless browser, past the bot challenge) and keeps its extractor
 //! registry, since a registered CMS's validator is Python; it hands the
 //! blob it found in. The browser reads a saved page and lets the core find
-//! the DealerInspire blob itself. Python's truthiness is the rule
+//! the Jazel blob itself. Python's truthiness is the rule
 //! throughout (an empty list or object counts as missing), since the
 //! CLI's scraper is what the library was built with.
 
@@ -20,7 +20,7 @@ pub struct ListingRequest {
     #[serde(default)]
     pub url: Option<String>,
     /// The analytics object a host already extracted (the CLI's registry).
-    /// Absent: the core looks for the DealerInspire marker itself.
+    /// Absent: the core looks for the Jazel marker itself.
     #[serde(default)]
     pub analytics: Option<Value>,
     #[serde(default = "yes")]

@@ -21,25 +21,28 @@ import { renderHeroVideoHere, videoThreads, setVideoThreads, isSupported as vide
 import { CoreWorker } from './pipeline/core-worker.js';
 import { buildAllPosts, vehicleTitle, PLATFORMS } from './pipeline/copy.js';
 import { decode, makeCanvas, ctxOf, canvasToBlob, pixelsOf } from './lib/imageio.js';
-import { makeZip, deliver } from './lib/zip.js';
 import * as OPTS from './options.js';
 import {
   loadOptions, saveOptions, resetOptions, initFromSpec, serialisable,
 } from './options.js';
 import { store, blobToCanvas } from './lib/store.js';
 import { loadSpec, get as specGet } from './spec.js';
-import { loadCore, version as coreVersion, enhanceInterior, renderFrame as coreRenderFrame, drawFrame as coreDrawFrame, call as coreCall, toImageData as coreToImageData, vehicleGradientColors as coreVehicleGradientColors } from './core.js';
+import { loadCore, version as coreVersion, enhanceInterior, call as coreCall } from './core.js';
 import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { Preview } from './preview.js';
 import { loadCapabilities, can, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlsToFlags, affectsPreview, renderLooks, openSubTab } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
-import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
-import { textOptions, textRequest, spotlightStyle, stillOptions, clipOptions, stockFrame } from './lib/text.js';
+import { image as libraryImage } from './lib/library.js';
+import { textOptions, textRequest, stillOptions, clipOptions, stockFrame } from './lib/text.js';
 import { describesVehicle, recordFromHtml } from './pipeline/listing.js';
 import { recordFromText } from './pipeline/vin.js';
 import { LibraryView } from './library/view.js';
 import { el } from './lib/widgets.js';
+import { canvasItem, openLightbox, wireLightbox } from './lib/lightbox.js';
+import { cropRows, sameShotAs, walkaround, clipOrder } from './pipeline/shots.js';
+import { saveOne, saveInterior, downloadBundle } from './lib/bundle.js';
+import { studioArt } from './lib/studio-art.js';
 import { HttpSource, DirectorySource } from './library/source.js';
 
 const $ = (id) => document.getElementById(id);
@@ -62,6 +65,7 @@ const state = {
 
 let nextId = 1;
 let preview = null;
+const { swatchArt, lookArt } = studioArt(() => preview?.subject?.() || null);
 
 /* The rail is a checklist: a step is ticked once it has what it needs.
  * Called from every render that can change that. */
@@ -562,7 +566,7 @@ function renderResults() {
     tile.append(pic, tagOf('interior'));
     interiorHost.appendChild(tile);
   }
-  const interiorItems = interiors.map((p) => canvasItem(p.interior, p.name, 'interior', () => saveInterior(p)));
+  const interiorItems = interiors.map((p) => canvasItem(p.interior, p.name, 'interior', () => saveInterior(state, p)));
   [...interiorHost.children].forEach((tile, i) => openable(tile, tile.querySelector('img'), `Open interior ${interiors[i].name}`, () => openLightbox(interiorItems, i)));
 
   // One tile per still, grouped by shape: a row of squares, a row of
@@ -597,7 +601,7 @@ function renderResults() {
       img.alt = `${label} still from ${p.name}`;
       pic.append(img);
       tile.append(pic, tagOf(angleLabel(p.angle)));
-      stillItems.push(canvasItem(canvas, `${p.name} \u00b7 ${label}`, angleLabel(p.angle), () => saveOne(p, fmt)));
+      stillItems.push(canvasItem(canvas, `${p.name} \u00b7 ${label}`, angleLabel(p.angle), () => saveOne(state, p, fmt)));
       const at = stillItems.length - 1;
       openable(tile, img, `Open ${label} still from ${p.name}`, () => openLightbox(stillItems, at));
       row.appendChild(tile);
@@ -771,131 +775,6 @@ function removeUpload(key, canvas) {
   }
   commitOptions();
   preview?.update();
-}
-
-/* What a swatch shows. Gradients are drawn by the core from the
- * preview's own subject (its paint, or the sample's), stock assets come
- * as thumbnails from the server, the user's images are themselves, and
- * glow colours are the spec's. */
-const artCache = new Map();
-function swatchArt(control, choice, values, image) {
-  // Tiles live in the DOM, so these are document canvases, never the
-  // offscreen ones the pipeline uses.
-  const tileCanvas = () => { const c = document.createElement('canvas'); c.width = 96; c.height = 96; return c; };
-  if (choice.file) {
-    if (!image) return null;
-    const c = tileCanvas();
-    const k = Math.max(96 / image.width, 96 / image.height);
-    c.getContext('2d').drawImage(image, (96 - image.width * k) / 2, (96 - image.height * k) / 2, image.width * k, image.height * k);
-    return c;
-  }
-  if (control.key === 'glowColor') {
-    const rgb = specGet('glow', 'colors')[choice.value];
-    return rgb ? { color: `rgb(${rgb.join(',')})` } : null;
-  }
-  if (control.key === 'frameColor' || /^(text|title|subtitle|badge)Color$/.test(control.key)) {
-    // White, black, or the paint as the core would read it off the subject.
-    if (choice.value === 'white') return { color: '#ffffff' };
-    if (choice.value === 'black') return { color: '#101010' };
-    if (choice.value === 'paint') {
-      const subject = preview?.subject?.();
-      try {
-        const sample = subject?.cutout ? ctxOf(subject.cutout, { willReadFrequently: true }).getImageData(0, 0, subject.cutout.width, subject.cutout.height) : null;
-        const [start] = coreVehicleGradientColors(subject?.exterior || null, null, sample);
-        return { color: `rgb(${start.join(',')})` };
-      } catch { return { color: '#a0a0aa' }; }
-    }
-    return null;
-  }
-  if (choice.asset) {
-    return libraryEntry(choice.expand || 'backgrounds', choice.asset)?.thumb || null;
-  }
-  if (control.key === 'border' && choice.value === 'line') {
-    // The core draws the tile as it draws the frame, in the chosen colour.
-    const key = JSON.stringify(['line', values.frameColor, values.frameWeight]);
-    if (!artCache.has(key)) {
-      try {
-        const subject = preview?.subject?.();
-        const rgba = coreDrawFrame(96, 96, { kind: 'line', color: values.frameColor || 'white', weight: Math.max(0.02, Number(values.frameWeight) || 0.008) * 2.5 },
-          subject?.vehicle || {}, subject ? ctxOf(subject.cutout, { willReadFrequently: true }).getImageData(0, 0, subject.cutout.width, subject.cutout.height) : null);
-        const c = tileCanvas();
-        const ctx = c.getContext('2d');
-        ctx.fillStyle = '#2a2d33'; ctx.fillRect(0, 0, 96, 96);
-        ctx.putImageData(new ImageData(new Uint8ClampedArray(rgba.data), 96, 96), 0, 0);
-        artCache.set(key, c);
-      } catch (e) { console.warn('frame tile failed', e); artCache.set(key, null); }
-    }
-    const c = artCache.get(key);
-    if (!c) return null;
-    const copy = tileCanvas(); copy.getContext('2d').drawImage(c, 0, 0); return copy;
-  }
-  if (control.key === 'backdrop' && ['vehicle', 'generic', 'sweep', 'radial', 'horizon'].includes(choice.value)) {
-    const subject = preview?.subject?.();
-    // Hue bands and the sweep show the chosen colour once it is theirs.
-    const color = choice.value !== 'vehicle' && values.backdrop === choice.value ? values.backdropColor || null : null;
-    const key = JSON.stringify([choice.value, subject?.exterior, subject?.interior, subject?.seed, color]);
-    if (!artCache.has(key)) {
-      try {
-        const bg = choice.value === 'generic'
-          ? { kind: 'generic', seed: `${subject?.seed || 'sample'}:preview`, color }
-          : { kind: choice.value, seed: `${subject?.seed || 'sample'}:preview`, exterior: subject?.exterior || null, interior: subject?.interior || null, color };
-        // The sweep reads the paint off the subject when the names give none.
-        const sample = subject?.cutout ? ctxOf(subject.cutout, { willReadFrequently: true }).getImageData(0, 0, subject.cutout.width, subject.cutout.height) : null;
-        const held = ['sweep', 'radial', 'horizon'].includes(choice.value);
-        if (held && sample) bg.sample = { $image: 0 };
-        const out = held
-          ? coreToImageData(coreCall({ op: 'render_frame', width: 96, height: 96, background: bg, cars: [], rgba: true }, sample ? [sample] : []))
-          : coreRenderFrame([], 96, 96, bg);
-        const c = tileCanvas();
-        c.getContext('2d').putImageData(out, 0, 0);
-        artCache.set(key, c);
-      } catch (e) { console.warn('swatch art failed', e); artCache.set(key, null); }
-    }
-    const c = artCache.get(key);
-    if (!c) return null;
-    const copy = tileCanvas();
-    copy.getContext('2d').drawImage(c, 0, 0);
-    return copy;
-  }
-  return null;
-}
-
-/* A look's tile: the preview's subject composed by the core with the
- * look's values over the current ones, small. Cached per look and
- * subject; the values a look does not set (the backdrop, say) are the
- * current ones, so the tiles change with them. */
-const lookArtCache = new Map();
-function lookArt(lk, values) {
-  const subject = preview?.subject?.();
-  if (!subject) return null;
-  const v = { ...values, ...lk.values };
-  const key = JSON.stringify([lk.id, subject.seed, v.backdrop, v.backdropColor, v.backdropColor2, v.backdropAngle, spotlightStyle(v), v.glow, v.glowColor, v.glowRadius, v.glowIntensity,
-    v.shadow, v.shadowStrength, v.reflection, v.reflectionStrength, v.border, v.frameColor, v.frameWeight]);
-  if (!lookArtCache.has(key)) {
-    try {
-      const size = 128;
-      // The run's look, drawn small: a wider margin, a tighter glow and
-      // a heavier line, so they read at tile size.
-      const look = stillOptions(v);
-      const composed = composeHero(subject.cutout, {
-        ...look,
-        width: size, height: size, seed: `${subject.seed}:look`,
-        exterior: subject.exterior, interior: subject.interior,
-        marginFrac: 0.08,
-        glowRadius: Math.max(2, Math.round((v.glowRadius || 24) / 6)),
-        border: null, borderStyle: look.borderStyle ? { ...look.borderStyle, weight: Math.max(0.02, Number(v.frameWeight) || 0.008) * 2 } : null,
-        text: null,
-      });
-      const c = document.createElement('canvas'); c.width = size; c.height = size;
-      c.getContext('2d').drawImage(composed, 0, 0);
-      lookArtCache.set(key, c);
-    } catch (e) { console.warn('look tile failed', e); lookArtCache.set(key, null); }
-  }
-  const c = lookArtCache.get(key);
-  if (!c) return null;
-  const copy = document.createElement('canvas'); copy.width = copy.height = c.width;
-  copy.getContext('2d').drawImage(c, 0, 0);
-  return copy;
 }
 
 /* The host panel.
@@ -1515,139 +1394,6 @@ function readVehicle() {
   saveDealer();
 }
 
-/* `source` with `top` and `bottom` rows cut off, or `source` itself when
- * there is nothing to cut. */
-function cropRows(source, top, bottom) {
-  const h = source.height - top - bottom;
-  if ((!top && !bottom) || h < 1) return source;
-  const c = makeCanvas(source.width, h);
-  ctxOf(c).drawImage(source, 0, top, source.width, h, 0, 0, source.width, h);
-  return c;
-}
-
-/* A cutout's same-shot signature, from the core (select.rs::
- * shot_signature, the one the CLI's photos.py checks): a difference hash
- * of the cut-out car over mid grey, and its aspect. Kept on the canvas,
- * since every later shot is checked against it. */
-function cutoutSignature(canvas) {
-  if (!canvas) return null;
-  if (!canvas.signature) {
-    const pixels = ctxOf(canvas, { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height);
-    canvas.signature = coreCall({ op: 'shot_signature', image: { $image: 0 } }, [pixels]);
-  }
-  return canvas.signature;
-}
-/* The earlier photo this cutout repeats (a re-save, a resized copy), by
- * the spec's select.sameShot bounds, or null. */
-function sameShotAs(canvas, earlier) {
-  const signature = cutoutSignature(canvas);
-  const kept = earlier.filter((q) => q.cutout);
-  if (!signature || !kept.length) return null;
-  const i = coreCall({ op: 'same_shot', signature, earlier: kept.map((q) => cutoutSignature(q.cutout)) });
-  return i === null ? null : kept[i];
-}
-
-/* The run's shots in the CLI's order, decided by the core
- * (core/src/select.rs, the code imaging/select.py calls): the lead,
- * which is the bundle's hero.png and the post's cover, is the most
- * confident shot of the first angle in the spec's heroPriority; the rest
- * walk round the car front to rear, each angle's most confident first;
- * angles the order does not know come last. */
-const shotsOf = (photos) => photos.map((p, i) => ({ name: String(i), angle: p.angle || '', confidence: p.angleConf || 0 }));
-function walkaround(photos) {
-  return coreCall({ op: 'select_shots', mode: 'walkaround', shots: shotsOf(photos) }).shots.map((s) => photos[Number(s.name)]);
-}
-
-/* The clip's order, as the CLI's vehicle_pipeline picks it (core
- * select.rs): every shot by walkaround, reseated so the first frame is
- * the conveyor still and the last hands back to it. */
-function clipOrder(photos) {
-  const shots = shotsOf(photos);
-  const pairs = coreCall({ op: 'select_shots', mode: 'carousel_all', shots }).shots.map((s) => ({ name: s.name, angle: s.angle }));
-  return coreCall({ op: 'select_shots', mode: 'conveyor_start', shots, pairs }).shots.map((s) => photos[Number(s.name)]);
-}
-
-function bundleName() {
-  const t = vehicleTitle(state.vehicle).replace(/\s+/g, '-');
-  const id = state.vehicle.stock_number || state.vehicle.vin;
-  return [t || 'lotstretcher', id].filter(Boolean).join('-');
-}
-
-async function saveOne(photo, fmt = null) {
-  const canvas = (fmt && photo.heroes?.[fmt]) || photo.hero;
-  const blob = await canvasToBlob(canvas, 'image/png');
-  const shape = fmt && fmt !== 'square' ? `-${fmt}` : '';
-  await deliver(blob, `${bundleName()}-${photo.angle || 'hero'}${shape}.png`);
-}
-
-async function saveInterior(photo) {
-  const blob = await canvasToBlob(photo.interior, 'image/jpeg', interiorQuality());
-  await deliver(blob, `${bundleName()}-interior-${photo.name.replace(/\.[^.]+$/, '')}.jpg`);
-}
-
-// The bundle's names and the interiors' JPEG quality, as the CLI's
-// (spec library.bundle).
-const bundleSpec = () => specGet('library').bundle;
-const interiorQuality = () => bundleSpec().interiorQuality / 100;
-
-async function downloadBundle() {
-  const btn = $('downloadBtn');
-  const label = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Packaging…';
-  try {
-    const files = [];
-    const bundle = bundleSpec();
-    const heroes = walkaround(state.photos.filter((p) => p.hero));
-
-    for (let i = 0; i < heroes.length; i++) {
-      const p = heroes[i];
-      const tag = p.angle ? `${String(i + 1).padStart(2, '0')}-${p.angle}` : String(i + 1).padStart(2, '0');
-      for (const [fmt, canvas] of Object.entries(p.heroes || { square: p.hero })) {
-        const blob = await canvasToBlob(canvas, 'image/png');
-        files.push({ name: `${fmt}/${tag}.png`, data: blob });
-        // The lead shot of each format also lands at the top level, the
-        // same shape the CLI's bundle uses.
-        if (i === 0) {
-          const top = { square: bundle.hero, portrait: bundle.heroPortrait, horizontal: bundle.heroHorizontal }[fmt];
-          files.push({ name: top || `hero-${fmt}.png`, data: blob });
-        }
-      }
-      if (p.cutout) {
-        files.push({ name: `cutout/${tag}.png`, data: await canvasToBlob(p.cutout, 'image/png') });
-      }
-    }
-
-    const interiors = state.photos.filter((p) => p.interior);
-    for (let i = 0; i < interiors.length; i++) {
-      files.push({
-        name: `${bundle.interior}/${String(i + 1).padStart(2, '0')}.jpg`,
-        data: await canvasToBlob(interiors[i].interior, 'image/jpeg', interiorQuality()),
-      });
-    }
-
-    for (const [fmt, blob] of Object.entries(state.videos || {})) {
-      files.push({ name: bundle.videos[fmt] || `hero-video-${fmt}.mp4`, data: blob });
-    }
-
-    if (state.posts) {
-      for (const [platform, text] of Object.entries(state.posts)) {
-        files.push({ name: bundle.posts[platform] || `${platform}.txt`, data: text });
-      }
-    }
-    files.push({ name: 'vehicle.json', data: JSON.stringify(state.vehicle, null, 2) });
-
-    const zip = await makeZip(files);
-    const how = await deliver(zip, `${bundleName()}.zip`);
-    btn.textContent = how === 'shared' ? 'Shared' : 'Saved';
-  } catch (e) {
-    btn.textContent = 'Failed';
-    console.error(e);
-  } finally {
-    setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 1800);
-  }
-}
-
 /* ---------- window sticker import ------------------------------------
  * The CLI shells out to poppler for this; in the browser pdf.js supplies
  * the same positioned text. Loaded lazily, so the 1.7MB costs nothing
@@ -1834,58 +1580,12 @@ function setStatus(id, text, tone = '') {
   s.className = `head-status${tone ? ` is-${tone}` : ''}`;
 }
 
-/* ---------- lightbox: one image at full size, and the next ----------
- * Items are {src, name, tag, cors, save}: `src` a URL or a function
- * making one (a result's canvas is encoded only when looked at), `save`
- * an action for the Save button. The booth's photos and the run's
- * stills and interiors all open here. */
-let lightboxItems = [];
-let lightboxAt = -1;
-const made = new Set();   // object URLs this box made, revoked on close
+/* The booth's photos as lightbox items. */
 function boothItems() {
   return state.photos.map((p) => ({
     src: p.thumb, name: p.name, cors: !!p.url,
     tag: p.rejected ? 'skipped' : p.scene ? (p.angle ? `${p.scene} · ${angleLabel(p.angle)}` : p.scene) : '',
   }));
-}
-function canvasItem(canvas, name, tag, save, quality = 0.92) {
-  let url = null;
-  return {
-    name, tag, save,
-    // Encoded again once the box has closed and revoked the last one.
-    src: async () => { if (!made.has(url)) { url = URL.createObjectURL(await canvasToBlob(canvas, 'image/jpeg', quality)); made.add(url); } return url; },
-  };
-}
-function openLightbox(items, i) {
-  if (!items.length) return;
-  lightboxItems = items;
-  lightboxAt = Math.max(0, Math.min(i, items.length - 1));
-  $('lightbox').hidden = false;
-  showLightbox();
-}
-async function showLightbox() {
-  const at = lightboxAt;
-  const item = lightboxItems[at];
-  if (!item) { closeLightbox(); return; }
-  const img = $('lightboxImg');
-  if (item.cors) img.crossOrigin = 'anonymous'; else img.removeAttribute('crossorigin');
-  const src = typeof item.src === 'function' ? await item.src() : item.src;
-  if (at !== lightboxAt) return;   // stepped on while encoding
-  img.src = src;
-  img.alt = item.name;
-  $('lightboxCap').textContent = `${at + 1} of ${lightboxItems.length} · ${item.name}${item.tag ? ` · ${item.tag}` : ''}`;
-  $('lightboxSave').hidden = !item.save;
-  $('lightboxSave').onclick = (e) => { e.stopPropagation(); item.save?.(); };
-  $('lightboxPrev').disabled = at === 0;
-  $('lightboxNext').disabled = at === lightboxItems.length - 1;
-}
-function stepLightbox(d) { if ($('lightbox').hidden) return; lightboxAt = Math.max(0, Math.min(lightboxAt + d, lightboxItems.length - 1)); showLightbox(); }
-function closeLightbox() {
-  $('lightbox').hidden = true;
-  $('lightboxImg').removeAttribute('src');
-  for (const u of made) URL.revokeObjectURL(u);
-  made.clear();
-  lightboxItems = [];
 }
 
 /* The first visit downloads the models (56MB) while the person is still
@@ -2149,25 +1849,7 @@ async function init() {
   }
 
   $('clearBtn').onclick = clearPhotos;
-  $('lightboxClose').onclick = closeLightbox;
-  $('lightboxPrev').onclick = (e) => { e.stopPropagation(); stepLightbox(-1); };
-  $('lightboxNext').onclick = (e) => { e.stopPropagation(); stepLightbox(1); };
-  $('lightbox').onclick = (e) => { if (e.target === $('lightbox')) closeLightbox(); };
-  window.addEventListener('keydown', (e) => {
-    if ($('lightbox').hidden) return;
-    if (e.key === 'Escape') closeLightbox();
-    else if (e.key === 'ArrowLeft') stepLightbox(-1);
-    else if (e.key === 'ArrowRight') stepLightbox(1);
-  });
-  // A swipe on the photo steps it.
-  let touchX = null;
-  $('lightbox').addEventListener('touchstart', (e) => { touchX = e.touches[0]?.clientX ?? null; }, { passive: true });
-  $('lightbox').addEventListener('touchend', (e) => {
-    if (touchX === null) return;
-    const dx = (e.changedTouches[0]?.clientX ?? touchX) - touchX;
-    touchX = null;
-    if (Math.abs(dx) > 40) stepLightbox(dx < 0 ? 1 : -1);
-  });
+  wireLightbox();
 
   // The VIN barcode, through the camera; a photo of it where there is
   // no camera stream. Either way the VIN takes the listing route, so
@@ -2208,7 +1890,7 @@ async function init() {
     } catch (err) { setStatus('vehicleStatus', String(err.message || err), 'err'); }
   };
   $('runBtn').onclick = run;
-  $('downloadBtn').onclick = downloadBundle;
+  $('downloadBtn').onclick = () => downloadBundle(state);
 
   // Only offer the camera where one plausibly exists. A desktop with a
   // webcam would give a useless still, and `capture` is ignored there

@@ -21,7 +21,7 @@ Given a vehicle detail page (VDP) URL, the self-hosted pipeline:
 4. **Generates** ready-to-copy-paste posts for Facebook Marketplace, Instagram, and Threads — each tailored to platform character limits, hashtag strategies, and preview rules.
 5. **Tracks** processed inventory via a persistent manifest, making daily syncs fast and incremental.
 
-lotstretcher was originally built for [Tomball Ford](https://www.tomballford.com) (a DealerInspire CMS site) and is designed to work plug-and-play with any DealerInspire-powered dealership, and with any other dealership CMS via a pluggable extractor architecture.
+lotstretcher was originally built for [Tomball Ford](https://www.tomballford.com) (a Jazel site, FordDirect's dealer platform) and is designed to work plug-and-play with any Jazel-powered dealership, and with any other dealership CMS via a pluggable extractor architecture.
 
 ---
 
@@ -878,7 +878,7 @@ catches anything printed before that log file exists, e.g. a missing `.venv`.)
 
 ## Adding Support for Other Dealership CMS Platforms
 
-`lotstretcher` comes out-of-the-box with support for **DealerInspire** CMS platforms. Adding support for another CMS (e.g. Dealer.com, DealerOn, CDK Global) is simple thanks to the pluggable extractor registry in `scrape.py`.
+`lotstretcher` comes out-of-the-box with support for **Jazel** (FordDirect) dealer sites. Adding support for another CMS (e.g. Dealer.com, DealerOn, CDK Global) is simple thanks to the pluggable extractor registry in `scrape.py`.
 
 ### How CMS Extraction Works
 Most automotive CMS platforms embed vehicle data directly into a JavaScript variable on the page for Google Tag Manager / analytics. `lotstretcher` searches the rendered HTML for this marker and extracts the balanced JSON object.
@@ -933,7 +933,7 @@ register_extractor("custom_cms", CUSTOM_CMS_MARKER, custom_cms_validator)
 
 ### 5. Carfax Link Missing on Used Vehicles
 - **Symptom**: `Vehicle.carfax_url` is `None` even though a badge is present on the website.
-- **Explanation**: DealerInspire sites populate the Carfax link via an asynchronous client-side API call into the `.carfax-logo` element. `fetch_rendered_html()` waits up to 12 seconds for this element when "used" is in the URL. If the network is exceptionally slow, the link may not have loaded before timeout.
+- **Explanation**: Jazel sites populate the Carfax link via an asynchronous client-side API call into the `.carfax-logo` element. `fetch_rendered_html()` waits up to 12 seconds for this element when "used" is in the URL. If the network is exceptionally slow, the link may not have loaded before timeout.
 
 ---
 
