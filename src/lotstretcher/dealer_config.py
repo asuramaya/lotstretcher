@@ -30,7 +30,6 @@ class DealerConfig:
     """All the per-dealer values the pipeline needs."""
 
     # -- Post boilerplate ---------------------------------------------------
-    dealer_name: str = "Tomball Ford"
     dealer_greeting: str = "Ask for Hector Chavez!"
     dealer_address: str = "22702 TX-249, Tomball, TX 77375"
 
@@ -39,22 +38,7 @@ class DealerConfig:
         "Tomball", "TomballTX", "Houston", "HoustonCars", "TomballFord",
     ])
 
-    # -- Which manufacturer "more details" resolvers are available -----------
-    # Keyed by lowercased make name.  Each entry is a module path:
-    #   "package.module:function"
-    # The function receives the Vehicle and returns a URL or None.
-    manufacturer_links: dict[str, str] = field(default_factory=lambda: {
-        "ford": "facebook_post:ford_qr_link",
-    })
-
-    # -- Border / branding --------------------------------------------------
-    # Default border tag used when composing hero images.
-    default_border_tag: str = "dealer-frame"
-
     # -- Dealer website (for the scraper) -----------------------------------
-    # Used as hints; the scraper is CMS-agnostic and reads the page's
-    # embedded data regardless of domain.
-    dealer_domain: Optional[str] = None
     inventory_url: Optional[str] = None
 
     # Named inventory scopes (e.g. "used" / "new" / "all", but the names
@@ -70,9 +54,6 @@ class DealerConfig:
     # does anything; resolve_scope_url() below refuses loudly if it's not
     # configured rather than guessing.
     inventory_urls: dict[str, str] = field(default_factory=dict)
-
-    # -- Recraft API key (AI background generation) -------------------------
-    recraft_api_key: Optional[str] = None
 
 
 def _env(key: str, default: str | None = None) -> str | None:
@@ -106,26 +87,19 @@ def load(path: str | Path | None = None) -> DealerConfig:
     src = Path(path) if path else _json_path()
     if src and src.exists():
         raw = json.loads(src.read_text(encoding="utf-8"))
-        for key in ("dealer_name", "dealer_greeting", "dealer_address",
-                     "default_border_tag", "dealer_domain", "inventory_url"):
+        for key in ("dealer_greeting", "dealer_address", "inventory_url"):
             if raw.get(key):
                 setattr(cfg, key, raw[key])
         if raw.get("city_tags"):
             cfg.city_tags = raw["city_tags"]
-        if raw.get("manufacturer_links"):
-            cfg.manufacturer_links.update(raw["manufacturer_links"])
         if raw.get("inventory_urls"):
             cfg.inventory_urls.update(raw["inventory_urls"])
 
     # Layer 2: env vars
     for env_key, attr in [
-        ("DEALER_NAME", "dealer_name"),
         ("DEALER_GREETING", "dealer_greeting"),
         ("DEALER_ADDRESS", "dealer_address"),
-        ("DEFAULT_BORDER_TAG", "default_border_tag"),
-        ("DEALER_DOMAIN", "dealer_domain"),
         ("INVENTORY_URL", "inventory_url"),
-        ("RECRAFT_API_KEY", "recraft_api_key"),
     ]:
         val = _env(env_key)
         if val is not None:

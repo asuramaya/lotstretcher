@@ -137,7 +137,7 @@ function drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, p
  * shots, the conveyor plan from the core. Split out so the Look pane's
  * preview can draw one frame of the very clip a run would render. */
 export function prepareClip(cutouts, {
-  width = 1254, height = 1254, seed = 'lotstretcher', angles = null,
+  width = specGet('canvas', 'default')[0], height = specGet('canvas', 'default')[1], seed = 'lotstretcher', angles = null,
   exterior = null, interior = null, generic = false, spotlight = true,
   backdrop = null,            // the generated backdrop's kind: a sweep is drawn once and held like a photo
   backdropColor = null,       // #rrggbb: the coloured backdrops' first stop, rather than the paint's
@@ -281,8 +281,8 @@ export function videoThreads() { return lastThreads; }
 export function setVideoThreads(n) { lastThreads = n; }
 
 export async function renderHeroVideoHere(cutouts, {
-  width = 1254,
-  height = 1254,
+  width = specGet('canvas', 'default')[0],
+  height = specGet('canvas', 'default')[1],
   fps = defaultFps(),
   seed = 'lotstretcher',
   angles = null,              // per-cutout angle labels; only the spec's pan angle pans

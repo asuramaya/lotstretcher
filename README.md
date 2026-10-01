@@ -326,11 +326,9 @@ Create a `dealer-config.json` file for your dealership:
 
 ```json
 {
-  "dealer_name": "Apex Ford of Austin",
   "dealer_greeting": "Ask for Alex in Sales!",
   "dealer_address": "4500 Motorway Blvd, Austin, TX 78701",
   "city_tags": ["Austin", "AustinCars", "ATXAuto", "TexasTrucks"],
-  "default_border_tag": "dealer-frame",
   "inventory_url": "https://www.apexfordaustin.com/inventory/all-vehicles/",
   "inventory_urls": {
     "used": "https://www.apexfordaustin.com/inventory/used-vehicles/",
@@ -340,7 +338,7 @@ Create a `dealer-config.json` file for your dealership:
 }
 ```
 
-`inventory_urls` is what `inventory-sync --scope <name>` reads, so you can run `inventory-sync --scope used` instead of retyping your dealer's full URL every time. Scope names are entirely up to you -- they're just keys in this object, not a fixed set lotstretcher understands. There's deliberately no built-in default for these (unlike `dealer_name`/`dealer_greeting`/etc): an unconfigured `--scope` fails loudly rather than silently pointing at whichever dealership this tool happened to ship with example values for.
+`inventory_urls` is what `inventory-sync --scope <name>` reads, so you can run `inventory-sync --scope used` instead of retyping your dealer's full URL every time. Scope names are entirely up to you -- they're just keys in this object, not a fixed set lotstretcher understands. There's deliberately no built-in default for these (unlike `dealer_greeting`/`dealer_address`/etc): an unconfigured `--scope` fails loudly rather than silently pointing at whichever dealership this tool happened to ship with example values for.
 
 Pass it on any command with `--dealer-config` or by setting the `LOTSTRETCHER_CONFIG` environment variable:
 
@@ -355,11 +353,9 @@ You can also configure lotstretcher directly using environment variables (ideal 
 | Environment Variable | Description | Default |
 |---|---|---|
 | `LOTSTRETCHER_CONFIG` | Path to a JSON configuration file | `None` |
-| `LOTSTRETCHER_DEALER_NAME` | Dealership name used in copy & captions | `Tomball Ford` |
 | `LOTSTRETCHER_DEALER_GREETING` | Greeting line in Facebook / social posts | `Ask for us at the front desk!` |
 | `LOTSTRETCHER_DEALER_ADDRESS` | Physical address included in listing copy | `22702 TX-249, Tomball, TX 77375` |
 | `LOTSTRETCHER_CITY_TAGS` | Comma-separated hashtags for social copy | `Tomball,TomballCars,Houston,HoustonCars` |
-| `LOTSTRETCHER_DEFAULT_BORDER_TAG`| Default border tag from `assets/manifest.json` | `tomball-dealer-frame` |
 | `LOTSTRETCHER_INVENTORY_URL` | Full inventory search URL for batch crawling | `None` |
 | `LOTSTRETCHER_INVENTORY_URL_<SCOPE>` | Per-scope inventory URL, e.g. `LOTSTRETCHER_INVENTORY_URL_USED` for `--scope used` | `None` |
 | `LOTSTRETCHER_LISTINGS_ROOT` | Default output directory for listings | `./listings` or current directory |
@@ -387,7 +383,7 @@ lotstretcher composites vehicle cutouts onto branded border frames. These assets
      "tags": ["dealer-frame", "custom"]
    }
    ```
-4. Use `--border "My Dealership Frame"` or set `"default_border_tag": "custom"` in your configuration.
+4. Use `--border "My Dealership Frame"` (or pick it in the Studio's Frame tool).
 
 ### Generated backgrounds, by category
 
@@ -865,7 +861,7 @@ export LOTSTRETCHER_REPO_DIR="/path/to/lotstretcher"                      # defa
 export LOTSTRETCHER_SCOPE="used"                                  # a name from dealer-config.json's inventory_urls
 # ...or set LOTSTRETCHER_INVENTORY_URL directly to skip scope resolution entirely
 export LOTSTRETCHER_LISTINGS_ROOT="/path/to/listings"
-export LOTSTRETCHER_CONFIG="/path/to/dealer-config.json"           # dealer_name/greeting/inventory_urls/etc
+export LOTSTRETCHER_CONFIG="/path/to/dealer-config.json"           # greeting/address/city_tags/inventory_urls
 export LOTSTRETCHER_LOG_DIR="/path/to/sync-logs"                   # default: ~/.local/sync-logs
 ```
 

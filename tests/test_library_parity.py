@@ -22,12 +22,15 @@ COMPOSE_SOURCES = "\n".join(p.read_text() for p in (REPO / "src" / "lotstretcher
     + "\n".join(p.read_text() for p in (REPO / "src" / "lotstretcher" / "imaging" / "compose").glob("*.py"))
 
 
-@pytest.mark.parametrize("name", [
-    SPEC["details"], SPEC["images"], SPEC["bundle"]["dir"],
-    *SPEC["bundle"]["posts"].values(),
-])
+@pytest.mark.parametrize("name", [SPEC["details"], SPEC["images"], SPEC["bundle"]["dir"]])
 def test_pipeline_writes_the_spec_names(name):
     assert f'"{name}"' in PIPELINE, f"vehicle_pipeline.py never writes {name!r}"
+
+
+def test_post_files_are_named_by_the_spec():
+    """The post files take their names from the spec on both surfaces."""
+    assert '_spec.get("library", "bundle", "posts")' in PIPELINE
+    assert "bundle.posts[platform]" in (REPO / "web" / "public" / "js" / "app.js").read_text()
 
 
 def test_video_names_follow_the_pipeline_rule():

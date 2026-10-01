@@ -25,7 +25,8 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
-from lotstretcher.manifest import already_fetched, dedup_key, find_delisted, load_manifest
+from lotstretcher.manifest import (MAX_DELIST_FRACTION, already_fetched, crawled_buckets, dedup_key, delist_candidates,
+                                   load_manifest)
 from lotstretcher.listing import expand_listing_url
 from lotstretcher.scrape import vin_from_url
 from lotstretcher.vehicle_pipeline import process_vehicle, HeroOptions
@@ -62,16 +63,6 @@ UPSCALE_MODEL = "swinir"
 
 import requests
 from playwright.sync_api import sync_playwright
-
-# Sanity threshold on the delist step, ported from cli.py's --sync guard
-# (decision this exists to prevent -- confirmed real incident, not
-# hypothetical: a listing crawl that silently returned fewer vehicles than
-# the site actually has -- a network blip, a stale/cached page, or a
-# not-yet-fixed count-parsing bug -- makes every vehicle outside that
-# short crawl look "delisted" even though it's still live. A dealer's real
-# inventory almost never turns over this fast in one sync cycle, so a
-# spike this size means the crawl was the problem, not the inventory.
-MAX_DELIST_FRACTION = 0.3
 
 
 def load_config(args) -> dict:
@@ -131,30 +122,6 @@ def load_config(args) -> dict:
                        os.environ.get("LOTSTRETCHER_LISTINGS_ROOT",
                                       str(Path.home() / "Documents" / "listings")))
     return config
-
-
-def _already_delisted_folders(out_root: Path, manifest: dict, crawled_buckets: set) -> set:
-    """Folder keys (from manifest entries in the given buckets) whose own
-    details.json already carries delisted_at from a prior cycle -- see the
-    mass-delist fraction comment above for why this matters. Reads every
-    crawled-bucket manifest entry's details.json once -- hundreds, not
-    thousands, and a small JSON read each; a few hundred ms even on a
-    slow disk, not worth restricting to just the "missing" subset for."""
-    out = set()
-    for k, e in manifest.items():
-        if not k.startswith("vin:"):
-            continue
-        folder = e.get("folder", "")
-        if folder.split("/", 1)[0] not in crawled_buckets:
-            continue
-        try:
-            data = json.loads((out_root / folder / "details.json").read_text())
-        except (OSError, ValueError):
-            continue
-        v = data.get("vehicle", data)
-        if v.get("delisted_at"):
-            out.add(folder)
-    return out
 
 
 def run_sync(config: dict, dry_run: bool = False, headed: bool = False,
@@ -361,39 +328,9 @@ def run_sync(config: dict, dry_run: bool = False, headed: bool = False,
     live_vins = {vin_from_url(u) for u in urls} - {None}
     now = time.strftime("%Y-%m-%dT%H:%M:%S%z")
 
-    # Scope the comparison to whichever bucket(s) this crawl actually covered.
-    # A used-only (or new-only) inventory URL only ever sees VINs from that
-    # bucket, so comparing against the WHOLE manifest makes every vehicle in
-    # the other bucket look "delisted" -- that's what tripped the mass-delist
-    # valve on the first used-only run (651 new-bucket entries flagged missing
-    # out of 861 total). Bucket is derived from the folder prefix manifest
-    # entries are already keyed with ("used/..." / "new/..."), matching the
-    # same "used" if "used" in url.lower() else "new" rule condition_bucket()
-    # falls back to for bare listing URLs (scrape.py).
-    crawled_buckets = {("used" if "used" in u.lower() else "new") for u in urls}
-    manifest = load_manifest(out_root)
-
-    # Both sides of the mass-delist fraction below have to be "still-active
-    # inventory" only, not the whole manifest's history. A vehicle already
-    # flagged delisted_at in an EARLIER cycle stays in the manifest forever
-    # (nothing ever prunes it) and was still missing from live_vins THIS
-    # cycle too, since it's still not listed -- so without this filter it
-    # re-counts as "missing" every single run, permanently inflating the
-    # fraction as more of the lot naturally turns over across cycles.
-    # Confirmed real: after one cycle correctly flagged 70 real sold
-    # vehicles, the very next cycle (zero new churn) still measured
-    # 68/217 = 31% and tripped the valve on nothing but its own prior work.
-    already_delisted = _already_delisted_folders(out_root, manifest, crawled_buckets)
-    manifest_vin_count = sum(
-        1 for k, e in manifest.items()
-        if k.startswith("vin:") and e.get("folder", "").split("/", 1)[0] in crawled_buckets
-        and e.get("folder") not in already_delisted
-    )
-    delisted = [
-        e for e in find_delisted(out_root, live_vins)
-        if e.get("folder", "").split("/", 1)[0] in crawled_buckets
-        and e.get("folder") not in already_delisted
-    ]
+    # Scoped to the buckets this crawl covered and to what is still active
+    # (manifest.delist_candidates says why each matters).
+    delisted, manifest_vin_count = delist_candidates(out_root, live_vins, crawled_buckets(urls))
     if not listing_complete and not allow_mass_delist:
         print("  !! Listing crawl was PARTIAL -- refusing to delist anything this cycle. "
               "A partial crawl can't tell 'no longer listed' apart from 'just wasn't on the "

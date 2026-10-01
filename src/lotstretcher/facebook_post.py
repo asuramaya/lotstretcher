@@ -51,15 +51,6 @@ def posts_for(v: Vehicle) -> dict:
     })
 
 
-def ford_qr_link(vin: str) -> str:
-    """Ford's own short-link redirector for the QR code printed on every
-    Monroney window sticker -- format confirmed from a real scanned QR
-    (http://v.ford.com/?v=<VIN>&c=1&s=1). c=1&s=1 look like fixed template
-    constants, not per-VIN, based on the one real sample seen; treat this
-    as a best-effort bonus link for the post, not verified data."""
-    return f"http://v.ford.com/?v={vin}&c=1&s=1"
-
-
 def build_facebook_post(v: Vehicle) -> str:
     return posts_for(v)["facebook"]
 

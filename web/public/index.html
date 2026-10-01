@@ -34,7 +34,7 @@
 
 <header class="appbar" id="appbar">
   <div class="shell appbar-row">
-    <div class="brand-slot" id="brandSlot"></div>
+    <div class="brand-slot" id="brandSlot"><a class="brand" href="#top">lot<span class="brand-tail">stretcher</span></a></div>
     <div class="appbar-actions">
       <a class="btn btn-ghost btn-sm hide-sm" href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener">Source</a>
       <a class="btn btn-primary btn-sm" data-go-surface="app" href="app.html">Open app</a>
@@ -42,8 +42,9 @@
   </div>
 </header>
 
+<main>
 <!-- ================= hero ================= -->
-<header class="hero" id="top">
+<section class="hero" id="top">
   <div class="shell hero-grid">
     <div class="hero-copy">
       <h1>Lot photos into listing photos.</h1>
@@ -72,7 +73,7 @@
       </span>
     </figure>
   </div>
-</header>
+</section>
 
 
 <!-- ================= looks ================= -->
@@ -119,8 +120,9 @@
 
 
 <!-- ================= steps ================= -->
-<section class="block">
+<section class="block" aria-labelledby="stepsHead">
   <div class="shell">
+    <h2 class="sr-only" id="stepsHead">How it works</h2>
     <div class="steps">
       <div><span class="step-n">1</span><h3>Drop in the photos</h3><p class="muted">A folder, the camera, pasted links, a VIN.</p></div>
       <div><span class="step-n">2</span><h3>It sorts, cuts and composes</h3><p class="muted">Exteriors cut out. Interiors kept whole.</p></div>
@@ -158,6 +160,7 @@
     <p class="xs dim sub">A whole lot on a schedule? <a href="https://github.com/asuramaya/lotstretcher" target="_blank" rel="noopener">Run the server</a>.</p>
   </div>
 </section>
+</main>
 
 <footer>
   <div class="shell row wrap foot-row">

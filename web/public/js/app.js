@@ -15,7 +15,7 @@ import {
 } from './config.js';
 import { initRuntime, runtime, loadModel, totalBytes, prefetchModels, modelsCached } from './pipeline/runtime.js';
 import { classifyScene, classifyAngle, loadLabels } from './pipeline/classify.js';
-import { matte, applyMatte, gateCutout } from './pipeline/matte.js';
+import { matte, cutOut } from './pipeline/matte.js';
 import { composeHero } from './pipeline/compose.js';
 import { renderHeroVideoHere, videoThreads, setVideoThreads, isSupported as videoSupported } from './pipeline/video.js';
 import { CoreWorker } from './pipeline/core-worker.js';
@@ -35,7 +35,7 @@ import { loadCapabilities, can, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlsToFlags, affectsPreview, renderLooks, openSubTab } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { entry as libraryEntry, image as libraryImage } from './lib/library.js';
-import { textOptions, textRequest, frameStyle, shadowStyle, reflectionStyle, spotlightStyle } from './lib/text.js';
+import { textOptions, textRequest, spotlightStyle, stillOptions, clipOptions, stockFrame } from './lib/text.js';
 import { describesVehicle, recordFromHtml } from './pipeline/listing.js';
 import { recordFromText } from './pipeline/vin.js';
 import { LibraryView } from './library/view.js';
@@ -200,7 +200,7 @@ async function restoreSession(s) {
   renderPhotos();
   $('resumeBox').innerHTML = '';
   go(s.pane === 'options' ? 'options' : 'booth');
-  if (prepared && preview?.getUserCutout?.()) { preview.current = 'yours'; preview.renderSamples(); preview.update(); preview.onSubjectChange?.(); }
+  if (prepared && preview?.getUserCutout?.()) preview.subjectChanged();
 }
 async function offerResume() {
   // Nothing is saved (or wiped) until the saved car has been looked at.
@@ -248,7 +248,6 @@ function go(pane) {
     // The stage draws the vehicle's own record: its title, its paint.
     readVehicle();
     // The preview is drawn only while it can be seen.
-    preview?.renderSamples();
     preview?.update();
     // On a phone the panel is a card: the first visit opens the Looks
     // card so the Studio never reads as an empty stage with a bar.
@@ -489,7 +488,31 @@ function topProgress(value, text = null) {
   $('appStatus').textContent = typeof value === 'number' && value > 0 && topText ? `${topText} ${Math.round(value * 100)}%` : topText;
 }
 
+/* What the results grid shows, encoded once: a still or interior as a
+ * small JPEG, a clip as its blob, each by its object URL while it is on
+ * screen and revoked when a later run replaces it. renderResults runs
+ * once per composed photo, so encoding afresh each time re-did every
+ * thumbnail and left every URL behind. */
+const shownUrls = new Map();   // canvas or blob -> Promise<object URL>
+function shownUrl(key, side) {
+  if (!shownUrls.has(key)) {
+    shownUrls.set(key, key instanceof Blob ? Promise.resolve(URL.createObjectURL(key)) : (async () => {
+      const k = side / Math.max(key.width, key.height);
+      const c = makeCanvas(Math.round(key.width * k), Math.round(key.height * k));
+      ctxOf(c).drawImage(key, 0, 0, c.width, c.height);
+      return URL.createObjectURL(await canvasToBlob(c, 'image/jpeg', 0.85));
+    })());
+  }
+  return shownUrls.get(key);
+}
+function forgetShown(live) {
+  for (const [key, url] of shownUrls) {
+    if (!live.has(key)) { url.then((u) => URL.revokeObjectURL(u)).catch(() => {}); shownUrls.delete(key); }
+  }
+}
+
 function renderResults() {
+  const live = new Set();
   const heroes = walkaround(state.photos.filter((p) => p.hero));
   const interiors = state.photos.filter((p) => p.interior);
 
@@ -523,11 +546,9 @@ function renderResults() {
     const tile = el('div', 'tile is-captioned');
     const pic = el('div', 'tile-pic');
     pic.style.aspectRatio = `${p.interior.width} / ${p.interior.height}`;
-    const scale = 420 / Math.max(p.interior.width, p.interior.height);
-    const c = makeCanvas(Math.round(p.interior.width * scale), Math.round(p.interior.height * scale));
-    ctxOf(c).drawImage(p.interior, 0, 0, c.width, c.height);
     const img = el('img');
-    canvasToBlob(c, 'image/jpeg', 0.85).then((b) => { img.src = URL.createObjectURL(b); });
+    live.add(p.interior);
+    shownUrl(p.interior, 420).then((u) => { img.src = u; });
     img.alt = `Interior photo ${p.name}, corrected`;
     pic.append(img);
     tile.append(pic, tagOf('interior'));
@@ -562,11 +583,9 @@ function renderResults() {
       const tile = el('div', 'tile is-captioned');
       const pic = el('div', 'tile-pic');
       pic.style.aspectRatio = `${canvas.width} / ${canvas.height}`;
-      const k = 640 / Math.max(canvas.width, canvas.height);
-      const c = makeCanvas(Math.round(canvas.width * k), Math.round(canvas.height * k));
-      ctxOf(c).drawImage(canvas, 0, 0, c.width, c.height);
       const img = el('img');
-      canvasToBlob(c, 'image/jpeg', 0.85).then((b) => { img.src = URL.createObjectURL(b); });
+      live.add(canvas);
+      shownUrl(canvas, 640).then((u) => { img.src = u; });
       img.alt = `${label} still from ${p.name}`;
       pic.append(img);
       tile.append(pic, tagOf(angleLabel(p.angle)));
@@ -587,7 +606,8 @@ function renderResults() {
     for (const [fmt, blob] of clips) {
       const wrap = el('figure', 'clip');
       const v = document.createElement('video');
-      v.src = URL.createObjectURL(blob);
+      live.add(blob);
+      shownUrl(blob).then((u) => { v.src = u; });
       v.controls = true; v.loop = true; v.muted = true; v.playsInline = true;
       v.preload = 'metadata';
       const cap = el('figcaption', 'xs dim',
@@ -596,6 +616,8 @@ function renderResults() {
       videoHost.appendChild(wrap);
     }
   }
+
+  forgetShown(live);
 
   const copyList = $('copyList');
   copyList.innerHTML = '';
@@ -844,14 +866,16 @@ function lookArt(lk, values) {
   if (!lookArtCache.has(key)) {
     try {
       const size = 128;
+      // The run's look, drawn small: a wider margin, a tighter glow and
+      // a heavier line, so they read at tile size.
+      const look = stillOptions(v);
       const composed = composeHero(subject.cutout, {
+        ...look,
         width: size, height: size, seed: `${subject.seed}:look`,
-        exterior: subject.exterior, interior: subject.interior, generic: v.backdrop === 'generic', backdrop: v.backdrop,
-        backdropColor: v.backdropColor || null, backdropColor2: v.backdropColor2 || null, backdropAngle: v.backdropAngle ?? null,
-        spotlight: spotlightStyle(v), marginFrac: 0.08,
-        glow: v.glow, glowColor: v.glowColor, glowRadius: Math.max(2, Math.round((v.glowRadius || 24) / 6)), glowIntensity: v.glowIntensity,
-        border: null, borderStyle: v.border === 'line' ? { ...frameStyle(v), weight: Math.max(0.02, Number(v.frameWeight) || 0.008) * 2 } : null,
-        shadow: shadowStyle(v), reflection: reflectionStyle(v),
+        exterior: subject.exterior, interior: subject.interior,
+        marginFrac: 0.08,
+        glowRadius: Math.max(2, Math.round((v.glowRadius || 24) / 6)),
+        border: null, borderStyle: look.borderStyle ? { ...look.borderStyle, weight: Math.max(0.02, Number(v.frameWeight) || 0.008) * 2 } : null,
         text: null,
       });
       const c = document.createElement('canvas'); c.width = size; c.height = size;
@@ -1064,11 +1088,10 @@ async function sortAndCut(stages, errors) {
         const m = await matte(p.bitmap, null, modelKeys(state.options.cutoutModel)[2]);
         clock('matte', t0);
         t0 = performance.now();
-        const cut = applyMatte(p.bitmap, m);
+        // Judged by the core's gate (gate.rs) and cropped to its box, as
+        // the CLI's cutout.py and photos.py do.
+        const { canvas: cutCanvas, gate } = cutOut(p.bitmap, m, state.options.strictCutouts);
         clock('cut', t0);
-        // The core's gate (gate.rs), as the CLI's cutout.py applies it.
-        const gate = gateCutout(cut, state.options.strictCutouts);
-        cut.matteAlpha = null;
         p.ambiguous = gate.ambiguous;
         p.coverage = gate.coverage;
 
@@ -1085,7 +1108,7 @@ async function sortAndCut(stages, errors) {
           }
         }
 
-        const twin = gate.ok ? sameShotAs(cut.canvas, exteriors.slice(0, i)) : null;
+        const twin = gate.ok ? sameShotAs(cutCanvas, exteriors.slice(0, i)) : null;
         if (!gate.ok) {
           p.rejected = gate.reason;
         } else if (twin) {
@@ -1093,8 +1116,8 @@ async function sortAndCut(stages, errors) {
           // from two links): composed once, not twice.
           p.rejected = `the same shot as ${twin.name}`;
         } else {
-          p.cutout = cut.canvas;
-          const cutBitmap = await createImageBitmap(await canvasToBlob(cut.canvas));
+          p.cutout = cutCanvas;
+          const cutBitmap = await createImageBitmap(await canvasToBlob(cutCanvas));
           t0 = performance.now();
           const angle = await classifyAngle(cutBitmap);
           clock('angle', t0);
@@ -1204,7 +1227,7 @@ function preload() {
       renderPhotos();
       // A finished preparation for the same photos: prepare again if they changed meanwhile.
       if (state.prepared?.key !== photoKey()) { state.prepared = null; renderPhotos(); }
-      if (preview?.getUserCutout?.()) { preview.current = 'yours'; preview.renderSamples(); preview.update(); preview.onSubjectChange?.(); }
+      if (preview?.getUserCutout?.()) preview.subjectChanged();
     }
   })();
   state.prepared = { key, promise, stages, errors };
@@ -1260,7 +1283,7 @@ async function run() {
     // its own file; the core fits the frame to each format.
     const stockBackground = !delegating && state.options.backdrop === 'asset'
       ? await libraryImage('backgrounds', state.options.background) : null;
-    const stockBorder = !delegating && state.options.border && !['none', 'custom', 'line'].includes(state.options.border)
+    const stockBorder = !delegating && stockFrame(state.options)
       ? await libraryImage('borders', state.options.border) : null;
     // A name remembered from another host (a server's private frame,
     // opened later on the site) is not in this library: say so rather
@@ -1268,10 +1291,13 @@ async function run() {
     if (!delegating && state.options.backdrop === 'asset' && !stockBackground) {
       state.errors.push(`background "${state.options.background || ''}" is not in this library; the stills use the gradient`);
     }
-    if (!delegating && state.options.border && !['none', 'custom', 'line'].includes(state.options.border) && !stockBorder) {
+    if (!delegating && stockFrame(state.options) && !stockBorder) {
       state.errors.push(`frame "${state.options.border}" is not in this library; the stills are frameless`);
     }
 
+    // What the Studio asks for, mapped once for every still and the clip.
+    const look = stillOptions(state.options);
+    const text = await textRequest(state.vehicle, textOptions(state.options));
     for (let i = 0; i < cut.length; i++) {
       const p = cut[i];
       p.heroes = {};
@@ -1316,26 +1342,16 @@ async function run() {
          * another format. Cropping a square down to 4:5 cuts the
          * vehicle's nose off; recomposing re-fits it to the new box. */
         const composeOpts = {
+          ...look,
           seed: `${vid}:${p.name}:${fmt}`,
           exterior: state.vehicle.exterior_color,
           interior: state.vehicle.interior_color,
           width: w, height: h,
-          spotlight: spotlightStyle(state.options),
-          marginFrac: state.options.margin,
-          generic: state.options.backdrop === 'generic', backdrop: state.options.backdrop,
-          backdropColor: state.options.backdropColor || null,
-          backdropColor2: state.options.backdropColor2 || null,
-          backdropAngle: state.options.backdropAngle ?? null,
           // The user's own images, the browser's --photo-background and
           // --border: drawn by the core exactly as the CLI's are.
           background: state.options.backdrop === 'custom' ? state.options.customBackground || null : stockBackground,
           border: state.options.border === 'custom' ? state.options.customFrame || null : stockBorder,
-          borderFit: state.options.frameFit,
-          borderStyle: frameStyle(state.options),
-          shadow: shadowStyle(state.options), reflection: reflectionStyle(state.options),
-          text: await textRequest(state.vehicle, textOptions(state.options)),
-          glow: state.options.glow, glowColor: state.options.glowColor,
-          glowRadius: state.options.glowRadius, glowIntensity: state.options.glowIntensity,
+          text,
         };
         if (cw) {
           try { p.heroes[fmt] = await cw.compose(p.cutout, composeOpts); }
@@ -1371,34 +1387,24 @@ async function run() {
       stages.push({ n: 5, label: 'Rendering video', state: 'active' });
       renderStages(stages);
       state.videos = {};
+      const clipShots = clipOrder(cut);
       for (const fmt of wantVideo) {
         const [w, h] = OPTS.VIDEO_FORMATS[fmt].size;
         try {
           const videoOpts = {
-            angles: cut.map((p) => p.angle || null),
+            // One or two shots are a push with crossfades (core carousel.rs).
+            ...clipOptions(state.options),
+            angles: clipShots.map((p) => p.angle || null),
             width: w, height: h,
             seed: `${vid}:video:${fmt}`,
             exterior: state.vehicle.exterior_color,
             interior: state.vehicle.interior_color,
-            generic: state.options.backdrop === 'generic', backdrop: state.options.backdrop,
-            backdropColor: state.options.backdropColor || null,
-            backdropColor2: state.options.backdropColor2 || null,
-            spotlight: spotlightStyle(state.options),
-            glow: state.options.glow,
-            glowColor: state.options.glowColor,
-            glowRadius: state.options.glowRadius,
-            glowIntensity: state.options.glowIntensity,
-            text: await textRequest(state.vehicle, textOptions(state.options)),
+            text,
             background: videoBackground,
-            frameStyle: frameStyle(state.options),
-            shadow: shadowStyle(state.options), reflection: reflectionStyle(state.options),
             vehicle: state.vehicle,
-            // One or two shots are a push with crossfades (core carousel.rs).
-            push: state.options.videoPush ?? null, crossfade: state.options.videoCrossfade ?? null,
-            fps: Number(state.options.videoFps) || undefined,
             onProgress: (f) => setProgress(0.85 + 0.15 * f),
           };
-          const shots = cut.map((p) => p.cutout);
+          const shots = clipShots.map((p) => p.cutout);
           if (cw) {
             try { state.videos[fmt] = await cw.video(shots, videoOpts); }
             catch (e) { console.warn('core worker video fell back to the page:', e); state.videos[fmt] = await renderHeroVideoHere(shots, videoOpts); }
@@ -1446,7 +1452,7 @@ async function run() {
     renderPhotos();
     renderResults();
     // A cut-out vehicle of the user's own is now a preview subject.
-    preview?.renderSamples();
+    preview?.subjectChanged();
   }
 }
 
@@ -1454,7 +1460,7 @@ async function run() {
 let stepsTimer = null;
 function renderStepsSoon() {
   clearTimeout(stepsTimer);
-  stepsTimer = setTimeout(() => { renderSteps(); if (preview?.current === 'yours') preview.update(); }, 0);
+  stepsTimer = setTimeout(() => { renderSteps(); preview?.update(); }, 0);
 }
 
 function readVehicle() {
@@ -1547,9 +1553,18 @@ function sameShotAs(canvas, earlier) {
  * confident shot of the first angle in the spec's heroPriority; the rest
  * walk round the car front to rear, each angle's most confident first;
  * angles the order does not know come last. */
+const shotsOf = (photos) => photos.map((p, i) => ({ name: String(i), angle: p.angle || '', confidence: p.angleConf || 0 }));
 function walkaround(photos) {
-  const shots = photos.map((p, i) => ({ name: String(i), angle: p.angle || '', confidence: p.angleConf || 0 }));
-  return coreCall({ op: 'select_shots', mode: 'walkaround', shots }).shots.map((s) => photos[Number(s.name)]);
+  return coreCall({ op: 'select_shots', mode: 'walkaround', shots: shotsOf(photos) }).shots.map((s) => photos[Number(s.name)]);
+}
+
+/* The clip's order, as the CLI's vehicle_pipeline picks it (core
+ * select.rs): every shot by walkaround, reseated so the first frame is
+ * the conveyor still and the last hands back to it. */
+function clipOrder(photos) {
+  const shots = shotsOf(photos);
+  const pairs = coreCall({ op: 'select_shots', mode: 'carousel_all', shots }).shots.map((s) => ({ name: s.name, angle: s.angle }));
+  return coreCall({ op: 'select_shots', mode: 'conveyor_start', shots, pairs }).shots.map((s) => photos[Number(s.name)]);
 }
 
 function bundleName() {
@@ -1566,12 +1581,14 @@ async function saveOne(photo, fmt = null) {
 }
 
 async function saveInterior(photo) {
-  const blob = await canvasToBlob(photo.interior, 'image/jpeg', INTERIOR_JPEG_QUALITY);
+  const blob = await canvasToBlob(photo.interior, 'image/jpeg', interiorQuality());
   await deliver(blob, `${bundleName()}-interior-${photo.name.replace(/\.[^.]+$/, '')}.jpg`);
 }
 
-// The CLI writes bundle/interior/*.jpg at quality 92.
-const INTERIOR_JPEG_QUALITY = 0.92;
+// The bundle's names and the interiors' JPEG quality, as the CLI's
+// (spec library.bundle).
+const bundleSpec = () => specGet('library').bundle;
+const interiorQuality = () => bundleSpec().interiorQuality / 100;
 
 async function downloadBundle() {
   const btn = $('downloadBtn');
@@ -1580,6 +1597,7 @@ async function downloadBundle() {
   btn.textContent = 'Packaging…';
   try {
     const files = [];
+    const bundle = bundleSpec();
     const heroes = walkaround(state.photos.filter((p) => p.hero));
 
     for (let i = 0; i < heroes.length; i++) {
@@ -1591,10 +1609,8 @@ async function downloadBundle() {
         // The lead shot of each format also lands at the top level, the
         // same shape the CLI's bundle uses.
         if (i === 0) {
-          files.push({
-            name: fmt === 'square' ? 'hero.png' : `hero-${fmt}.png`,
-            data: await canvasToBlob(canvas, 'image/png'),
-          });
+          const top = { square: bundle.hero, portrait: bundle.heroPortrait, horizontal: bundle.heroHorizontal }[fmt];
+          files.push({ name: top || `hero-${fmt}.png`, data: blob });
         }
       }
       if (p.cutout) {
@@ -1605,18 +1621,18 @@ async function downloadBundle() {
     const interiors = state.photos.filter((p) => p.interior);
     for (let i = 0; i < interiors.length; i++) {
       files.push({
-        name: `${specGet('library').bundle.interior}/${String(i + 1).padStart(2, '0')}.jpg`,
-        data: await canvasToBlob(interiors[i].interior, 'image/jpeg', INTERIOR_JPEG_QUALITY),
+        name: `${bundle.interior}/${String(i + 1).padStart(2, '0')}.jpg`,
+        data: await canvasToBlob(interiors[i].interior, 'image/jpeg', interiorQuality()),
       });
     }
 
     for (const [fmt, blob] of Object.entries(state.videos || {})) {
-      files.push({ name: fmt === 'square' ? 'hero-video.mp4' : `hero-video-${fmt}.mp4`, data: blob });
+      files.push({ name: bundle.videos[fmt] || `hero-video-${fmt}.mp4`, data: blob });
     }
 
     if (state.posts) {
       for (const [platform, text] of Object.entries(state.posts)) {
-        files.push({ name: `${platform}.txt`, data: text });
+        files.push({ name: bundle.posts[platform] || `${platform}.txt`, data: text });
       }
     }
     files.push({ name: 'vehicle.json', data: JSON.stringify(state.vehicle, null, 2) });
@@ -2096,7 +2112,7 @@ async function init() {
     getOptions: () => state.options,
     getVehicle: () => state.vehicle,
     getUserCutout: () => state.photos.find((p) => p.cutout)?.cutout || null,
-    getUserCutouts: () => state.photos.filter((p) => p.cutout).map((p) => p.cutout),
+    getUserCutouts: () => clipOrder(state.photos.filter((p) => p.cutout)).map((p) => p.cutout),
     getPhotoCount: () => state.photos.length,
     onToggleFormat: toggleFormat,
   });
@@ -2118,7 +2134,8 @@ async function init() {
     if (hit && state.options[`${hit}Position`]) return hit;
     return null;
   };
-  preview.load().then(() => renderOptions());
+  preview.subjectChanged();
+  renderOptions();
 
   // Settings: the dealer and this host. Dealer edits are kept as typed
   // and reach the Studio's Text tool as its default line.

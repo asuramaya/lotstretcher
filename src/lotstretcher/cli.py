@@ -182,9 +182,6 @@ def _read_summary_fields(folder: Path) -> dict:
 
 RUN_LOG_FILENAME = "runs.jsonl"
 
-# --sync's safety valve -- see the check itself for why this exists.
-MAX_DELIST_FRACTION = 0.3
-
 
 def append_run_log(out_root: Path, results: list[dict]) -> None:
     """Append this run's outcomes to a durable log, one JSON object per URL.
@@ -397,7 +394,7 @@ def build_parser() -> argparse.ArgumentParser:
                               "find_delisted().")
     parser.add_argument("--confirm-mass-delist", action="store_true",
                          help=f"Allow --sync to delist despite a red flag: either flagging more than "
-                              f"{round(MAX_DELIST_FRACTION * 100)}%% of the manifest in one run, or the "
+                              f"{round(fetch_manifest.MAX_DELIST_FRACTION * 100)}%% of the manifest in one run, or the "
                               "listing crawl itself being interrupted partway through. Off by default -- "
                               "both almost always mean the listing crawl didn't actually cover the full "
                               "inventory, not that this many vehicles genuinely sold at once.")
@@ -587,26 +584,19 @@ def main():
 
     if args.sync:
         # Only vehicles missing from a FULL listing crawl are fair to call
-        # delisted (see expand_urls()'s docstring) -- listing_derived_urls
-        # is exactly that set, restricted to VINs since anything without
-        # one can't be matched against the manifest's vin: keys anyway.
-        live_vins = {vin_from_url(u) for u in listing_derived_urls} - {None}
-        delisted = fetch_manifest.find_delisted(out_root, live_vins)
+        # delisted (see expand_urls()'s docstring), scoped as inventory-sync
+        # scopes them (manifest.delist_candidates): to the buckets crawled,
+        # and to what an earlier sync has not already flagged.
+        from lotstretcher.library_ops import mark_delisted
 
-        # Safety valve: confirmed real failure mode, not hypothetical --
-        # pointing --sync at a NARROW/filtered listing URL (a single model
-        # search, a typo'd filter) instead of a genuinely full-inventory
-        # one makes every other vehicle in the manifest look "missing" and
-        # mass-flags real live inventory as sold. A real dealer's day-to-
-        # day churn is a handful of vehicles, never a third of the
-        # manifest at once -- so a spike that size is far more likely to
-        # mean "wrong URL" than "mass sell-off", and the safe default is
-        # to refuse and say why rather than write it.
-        manifest_vin_count = sum(1 for k in fetch_manifest.load_manifest(out_root) if k.startswith("vin:"))
-        if manifest_vin_count and len(delisted) / manifest_vin_count > MAX_DELIST_FRACTION \
-                and not args.confirm_mass_delist:
-            log(f"\n!! --sync found {len(delisted)}/{manifest_vin_count} previously-scraped vehicles "
-                f"missing from this listing crawl -- that's above the {MAX_DELIST_FRACTION:.0%} "
+        live_vins = {vin_from_url(u) for u in listing_derived_urls} - {None}
+        delisted, active = fetch_manifest.delist_candidates(
+            out_root, live_vins, fetch_manifest.crawled_buckets(listing_derived_urls))
+        # Pointing --sync at a narrow or filtered listing makes the rest of
+        # the lot look missing: a spike this size is refused, not written.
+        if active and len(delisted) / active > fetch_manifest.MAX_DELIST_FRACTION and not args.confirm_mass_delist:
+            log(f"\n!! --sync found {len(delisted)}/{active} previously-scraped vehicles "
+                f"missing from this listing crawl -- that's above the {fetch_manifest.MAX_DELIST_FRACTION:.0%} "
                 "sanity threshold. This almost always means the listing URL is narrower than the full "
                 "inventory (a filtered search, a typo), not that this many vehicles actually sold. "
                 "Refusing to flag anything. If this delisting is genuinely expected, re-run with "
@@ -614,26 +604,13 @@ def main():
             sys.exit(1)
 
         now = time.strftime("%Y-%m-%dT%H:%M:%S%z")
-        newly_flagged = []
-        for entry in delisted:
-            details_path = out_root / entry["folder"] / "details.json"
-            try:
-                data = json.loads(details_path.read_text())
-            except (OSError, ValueError):
-                continue
-            v = data.get("vehicle", data)
-            if v.get("delisted_at"):
-                continue  # already flagged in a previous sync, don't overwrite the original timestamp
-            v["delisted_at"] = now
-            details_path.write_text(json.dumps(data, indent=2) + "\n")
-            newly_flagged.append(entry["folder"])
+        newly_flagged = [e["folder"] for e in delisted if mark_delisted(out_root / e["folder"], now)]
         if newly_flagged:
             log(f"Delisted: {len(newly_flagged)} vehicle(s) no longer in the live listing, flagged:")
             for folder in newly_flagged:
                 log(f"  - {folder}")
         else:
-            log(f"Delisted: none ({len(delisted)} already flagged from a previous sync)" if delisted
-                else "Delisted: none")
+            log("Delisted: none")
 
     if failures:
         log("Failures:")

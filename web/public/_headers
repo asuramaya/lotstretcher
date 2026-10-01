@@ -10,12 +10,15 @@
   Cross-Origin-Embedder-Policy: require-corp
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000
+  # The camera is the VIN scan's, on this origin only; nothing else.
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), usb=()
   # No login, no accounts, no analytics, no third-party scripts. The CSP
   # says so in a form a browser will actually enforce.
   #
   # connect-src is deliberately broad: the app fetches vehicle photos
-  # from whatever CDN the dealer uses, and (Tier 2, opt-in) talks to an
-  # AI provider with the USER's own key. Neither destination is knowable
+  # and listing pages from whatever CDN the dealer uses, and a
+  # self-hosted server wherever the user runs one. Neither is knowable
   # ahead of time. Nothing is sent to lotstretcher.org, because there is
   # no server here to send it to.
   Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https:; connect-src 'self' blob: data: https:; worker-src 'self' blob:; media-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'

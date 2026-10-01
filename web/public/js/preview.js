@@ -16,28 +16,18 @@ import { prepareClip, drawClipFrame } from './pipeline/video.js';
 import { get as specGet } from './spec.js';
 import * as OPTS from './options.js';
 import { imageNow } from './lib/library.js';
-import { textOptions, textRequestNow, planOverlaysNow, frameStyle, shadowStyle, reflectionStyle, spotlightStyle } from './lib/text.js';
+import { textOptions, textRequestNow, planOverlaysNow, frameStyle, shadowStyle, reflectionStyle, spotlightStyle, stillOptions, clipOptions, stockFrame } from './lib/text.js';
 import { el, segment, chip } from './lib/widgets.js';
 
-/* A stock asset as a canvas: the site's own file, or the server's
- * picture of one only it holds. A fetch in flight redraws the preview
- * when it lands. */
-const assetImage = (kind, name, onReady) => imageNow(kind, name, onReady);
-
-
-
-/* A lever's number, or null for the spec's default. */
-const numOrNull = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
 
 export class Preview {
-  /* `host` holds #previewCanvas, #previewSamples and #estimates.
+  /* `host` holds #previewCanvas and #estimates.
    * `getOptions()` returns the live options; `getVehicle()` the form's
    * vehicle (for its colours); `getUserCutout()` a cutout canvas from
    * the last run, or null. */
   constructor(host, { getOptions, getVehicle, getUserCutout, getUserCutouts = null, getPhotoCount, onToggleFormat = null }) {
     this.host = host;
     this.canvas = host.querySelector('#previewCanvas');
-    this.samplesHost = host.querySelector('#previewSamples');
     this.estimatesHost = host.querySelector('#estimates');
     this.caption = host.querySelector('#previewCaption');
     this.getOptions = getOptions;
@@ -46,8 +36,6 @@ export class Preview {
     this.getUserCutouts = getUserCutouts;
     this.getPhotoCount = getPhotoCount;
     this.onToggleFormat = onToggleFormat;
-    this.samples = [];
-    this.current = null;      // the chosen sample's key, or 'yours'
     this.mode = 'still';      // or 'video': one frame of the clip a run would render
     this.scrub = 0.35;        // where in the clip that frame is
     this.clip = null;         // the prepared clip, keyed by what shaped it
@@ -200,22 +188,12 @@ export class Preview {
     if (fill) box.style.height = `${Math.floor(H)}px`;
   }
 
-  async load() {
-    // The subject is always the person's own vehicle: the studio opens
-    // once a cut-out exists, so there is nothing to stand in for it.
-    this.samples = [];
-    this.current = 'yours';
-    this.renderSamples();
+  /* The subject is always the person's own vehicle (the studio opens
+   * once a cut-out exists): draw it, and anything drawn on it (the look
+   * tiles), whenever it appears or changes. */
+  subjectChanged() {
     this.update();
-    // Anything drawn on the subject (the look tiles) can draw now.
     this.onSubjectChange?.();
-  }
-
-  renderSamples() {
-    // One subject, so no picker; kept as the hook callers use when a
-    // cut-out appears.
-    this.current = 'yours';
-    if (this.samplesHost) this.samplesHost.innerHTML = '';
   }
 
   setMode(mode) {
@@ -223,12 +201,6 @@ export class Preview {
     for (const b of this.modesHost.querySelectorAll('.seg')) b.setAttribute('aria-pressed', String(b.dataset.value === mode));
     this.scrubInput.hidden = mode !== 'video';
     this.update();
-  }
-
-  /* Both modes are always offered: a video is previewed whether or not
-   * one is ticked, since ticking is decided under the stage. */
-  syncModes() {
-    this.renderFormats();
   }
 
   /* Every format of the current mode, ticked or not, with which are
@@ -275,19 +247,13 @@ export class Preview {
     }
   }
 
-  subjectLabel() { return 'Your vehicle'; }
-
-  /* The cutout and colours the preview draws: the user's own vehicle
-   * takes the form's colours, a sample takes its real ones. */
+  /* The cutout and colours the preview draws: the user's own vehicle,
+   * in the form's colours. */
   subject() {
-    if (this.current === 'yours') {
-      const cut = this.getUserCutout();
-      if (cut) {
-        const v = this.getVehicle() || {};
-        return { cutout: cut, exterior: v.exterior_color || null, interior: v.interior_color || null, seed: 'yours', vehicle: v };
-      }
-    }
-    return null;
+    const cut = this.getUserCutout();
+    if (!cut) return null;
+    const v = this.getVehicle() || {};
+    return { cutout: cut, exterior: v.exterior_color || null, interior: v.interior_color || null, seed: 'yours', vehicle: v };
   }
 
   /* Coalesced: a slider fires many times a second and one compose is a
@@ -329,18 +295,18 @@ export class Preview {
       const [fw, fh] = fmt.size;
       this.fitStage(fw, fh);
       const [width, height] = this.targetSize(fw, fh);
-      if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || fmt.key || 'still'}${this.hasText() ? ' \u00b7 drag the text to place it' : ''}`;
+      if (this.caption) this.caption.textContent = `Your vehicle \u00b7 ${fmt.label || fmt.key || 'still'}${this.hasText() ? ' \u00b7 drag the text to place it' : ''}`;
       this.canvas.classList.toggle('has-text', this.hasText());
       const t0 = performance.now();
       // A frame is fitted to the format by the core; a large one is
       // scaled down to the preview's size first so the fit resamples
       // less. A stock frame or background is the server's, drawn from
       // the picture it serves for the swatches.
-      const stockBorder = o.border && !['none', 'custom', 'line'].includes(o.border) ? o.border : null;
+      const stockBorder = stockFrame(o);
       let border = o.border === 'custom' ? o.customFrame || null
-        : (stockBorder ? assetImage('borders', stockBorder, () => this.update()) : null);
+        : (stockBorder ? imageNow('borders', stockBorder, () => this.update()) : null);
       const stockBackground = o.backdrop === 'asset' && o.background
-        ? assetImage('backgrounds', o.background, () => this.update()) : null;
+        ? imageNow('backgrounds', o.background, () => this.update()) : null;
       if (border && Math.max(border.width, border.height) > Math.max(width, height)) {
         const k = Math.max(width, height) / Math.max(border.width, border.height);
         const small = document.createElement('canvas');
@@ -353,16 +319,12 @@ export class Preview {
       // the frame's window, so it sits exactly where the run's will.
       const text = textRequestNow(subject.vehicle, textOptions(o), () => this.update());
       const composed = composeHero(subject.cutout, {
+        ...stillOptions(o),
         width, height, text,
         seed: `${subject.seed}:preview`,
         exterior: subject.exterior, interior: subject.interior,
-        generic: o.backdrop === 'generic',
-        backdrop: o.backdrop, backdropColor: o.backdropColor || null, backdropColor2: o.backdropColor2 || null, backdropAngle: o.backdropAngle ?? null,
         background: o.backdrop === 'custom' ? o.customBackground || null : stockBackground,
-        border, borderFit: o.frameFit, borderStyle: frameStyle(o), shadow: shadowStyle(o), reflection: reflectionStyle(o),
-        spotlight: spotlightStyle(o),
-        marginFrac: o.margin,
-        glow: o.glow, glowColor: o.glowColor, glowRadius: o.glowRadius, glowIntensity: o.glowIntensity,
+        border,
       });
       this.lastMs = performance.now() - t0;
       this.lastPixels = composed.width * composed.height;
@@ -398,19 +360,19 @@ export class Preview {
     // The clip's backdrop is the still's: a stock or the user's photo,
     // else the gradient.
     const background = o.backdrop === 'custom' ? o.customBackground || null
-      : o.backdrop === 'asset' && o.background ? assetImage('backgrounds', o.background, () => this.update()) : null;
+      : o.backdrop === 'asset' && o.background ? imageNow('backgrounds', o.background, () => this.update()) : null;
     const style = frameStyle(o);
     const key = JSON.stringify([width, height, seed, o.backdrop, o.backdropColor, o.backdropColor2, spotlightStyle(o), subject.exterior, subject.interior, cutouts.length, text,
       background ? `${o.backdrop}:${o.background || o.customBackground?.name || ''}` : null, style, o.videoPush, o.videoCrossfade]);
     if (key !== this.clipKey) {
       this.clip = prepareClip(cutouts, {
+        ...clipOptions(o),
         width, height, seed: `${seed}:video`, exterior: subject.exterior, interior: subject.interior,
-        generic: o.backdrop === 'generic', backdrop: o.backdrop, backdropColor: o.backdropColor || null, backdropColor2: o.backdropColor2 || null, spotlight: spotlightStyle(o), text, background, frameStyle: style,
-        vehicle: subject.vehicle, push: numOrNull(o.videoPush), crossfade: numOrNull(o.videoCrossfade),
+        text, background, vehicle: subject.vehicle,
       });
       this.clipKey = key;
     }
-    if (this.caption) this.caption.textContent = `${this.subjectLabel()} \u00b7 ${fmt.label || 'video'} \u00b7 ${(this.scrub * this.clip.duration).toFixed(1)} s`;
+    if (this.caption) this.caption.textContent = `Your vehicle \u00b7 ${fmt.label || 'video'} \u00b7 ${(this.scrub * this.clip.duration).toFixed(1)} s`;
     const t0 = performance.now();
     this.canvas.width = width; this.canvas.height = height;
     drawClipFrame(this.canvas.getContext('2d'), this.clip, this.scrub * this.clip.duration, {
@@ -425,7 +387,7 @@ export class Preview {
    * from the preview's own measured compose, so they track this device
    * rather than a laptop the numbers were once measured on. */
   renderEstimates() {
-    this.syncModes();
+    this.renderFormats();
     const host = this.estimatesHost;
     host.innerHTML = '';
     const o = this.getOptions();

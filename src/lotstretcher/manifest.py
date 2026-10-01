@@ -130,6 +130,43 @@ def find_delisted(out_root: Path, live_vins: set[str]) -> list[dict]:
     return out
 
 
+# A real dealer's day-to-day churn is a handful of vehicles, never a third
+# of the lot at once: a spike past this means the crawl was narrower than
+# the inventory (a filtered search, a typo), and delisting is refused.
+MAX_DELIST_FRACTION = 0.3
+
+
+def crawled_buckets(urls) -> set[str]:
+    """The manifest buckets ("used"/"new") a listing crawl covered, by the
+    same rule scrape.condition_bucket falls back to for a bare listing URL."""
+    return {("used" if "used" in u.lower() else "new") for u in urls}
+
+
+def delist_candidates(out_root: Path, live_vins: set[str], buckets: set[str]) -> tuple[list[dict], int]:
+    """(missing, active): the still-active vehicles in the crawled buckets
+    that this crawl did not see, and how many still-active vehicles those
+    buckets hold, for the mass-delist fraction. Both leave out what an
+    earlier sync already flagged: it stays in the manifest forever and
+    would re-count as missing every run (confirmed real: a cycle after 70
+    true sales measured 68/217 = 31% and refused on its own prior work).
+    Both are scoped to the crawled buckets: a used-only crawl made 651
+    new vehicles look missing out of 861."""
+    manifest = load_manifest(out_root)
+    in_scope = {e.get("folder", "") for k, e in manifest.items()
+                if k.startswith("vin:") and e.get("folder", "").split("/", 1)[0] in buckets}
+    flagged = set()
+    for folder in in_scope:
+        try:
+            data = json.loads((out_root / folder / "details.json").read_text())
+        except (OSError, ValueError):
+            continue
+        if data.get("vehicle", data).get("delisted_at"):
+            flagged.add(folder)
+    active = in_scope - flagged
+    missing = [e for e in find_delisted(out_root, live_vins) if e.get("folder", "") in active]
+    return missing, len(active)
+
+
 def record_fetch(out_root: Path, url: str, folder_name: str, vin: str | None = None,
                   stock_number: str | None = None, photos_pending: bool = False) -> None:
     """photos_pending=True marks this fetch as INCOMPLETE despite having

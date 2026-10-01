@@ -15,7 +15,6 @@
 import { loadModel, getOrt } from './runtime.js';
 import { resizeTo, imageDataOf, makeCanvas, ctxOf } from '../lib/imageio.js';
 import { available as coreAvailable, call as coreCall, toImageData } from '../core.js';
-import { ALPHA_THRESHOLD } from '../config.js';
 
 /* u2net's own normalisation, which is NOT ImageNet's.
  * From rembg's u2net session: the image is divided by its own max, then
@@ -50,7 +49,7 @@ function toU2netTensor(imageData, size) {
 /* Produce an alpha matte for `bitmap`.
  *
  * Returns { alpha, size } where alpha is a Float32Array of size*size in
- * [0,1]. Whether it is good enough is the core's gate (gateCutout), read
+ * [0,1]. Whether it is good enough is the core's gate (cutOut), read
  * off the matte stretched to the photo's size. */
 export async function matte(bitmap, onProgress, model = 'matte') {
   const { session, spec, inputName } = await loadModel(model, onProgress);
@@ -87,15 +86,15 @@ export async function matte(bitmap, onProgress, model = 'matte') {
   return { alpha, size };
 }
 
-/* Apply an alpha matte to a bitmap at full source resolution, crop to
- * the visible pixels, and return { canvas, bbox, coverage, matteAlpha }
- * (the stretched matte the gate reads, one byte a pixel).
+/* Apply an alpha matte to a bitmap at full source resolution, judge it
+ * and crop it: returns { canvas, gate }, canvas null when the gate found
+ * no subject. `strict` off keeps only that hard failure.
  *
- * The crop matters downstream: compute_placement() in layout.py expects
- * a cutout already trimmed to its visible pixels, and scales it to fill
- * its box. An uncropped cutout would be scaled by its transparent
- * padding and come out small and off-centre. */
-export function applyMatte(bitmap, { alpha, size }) {
+ * The crop matters downstream: the core's placement expects a cutout
+ * already trimmed to its visible pixels, and scales it to fill its box.
+ * An uncropped cutout would be scaled by its transparent padding and
+ * come out small and off-centre. */
+export function cutOut(bitmap, { alpha, size }, strict = true) {
   const W = bitmap.width, H = bitmap.height;
 
   // Upscale the matte to source resolution via the GPU-backed 2D
@@ -134,45 +133,15 @@ export function applyMatte(bitmap, { alpha, size }) {
     try { out = toImageData(coreCall({ op: 'refine_cutout', image: { $image: 0 } }, [img])); } catch { out = img; }
   }
 
-  let minX = W, minY = H, maxX = -1, maxY = -1, opaque = 0;
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const a = out.data[(y * W + x) * 4 + 3];
-      if (a > ALPHA_THRESHOLD) {
-        opaque++;
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-      }
-    }
-  }
-
-  if (maxX < 0) return { canvas: null, bbox: null, coverage: 0, matteAlpha, width: W, height: H };
-
+  // Whether it is good enough, and where the vehicle is: the core's
+  // gate (gate.rs) on the model's matte at the photo's size before any
+  // refinement, the one the CLI's imaging/cutout.py applies; the cutout
+  // is cropped to the box the gate found, as the CLI's photos.py does.
+  const gate = coreCall({ op: 'cutout_gate', strict, alpha: { $image: 0 } }, [{ width: W, height: H, channels: 1, data: matteAlpha }]);
+  if (!gate.bbox) return { canvas: null, gate };
   fctx.putImageData(out, 0, 0);
-
-  const cw = maxX - minX + 1, ch = maxY - minY + 1;
-  const cut = makeCanvas(cw, ch);
-  ctxOf(cut).drawImage(full, minX, minY, cw, ch, 0, 0, cw, ch);
-
-  return {
-    canvas: cut,
-    bbox: { x: minX, y: minY, w: cw, h: ch },
-    coverage: opaque / (W * H),
-    matteAlpha, width: W, height: H,
-  };
-}
-
-/* Is this cutout good enough to compose? The core's gate (gate.rs), the
- * one the CLI's imaging/cutout.py applies, on the model's matte at the
- * photo's size before any refinement: ambiguous edges, a close-up that
- * fills the frame, a subject too small or a background not separated.
- * Off (`strict` false) keeps only the hard failure, no subject at all.
- * Returns { ok, reason, ambiguous, coverage, fills_frame, bbox }, the
- * reason phrased for a person. */
-export function gateCutout(cut, strict = true) {
-  if (!cut.matteAlpha) return { ok: false, reason: 'no vehicle found in this photo', fills_frame: false };
-  return coreCall({ op: 'cutout_gate', strict, alpha: { $image: 0 } },
-    [{ width: cut.width, height: cut.height, channels: 1, data: cut.matteAlpha }]);
+  const [x0, y0, x1, y1] = gate.bbox;
+  const cut = makeCanvas(x1 - x0, y1 - y0);
+  ctxOf(cut).drawImage(full, x0, y0, x1 - x0, y1 - y0, 0, 0, x1 - x0, y1 - y0);
+  return { canvas: cut, gate };
 }

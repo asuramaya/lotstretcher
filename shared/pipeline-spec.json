@@ -2228,6 +2228,7 @@
       "heroHorizontal": "hero-horizontal.png",
       "framed": "framed",
       "interior": "interior",
+      "interiorQuality": 92,
       "videos": {
         "square": "hero-video.mp4",
         "vertical": "hero-video-vertical.mp4",

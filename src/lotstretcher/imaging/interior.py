@@ -381,7 +381,7 @@ def process_gallery(interior_dir, out_dir, vehicle: dict,
         if callout:
             img = draw_callout(img, callout)
         dest = out_dir / f"{path.stem}.jpg"
-        img.save(dest, quality=92)
+        img.save(dest, quality=_spec.get("library", "bundle", "interiorQuality"))
         subject, confidence = by_name.get(path.name, (None, None))
         written.append({"file": dest.name, "subject": subject,
                         "confidence": round(confidence, 3) if confidence else None,

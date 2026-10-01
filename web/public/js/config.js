@@ -39,7 +39,7 @@ export function modelKeys(cutoutModel) {
 
 /* Where the models come from in production. Cloudflare caps static
  * assets at 25MiB per file on free AND paid plans, so the 44.2MB matte
- * cannot be an asset regardless of billing -- the three models live in
+ * cannot be an asset regardless of billing -- the models live in
  * R2 (zero egress) behind the bucket's custom domain, which Cloudflare
  * caches (the r2.dev address is rate-limited and not for production).
  * Objects sit under models/<MODEL_VERSION>/ with a year-long immutable
@@ -56,17 +56,13 @@ export const ORT_PATH = 'ort/';
  * which is why the app surfaces isolation state rather than hiding it. */
 export const MAX_THREADS = 4;
 
-export const CANVAS = 1254;          // matches DEFAULT_CANVAS_SIZE in compose/hero.py
-
 /* ImageNet normalisation -- what both students were trained with. */
 export const NORM_MEAN = [0.485, 0.456, 0.406];
 export const NORM_STD = [0.229, 0.224, 0.225];
 
-/* Gate values are loaded from shared/pipeline-spec.json by
+/* The values below are loaded from shared/pipeline-spec.json by
  * initConfigFromSpec(); the literals here are only what the module
  * evaluates to before that runs. */
-export let ALPHA_THRESHOLD = 16;
-
 /* The quality gates themselves (ambiguity, coverage, frame fill) are
  * the core's (gate.rs, pipeline/matte.js::gateCutout). */
 export let MAX_SOURCE_SIDE = 2048;
@@ -98,7 +94,6 @@ export const LIMITS = {
  * These are `let` rather than `const` precisely so the spec, not this
  * file, is the source of truth. */
 export function initConfigFromSpec(get) {
-  ALPHA_THRESHOLD = get('cutout', 'alphaThreshold');
   MAX_SOURCE_SIDE = get('cutout', 'maxSourceSideBrowser') || 0;
   MIN_ANGLE_CONFIDENCE = get('confidence', 'minAngle');
   MIN_SCENE_CONFIDENCE = get('confidence', 'minScene');

@@ -81,6 +81,33 @@ export function reflectionStyle(o) { return styles(o).reflection; }
 
 export function wantsText(text) { return facts(text).wants_text; }
 
+/* A lever's number, or null for the spec's default. */
+export const numOrNull = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
+
+/* The Studio's values as the compositor's options, for a still and for
+ * a clip: one mapping for the run, the preview and the look tiles, the
+ * backdrop's through the core's (controls.rs: colours only for the
+ * coloured kinds, an angle only for the linear ones). The caller adds
+ * the size, seed, colours, pictures and text. */
+export function stillOptions(o) {
+  const s = styles(o);
+  const b = s.backdrop;
+  return {
+    backdrop: b.kind, generic: b.kind === 'generic', backdropColor: b.color, backdropColor2: b.color2, backdropAngle: b.angle,
+    spotlight: s.spotlight, marginFrac: numOrNull(o.margin),
+    glow: !!o.glow, glowColor: o.glowColor, glowRadius: numOrNull(o.glowRadius), glowIntensity: numOrNull(o.glowIntensity),
+    borderFit: o.frameFit, borderStyle: s.border_style, shadow: s.shadow, reflection: s.reflection,
+  };
+}
+export function clipOptions(o) {
+  const { borderStyle, borderFit, marginFrac, backdropAngle, ...rest } = stillOptions(o);
+  return { ...rest, frameStyle: borderStyle, push: numOrNull(o.videoPush), crossfade: numOrNull(o.videoCrossfade), fps: numOrNull(o.videoFps) ?? undefined };
+}
+
+/* A stock frame's name, when the Frame picker names one (not none, your
+ * own, or the drawn line). */
+export function stockFrame(o) { return o.border && !['none', 'custom', 'line'].includes(o.border) ? o.border : null; }
+
 /* The Text controls and the vehicle as one compose field, with the font
  * loaded, or null when no text is asked for (so a run without text
  * never fetches the font). The core plans the words inside the frame's

@@ -159,7 +159,7 @@ def compose(cutout_png: bytes, options: dict[str, Any],
                                    options.get("exteriorColor"), options.get("interiorColor"),
                                    backdrop_color(options), backdrop_color2(options), backdrop_angle(options))
 
-    from ..library_ops import stock_border
+    from ..library_ops import look_kwargs, stock_border
     wants_border = bool(options.get("frame")) or stock_border(options) is not None
     border = _resolve_asset("borders", stock_border(options), warnings) if wants_border else None
     if wants_border and border is None and not stock_border(options):
@@ -169,13 +169,8 @@ def compose(cutout_png: bytes, options: dict[str, Any],
         background, border, [cutout_path],
         layout="single",
         spotlight=spotlight_style(options),
-        glow=bool(options.get("glow", False)),
-        glow_color=options.get("glowColor") or "white",
-        glow_radius=int(options.get("glowRadius") or 24),
-        glow_intensity=float(options.get("glowIntensity") or 0.75),
-        margin_frac=float(options.get("margin") or 0.06),
+        **look_kwargs(options),
         canvas_size=(width, height),
-        border_fit=options.get("frameFit") or "slice",
         # The app sends its vehicle form along, so a title or price
         # badge on the server's still is the same as the browser's.
         text=text_request(options.get("vehicle") or {}, text_options(options)),

@@ -7,14 +7,14 @@
  * unpacks the result. The same request produces the same bytes on the
  * server. */
 
-import { CANVAS } from '../config.js';
+import { get as specGet } from '../spec.js';
 import { makeCanvas, ctxOf, coverFit } from '../lib/imageio.js';
 import * as core from '../core.js';
 
 /* Compose one hero image. `cutout` is a cropped RGBA canvas. */
 export function composeHero(cutout, {
-  width = CANVAS,
-  height = CANVAS,
+  width = specGet('canvas', 'default')[0],
+  height = specGet('canvas', 'default')[1],
   seed = 'lotstretcher',
   exterior = null,
   interior = null,

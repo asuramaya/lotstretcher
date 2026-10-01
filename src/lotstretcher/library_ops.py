@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from lotstretcher import spec as _spec
 from lotstretcher.imaging import assets
 from lotstretcher.imaging.compose import compose_interiors, compose_vehicle, compose_wheel_shots
 from lotstretcher.imaging.text import (BACKDROPS, backdrop_angle, backdrop_color, backdrop_color2, frame_style, reflection_style,
@@ -27,6 +28,26 @@ def generated_backdrop(options: dict) -> str:
     vehicle unless generic or sweep was picked (a photo is `gradient`)."""
     kind = options.get("backdrop")
     return kind if kind in BACKDROPS else "vehicle"
+
+
+def _num(options: dict, key: str, cast=float):
+    """A number lever's value, or its control's default when unset; 0 is a value."""
+    v = options.get(key)
+    return cast(v if v not in (None, "") else _spec.control_default(key))
+
+
+def look_kwargs(options: dict) -> dict:
+    """The glow, margin and frame fit the app's controls ask for, as the
+    compositor's keyword arguments, with the Studio's defaults: one mapping
+    for the server's still, recompose and a re-scrape."""
+    return {
+        "glow": bool(options.get("glow", _spec.control_default("glow"))),
+        "glow_color": options.get("glowColor") or _spec.control_default("glowColor"),
+        "glow_radius": _num(options, "glowRadius", int),
+        "glow_intensity": _num(options, "glowIntensity"),
+        "margin_frac": _num(options, "margin"),
+        "border_fit": options.get("frameFit") or _spec.control_default("frameFit"),
+    }
 
 
 def find_vehicle_folders(root: Path) -> list[Path]:
@@ -96,12 +117,8 @@ def resolve_recompose_options(options: dict) -> dict:
         "border_path": border_path,
         "hero_formats": tuple(dict.fromkeys(formats)),
         "style": {
-            "glow": bool(options.get("glow", False)),
-            "glow_color": options.get("glowColor") or "white",
-            "glow_radius": int(options.get("glowRadius") or 24),
-            "glow_intensity": float(options.get("glowIntensity") or 0.75),
+            **{k: v for k, v in look_kwargs(options).items() if k != "margin_frac"},
             "gradient": not wants_photo,
-            "border_fit": options.get("frameFit") or "slice",
             "text": text_options(options),
             "border_style": frame_style(options),
             "shadow": shadow_style(options),
@@ -151,13 +168,8 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
 
     opts = HeroOptions(
         enabled=bool(options.get("hero", True)),
-        glow=bool(options.get("glow", False)),
-        glow_color=options.get("glowColor") or "white",
-        glow_radius=int(options.get("glowRadius") or 24),
-        glow_intensity=float(options.get("glowIntensity") or 0.75),
+        **look_kwargs(options),
         spotlight=spotlight_style(options),
-        margin_frac=float(options.get("margin") if options.get("margin") is not None else 0.06),
-        border_fit=options.get("frameFit") or "slice",
         text=text_options(options),
         border_style=frame_style(options),
         shadow=shadow_style(options),

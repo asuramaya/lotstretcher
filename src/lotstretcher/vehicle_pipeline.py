@@ -14,8 +14,8 @@ import requests
 
 import lotstretcher.manifest as fetch_manifest
 from lotstretcher import core
-from lotstretcher.facebook_post import build_facebook_post, check_pricing_consistency, explain_facebook_post
-from lotstretcher.social_post import build_instagram_caption, build_threads_post
+from lotstretcher import spec as _spec
+from lotstretcher.facebook_post import check_pricing_consistency, posts_for
 from lotstretcher.imaging.compose import compose_interiors, compose_vehicle, compose_wheel_shots
 from lotstretcher.photos import download_photos
 from lotstretcher.scrape import (USER_AGENT, condition_bucket, fetch_rendered_html, normalize_vehicle,
@@ -487,18 +487,18 @@ def process_vehicle_record(v, url: str, session: requests.Session, out_root: Pat
                     log(f"    ! hero video failed: {e}")
                     v.warnings.append(f"Hero video failed: {e}")
 
+    # Every post and its audit notes, built once by the core.
+    posts = posts_for(v)
     details = dataclasses.asdict(v)
-    details["_facebook_post_notes"] = explain_facebook_post(v)
+    details["_facebook_post_notes"] = dict(posts["explain"])
     (folder / "details.json").write_text(json.dumps(details, indent=2), encoding="utf-8")
     # facebook.txt is the actual text to post, right alongside the images
-    # meant to go with it -- lives in bundle/, not the folder root.
+    # meant to go with it -- lives in bundle/, not the folder root. The
+    # others are the same facts, re-ordered and re-budgeted per surface.
     bundle_dir = folder / "bundle"
     bundle_dir.mkdir(parents=True, exist_ok=True)
-    (bundle_dir / "facebook.txt").write_text(build_facebook_post(v), encoding="utf-8")
-    # Same facts, re-ordered and re-budgeted per surface -- see
-    # social_post.py for why the long post can't just be truncated.
-    (bundle_dir / "threads.txt").write_text(build_threads_post(v), encoding="utf-8")
-    (bundle_dir / "instagram.txt").write_text(build_instagram_caption(v), encoding="utf-8")
+    for platform, name in _spec.get("library", "bundle", "posts").items():
+        (bundle_dir / name).write_text(posts[platform], encoding="utf-8")
 
     # No REAL photos survived download_photos() -- almost always a dealer
     # placeholder graphic ("Just Arrived, Photos Coming Soon") that
