@@ -3,8 +3,9 @@
  * The CLI shells out to poppler (`pdftotext -bbox`) for this. A browser
  * cannot, so pdf.js supplies the same thing: text items with positions.
  * The parsing itself is the core's (core/src/sticker.rs), the same code
- * the CLI's words go through; this module only produces the words and
- * maps the record onto the form.
+ * the CLI's words go through, and so is reading the record as the
+ * vehicle's fields (sticker_fields.rs); this module only produces the
+ * words.
  *
  * pdf.js is loaded LAZILY, only when someone actually imports a sticker,
  * so the 1.7MB never costs anything to the common path.
@@ -32,59 +33,6 @@ async function loadPdfjs() {
 
 import { call, loadCore } from '../core.js';
 import { get as specGet } from '../spec.js';
-
-/* Trim levels, drivetrains and the like are ACRONYMS, not words. Plain
- * title case turns "XLT FWD" into "Xlt Fwd", which then goes straight
- * into a post and reads as a typo to anyone who knows the car. */
-const ACRONYMS = new Set([
-  'XL', 'XLT', 'SE', 'SEL', 'LT', 'LS', 'LTZ', 'RST', 'ST', 'GT', 'SS', 'SR', 'SR5',
-  'EX', 'LX', 'DX', 'SV', 'SL', 'S', 'RS', 'GLS', 'GLE', 'TRD', 'ZR2', 'Z71', 'SLE',
-  'SLT', 'XSE', 'XLE', 'FWD', 'AWD', 'RWD', '4WD', '2WD', '4X4', '4X2',
-  'V6', 'V8', 'V10', 'TDI', 'GTI', 'ABS', 'LED', 'USB', 'AM/FM', 'MSRP', 'VIN',
-  'MPG', 'EPA', 'SYNC', 'AC', 'A/C', 'PHEV', 'EV', 'SUV',
-  'TI-VCT', 'VCT', 'GTDI', 'FHEV', 'HEV', 'PFDI', 'HP', 'DOHC',
-]);
-
-/* Abbreviations the sticker prints that read badly in a post. Kept
- * narrow and only applied to display strings, never to the parsed value
- * the CLI would also produce, so the two stay comparable. */
-const EXPANSIONS = [
-  [/\bSiriusxm\b/i, 'SiriusXM'],
-  [/\bEcoboost\b/i, 'EcoBoost'],
-  [/\bAlum\b/i, 'Aluminum'],
-  [/\bIncl\b/i, 'Included'],
-  [/\bConn\b/i, 'Connected'],
-  [/\bTri\s*-?\s*Coat\b/i, 'Tri-Coat'],
-  [/\bTc\b/i, 'Tri-Coat'],
-  [/\bMet\b/i, 'Metallic'],
-  [/\bMetalic\b/i, 'Metallic'],
-  [/\bPkg\b/i, 'Package'],
-  [/\bTrans\b/i, 'Transmission'],
-  [/\bPowerboost\b/i, 'PowerBoost'],
-  [/\bW\//i, 'With '],
-];
-
-function titleCase(s) {
-  return s.toLowerCase()
-    .replace(/\b[a-z]/g, (c) => c.toUpperCase())
-    // A letter straight after a digit is a unit, not a new word: engine
-    // displacements must read "2.0L EcoBoost", never "2.0l".
-    .replace(/(\d)([a-z])\b/g, (_, d, c) => d + c.toUpperCase())
-    // "480Hp" -> "480HP".
-    .replace(/(\d)hp\b/gi, '$1HP')
-    // Restore anything that is an acronym rather than a word.
-    .replace(/\b[A-Za-z][A-Za-z0-9/]*\b/g, (w) => (
-      ACRONYMS.has(w.toUpperCase()) ? w.toUpperCase() : w
-    ));
-}
-
-/* Title case, then expand the sticker's own abbreviations. For values
- * shown to a person or dropped into post copy. */
-function displayCase(s) {
-  let out = titleCase(s);
-  for (const [re, to] of EXPANSIONS) out = out.replace(re, to);
-  return out;
-}
 
 /* Page 1's text as positioned words, top-down, in the core's shape. */
 async function words(source) {
@@ -137,52 +85,18 @@ export async function parseSticker(source) {
   await loadCore();
   const { words: ws } = await words(source);
   const rec = call({ op: 'parse_sticker', words: ws, y_tol: specGet('sticker').rowToleranceBrowser });
-  const out = { ...rec, raw: { wordCount: ws.length } };
-  const o = rec.overview || {};
-  if (o.vin) out.vin = o.vin;
-  if (rec.placeholder) return out;
-
-  if (o.model_line) { out.model_line = o.model_line; out.model = o.model_name || o.model_line; }
-  if (o.trim_drivetrain) out.trim_drivetrain = o.trim_drivetrain;
-  if (o.seating_capacity) out.seating = o.seating_capacity;
-  if (o.engine) out.engine = displayCase(o.engine);
-  if (o.transmission) out.transmission = displayCase(o.transmission);
-  if (o.exterior_color) out.exterior_color = o.exterior_color;
-  if (o.interior_trim) out.interior_color = o.interior_trim;
-  if (o.trim) out.trim = o.trim;
-  if (o.body_style) out.body_style = o.body_style;
-  if (o.drivetrain) out.drivetrain = o.drivetrain;
-  /* The sticker's total is what the car cost NEW. It is only the asking
-   * price of a new car, so it is kept as msrp and the form decides
-   * (stickerPriceApplies) whether it may become the price. */
-  out.msrp = rec.pricing.total_msrp || rec.pricing.base_price || null;
-  if (out.trim_drivetrain) {
-    const first = out.trim_drivetrain.split(/\s+/)[0];
-    if (/^\d{4}$/.test(first)) out.year = first;
-  }
-  return out;
+  // The flat facts (year, model, the engine as a person writes it, the
+  // total as msrp) are the core's (sticker_fields.rs), as the CLI's are.
+  // The sticker's total is what the car cost NEW, so it is kept as msrp
+  // and the form decides (stickerPriceApplies) whether it is the price.
+  return { ...rec, raw: { wordCount: ws.length }, ...call({ op: 'sticker_fields', record: rec }).fields };
 }
 
 /* Map a parsed sticker onto the app's vehicle fields.
  * Only fills what the sticker actually knows, so it never blanks a value
  * the user typed. */
 export function stickerToVehicle(sticker) {
-  const v = {};
-  for (const [from, to] of [
-    ['year', 'year'], ['make', 'make'], ['model', 'model'], ['trim', 'trim'],
-    ['exterior_color', 'exterior_color'], ['interior_color', 'interior_color'],
-    ['vin', 'vin'], ['msrp', 'msrp'],
-  ]) {
-    if (!sticker[from]) continue;
-    let value = String(sticker[from]);
-    // Colours reach the form AND the post copy, so expand the sticker's
-    // abbreviations once here rather than letting the two disagree.
-    if (from.endsWith('_color')) value = displayCase(value);
-    else value = value.replace(/^\$/, '').replace(/,/g, '');
-    v[to] = value;
-  }
-  if (v.msrp) v.msrp = v.msrp.replace(/\.00$/, '');
-  return v;
+  return call({ op: 'sticker_fields', record: sticker }).vehicle;
 }
 
 /* Whether a sticker's MSRP may stand as the asking price: only for a car

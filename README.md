@@ -211,7 +211,7 @@ fixtures. The post copy is the core's as well (`build_posts`: the Marketplace po
 its cap, the Instagram caption, the hashtags and the audit notes), with `facebook_post.py`, `social_post.py`
 and `copy.js` reduced to hosts that hand in the vehicle and the dealer boilerplate. The VIN decoder and the shot picking are the core's as well
 (`vin_decode`, `vin_record`, `select_shots`), and so are reading a vehicle page into its record
-(`listing_record`, with an exact port of Python's `html.unescape`), the vendor padding on dealer photos
+(`listing_record`, with an exact port of Python's `html.unescape`), a sticker's facts as the vehicle's fields (`sticker_fields`, the engine and colours as a person writes them), the vendor padding on dealer photos
 (`detect_bars`, `batch_bars`, `detect_banner`), the known-junk pHash (`phash`, `junk_match`), the
 layouts and a car's placement (`layout`, `placement`), and the mapping from the Studio's control values
 to every request field (`styles`, `text_facts`, `backdrop_spec`, `gradient_stops`); each replaced a

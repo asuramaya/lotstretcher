@@ -1,0 +1,4530 @@
+{
+ "cases": [
+  {
+   "record": {
+    "overview": {
+     "vin": "1FT8W2BT2REC59903",
+     "model_line": "Super Duty",
+     "trim_drivetrain": "2024 F250 Srw 4X4 Crew Cab",
+     "transmission": "10-Speed Auto Torqshift",
+     "exterior_color": "Carbonized Gray",
+     "interior_trim": "Medium Dark Slate Cloth",
+     "model": "2024 Super Duty F250 Srw 4X4 Crew Cab"
+    },
+    "pricing": {
+     "base_price": "$51,560.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$70,610.00",
+     "total_msrp": "$72,605.00"
+    }
+   },
+   "fields": {
+    "vin": "1FT8W2BT2REC59903",
+    "model_line": "Super Duty",
+    "model": "Super Duty",
+    "trim_drivetrain": "2024 F250 Srw 4X4 Crew Cab",
+    "transmission": "10-Speed Auto Torqshift",
+    "exterior_color": "Carbonized Gray",
+    "interior_color": "Medium Dark Slate Cloth",
+    "msrp": "$72,605.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Super Duty",
+    "exterior_color": "Carbonized Gray",
+    "interior_color": "Medium Dark Slate Cloth",
+    "vin": "1FT8W2BT2REC59903",
+    "msrp": "72605"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW5L59RFA42982",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Star White Metallic Tricoat",
+     "interior_trim": "Black Lthr Trim Bucket Seat",
+     "model": "2024 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$64,995.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$67,640.00",
+     "total_msrp": "$69,635.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW5L59RFA42982",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Star White Metallic Tricoat",
+    "interior_color": "Black Lthr Trim Bucket Seat",
+    "msrp": "$69,635.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "Black Lthr Trim Bucket Seat",
+    "vin": "1FTFW5L59RFA42982",
+    "msrp": "69635"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMCU0G67NUC01787",
+     "model_line": "Escape Fwd",
+     "trim_drivetrain": "2022 Escape Se Fwd",
+     "engine": "1.5L Ecoboost W/Start-Stop",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Dark Earth Gray Cloth Seats",
+     "model": "2022 Escape Fwd Escape Se Fwd"
+    },
+    "pricing": {
+     "base_price": "$28,520.00",
+     "destination_and_delivery": "$1,495.00",
+     "total_vehicle_and_options": "$31,000.00",
+     "total_msrp": "$32,495.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMCU0G67NUC01787",
+    "model_line": "Escape Fwd",
+    "model": "Escape Fwd",
+    "trim_drivetrain": "2022 Escape Se Fwd",
+    "engine": "1.5L EcoBoost With Start-Stop",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Dark Earth Gray Cloth Seats",
+    "msrp": "$32,495.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "Escape Fwd",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Dark Earth Gray Cloth Seats",
+    "vin": "1FMCU0G67NUC01787",
+    "msrp": "32495"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FT8W3DT3REC42210",
+     "model_line": "Super Duty",
+     "trim_drivetrain": "2024 F350 Drw 4X4 Crew Cab",
+     "transmission": "10-Speed Auto Torqshift",
+     "exterior_color": "Race Red",
+     "interior_trim": "Baja Leather",
+     "model": "2024 Super Duty F350 Drw 4X4 Crew Cab"
+    },
+    "pricing": {
+     "base_price": "$67,480.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$84,820.00",
+     "total_msrp": "$86,815.00"
+    }
+   },
+   "fields": {
+    "vin": "1FT8W3DT3REC42210",
+    "model_line": "Super Duty",
+    "model": "Super Duty",
+    "trim_drivetrain": "2024 F350 Drw 4X4 Crew Cab",
+    "transmission": "10-Speed Auto Torqshift",
+    "exterior_color": "Race Red",
+    "interior_color": "Baja Leather",
+    "msrp": "$86,815.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Super Duty",
+    "exterior_color": "Race Red",
+    "interior_color": "Baja Leather",
+    "vin": "1FT8W3DT3REC42210",
+    "msrp": "86815"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1E52PKE22708",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Atlas Blue Metallic",
+     "interior_trim": "Black Sport Cloth40/Con/40",
+     "model": "2023 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$45,410.00",
+     "destination_and_delivery": "$1,895.00",
+     "total_vehicle_and_options": "$54,050.00",
+     "total_msrp": "$53,850.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1E52PKE22708",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Atlas Blue Metallic",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "msrp": "$53,850.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Atlas Blue Metallic",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "vin": "1FTFW1E52PKE22708",
+    "msrp": "53850"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1E8XPKD27842",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "engine": "3.5L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Race Red",
+     "interior_trim": "Black Sport 40/Console/40",
+     "model": "2023 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$50,220.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$62,385.00",
+     "total_msrp": "$62,180.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1E8XPKD27842",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "engine": "3.5L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Race Red",
+    "interior_color": "Black Sport 40/Console/40",
+    "msrp": "$62,180.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Race Red",
+    "interior_color": "Black Sport 40/Console/40",
+    "vin": "1FTFW1E8XPKD27842",
+    "msrp": "62180"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTER4BH5RLE15770",
+     "model_line": "Ranger",
+     "trim_drivetrain": "2024 Supercrew 4X2 Xl",
+     "engine": "2.3L Ecoboost Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Ebony Premium Cloth Seats",
+     "model": "2024 Ranger Supercrew 4X2 Xl"
+    },
+    "pricing": {
+     "base_price": "$32,670.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$33,405.00",
+     "total_msrp": "$35,000.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTER4BH5RLE15770",
+    "model_line": "Ranger",
+    "model": "Ranger",
+    "trim_drivetrain": "2024 Supercrew 4X2 Xl",
+    "engine": "2.3L EcoBoost Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Oxford White",
+    "interior_color": "Ebony Premium Cloth Seats",
+    "msrp": "$35,000.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Ranger",
+    "exterior_color": "Oxford White",
+    "interior_color": "Ebony Premium Cloth Seats",
+    "vin": "1FTER4BH5RLE15770",
+    "msrp": "35000"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMSK7DH6PGA99254",
+     "model_line": "Explorer",
+     "trim_drivetrain": "2023 Explorer Xlt Rwd",
+     "engine": "2.3L Ecoboost I-4 Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Star White Met Tri-Coat",
+     "interior_trim": "Ebony Activex Seat Mtrl",
+     "model": "2023 Explorer Explorer Xlt Rwd"
+    },
+    "pricing": {
+     "base_price": "$38,570.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$45,125.00",
+     "total_msrp": "$46,720.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMSK7DH6PGA99254",
+    "model_line": "Explorer",
+    "model": "Explorer",
+    "trim_drivetrain": "2023 Explorer Xlt Rwd",
+    "engine": "2.3L EcoBoost I-4 Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Star White Met Tri-Coat",
+    "interior_color": "Ebony Activex Seat Mtrl",
+    "msrp": "$46,720.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "Explorer",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "Ebony Activex Seat Mtrl",
+    "vin": "1FMSK7DH6PGA99254",
+    "msrp": "46720"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1E89PFC61714",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "engine": "3.5L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Avalanche",
+     "interior_trim": "Dark Slate Cloth 40Consle40",
+     "model": "2023 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$50,220.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$63,260.00",
+     "total_msrp": "$63,255.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1E89PFC61714",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "engine": "3.5L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Avalanche",
+    "interior_color": "Dark Slate Cloth 40Consle40",
+    "msrp": "$63,255.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Avalanche",
+    "interior_color": "Dark Slate Cloth 40consle40",
+    "vin": "1FTFW1E89PFC61714",
+    "msrp": "63255"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMCU0G63NUA32254",
+     "model_line": "Escape Fwd",
+     "trim_drivetrain": "2022 Escape Se Fwd",
+     "engine": "1.5L Ecoboost W/Start-Stop",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Dark Earth Gray Cloth Seats",
+     "model": "2022 Escape Fwd Escape Se Fwd"
+    },
+    "pricing": {
+     "base_price": "$28,095.00",
+     "destination_and_delivery": "$1,495.00",
+     "total_vehicle_and_options": "$31,590.00",
+     "total_msrp": "$33,085.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMCU0G63NUA32254",
+    "model_line": "Escape Fwd",
+    "model": "Escape Fwd",
+    "trim_drivetrain": "2022 Escape Se Fwd",
+    "engine": "1.5L EcoBoost With Start-Stop",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Dark Earth Gray Cloth Seats",
+    "msrp": "$33,085.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "Escape Fwd",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Dark Earth Gray Cloth Seats",
+    "vin": "1FMCU0G63NUA32254",
+    "msrp": "33085"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMDE5CH0MLA63326",
+     "model_line": "Bronco",
+     "trim_drivetrain": "2021 2-Door Advanced 4X4",
+     "seating_capacity": "Badlands - 4 Passenger",
+     "engine": "2.3L Ecoboost I-4 Engine",
+     "transmission": "7-Speed Manual Transmission",
+     "exterior_color": "Cyber Orange Met Tri-Coat",
+     "interior_trim": "Vinyl Black Seats",
+     "model": "2021 Bronco 2-Door Advanced 4X4"
+    },
+    "pricing": {
+     "base_price": "$42,095.00",
+     "destination_and_delivery": "$1,495.00",
+     "total_vehicle_and_options": "$47,345.00",
+     "total_msrp": "$48,840.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMDE5CH0MLA63326",
+    "model_line": "Bronco",
+    "model": "Bronco",
+    "trim_drivetrain": "2021 2-Door Advanced 4X4",
+    "seating": "Badlands - 4 Passenger",
+    "engine": "2.3L EcoBoost I-4 Engine",
+    "transmission": "7-Speed Manual Transmission",
+    "exterior_color": "Cyber Orange Met Tri-Coat",
+    "interior_color": "Vinyl Black Seats",
+    "msrp": "$48,840.00",
+    "year": "2021"
+   },
+   "vehicle": {
+    "year": "2021",
+    "model": "Bronco",
+    "exterior_color": "Cyber Orange Metallic Tri-Coat",
+    "interior_color": "Vinyl Black Seats",
+    "vin": "1FMDE5CH0MLA63326",
+    "msrp": "48840"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "2FMPK3J96MBA24911",
+     "model_line": "Edge",
+     "trim_drivetrain": "2021 Edge St-Line-Fwd",
+     "seating_capacity": "5-Passenger",
+     "engine": "Twin-Scrl 2.0L Ecoboost Eng",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Star White",
+     "interior_trim": "Ebony Activex Seat Material",
+     "model": "2021 Edge Edge St-Line-Fwd"
+    },
+    "pricing": {
+     "base_price": "$38,940.00",
+     "destination_and_delivery": "$1,245.00",
+     "total_vehicle_and_options": "$40,050.00",
+     "total_msrp": "$41,295.00"
+    }
+   },
+   "fields": {
+    "vin": "2FMPK3J96MBA24911",
+    "model_line": "Edge",
+    "model": "Edge",
+    "trim_drivetrain": "2021 Edge St-Line-Fwd",
+    "seating": "5-Passenger",
+    "engine": "Twin-Scrl 2.0L EcoBoost Eng",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Star White",
+    "interior_color": "Ebony Activex Seat Material",
+    "msrp": "$41,295.00",
+    "year": "2021"
+   },
+   "vehicle": {
+    "year": "2021",
+    "model": "Edge",
+    "exterior_color": "Star White",
+    "interior_color": "Ebony Activex Seat Material",
+    "vin": "2FMPK3J96MBA24911",
+    "msrp": "41295"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1RGXPFA30435",
+     "model_line": "F-150 Raptor",
+     "trim_drivetrain": "2023 Raptor 4X4 Supercrew",
+     "engine": "3.5L Ecoboost High Output",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Black Leather Bucket Seats",
+     "model": "2023 F-150 Raptor Raptor 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$76,775.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$86,185.00",
+     "total_msrp": "$87,980.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1RGXPFA30435",
+    "model_line": "F-150 Raptor",
+    "model": "F-150 Raptor",
+    "trim_drivetrain": "2023 Raptor 4X4 Supercrew",
+    "engine": "3.5L EcoBoost High Output",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Leather Bucket Seats",
+    "msrp": "$87,980.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150 Raptor",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Leather Bucket Seats",
+    "vin": "1FTFW1RGXPFA30435",
+    "msrp": "87980"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTMF1L55TKE60146",
+     "model_line": "F-150",
+     "trim_drivetrain": "2026 F-150 4X4 Regular Cab",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Dark Slate Cloth 40/20/40",
+     "model": "2026 F-150 F-150 4X4 Regular Cab"
+    },
+    "pricing": {
+     "base_price": "$44,345.00",
+     "destination_and_delivery": "$2,795.00",
+     "total_vehicle_and_options": "$44,345.00",
+     "total_msrp": "$47,140.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTMF1L55TKE60146",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2026 F-150 4X4 Regular Cab",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Oxford White",
+    "interior_color": "Dark Slate Cloth 40/20/40",
+    "msrp": "$47,140.00",
+    "year": "2026"
+   },
+   "vehicle": {
+    "year": "2026",
+    "model": "F-150",
+    "exterior_color": "Oxford White",
+    "interior_color": "Dark Slate Cloth 40/20/40",
+    "vin": "1FTMF1L55TKE60146",
+    "msrp": "47140"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1ED6PFA18097",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "transmission": "Hybrid Elec 10-Spd Auto Tra",
+     "exterior_color": "Antimatter Blue Metallic",
+     "interior_trim": "Black Int W/Black Leather",
+     "model": "2023 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$68,490.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$79,660.00",
+     "total_msrp": "$80,955.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1ED6PFA18097",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "transmission": "Hybrid Elec 10-Spd Auto Tra",
+    "exterior_color": "Antimatter Blue Metallic",
+    "interior_color": "Black Int W/Black Leather",
+    "msrp": "$80,955.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Antimatter Blue Metallic",
+    "interior_color": "Black Int With Black Leather",
+    "vin": "1FTFW1ED6PFA18097",
+    "msrp": "80955"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "3FMCR9GN7SRE25772",
+     "model_line": "Bronco Sport",
+     "trim_drivetrain": "2025 Heritage 4X4",
+     "seating_capacity": "5-Passenger",
+     "engine": "1.5L Ecoboost Engine",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Azure Gray Metallic Tri-Coa",
+     "interior_trim": "Plaid Cloth Navy Pier",
+     "model": "2025 Bronco Sport Heritage 4X4"
+    },
+    "pricing": {
+     "base_price": "$33,395.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$35,785.00",
+     "total_msrp": "$37,380.00"
+    }
+   },
+   "fields": {
+    "vin": "3FMCR9GN7SRE25772",
+    "model_line": "Bronco Sport",
+    "model": "Bronco Sport",
+    "trim_drivetrain": "2025 Heritage 4X4",
+    "seating": "5-Passenger",
+    "engine": "1.5L EcoBoost Engine",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Azure Gray Metallic Tri-Coa",
+    "interior_color": "Plaid Cloth Navy Pier",
+    "msrp": "$37,380.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "Bronco Sport",
+    "exterior_color": "Azure Gray Metallic Tri-Coa",
+    "interior_color": "Plaid Cloth Navy Pier",
+    "vin": "3FMCR9GN7SRE25772",
+    "msrp": "37380"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMJK1M87SEA37102",
+     "model_line": "Expedition Max",
+     "trim_drivetrain": "2025 Exped. Platinum 4X4",
+     "seating_capacity": "Platinum 7-Passenger",
+     "engine": "3.5L Ecoboost V6 Engine",
+     "transmission": "10Spd Auto Trans W/Slctshft",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Salt Crys Gray Lthr-Trim Se",
+     "model": "2025 Expedition Max Exped. Platinum 4X4"
+    },
+    "pricing": {
+     "base_price": "$77,430.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$80,240.00",
+     "total_msrp": "$82,235.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMJK1M87SEA37102",
+    "model_line": "Expedition Max",
+    "model": "Expedition Max",
+    "trim_drivetrain": "2025 Exped. Platinum 4X4",
+    "seating": "Platinum 7-Passenger",
+    "engine": "3.5L EcoBoost V6 Engine",
+    "transmission": "10spd Auto Transmission With Slctshft",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Salt Crys Gray Lthr-Trim Se",
+    "msrp": "$82,235.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "Expedition Max",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Salt Crys Gray Lthr-Trim SE",
+    "vin": "1FMJK1M87SEA37102",
+    "msrp": "82235"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1ED1MFA59359",
+     "model_line": "F-150",
+     "trim_drivetrain": "2021 F-150 4X4 Supercrew",
+     "transmission": "Hybrid Elec 10-Spd Auto Tra",
+     "exterior_color": "Star White Metallic Tricoat",
+     "interior_trim": "Admiral Blue Leather Seats",
+     "model": "2021 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$74,250.00",
+     "destination_and_delivery": "$1695.00",
+     "total_vehicle_and_options": "$77110.00",
+     "total_msrp": "$78,805.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1ED1MFA59359",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2021 F-150 4X4 Supercrew",
+    "transmission": "Hybrid Elec 10-Spd Auto Tra",
+    "exterior_color": "Star White Metallic Tricoat",
+    "interior_color": "Admiral Blue Leather Seats",
+    "msrp": "$78,805.00",
+    "year": "2021"
+   },
+   "vehicle": {
+    "year": "2021",
+    "model": "F-150",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "Admiral Blue Leather Seats",
+    "vin": "1FTFW1ED1MFA59359",
+    "msrp": "78805"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMJU1K82PEA37254",
+     "model_line": "Expedition",
+     "trim_drivetrain": "2023 Exped. Ltd Stealth 4X2",
+     "seating_capacity": "Limited 7-Passenger",
+     "engine": "3.5L Ecoboost V6 Engine",
+     "transmission": "10Spd Auto Trans W/Slctshft",
+     "exterior_color": "Star White Met Tri-Coat",
+     "interior_trim": "Onyx Leather-Trim Seats",
+     "model": "2023 Expedition Exped. Ltd Stealth 4X2"
+    },
+    "pricing": {
+     "base_price": "$68,060.00",
+     "destination_and_delivery": "$1,895.00",
+     "total_vehicle_and_options": "$74,420.00",
+     "total_msrp": "$76,315.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMJU1K82PEA37254",
+    "model_line": "Expedition",
+    "model": "Expedition",
+    "trim_drivetrain": "2023 Exped. Ltd Stealth 4X2",
+    "seating": "Limited 7-Passenger",
+    "engine": "3.5L EcoBoost V6 Engine",
+    "transmission": "10spd Auto Transmission With Slctshft",
+    "exterior_color": "Star White Met Tri-Coat",
+    "interior_color": "Onyx Leather-Trim Seats",
+    "msrp": "$76,315.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "Expedition",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "Onyx Leather-Trim Seats",
+    "vin": "1FMJU1K82PEA37254",
+    "msrp": "76315"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMDE8BH9RLA33638",
+     "model_line": "Bronco",
+     "trim_drivetrain": "2024 Outer Banks 4-Door 4X4",
+     "seating_capacity": "Outer Banks - 5 Passenger",
+     "engine": "2.3L Ecoboost I-4 Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Lth-Trm/Vinyl Roast/Blk Sts",
+     "model": "2024 Bronco Outer Banks 4-Door 4X4"
+    },
+    "pricing": {
+     "base_price": "$47,940.00",
+     "destination_and_delivery": "$1,895.00",
+     "total_vehicle_and_options": "$50,030.00",
+     "total_msrp": "$51,925.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMDE8BH9RLA33638",
+    "model_line": "Bronco",
+    "model": "Bronco",
+    "trim_drivetrain": "2024 Outer Banks 4-Door 4X4",
+    "seating": "Outer Banks - 5 Passenger",
+    "engine": "2.3L EcoBoost I-4 Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Lth-Trm/Vinyl Roast/Blk Sts",
+    "msrp": "$51,925.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Bronco",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Lth-Trm/Vinyl Roast/Blk Sts",
+    "vin": "1FMDE8BH9RLA33638",
+    "msrp": "51925"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FM5K8GCXLGA17667",
+     "model_line": "Explorer",
+     "trim_drivetrain": "2020 Explorer St 4Wd",
+     "engine": "3.0L Ecoboost V6 Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Star White Met Tri-Coat",
+     "interior_trim": "Ebony Lthr Seat Surfaces",
+     "model": "2020 Explorer Explorer St 4Wd"
+    },
+    "pricing": {
+     "base_price": "$54,740.00",
+     "destination_and_delivery": "$1095.00",
+     "total_vehicle_and_options": "$59140.00",
+     "total_msrp": "$60,235.00"
+    }
+   },
+   "fields": {
+    "vin": "1FM5K8GCXLGA17667",
+    "model_line": "Explorer",
+    "model": "Explorer",
+    "trim_drivetrain": "2020 Explorer St 4Wd",
+    "engine": "3.0L EcoBoost V6 Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Star White Met Tri-Coat",
+    "interior_color": "Ebony Lthr Seat Surfaces",
+    "msrp": "$60,235.00",
+    "year": "2020"
+   },
+   "vehicle": {
+    "year": "2020",
+    "model": "Explorer",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "Ebony Lthr Seat Surfaces",
+    "vin": "1FM5K8GCXLGA17667",
+    "msrp": "60235"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMDE8BH6TLA86496",
+     "model_line": "Bronco",
+     "trim_drivetrain": "2026 Outer Banks 4-Door 4X4",
+     "seating_capacity": "Outer Banks - 5 Passenger",
+     "engine": "2.3L Ecoboost I-4 Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Lth-Trm/Vinyl Black Sts",
+     "model": "2026 Bronco Outer Banks 4-Door 4X4"
+    },
+    "pricing": {
+     "base_price": "$48,090.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$50,380.00",
+     "total_msrp": "$52,375.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMDE8BH6TLA86496",
+    "model_line": "Bronco",
+    "model": "Bronco",
+    "trim_drivetrain": "2026 Outer Banks 4-Door 4X4",
+    "seating": "Outer Banks - 5 Passenger",
+    "engine": "2.3L EcoBoost I-4 Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Oxford White",
+    "interior_color": "Lth-Trm/Vinyl Black Sts",
+    "msrp": "$52,375.00",
+    "year": "2026"
+   },
+   "vehicle": {
+    "year": "2026",
+    "model": "Bronco",
+    "exterior_color": "Oxford White",
+    "interior_color": "Lth-Trm/Vinyl Black Sts",
+    "vin": "1FMDE8BH6TLA86496",
+    "msrp": "52375"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FA6P8TH0R5106024",
+     "model_line": "Mustang",
+     "trim_drivetrain": "2024 Ecoboost Coupe",
+     "seating_capacity": "4-Passenger Sports Car",
+     "engine": "2.3L Ecoboost 315Hp",
+     "exterior_color": "Shadow Black",
+     "interior_trim": "Black Onyx Cloth/Vinyl Trim",
+     "model": "2024 Mustang Ecoboost Coupe"
+    },
+    "pricing": {
+     "base_price": "$30,920.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$35,130.00",
+     "total_msrp": "$36,725.00"
+    }
+   },
+   "fields": {
+    "vin": "1FA6P8TH0R5106024",
+    "model_line": "Mustang",
+    "model": "Mustang",
+    "trim_drivetrain": "2024 Ecoboost Coupe",
+    "seating": "4-Passenger Sports Car",
+    "engine": "2.3L EcoBoost 315HP",
+    "exterior_color": "Shadow Black",
+    "interior_color": "Black Onyx Cloth/Vinyl Trim",
+    "msrp": "$36,725.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Mustang",
+    "exterior_color": "Shadow Black",
+    "interior_color": "Black Onyx Cloth/Vinyl Trim",
+    "vin": "1FA6P8TH0R5106024",
+    "msrp": "36725"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1ED1PFC67794",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "transmission": "Hybrid Elec 10-Spd Auto Tra",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Black Int W/Black Lthr Trim",
+     "model": "2023 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$50,220.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$65,220.00",
+     "total_msrp": "$63,315.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1ED1PFC67794",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "transmission": "Hybrid Elec 10-Spd Auto Tra",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Int W/Black Lthr Trim",
+    "msrp": "$63,315.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Int With Black Lthr Trim",
+    "vin": "1FTFW1ED1PFC67794",
+    "msrp": "63315"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMJU1K82REA81340",
+     "model_line": "Expedition",
+     "trim_drivetrain": "2024 Exped. Ltd Stealth 4X2",
+     "seating_capacity": "Limited 7-Passenger",
+     "engine": "3.5L Ecoboost V6 Engine",
+     "transmission": "10Spd Auto Trans W/Slctshft",
+     "exterior_color": "Iconic Silver Metallic",
+     "interior_trim": "Blk Onyx Leather-Trim Seats",
+     "model": "2024 Expedition Exped. Ltd Stealth 4X2"
+    },
+    "pricing": {
+     "base_price": "$68,515.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$75,175.00",
+     "total_msrp": "$77,170.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMJU1K82REA81340",
+    "model_line": "Expedition",
+    "model": "Expedition",
+    "trim_drivetrain": "2024 Exped. Ltd Stealth 4X2",
+    "seating": "Limited 7-Passenger",
+    "engine": "3.5L EcoBoost V6 Engine",
+    "transmission": "10spd Auto Transmission With Slctshft",
+    "exterior_color": "Iconic Silver Metallic",
+    "interior_color": "Blk Onyx Leather-Trim Seats",
+    "msrp": "$77,170.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Expedition",
+    "exterior_color": "Iconic Silver Metallic",
+    "interior_color": "Blk Onyx Leather-Trim Seats",
+    "vin": "1FMJU1K82REA81340",
+    "msrp": "77170"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMWK8GC9TGB41675",
+     "model_line": "Explorer",
+     "trim_drivetrain": "2026 Explorer St 4Wd",
+     "engine": "3.0L Ecoboost V6 Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Onyx Miko Inserts",
+     "model": "2026 Explorer Explorer St 4Wd"
+    },
+    "pricing": {
+     "base_price": "$56,905.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$60,645.00",
+     "total_msrp": "$62,440.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMWK8GC9TGB41675",
+    "model_line": "Explorer",
+    "model": "Explorer",
+    "trim_drivetrain": "2026 Explorer St 4Wd",
+    "engine": "3.0L EcoBoost V6 Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Onyx Miko Inserts",
+    "msrp": "$62,440.00",
+    "year": "2026"
+   },
+   "vehicle": {
+    "year": "2026",
+    "model": "Explorer",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Onyx Miko Inserts",
+    "vin": "1FMWK8GC9TGB41675",
+    "msrp": "62440"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW3KP7RKF28832",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X2 Supercrew",
+     "engine": "2.7L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Black Sport 40/Console/40",
+     "model": "2024 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$50,090.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$51,210.00",
+     "total_msrp": "$53,205.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW3KP7RKF28832",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X2 Supercrew",
+    "engine": "2.7L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Sport 40/Console/40",
+    "msrp": "$53,205.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Sport 40/Console/40",
+    "vin": "1FTEW3KP7RKF28832",
+    "msrp": "53205"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW3LD5RFA49844",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+     "transmission": "Hybrid Elec 10-Spd Auto Tra",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Black Sport 40/Console/40",
+     "model": "2024 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$53,840.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$63,220.00",
+     "total_msrp": "$61,315.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW3LD5RFA49844",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+    "transmission": "Hybrid Elec 10-Spd Auto Tra",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Sport 40/Console/40",
+    "msrp": "$61,315.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Sport 40/Console/40",
+    "vin": "1FTFW3LD5RFA49844",
+    "msrp": "61315"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTER4HP9SLE00712",
+     "model_line": "Ranger",
+     "trim_drivetrain": "2025 Supercrew 4X4 Xlt",
+     "engine": "2.7L Ecoboost Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Shadow Black",
+     "interior_trim": "Ebony Cloth Seats",
+     "model": "2025 Ranger Supercrew 4X4 Xlt"
+    },
+    "pricing": {
+     "base_price": "$39,495.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$45,970.00",
+     "total_msrp": "$47,315.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTER4HP9SLE00712",
+    "model_line": "Ranger",
+    "model": "Ranger",
+    "trim_drivetrain": "2025 Supercrew 4X4 Xlt",
+    "engine": "2.7L EcoBoost Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Shadow Black",
+    "interior_color": "Ebony Cloth Seats",
+    "msrp": "$47,315.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "Ranger",
+    "exterior_color": "Shadow Black",
+    "interior_color": "Ebony Cloth Seats",
+    "vin": "1FTER4HP9SLE00712",
+    "msrp": "47315"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW2LP1SKE97009",
+     "model_line": "F-150",
+     "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+     "engine": "2.7L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Space White Metallic",
+     "interior_trim": "Black Stx Cloth 40/Con/40",
+     "model": "2025 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$51,230.00",
+     "destination_and_delivery": "$2,195.00",
+     "total_vehicle_and_options": "$53,250.00",
+     "total_msrp": "$52,445.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW2LP1SKE97009",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+    "engine": "2.7L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Space White Metallic",
+    "interior_color": "Black Stx Cloth 40/Con/40",
+    "msrp": "$52,445.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "F-150",
+    "exterior_color": "Space White Metallic",
+    "interior_color": "Black Stx Cloth 40/Con/40",
+    "vin": "1FTEW2LP1SKE97009",
+    "msrp": "52445"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FBAX2C83SKA72867",
+     "model_line": "Transit",
+     "trim_drivetrain": "2025 350 Mr Pass Xlt Rwd",
+     "transmission": "10-Speed Transmission",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Dark Palazzo Gray Cloth",
+     "model": "2025 Transit 350 Mr Pass Xlt Rwd"
+    },
+    "pricing": {
+     "base_price": "$59,500.00",
+     "destination_and_delivery": "$2,095.00",
+     "total_vehicle_and_options": "$61,590.00",
+     "total_msrp": "$63,685.00"
+    }
+   },
+   "fields": {
+    "vin": "1FBAX2C83SKA72867",
+    "model_line": "Transit",
+    "model": "Transit",
+    "trim_drivetrain": "2025 350 Mr Pass Xlt Rwd",
+    "transmission": "10-Speed Transmission",
+    "exterior_color": "Oxford White",
+    "interior_color": "Dark Palazzo Gray Cloth",
+    "msrp": "$63,685.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "Transit",
+    "exterior_color": "Oxford White",
+    "interior_color": "Dark Palazzo Gray Cloth",
+    "vin": "1FBAX2C83SKA72867",
+    "msrp": "63685"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMSK8JH9PGB16008",
+     "model_line": "Explorer",
+     "trim_drivetrain": "2023 Explorer Timberlne 4Wd",
+     "engine": "2.3L Ecoboost I-4 Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Stone Blue Metallic",
+     "interior_trim": "Deep Cypress Activex Seats",
+     "model": "2023 Explorer Explorer Timberlne 4Wd"
+    },
+    "pricing": {
+     "base_price": "$48,980.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$51,100.00",
+     "total_msrp": "$52,695.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMSK8JH9PGB16008",
+    "model_line": "Explorer",
+    "model": "Explorer",
+    "trim_drivetrain": "2023 Explorer Timberlne 4Wd",
+    "engine": "2.3L EcoBoost I-4 Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Stone Blue Metallic",
+    "interior_color": "Deep Cypress Activex Seats",
+    "msrp": "$52,695.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "Explorer",
+    "exterior_color": "Stone Blue Metallic",
+    "interior_color": "Deep Cypress Activex Seats",
+    "vin": "1FMSK8JH9PGB16008",
+    "msrp": "52695"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "3FTTW8F93PRA99424",
+     "model_line": "Maverick",
+     "trim_drivetrain": "2023 Xl Awd",
+     "engine": "2.0L Ecoboost Engine",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Black Onyx-Med Dk Slate Tri",
+     "model": "2023 Maverick Xl Awd"
+    },
+    "pricing": {
+     "base_price": "$22,595.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$25,010.00",
+     "total_msrp": "$26,605.00"
+    }
+   },
+   "fields": {
+    "vin": "3FTTW8F93PRA99424",
+    "model_line": "Maverick",
+    "model": "Maverick",
+    "trim_drivetrain": "2023 Xl Awd",
+    "engine": "2.0L EcoBoost Engine",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Onyx-Med Dk Slate Tri",
+    "msrp": "$26,605.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "Maverick",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Onyx-Med Dk Slate Tri",
+    "vin": "3FTTW8F93PRA99424",
+    "msrp": "26605"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW2KP3RKE82006",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X2 Supercrew",
+     "engine": "2.7L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Avalanche",
+     "interior_trim": "Black Stx Cloth 40/Con/40",
+     "model": "2024 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$48,335.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$49,920.00",
+     "total_msrp": "$49,915.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW2KP3RKE82006",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X2 Supercrew",
+    "engine": "2.7L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Stx Cloth 40/Con/40",
+    "msrp": "$49,915.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Stx Cloth 40/Con/40",
+    "vin": "1FTEW2KP3RKE82006",
+    "msrp": "49915"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMCU0GN4PUB37864",
+     "model_line": "Escape Fwd",
+     "trim_drivetrain": "2023 Active Fwd",
+     "engine": "1.5L Ecoboost W/Start-Stop",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Ebony Unique Cloth Seats",
+     "model": "2023 Escape Fwd Active Fwd"
+    },
+    "pricing": {
+     "base_price": "$29,345.00",
+     "destination_and_delivery": "$1,495.00",
+     "total_vehicle_and_options": "$29,345.00",
+     "total_msrp": "$30,840.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMCU0GN4PUB37864",
+    "model_line": "Escape Fwd",
+    "model": "Escape Fwd",
+    "trim_drivetrain": "2023 Active Fwd",
+    "engine": "1.5L EcoBoost With Start-Stop",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Ebony Unique Cloth Seats",
+    "msrp": "$30,840.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "Escape Fwd",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Ebony Unique Cloth Seats",
+    "vin": "1FMCU0GN4PUB37864",
+    "msrp": "30840"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMSK8DH6NGB39271",
+     "model_line": "Explorer",
+     "trim_drivetrain": "2022 Explorer Xlt 4Wd",
+     "engine": "2.3L Ecoboost I-4 Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Star White Met Tri-Coat",
+     "interior_trim": "Ebony/Lt Slate Activex Seat",
+     "model": "2022 Explorer Explorer Xlt 4Wd"
+    },
+    "pricing": {
+     "base_price": "$39,245.00",
+     "destination_and_delivery": "$1,295.00",
+     "total_vehicle_and_options": "$45,275.00",
+     "total_msrp": "$46,270.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMSK8DH6NGB39271",
+    "model_line": "Explorer",
+    "model": "Explorer",
+    "trim_drivetrain": "2022 Explorer Xlt 4Wd",
+    "engine": "2.3L EcoBoost I-4 Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Star White Met Tri-Coat",
+    "interior_color": "Ebony/Lt Slate Activex Seat",
+    "msrp": "$46,270.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "Explorer",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "Ebony/Lt Slate Activex Seat",
+    "vin": "1FMSK8DH6NGB39271",
+    "msrp": "46270"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1C58PFC41488",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Avalanche",
+     "interior_trim": "Black Sport Cloth40/Con/40",
+     "model": "2023 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$41,530.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$49,570.00",
+     "total_msrp": "$49,470.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1C58PFC41488",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "msrp": "$49,470.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "vin": "1FTEW1C58PFC41488",
+    "msrp": "49470"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMCU0MN5PUA62726",
+     "model_line": "Escape Fwd",
+     "trim_drivetrain": "2023 St Line Fwd",
+     "engine": "1.5L Ecoboost W/Start-Stop",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Ebny Part Vnyl/Clth&Red Sti",
+     "model": "2023 Escape Fwd St Line Fwd"
+    },
+    "pricing": {
+     "base_price": "$30,340.00",
+     "destination_and_delivery": "$1,495.00",
+     "total_vehicle_and_options": "$31,410.00",
+     "total_msrp": "$32,155.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMCU0MN5PUA62726",
+    "model_line": "Escape Fwd",
+    "model": "Escape Fwd",
+    "trim_drivetrain": "2023 St Line Fwd",
+    "engine": "1.5L EcoBoost With Start-Stop",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Ebny Part Vnyl/Clth&Red Sti",
+    "msrp": "$32,155.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "Escape Fwd",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Ebny Part Vnyl/Clth&Red Sti",
+    "vin": "1FMCU0MN5PUA62726",
+    "msrp": "32155"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW3L54RKF07499",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Avalanche",
+     "interior_trim": "Black Sport 40/Console/40",
+     "model": "2024 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$53,950.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$62,070.00",
+     "total_msrp": "$62,065.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW3L54RKF07499",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Sport 40/Console/40",
+    "msrp": "$62,065.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Sport 40/Console/40",
+    "vin": "1FTFW3L54RKF07499",
+    "msrp": "62065"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1CP2NKE79875",
+     "model_line": "F-150",
+     "trim_drivetrain": "2022 F-150 4X2 Supercrew",
+     "engine": "2.7L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Black Sport Cloth40/Con/40",
+     "model": "2022 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$39,570.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$46,590.00",
+     "total_msrp": "$46,290.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1CP2NKE79875",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2022 F-150 4X2 Supercrew",
+    "engine": "2.7L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "msrp": "$46,290.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "F-150",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "vin": "1FTEW1CP2NKE79875",
+    "msrp": "46290"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1C51PKF04394",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Area 51 Blue",
+     "interior_trim": "Black Sport Cloth40/Con/40",
+     "model": "2023 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$41,530.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$49,570.00",
+     "total_msrp": "$49,470.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1C51PKF04394",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Area 51 Blue",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "msrp": "$49,470.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Area 51 Blue",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "vin": "1FTEW1C51PKF04394",
+    "msrp": "49470"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "3FMTK1RM9NMA59793",
+     "model_line": "Mustang Mach-E",
+     "trim_drivetrain": "2022 Select Rwd",
+     "seating_capacity": "5-Passenger",
+     "transmission": "Single-Speed Transmission",
+     "exterior_color": "Space White Metallic",
+     "interior_trim": "Blk Onyx Activex Seat Mtrl",
+     "model": "2022 Mustang Mach-E Select Rwd"
+    },
+    "pricing": {
+     "base_price": "$43,895.00",
+     "destination_and_delivery": "$1,100.00",
+     "total_vehicle_and_options": "$46,770.00",
+     "total_msrp": "$47,870.00"
+    }
+   },
+   "fields": {
+    "vin": "3FMTK1RM9NMA59793",
+    "model_line": "Mustang Mach-E",
+    "model": "Mustang Mach-E",
+    "trim_drivetrain": "2022 Select Rwd",
+    "seating": "5-Passenger",
+    "transmission": "Single-Speed Transmission",
+    "exterior_color": "Space White Metallic",
+    "interior_color": "Blk Onyx Activex Seat Mtrl",
+    "msrp": "$47,870.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "Mustang Mach-E",
+    "exterior_color": "Space White Metallic",
+    "interior_color": "Blk Onyx Activex Seat Mtrl",
+    "vin": "3FMTK1RM9NMA59793",
+    "msrp": "47870"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMEE9BPXTLA76541",
+     "model_line": "Bronco",
+     "trim_drivetrain": "2026 Badlands 4-Door 4X4",
+     "seating_capacity": "Badlands - 5 Passenger",
+     "engine": "2.7L Ecoboost V6 Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Vinyl Black Seats",
+     "model": "2026 Bronco Badlands 4-Door 4X4"
+    },
+    "pricing": {
+     "base_price": "$48,890.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$57,645.00",
+     "total_msrp": "$59,640.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMEE9BPXTLA76541",
+    "model_line": "Bronco",
+    "model": "Bronco",
+    "trim_drivetrain": "2026 Badlands 4-Door 4X4",
+    "seating": "Badlands - 5 Passenger",
+    "engine": "2.7L EcoBoost V6 Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Oxford White",
+    "interior_color": "Vinyl Black Seats",
+    "msrp": "$59,640.00",
+    "year": "2026"
+   },
+   "vehicle": {
+    "year": "2026",
+    "model": "Bronco",
+    "exterior_color": "Oxford White",
+    "interior_color": "Vinyl Black Seats",
+    "vin": "1FMEE9BPXTLA76541",
+    "msrp": "59640"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FA6P8CF8L5114829",
+     "model_line": "Mustang",
+     "trim_drivetrain": "2020 Gt Coupe Premium",
+     "seating_capacity": "4-Passenger Sports Car",
+     "exterior_color": "Velocity Blue",
+     "interior_trim": "Ebony Lthr-Trim Red Stitch",
+     "model": "2020 Mustang Gt Coupe Premium"
+    },
+    "pricing": {
+     "base_price": "$39,630.00",
+     "destination_and_delivery": "$1,095.00",
+     "total_vehicle_and_options": "$49,685.00",
+     "total_msrp": "$50,780.00"
+    }
+   },
+   "fields": {
+    "vin": "1FA6P8CF8L5114829",
+    "model_line": "Mustang",
+    "model": "Mustang",
+    "trim_drivetrain": "2020 Gt Coupe Premium",
+    "seating": "4-Passenger Sports Car",
+    "exterior_color": "Velocity Blue",
+    "interior_color": "Ebony Lthr-Trim Red Stitch",
+    "msrp": "$50,780.00",
+    "year": "2020"
+   },
+   "vehicle": {
+    "year": "2020",
+    "model": "Mustang",
+    "exterior_color": "Velocity Blue",
+    "interior_color": "Ebony Lthr-Trim Red Stitch",
+    "vin": "1FA6P8CF8L5114829",
+    "msrp": "50780"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1CP8PKF19511",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+     "engine": "2.7L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Black Sport 40/Console/40",
+     "model": "2023 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$46,360.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$55,560.00",
+     "total_msrp": "$55,555.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1CP8PKF19511",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+    "engine": "2.7L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Oxford White",
+    "interior_color": "Black Sport 40/Console/40",
+    "msrp": "$55,555.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Oxford White",
+    "interior_color": "Black Sport 40/Console/40",
+    "vin": "1FTEW1CP8PKF19511",
+    "msrp": "55555"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTER4LRXSLE10738",
+     "model_line": "Ranger Raptor",
+     "trim_drivetrain": "2025 Supercrew 4X4 Raptor",
+     "engine": "3.0L Ecoboost Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Shadow Black",
+     "interior_trim": "Ebony Leather-Trim Seats",
+     "model": "2025 Ranger Raptor Supercrew 4X4 Raptor"
+    },
+    "pricing": {
+     "base_price": "$55,820.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$55,820.00",
+     "total_msrp": "$57,415.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTER4LRXSLE10738",
+    "model_line": "Ranger Raptor",
+    "model": "Ranger Raptor",
+    "trim_drivetrain": "2025 Supercrew 4X4 Raptor",
+    "engine": "3.0L EcoBoost Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Shadow Black",
+    "interior_color": "Ebony Leather-Trim Seats",
+    "msrp": "$57,415.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "Ranger Raptor",
+    "exterior_color": "Shadow Black",
+    "interior_color": "Ebony Leather-Trim Seats",
+    "vin": "1FTER4LRXSLE10738",
+    "msrp": "57415"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMJU1HT6NEA30588",
+     "model_line": "Expedition",
+     "trim_drivetrain": "2022 Expedition Xlt 4X2",
+     "seating_capacity": "Xlt 7-Passenger",
+     "engine": "3.5L Ecoboost V6 Engine",
+     "transmission": "10Spd Auto Trans W/Slctshft",
+     "exterior_color": "Star White Met Tri-Coat",
+     "interior_trim": "Onyx Activex Seat Mtrl",
+     "model": "2022 Expedition Expedition Xlt 4X2"
+    },
+    "pricing": {
+     "base_price": "$56,685.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$62,325.00",
+     "total_msrp": "$64,120.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMJU1HT6NEA30588",
+    "model_line": "Expedition",
+    "model": "Expedition",
+    "trim_drivetrain": "2022 Expedition Xlt 4X2",
+    "seating": "Xlt 7-Passenger",
+    "engine": "3.5L EcoBoost V6 Engine",
+    "transmission": "10spd Auto Transmission With Slctshft",
+    "exterior_color": "Star White Met Tri-Coat",
+    "interior_color": "Onyx Activex Seat Mtrl",
+    "msrp": "$64,120.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "Expedition",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "Onyx Activex Seat Mtrl",
+    "vin": "1FMJU1HT6NEA30588",
+    "msrp": "64120"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1C58PKF01458",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Black Sport Cloth40/Con/40",
+     "model": "2023 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$41,530.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$48,430.00",
+     "total_msrp": "$48,330.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1C58PKF01458",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "msrp": "$48,330.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "vin": "1FTEW1C58PKF01458",
+    "msrp": "48330"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1E82PFC21152",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "engine": "3.5L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Dark Slate Cloth 40/20/40",
+     "model": "2023 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$49,220.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$52,350.00",
+     "total_msrp": "$54,145.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1E82PFC21152",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "engine": "3.5L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Dark Slate Cloth 40/20/40",
+    "msrp": "$54,145.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Dark Slate Cloth 40/20/40",
+    "vin": "1FTFW1E82PFC21152",
+    "msrp": "54145"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW3L55SFC67460",
+     "model_line": "F-150",
+     "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Black Sport Cloth 40/Con/40",
+     "model": "2025 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$51,915.00",
+     "destination_and_delivery": "$2,595.00",
+     "total_vehicle_and_options": "$63,835.00",
+     "total_msrp": "$64,430.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW3L55SFC67460",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Oxford White",
+    "interior_color": "Black Sport Cloth 40/Con/40",
+    "msrp": "$64,430.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "F-150",
+    "exterior_color": "Oxford White",
+    "interior_color": "Black Sport Cloth 40/Con/40",
+    "vin": "1FTFW3L55SFC67460",
+    "msrp": "64430"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1E83NFC15499",
+     "model_line": "F-150",
+     "trim_drivetrain": "2022 F-150 4X4 Supercrew",
+     "engine": "3.5L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Star White Metallic Tricoat",
+     "interior_trim": "Black Int W/Black Leather",
+     "model": "2022 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$66,895.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$78,285.00",
+     "total_msrp": "$79,580.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1E83NFC15499",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2022 F-150 4X4 Supercrew",
+    "engine": "3.5L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Star White Metallic Tricoat",
+    "interior_color": "Black Int W/Black Leather",
+    "msrp": "$79,580.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "F-150",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "Black Int With Black Leather",
+    "vin": "1FTFW1E83NFC15499",
+    "msrp": "79580"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW5L57TKD08580",
+     "model_line": "F-150",
+     "trim_drivetrain": "2026 F-150 4X4 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Black Activex",
+     "model": "2026 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$63,360.00",
+     "destination_and_delivery": "$2,595.00",
+     "total_vehicle_and_options": "$66,025.00",
+     "total_msrp": "$68,620.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW5L57TKD08580",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2026 F-150 4X4 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Activex",
+    "msrp": "$68,620.00",
+    "year": "2026"
+   },
+   "vehicle": {
+    "year": "2026",
+    "model": "F-150",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Activex",
+    "vin": "1FTFW5L57TKD08580",
+    "msrp": "68620"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1E87PFB51860",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "engine": "3.5L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Avalanche",
+     "interior_trim": "Black Int W/Black Leather",
+     "model": "2023 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$68,490.00",
+     "destination_and_delivery": "$1,895.00",
+     "total_vehicle_and_options": "$76,925.00",
+     "total_msrp": "$78,320.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1E87PFB51860",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "engine": "3.5L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Int W/Black Leather",
+    "msrp": "$78,320.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Int With Black Leather",
+    "vin": "1FTFW1E87PFB51860",
+    "msrp": "78320"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FA6P8TH8R5121919",
+     "model_line": "Mustang",
+     "trim_drivetrain": "2024 Ecoboost Coupe Premium",
+     "seating_capacity": "4-Passenger Sports Car",
+     "engine": "2.3L Ecoboost 315Hp",
+     "exterior_color": "Shadow Black",
+     "interior_trim": "Black Onyx Lthr-Trimmed",
+     "model": "2024 Mustang Ecoboost Coupe Premium"
+    },
+    "pricing": {
+     "base_price": "$36,445.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$40,340.00",
+     "total_msrp": "$41,935.00"
+    }
+   },
+   "fields": {
+    "vin": "1FA6P8TH8R5121919",
+    "model_line": "Mustang",
+    "model": "Mustang",
+    "trim_drivetrain": "2024 Ecoboost Coupe Premium",
+    "seating": "4-Passenger Sports Car",
+    "engine": "2.3L EcoBoost 315HP",
+    "exterior_color": "Shadow Black",
+    "interior_color": "Black Onyx Lthr-Trimmed",
+    "msrp": "$41,935.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Mustang",
+    "exterior_color": "Shadow Black",
+    "interior_color": "Black Onyx Lthr-Trimmed",
+    "vin": "1FA6P8TH8R5121919",
+    "msrp": "41935"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMSK7DH0LGC98360",
+     "model_line": "Explorer",
+     "trim_drivetrain": "2020 Explorer Xlt Rwd",
+     "engine": "2.3L I4 Ecoboost Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Ebony Activex Seat Mtrl",
+     "model": "2020 Explorer Explorer Xlt Rwd"
+    },
+    "pricing": {
+     "base_price": "$36,925.00",
+     "destination_and_delivery": "$1,245.00",
+     "total_vehicle_and_options": "$44,155.00",
+     "total_msrp": "$44,400.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMSK7DH0LGC98360",
+    "model_line": "Explorer",
+    "model": "Explorer",
+    "trim_drivetrain": "2020 Explorer Xlt Rwd",
+    "engine": "2.3L I4 EcoBoost Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Ebony Activex Seat Mtrl",
+    "msrp": "$44,400.00",
+    "year": "2020"
+   },
+   "vehicle": {
+    "year": "2020",
+    "model": "Explorer",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Ebony Activex Seat Mtrl",
+    "vin": "1FMSK7DH0LGC98360",
+    "msrp": "44400"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW3LD7RFA30454",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+     "transmission": "Hybrid Elec 10-Spd Auto Tra",
+     "exterior_color": "Antimatter Blue Metallic",
+     "interior_trim": "Black Sport 40/Console/40",
+     "model": "2024 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$53,840.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$65,335.00",
+     "total_msrp": "$63,430.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW3LD7RFA30454",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+    "transmission": "Hybrid Elec 10-Spd Auto Tra",
+    "exterior_color": "Antimatter Blue Metallic",
+    "interior_color": "Black Sport 40/Console/40",
+    "msrp": "$63,430.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Antimatter Blue Metallic",
+    "interior_color": "Black Sport 40/Console/40",
+    "vin": "1FTFW3LD7RFA30454",
+    "msrp": "63430"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FT8W3DM8TEE35873",
+     "model_line": "Super Duty",
+     "trim_drivetrain": "2026 F350 Drw 4X4 Crew Cab",
+     "transmission": "10-Speed Auto Torqshift",
+     "exterior_color": "Star White",
+     "interior_trim": "Smoked Truffle Leather",
+     "model": "2026 Super Duty F350 Drw 4X4 Crew Cab"
+    },
+    "pricing": {
+     "base_price": "$82,495.00",
+     "destination_and_delivery": "$2,795.00",
+     "total_vehicle_and_options": "$106,590.00",
+     "total_msrp": "$109,385.00"
+    }
+   },
+   "fields": {
+    "vin": "1FT8W3DM8TEE35873",
+    "model_line": "Super Duty",
+    "model": "Super Duty",
+    "trim_drivetrain": "2026 F350 Drw 4X4 Crew Cab",
+    "transmission": "10-Speed Auto Torqshift",
+    "exterior_color": "Star White",
+    "interior_color": "Smoked Truffle Leather",
+    "msrp": "$109,385.00",
+    "year": "2026"
+   },
+   "vehicle": {
+    "year": "2026",
+    "model": "Super Duty",
+    "exterior_color": "Star White",
+    "interior_color": "Smoked Truffle Leather",
+    "vin": "1FT8W3DM8TEE35873",
+    "msrp": "109385"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1EP0PKD71397",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "engine": "2.7L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Antimatter Blue Metallic",
+     "interior_trim": "Slate Gray 40/Con/40",
+     "model": "2023 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$50,220.00",
+     "destination_and_delivery": "$1,895.00",
+     "total_vehicle_and_options": "$60,830.00",
+     "total_msrp": "$60,725.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1EP0PKD71397",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "engine": "2.7L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Antimatter Blue Metallic",
+    "interior_color": "Slate Gray 40/Con/40",
+    "msrp": "$60,725.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Antimatter Blue Metallic",
+    "interior_color": "Slate Gray 40/Con/40",
+    "vin": "1FTEW1EP0PKD71397",
+    "msrp": "60725"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FT8W3DT1REC12526",
+     "model_line": "Super Duty",
+     "trim_drivetrain": "2024 F350 Drw 4X4 Crew Cab",
+     "transmission": "10-Speed Auto Torqshift",
+     "exterior_color": "Carbonized Gray",
+     "interior_trim": "Black Onyx Leather",
+     "model": "2024 Super Duty F350 Drw 4X4 Crew Cab"
+    },
+    "pricing": {
+     "base_price": "$67,480.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$81,870.00",
+     "total_msrp": "$83,865.00"
+    }
+   },
+   "fields": {
+    "vin": "1FT8W3DT1REC12526",
+    "model_line": "Super Duty",
+    "model": "Super Duty",
+    "trim_drivetrain": "2024 F350 Drw 4X4 Crew Cab",
+    "transmission": "10-Speed Auto Torqshift",
+    "exterior_color": "Carbonized Gray",
+    "interior_color": "Black Onyx Leather",
+    "msrp": "$83,865.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Super Duty",
+    "exterior_color": "Carbonized Gray",
+    "interior_color": "Black Onyx Leather",
+    "vin": "1FT8W3DT1REC12526",
+    "msrp": "83865"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTER4GH3RLE65981",
+     "model_line": "Ranger",
+     "trim_drivetrain": "2024 Supercrew 4X2 Xlt",
+     "engine": "2.3L Ecoboost Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Ebony Premium Cloth Seats",
+     "model": "2024 Ranger Supercrew 4X2 Xlt"
+    },
+    "pricing": {
+     "base_price": "$36,260.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$37,520.00",
+     "total_msrp": "$39,115.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTER4GH3RLE65981",
+    "model_line": "Ranger",
+    "model": "Ranger",
+    "trim_drivetrain": "2024 Supercrew 4X2 Xlt",
+    "engine": "2.3L EcoBoost Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Ebony Premium Cloth Seats",
+    "msrp": "$39,115.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Ranger",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Ebony Premium Cloth Seats",
+    "vin": "1FTER4GH3RLE65981",
+    "msrp": "39115"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW2L50SKE84741",
+     "model_line": "F-150",
+     "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Rapid Red Met Tinted Cc",
+     "interior_trim": "Black Stx Cloth 40/Con/40",
+     "model": "2025 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$51,230.00",
+     "destination_and_delivery": "$2,195.00",
+     "total_vehicle_and_options": "$57,700.00",
+     "total_msrp": "$57,895.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW2L50SKE84741",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Rapid Red Met Tinted Cc",
+    "interior_color": "Black Stx Cloth 40/Con/40",
+    "msrp": "$57,895.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "F-150",
+    "exterior_color": "Rapid Red Metallic Tinted Cc",
+    "interior_color": "Black Stx Cloth 40/Con/40",
+    "vin": "1FTFW2L50SKE84741",
+    "msrp": "57895"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1RG6PFA15687",
+     "model_line": "F-150 Raptor",
+     "trim_drivetrain": "2023 Raptor 4X4 Supercrew",
+     "engine": "3.5L Ecoboost High Output",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Avalanche",
+     "interior_trim": "Black Leather Bucket Seats",
+     "model": "2023 F-150 Raptor Raptor 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$76,775.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$82,970.00",
+     "total_msrp": "$84,765.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1RG6PFA15687",
+    "model_line": "F-150 Raptor",
+    "model": "F-150 Raptor",
+    "trim_drivetrain": "2023 Raptor 4X4 Supercrew",
+    "engine": "3.5L EcoBoost High Output",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Leather Bucket Seats",
+    "msrp": "$84,765.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150 Raptor",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Leather Bucket Seats",
+    "vin": "1FTFW1RG6PFA15687",
+    "msrp": "84765"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMJU1K80PEA18119",
+     "model_line": "Expedition",
+     "trim_drivetrain": "2023 Exped. Ltd Stealth 4X2",
+     "seating_capacity": "Limited 7-Passenger",
+     "engine": "3.5L Ecoboost V6 Engine",
+     "transmission": "10Spd Auto Trans W/Slctshft",
+     "exterior_color": "Dark Matter Gray Metallic",
+     "interior_trim": "Onyx Leather-Trim Seats",
+     "model": "2023 Expedition Exped. Ltd Stealth 4X2"
+    },
+    "pricing": {
+     "base_price": "$68,060.00",
+     "destination_and_delivery": "$1,895.00",
+     "total_vehicle_and_options": "$75,415.00",
+     "total_msrp": "$77,310.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMJU1K80PEA18119",
+    "model_line": "Expedition",
+    "model": "Expedition",
+    "trim_drivetrain": "2023 Exped. Ltd Stealth 4X2",
+    "seating": "Limited 7-Passenger",
+    "engine": "3.5L EcoBoost V6 Engine",
+    "transmission": "10spd Auto Transmission With Slctshft",
+    "exterior_color": "Dark Matter Gray Metallic",
+    "interior_color": "Onyx Leather-Trim Seats",
+    "msrp": "$77,310.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "Expedition",
+    "exterior_color": "Dark Matter Gray Metallic",
+    "interior_color": "Onyx Leather-Trim Seats",
+    "vin": "1FMJU1K80PEA18119",
+    "msrp": "77310"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FA6P8CF2R5430042",
+     "model_line": "Mustang",
+     "trim_drivetrain": "2024 Gt Coupe Premium",
+     "seating_capacity": "4-Passenger Sports Car",
+     "exterior_color": "Vapor Blue Metallic",
+     "interior_trim": "Navy Pier Leather-Trimmed",
+     "model": "2024 Mustang Gt Coupe Premium"
+    },
+    "pricing": {
+     "base_price": "$46,980.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$52,505.00",
+     "total_msrp": "$54,100.00"
+    }
+   },
+   "fields": {
+    "vin": "1FA6P8CF2R5430042",
+    "model_line": "Mustang",
+    "model": "Mustang",
+    "trim_drivetrain": "2024 Gt Coupe Premium",
+    "seating": "4-Passenger Sports Car",
+    "exterior_color": "Vapor Blue Metallic",
+    "interior_color": "Navy Pier Leather-Trimmed",
+    "msrp": "$54,100.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Mustang",
+    "exterior_color": "Vapor Blue Metallic",
+    "interior_color": "Navy Pier Leather-Trimmed",
+    "vin": "1FA6P8CF2R5430042",
+    "msrp": "54100"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1RG9SFB17235",
+     "model_line": "F-150 Raptor",
+     "trim_drivetrain": "2025 Raptor 4X4 Supercrew",
+     "engine": "3.5L Ecoboost High Output",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Black Leather Bucket Seats",
+     "model": "2025 F-150 Raptor Raptor 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$79,005.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$80,500.00",
+     "total_msrp": "$82,495.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1RG9SFB17235",
+    "model_line": "F-150 Raptor",
+    "model": "F-150 Raptor",
+    "trim_drivetrain": "2025 Raptor 4X4 Supercrew",
+    "engine": "3.5L EcoBoost High Output",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Leather Bucket Seats",
+    "msrp": "$82,495.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "F-150 Raptor",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Leather Bucket Seats",
+    "vin": "1FTFW1RG9SFB17235",
+    "msrp": "82495"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTVW3LK6SWG16286",
+     "model_line": "F-150 Lightning",
+     "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+     "transmission": "Single-Speed Transmission",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Md Dark Slate Cloth 40/C/40",
+     "model": "2025 F-150 Lightning F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$62,995.00",
+     "destination_and_delivery": "$2,195.00",
+     "total_vehicle_and_options": "$63,770.00",
+     "total_msrp": "$65,965.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTVW3LK6SWG16286",
+    "model_line": "F-150 Lightning",
+    "model": "F-150 Lightning",
+    "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+    "transmission": "Single-Speed Transmission",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Md Dark Slate Cloth 40/C/40",
+    "msrp": "$65,965.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "F-150 Lightning",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Md Dark Slate Cloth 40/C/40",
+    "vin": "1FTVW3LK6SWG16286",
+    "msrp": "65965"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1E88NFA47293",
+     "model_line": "F-150",
+     "trim_drivetrain": "2022 F-150 4X4 Supercrew",
+     "engine": "3.5L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Star White Metallic Tricoat",
+     "interior_trim": "Admiral Blue Leather Seats",
+     "model": "2022 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$77,760.00",
+     "destination_and_delivery": "$1,695.00",
+     "total_vehicle_and_options": "$81,815.00",
+     "total_msrp": "$83,510.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1E88NFA47293",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2022 F-150 4X4 Supercrew",
+    "engine": "3.5L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Star White Metallic Tricoat",
+    "interior_color": "Admiral Blue Leather Seats",
+    "msrp": "$83,510.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "F-150",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "Admiral Blue Leather Seats",
+    "vin": "1FTFW1E88NFA47293",
+    "msrp": "83510"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FT8W3DT2SEC09611",
+     "model_line": "Super Duty",
+     "trim_drivetrain": "2025 F350 Drw 4X4 Crew Cab",
+     "transmission": "10-Speed Auto Torqshift",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Medium Dark Slate Cloth",
+     "model": "2025 Super Duty F350 Drw 4X4 Crew Cab"
+    },
+    "pricing": {
+     "base_price": "$58,700.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$70,985.00",
+     "total_msrp": "$72,980.00"
+    }
+   },
+   "fields": {
+    "vin": "1FT8W3DT2SEC09611",
+    "model_line": "Super Duty",
+    "model": "Super Duty",
+    "trim_drivetrain": "2025 F350 Drw 4X4 Crew Cab",
+    "transmission": "10-Speed Auto Torqshift",
+    "exterior_color": "Oxford White",
+    "interior_color": "Medium Dark Slate Cloth",
+    "msrp": "$72,980.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "Super Duty",
+    "exterior_color": "Oxford White",
+    "interior_color": "Medium Dark Slate Cloth",
+    "vin": "1FT8W3DT2SEC09611",
+    "msrp": "72980"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTMF1L58TKD85748",
+     "model_line": "F-150",
+     "trim_drivetrain": "2026 F-150 4X4 Regular Cab",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Iconic Silver Metallic",
+     "interior_trim": "Dark Slate Cloth 40/20/40",
+     "model": "2026 F-150 F-150 4X4 Regular Cab"
+    },
+    "pricing": {
+     "base_price": "$44,345.00",
+     "destination_and_delivery": "$2,795.00",
+     "total_vehicle_and_options": "$45,540.00",
+     "total_msrp": "$48,335.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTMF1L58TKD85748",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2026 F-150 4X4 Regular Cab",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Iconic Silver Metallic",
+    "interior_color": "Dark Slate Cloth 40/20/40",
+    "msrp": "$48,335.00",
+    "year": "2026"
+   },
+   "vehicle": {
+    "year": "2026",
+    "model": "F-150",
+    "exterior_color": "Iconic Silver Metallic",
+    "interior_color": "Dark Slate Cloth 40/20/40",
+    "vin": "1FTMF1L58TKD85748",
+    "msrp": "48335"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FM5K8GC6LGA90650",
+     "model_line": "Explorer",
+     "trim_drivetrain": "2020 Explorer St 4Wd",
+     "engine": "3.0L Ecoboost V6 Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Ebony Lthr Seat Surfaces",
+     "model": "2020 Explorer Explorer St 4Wd"
+    },
+    "pricing": {
+     "base_price": "$54,740.00",
+     "destination_and_delivery": "$1,195.00",
+     "total_vehicle_and_options": "$58,645.00",
+     "total_msrp": "$59,840.00"
+    }
+   },
+   "fields": {
+    "vin": "1FM5K8GC6LGA90650",
+    "model_line": "Explorer",
+    "model": "Explorer",
+    "trim_drivetrain": "2020 Explorer St 4Wd",
+    "engine": "3.0L EcoBoost V6 Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Ebony Lthr Seat Surfaces",
+    "msrp": "$59,840.00",
+    "year": "2020"
+   },
+   "vehicle": {
+    "year": "2020",
+    "model": "Explorer",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Ebony Lthr Seat Surfaces",
+    "vin": "1FM5K8GC6LGA90650",
+    "msrp": "59840"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "2FMPK4J91PBA41349",
+     "model_line": "Edge",
+     "trim_drivetrain": "2023 Edge Sel Awd",
+     "seating_capacity": "5-Passenger",
+     "engine": "Twin-Scrl 2.0L Ecoboost Eng",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Carbonized Gray",
+     "interior_trim": "Ebony Activex Seat Material",
+     "model": "2023 Edge Edge Sel Awd"
+    },
+    "pricing": {
+     "base_price": "$39,345.00",
+     "destination_and_delivery": "$1,495.00",
+     "total_vehicle_and_options": "$42,290.00",
+     "total_msrp": "$43,785.00"
+    }
+   },
+   "fields": {
+    "vin": "2FMPK4J91PBA41349",
+    "model_line": "Edge",
+    "model": "Edge",
+    "trim_drivetrain": "2023 Edge Sel Awd",
+    "seating": "5-Passenger",
+    "engine": "Twin-Scrl 2.0L EcoBoost Eng",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Carbonized Gray",
+    "interior_color": "Ebony Activex Seat Material",
+    "msrp": "$43,785.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "Edge",
+    "exterior_color": "Carbonized Gray",
+    "interior_color": "Ebony Activex Seat Material",
+    "vin": "2FMPK4J91PBA41349",
+    "msrp": "43785"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW6LDXSFA04504",
+     "model_line": "F-150",
+     "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+     "transmission": "Hybrid Elec 10-Spd Auto Tra",
+     "exterior_color": "Star White Metallic Tricoat",
+     "interior_trim": "Java Leather",
+     "model": "2025 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$74,805.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$78,795.00",
+     "total_msrp": "$78,890.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW6LDXSFA04504",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+    "transmission": "Hybrid Elec 10-Spd Auto Tra",
+    "exterior_color": "Star White Metallic Tricoat",
+    "interior_color": "Java Leather",
+    "msrp": "$78,890.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "F-150",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "Java Leather",
+    "vin": "1FTFW6LDXSFA04504",
+    "msrp": "78890"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMJK1H8XPEA45308",
+     "model_line": "Expedition Max",
+     "trim_drivetrain": "2023 Expedition Xlt 4X2",
+     "seating_capacity": "Xlt 7-Passenger",
+     "engine": "3.5L Ecoboost V6 Engine",
+     "transmission": "10Spd Auto Trans W/Slctshft",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Onyx Activex Seat Mtrl",
+     "model": "2023 Expedition Max Expedition Xlt 4X2"
+    },
+    "pricing": {
+     "base_price": "$62,190.00",
+     "destination_and_delivery": "$1,895.00",
+     "total_vehicle_and_options": "$70,540.00",
+     "total_msrp": "$72,435.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMJK1H8XPEA45308",
+    "model_line": "Expedition Max",
+    "model": "Expedition Max",
+    "trim_drivetrain": "2023 Expedition Xlt 4X2",
+    "seating": "Xlt 7-Passenger",
+    "engine": "3.5L EcoBoost V6 Engine",
+    "transmission": "10spd Auto Transmission With Slctshft",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Onyx Activex Seat Mtrl",
+    "msrp": "$72,435.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "Expedition Max",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Onyx Activex Seat Mtrl",
+    "vin": "1FMJK1H8XPEA45308",
+    "msrp": "72435"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW2L56SKD37999",
+     "model_line": "F-150",
+     "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Space White Metallic",
+     "interior_trim": "Black Stx Cloth 40/Con/40",
+     "model": "2025 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$51,130.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$54,325.00",
+     "total_msrp": "$54,320.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW2L56SKD37999",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2025 F-150 4X4 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Space White Metallic",
+    "interior_color": "Black Stx Cloth 40/Con/40",
+    "msrp": "$54,320.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "F-150",
+    "exterior_color": "Space White Metallic",
+    "interior_color": "Black Stx Cloth 40/Con/40",
+    "vin": "1FTFW2L56SKD37999",
+    "msrp": "54320"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMJK1LT9LEA51803",
+     "model_line": "Expedition Max",
+     "trim_drivetrain": "2020 Exped. Platinum 4X2",
+     "seating_capacity": "Platinum 7-Passenger",
+     "engine": "3.5L Ecoboost V6 Engine",
+     "transmission": "10Spd Auto Trans W/Slctshft",
+     "exterior_color": "Desert Gold Metallic",
+     "interior_trim": "Med Ceramic Lthr-Trim Seats",
+     "model": "2020 Expedition Max Exped. Platinum 4X2"
+    },
+    "pricing": {
+     "base_price": "$76,965.00",
+     "destination_and_delivery": "$1,695.00",
+     "total_vehicle_and_options": "$77,560.00",
+     "total_msrp": "$79,255.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMJK1LT9LEA51803",
+    "model_line": "Expedition Max",
+    "model": "Expedition Max",
+    "trim_drivetrain": "2020 Exped. Platinum 4X2",
+    "seating": "Platinum 7-Passenger",
+    "engine": "3.5L EcoBoost V6 Engine",
+    "transmission": "10spd Auto Transmission With Slctshft",
+    "exterior_color": "Desert Gold Metallic",
+    "interior_color": "Med Ceramic Lthr-Trim Seats",
+    "msrp": "$79,255.00",
+    "year": "2020"
+   },
+   "vehicle": {
+    "year": "2020",
+    "model": "Expedition Max",
+    "exterior_color": "Desert Gold Metallic",
+    "interior_color": "Med Ceramic Lthr-Trim Seats",
+    "vin": "1FMJK1LT9LEA51803",
+    "msrp": "79255"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW3L81RKD32705",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+     "engine": "3.5L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Black Sport 40/Console/40",
+     "model": "2024 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$53,840.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$62,645.00",
+     "total_msrp": "$62,640.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW3L81RKD32705",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+    "engine": "3.5L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Sport 40/Console/40",
+    "msrp": "$62,640.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Sport 40/Console/40",
+    "vin": "1FTFW3L81RKD32705",
+    "msrp": "62640"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW3KP3RKE80469",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X2 Supercrew",
+     "engine": "2.7L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Dark Slate Cloth 40/Con/40",
+     "model": "2024 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$50,090.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$51,605.00",
+     "total_msrp": "$53,600.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW3KP3RKE80469",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X2 Supercrew",
+    "engine": "2.7L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Dark Slate Cloth 40/Con/40",
+    "msrp": "$53,600.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Dark Slate Cloth 40/Con/40",
+    "vin": "1FTEW3KP3RKE80469",
+    "msrp": "53600"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1CP5PKE28597",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+     "engine": "2.7L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Black Sport Cloth40/20/40",
+     "model": "2023 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$41,530.00",
+     "destination_and_delivery": "$1,895.00",
+     "total_vehicle_and_options": "$46,575.00",
+     "total_msrp": "$46,375.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1CP5PKE28597",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+    "engine": "2.7L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Oxford White",
+    "interior_color": "Black Sport Cloth40/20/40",
+    "msrp": "$46,375.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Oxford White",
+    "interior_color": "Black Sport Cloth40/20/40",
+    "vin": "1FTEW1CP5PKE28597",
+    "msrp": "46375"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "2FMPK4K98PBA33778",
+     "model_line": "Edge",
+     "trim_drivetrain": "2023 Edge Titanium Awd",
+     "seating_capacity": "5-Passenger",
+     "engine": "Twin-Scrl 2.0L Ecoboost Eng",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Ebony Activex Trimmed Seats",
+     "model": "2023 Edge Edge Titanium Awd"
+    },
+    "pricing": {
+     "base_price": "$43,100.00",
+     "destination_and_delivery": "$1,495.00",
+     "total_vehicle_and_options": "$44,360.00",
+     "total_msrp": "$45,855.00"
+    }
+   },
+   "fields": {
+    "vin": "2FMPK4K98PBA33778",
+    "model_line": "Edge",
+    "model": "Edge",
+    "trim_drivetrain": "2023 Edge Titanium Awd",
+    "seating": "5-Passenger",
+    "engine": "Twin-Scrl 2.0L EcoBoost Eng",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Ebony Activex Trimmed Seats",
+    "msrp": "$45,855.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "Edge",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Ebony Activex Trimmed Seats",
+    "vin": "2FMPK4K98PBA33778",
+    "msrp": "45855"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMJU1L83VEA13590",
+     "model_line": "Expedition",
+     "trim_drivetrain": "2027 Exped. Platinum 4X2",
+     "seating_capacity": "Platinum 7-Passenger",
+     "engine": "3.5L Ecoboost V6 Engine",
+     "transmission": "10Spd Auto Trans W/Slctshft",
+     "exterior_color": "Glacier Gray Met Tri-Coat",
+     "interior_trim": "Black Onyx Lthr-Trimmed",
+     "model": "2027 Expedition Exped. Platinum 4X2"
+    },
+    "pricing": {
+     "base_price": "$70,550.00",
+     "destination_and_delivery": "$2,795.00",
+     "total_vehicle_and_options": "$72,465.00",
+     "total_msrp": "$75,260.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMJU1L83VEA13590",
+    "model_line": "Expedition",
+    "model": "Expedition",
+    "trim_drivetrain": "2027 Exped. Platinum 4X2",
+    "seating": "Platinum 7-Passenger",
+    "engine": "3.5L EcoBoost V6 Engine",
+    "transmission": "10spd Auto Transmission With Slctshft",
+    "exterior_color": "Glacier Gray Met Tri-Coat",
+    "interior_color": "Black Onyx Lthr-Trimmed",
+    "msrp": "$75,260.00",
+    "year": "2027"
+   },
+   "vehicle": {
+    "year": "2027",
+    "model": "Expedition",
+    "exterior_color": "Glacier Gray Metallic Tri-Coat",
+    "interior_color": "Black Onyx Lthr-Trimmed",
+    "vin": "1FMJU1L83VEA13590",
+    "msrp": "75260"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "3FTTW8HA3TRB41981",
+     "model_line": "Maverick",
+     "trim_drivetrain": "2026 Xlt Fwd",
+     "engine": "2.0L Ecoboost Engine",
+     "transmission": "Automatic Transmission",
+     "exterior_color": "Azure Gray Metallic Tc",
+     "interior_trim": "Navy Pier - Aspen Gray",
+     "model": "2026 Maverick Xlt Fwd"
+    },
+    "pricing": {
+     "base_price": "$30,645.00",
+     "destination_and_delivery": "$1,845.00",
+     "total_vehicle_and_options": "$30,255.00",
+     "total_msrp": "$32,100.00"
+    }
+   },
+   "fields": {
+    "vin": "3FTTW8HA3TRB41981",
+    "model_line": "Maverick",
+    "model": "Maverick",
+    "trim_drivetrain": "2026 Xlt Fwd",
+    "engine": "2.0L EcoBoost Engine",
+    "transmission": "Automatic Transmission",
+    "exterior_color": "Azure Gray Metallic Tc",
+    "interior_color": "Navy Pier - Aspen Gray",
+    "msrp": "$32,100.00",
+    "year": "2026"
+   },
+   "vehicle": {
+    "year": "2026",
+    "model": "Maverick",
+    "exterior_color": "Azure Gray Metallic Tri-Coat",
+    "interior_color": "Navy Pier - Aspen Gray",
+    "vin": "3FTTW8HA3TRB41981",
+    "msrp": "32100"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FT8W3DM5TEC78576",
+     "model_line": "Super Duty",
+     "trim_drivetrain": "2026 F350 Drw 4X4 Crew Cab",
+     "transmission": "10-Speed Auto Torqshift",
+     "exterior_color": "Avalanche",
+     "interior_trim": "Black Onyx Activex Trimmed",
+     "model": "2026 Super Duty F350 Drw 4X4 Crew Cab"
+    },
+    "pricing": {
+     "base_price": "$68,530.00",
+     "destination_and_delivery": "$2,595.00",
+     "total_vehicle_and_options": "$88,655.00",
+     "total_msrp": "$91,250.00"
+    }
+   },
+   "fields": {
+    "vin": "1FT8W3DM5TEC78576",
+    "model_line": "Super Duty",
+    "model": "Super Duty",
+    "trim_drivetrain": "2026 F350 Drw 4X4 Crew Cab",
+    "transmission": "10-Speed Auto Torqshift",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Onyx Activex Trimmed",
+    "msrp": "$91,250.00",
+    "year": "2026"
+   },
+   "vehicle": {
+    "year": "2026",
+    "model": "Super Duty",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Onyx Activex Trimmed",
+    "vin": "1FT8W3DM5TEC78576",
+    "msrp": "91250"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "2FMPK4J90RBA54953",
+     "model_line": "Edge",
+     "trim_drivetrain": "2024 Edge St-Line-Awd",
+     "seating_capacity": "5-Passenger",
+     "engine": "Twin-Scrl 2.0L Ecoboost Eng",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Atlas Blue",
+     "interior_trim": "Ebony Activex Trimmed",
+     "model": "2024 Edge Edge St-Line-Awd"
+    },
+    "pricing": {
+     "base_price": "$43,620.00",
+     "destination_and_delivery": "$1,495.00",
+     "total_vehicle_and_options": "$45,665.00",
+     "total_msrp": "$47,160.00"
+    }
+   },
+   "fields": {
+    "vin": "2FMPK4J90RBA54953",
+    "model_line": "Edge",
+    "model": "Edge",
+    "trim_drivetrain": "2024 Edge St-Line-Awd",
+    "seating": "5-Passenger",
+    "engine": "Twin-Scrl 2.0L EcoBoost Eng",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Atlas Blue",
+    "interior_color": "Ebony Activex Trimmed",
+    "msrp": "$47,160.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Edge",
+    "exterior_color": "Atlas Blue",
+    "interior_color": "Ebony Activex Trimmed",
+    "vin": "2FMPK4J90RBA54953",
+    "msrp": "47160"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "2FMPK4J97RBA54223",
+     "model_line": "Edge",
+     "trim_drivetrain": "2024 Edge Sel Awd",
+     "seating_capacity": "5-Passenger",
+     "engine": "Twin-Scrl 2.0L Ecoboost Eng",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Ebony Activex Trimmed",
+     "model": "2024 Edge Edge Sel Awd"
+    },
+    "pricing": {
+     "base_price": "$39,565.00",
+     "destination_and_delivery": "$1,495.00",
+     "total_vehicle_and_options": "$41,080.00",
+     "total_msrp": "$42,575.00"
+    }
+   },
+   "fields": {
+    "vin": "2FMPK4J97RBA54223",
+    "model_line": "Edge",
+    "model": "Edge",
+    "trim_drivetrain": "2024 Edge Sel Awd",
+    "seating": "5-Passenger",
+    "engine": "Twin-Scrl 2.0L EcoBoost Eng",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Oxford White",
+    "interior_color": "Ebony Activex Trimmed",
+    "msrp": "$42,575.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Edge",
+    "exterior_color": "Oxford White",
+    "interior_color": "Ebony Activex Trimmed",
+    "vin": "2FMPK4J97RBA54223",
+    "msrp": "42575"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW5L5XRKE81051",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Black Lthr Trim Bucket Seat",
+     "model": "2024 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$65,395.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$67,045.00",
+     "total_msrp": "$69,040.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW5L5XRKE81051",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Lthr Trim Bucket Seat",
+    "msrp": "$69,040.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Lthr Trim Bucket Seat",
+    "vin": "1FTFW5L5XRKE81051",
+    "msrp": "69040"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1CP3PKD51678",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+     "engine": "2.7L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Black Sport Cloth40/Con/40",
+     "model": "2023 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$41,530.00",
+     "destination_and_delivery": "$1,895.00",
+     "total_vehicle_and_options": "$47,435.00",
+     "total_msrp": "$47,235.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1CP3PKD51678",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+    "engine": "2.7L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "msrp": "$47,235.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "vin": "1FTEW1CP3PKD51678",
+    "msrp": "47235"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1E54LFB78512",
+     "model_line": "F-150",
+     "trim_drivetrain": "2020 F-150 4X4 Supercrew",
+     "transmission": "Elec 10-Speed Auto W/Tow Mo",
+     "exterior_color": "Magma Red",
+     "interior_trim": "Black Int W/Black Leather",
+     "model": "2020 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$58,945.00",
+     "destination_and_delivery": "$1,695.00",
+     "total_vehicle_and_options": "$64,915.00",
+     "total_msrp": "$66,110.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1E54LFB78512",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2020 F-150 4X4 Supercrew",
+    "transmission": "Elec 10-Speed Auto With Tow Mo",
+    "exterior_color": "Magma Red",
+    "interior_color": "Black Int W/Black Leather",
+    "msrp": "$66,110.00",
+    "year": "2020"
+   },
+   "vehicle": {
+    "year": "2020",
+    "model": "F-150",
+    "exterior_color": "Magma Red",
+    "interior_color": "Black Int With Black Leather",
+    "vin": "1FTEW1E54LFB78512",
+    "msrp": "66110"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW5L57RFB79693",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Rapid Red Met Tinted Cc",
+     "interior_trim": "Black Int W/Black Lthr Trim",
+     "model": "2024 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$65,395.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$67,985.00",
+     "total_msrp": "$69,980.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW5L57RFB79693",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Rapid Red Met Tinted Cc",
+    "interior_color": "Black Int W/Black Lthr Trim",
+    "msrp": "$69,980.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Rapid Red Metallic Tinted Cc",
+    "interior_color": "Black Int With Black Lthr Trim",
+    "vin": "1FTFW5L57RFB79693",
+    "msrp": "69980"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTMF1L50TKD81712",
+     "model_line": "F-150",
+     "trim_drivetrain": "2026 F-150 4X4 Regular Cab",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Dark Slate Cloth 40/20/40",
+     "model": "2026 F-150 F-150 4X4 Regular Cab"
+    },
+    "pricing": {
+     "base_price": "$44,345.00",
+     "destination_and_delivery": "$2,795.00",
+     "total_vehicle_and_options": "$45,540.00",
+     "total_msrp": "$48,335.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTMF1L50TKD81712",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2026 F-150 4X4 Regular Cab",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Oxford White",
+    "interior_color": "Dark Slate Cloth 40/20/40",
+    "msrp": "$48,335.00",
+    "year": "2026"
+   },
+   "vehicle": {
+    "year": "2026",
+    "model": "F-150",
+    "exterior_color": "Oxford White",
+    "interior_color": "Dark Slate Cloth 40/20/40",
+    "vin": "1FTMF1L50TKD81712",
+    "msrp": "48335"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FT8W2BM0SEC80733",
+     "model_line": "Super Duty",
+     "trim_drivetrain": "2025 F250 Srw 4X4 Crew Cab",
+     "transmission": "10-Speed Auto Torqshift",
+     "exterior_color": "Agate Black",
+     "interior_trim": "Black Onyx Activex",
+     "model": "2025 Super Duty F250 Srw 4X4 Crew Cab"
+    },
+    "pricing": {
+     "base_price": "$64,740.00",
+     "destination_and_delivery": "$2,095.00",
+     "total_vehicle_and_options": "$90,465.00",
+     "total_msrp": "$91,420.00"
+    }
+   },
+   "fields": {
+    "vin": "1FT8W2BM0SEC80733",
+    "model_line": "Super Duty",
+    "model": "Super Duty",
+    "trim_drivetrain": "2025 F250 Srw 4X4 Crew Cab",
+    "transmission": "10-Speed Auto Torqshift",
+    "exterior_color": "Agate Black",
+    "interior_color": "Black Onyx Activex",
+    "msrp": "$91,420.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "Super Duty",
+    "exterior_color": "Agate Black",
+    "interior_color": "Black Onyx Activex",
+    "vin": "1FT8W2BM0SEC80733",
+    "msrp": "91420"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FMJU1RT0NEA03451",
+     "model_line": "Expedition",
+     "trim_drivetrain": "2022 Exped Timberline 4X4",
+     "seating_capacity": "7-Passenger",
+     "engine": "3.5L Ecoboost V6 Engine",
+     "transmission": "10Spd Auto Trans W/Slctshft",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Deep Cypress Leather-Trim S",
+     "model": "2022 Expedition Exped Timberline 4X4"
+    },
+    "pricing": {
+     "base_price": "$69,150.00",
+     "destination_and_delivery": "$1,695.00",
+     "total_vehicle_and_options": "$78,655.00",
+     "total_msrp": "$80,350.00"
+    }
+   },
+   "fields": {
+    "vin": "1FMJU1RT0NEA03451",
+    "model_line": "Expedition",
+    "model": "Expedition",
+    "trim_drivetrain": "2022 Exped Timberline 4X4",
+    "seating": "7-Passenger",
+    "engine": "3.5L EcoBoost V6 Engine",
+    "transmission": "10spd Auto Transmission With Slctshft",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Deep Cypress Leather-Trim S",
+    "msrp": "$80,350.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "Expedition",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Deep Cypress Leather-Trim S",
+    "vin": "1FMJU1RT0NEA03451",
+    "msrp": "80350"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "3FMTK3R77SMA00923",
+     "model_line": "Mustang Mach-E",
+     "trim_drivetrain": "2025 Premium Rwd",
+     "seating_capacity": "5-Passenger",
+     "transmission": "Single-Speed Transmission",
+     "exterior_color": "Molten Magenta Tinted Cc",
+     "interior_trim": "Lt Gray Perforated Activex",
+     "model": "2025 Mustang Mach-E Premium Rwd"
+    },
+    "pricing": {
+     "base_price": "$39,995.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$46,085.00",
+     "total_msrp": "$48,080.00"
+    }
+   },
+   "fields": {
+    "vin": "3FMTK3R77SMA00923",
+    "model_line": "Mustang Mach-E",
+    "model": "Mustang Mach-E",
+    "trim_drivetrain": "2025 Premium Rwd",
+    "seating": "5-Passenger",
+    "transmission": "Single-Speed Transmission",
+    "exterior_color": "Molten Magenta Tinted Cc",
+    "interior_color": "Lt Gray Perforated Activex",
+    "msrp": "$48,080.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "Mustang Mach-E",
+    "exterior_color": "Molten Magenta Tinted Cc",
+    "interior_color": "LT Gray Perforated Activex",
+    "vin": "3FMTK3R77SMA00923",
+    "msrp": "48080"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1RG4NFA85931",
+     "model_line": "F-150 Raptor",
+     "trim_drivetrain": "2022 Raptor 4X4 Supercrew",
+     "engine": "3.5L Ecoboost High Output",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Black Leather Bucket Seats",
+     "model": "2022 F-150 Raptor Raptor 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$69,525.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$81,675.00",
+     "total_msrp": "$83,470.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1RG4NFA85931",
+    "model_line": "F-150 Raptor",
+    "model": "F-150 Raptor",
+    "trim_drivetrain": "2022 Raptor 4X4 Supercrew",
+    "engine": "3.5L EcoBoost High Output",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Leather Bucket Seats",
+    "msrp": "$83,470.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "F-150 Raptor",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Black Leather Bucket Seats",
+    "vin": "1FTFW1RG4NFA85931",
+    "msrp": "83470"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1E80PFA39188",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "engine": "3.5L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Agate Black Metallic",
+     "interior_trim": "Java Int W/Kingsville Leath",
+     "model": "2023 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$66,805.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$79,775.00",
+     "total_msrp": "$80,320.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1E80PFA39188",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "engine": "3.5L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Java Int W/Kingsville Leath",
+    "msrp": "$80,320.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Agate Black Metallic",
+    "interior_color": "Java Int With Kingsville Leath",
+    "vin": "1FTFW1E80PFA39188",
+    "msrp": "80320"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTER4FH1LLA71632",
+     "model_line": "Ranger",
+     "trim_drivetrain": "2020 Supercrew 4X4 - 5' Box",
+     "engine": "2.3L Ecoboost Engine",
+     "transmission": "Elec 10-Speed Auto Trans",
+     "exterior_color": "Magnetic",
+     "interior_trim": "Ebony Premium Cloth Seats",
+     "model": "2020 Ranger Supercrew 4X4 - 5' Box"
+    },
+    "pricing": {
+     "base_price": "$34,635.00",
+     "destination_and_delivery": "$1,195.00",
+     "total_vehicle_and_options": "$38,095.00",
+     "total_msrp": "$38,790.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTER4FH1LLA71632",
+    "model_line": "Ranger",
+    "model": "Ranger",
+    "trim_drivetrain": "2020 Supercrew 4X4 - 5' Box",
+    "engine": "2.3L EcoBoost Engine",
+    "transmission": "Elec 10-Speed Auto Transmission",
+    "exterior_color": "Magnetic",
+    "interior_color": "Ebony Premium Cloth Seats",
+    "msrp": "$38,790.00",
+    "year": "2020"
+   },
+   "vehicle": {
+    "year": "2020",
+    "model": "Ranger",
+    "exterior_color": "Magnetic",
+    "interior_color": "Ebony Premium Cloth Seats",
+    "vin": "1FTER4FH1LLA71632",
+    "msrp": "38790"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTVW1EL0PWG63606",
+     "model_line": "F-150 Lightning",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "transmission": "Single-Speed Transmission",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Dark Slate Cloth 40Consle40",
+     "model": "2023 F-150 Lightning F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$54,995.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$55,495.00",
+     "total_msrp": "$57,490.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTVW1EL0PWG63606",
+    "model_line": "F-150 Lightning",
+    "model": "F-150 Lightning",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "transmission": "Single-Speed Transmission",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Dark Slate Cloth 40Consle40",
+    "msrp": "$57,490.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150 Lightning",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Dark Slate Cloth 40consle40",
+    "vin": "1FTVW1EL0PWG63606",
+    "msrp": "57490"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FA6P8TH5R5110957",
+     "model_line": "Mustang",
+     "trim_drivetrain": "2024 Ecoboost Coupe",
+     "seating_capacity": "4-Passenger Sports Car",
+     "engine": "2.3L Ecoboost 315Hp",
+     "exterior_color": "Atlas Blue Metallic",
+     "interior_trim": "Black Onyx Cloth/Vinyl Trim",
+     "model": "2024 Mustang Ecoboost Coupe"
+    },
+    "pricing": {
+     "base_price": "$30,920.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$34,830.00",
+     "total_msrp": "$36,425.00"
+    }
+   },
+   "fields": {
+    "vin": "1FA6P8TH5R5110957",
+    "model_line": "Mustang",
+    "model": "Mustang",
+    "trim_drivetrain": "2024 Ecoboost Coupe",
+    "seating": "4-Passenger Sports Car",
+    "engine": "2.3L EcoBoost 315HP",
+    "exterior_color": "Atlas Blue Metallic",
+    "interior_color": "Black Onyx Cloth/Vinyl Trim",
+    "msrp": "$36,425.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Mustang",
+    "exterior_color": "Atlas Blue Metallic",
+    "interior_color": "Black Onyx Cloth/Vinyl Trim",
+    "vin": "1FA6P8TH5R5110957",
+    "msrp": "36425"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1C57PFB63561",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+     "engine": "5.0L V8 Engine",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Black Sport Cloth40/Con/40",
+     "model": "2023 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$41,530.00",
+     "destination_and_delivery": "$1,895.00",
+     "total_vehicle_and_options": "$50,255.00",
+     "total_msrp": "$50,055.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1C57PFB63561",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X2 Supercrew",
+    "engine": "5.0L V8 Engine",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "msrp": "$50,055.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Sport Cloth40/Con/40",
+    "vin": "1FTEW1C57PFB63561",
+    "msrp": "50055"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FT8W2BM0REC08814",
+     "model_line": "Super Duty",
+     "trim_drivetrain": "2024 F250 Srw 4X4 Crew Cab",
+     "transmission": "10-Speed Auto Torqshift",
+     "exterior_color": "Star White",
+     "interior_trim": "Admiral Blue Lt Slate Leath",
+     "model": "2024 Super Duty F250 Srw 4X4 Crew Cab"
+    },
+    "pricing": {
+     "base_price": "$97,095.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$99,150.00",
+     "total_msrp": "$101,145.00"
+    }
+   },
+   "fields": {
+    "vin": "1FT8W2BM0REC08814",
+    "model_line": "Super Duty",
+    "model": "Super Duty",
+    "trim_drivetrain": "2024 F250 Srw 4X4 Crew Cab",
+    "transmission": "10-Speed Auto Torqshift",
+    "exterior_color": "Star White",
+    "interior_color": "Admiral Blue Lt Slate Leath",
+    "msrp": "$101,145.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Super Duty",
+    "exterior_color": "Star White",
+    "interior_color": "Admiral Blue LT Slate Leath",
+    "vin": "1FT8W2BM0REC08814",
+    "msrp": "101145"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "3FTTW8H35RRA22548",
+     "model_line": "Maverick",
+     "trim_drivetrain": "2024 Xlt Fwd",
+     "engine": "2.5L Hybrid Engine",
+     "transmission": "Auto Cv Transmission",
+     "exterior_color": "Terrain",
+     "interior_trim": "Navy Pier -Med Slate Trim",
+     "model": "2024 Maverick Xlt Fwd"
+    },
+    "pricing": {
+     "base_price": "$26,315.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$28,030.00",
+     "total_msrp": "$29,625.00"
+    }
+   },
+   "fields": {
+    "vin": "3FTTW8H35RRA22548",
+    "model_line": "Maverick",
+    "model": "Maverick",
+    "trim_drivetrain": "2024 Xlt Fwd",
+    "engine": "2.5L Hybrid Engine",
+    "transmission": "Auto Cv Transmission",
+    "exterior_color": "Terrain",
+    "interior_color": "Navy Pier -Med Slate Trim",
+    "msrp": "$29,625.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Maverick",
+    "exterior_color": "Terrain",
+    "interior_color": "Navy Pier -Med Slate Trim",
+    "vin": "3FTTW8H35RRA22548",
+    "msrp": "29625"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1EP3NFC05204",
+     "model_line": "F-150",
+     "trim_drivetrain": "2022 F-150 4X4 Supercrew",
+     "engine": "2.7L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Black Sport 40/Console/40",
+     "model": "2022 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$48,625.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$58,840.00",
+     "total_msrp": "$58,635.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1EP3NFC05204",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2022 F-150 4X4 Supercrew",
+    "engine": "2.7L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Oxford White",
+    "interior_color": "Black Sport 40/Console/40",
+    "msrp": "$58,635.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "F-150",
+    "exterior_color": "Oxford White",
+    "interior_color": "Black Sport 40/Console/40",
+    "vin": "1FTEW1EP3NFC05204",
+    "msrp": "58635"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "3FMTK3R7XTMA05521",
+     "model_line": "Mustang Mach-E",
+     "trim_drivetrain": "2026 Premium Rwd",
+     "seating_capacity": "5-Passenger",
+     "transmission": "Single-Speed Transmission",
+     "exterior_color": "Star White Met Tri-Coat",
+     "interior_trim": "Lt Gray Perforated Activex",
+     "model": "2026 Mustang Mach-E Premium Rwd"
+    },
+    "pricing": {
+     "base_price": "$40,595.00",
+     "destination_and_delivery": "$2,045.00",
+     "total_vehicle_and_options": "$47,680.00",
+     "total_msrp": "$49,725.00"
+    }
+   },
+   "fields": {
+    "vin": "3FMTK3R7XTMA05521",
+    "model_line": "Mustang Mach-E",
+    "model": "Mustang Mach-E",
+    "trim_drivetrain": "2026 Premium Rwd",
+    "seating": "5-Passenger",
+    "transmission": "Single-Speed Transmission",
+    "exterior_color": "Star White Met Tri-Coat",
+    "interior_color": "Lt Gray Perforated Activex",
+    "msrp": "$49,725.00",
+    "year": "2026"
+   },
+   "vehicle": {
+    "year": "2026",
+    "model": "Mustang Mach-E",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "LT Gray Perforated Activex",
+    "vin": "3FMTK3R7XTMA05521",
+    "msrp": "49725"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW2KP7RKF20711",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X2 Supercrew",
+     "engine": "2.7L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto Trans",
+     "exterior_color": "Avalanche",
+     "interior_trim": "Black Stx Cloth 40/Con/40",
+     "model": "2024 F-150 F-150 4X2 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$48,335.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$50,390.00",
+     "total_msrp": "$50,385.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW2KP7RKF20711",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X2 Supercrew",
+    "engine": "2.7L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto Transmission",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Stx Cloth 40/Con/40",
+    "msrp": "$50,385.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Stx Cloth 40/Con/40",
+    "vin": "1FTEW2KP7RKF20711",
+    "msrp": "50385"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW3LD2RFA67332",
+     "model_line": "F-150",
+     "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+     "transmission": "Hybrid Elec 10-Spd Auto Tra",
+     "exterior_color": "Antimatter Blue Metallic",
+     "interior_trim": "Black Sport 40/Console/40",
+     "model": "2024 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$53,840.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$63,510.00",
+     "total_msrp": "$61,605.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW3LD2RFA67332",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2024 F-150 4X4 Supercrew",
+    "transmission": "Hybrid Elec 10-Spd Auto Tra",
+    "exterior_color": "Antimatter Blue Metallic",
+    "interior_color": "Black Sport 40/Console/40",
+    "msrp": "$61,605.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "F-150",
+    "exterior_color": "Antimatter Blue Metallic",
+    "interior_color": "Black Sport 40/Console/40",
+    "vin": "1FTFW3LD2RFA67332",
+    "msrp": "61605"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "5LMPJ8J40RJ868365",
+     "model_line": "Lincoln Nautilus",
+     "trim_drivetrain": "2024 Awd Premiere I",
+     "seating_capacity": "5-Passenger",
+     "transmission": "Cvt Auto Electric Transmiss",
+     "exterior_color": "White Platinum Met 3C",
+     "interior_trim": "Lincoln Soft Touch Blk Onyx",
+     "model": "2024 Lincoln Nautilus Awd Premiere I"
+    },
+    "pricing": {
+     "base_price": "$50,415.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$54,165.00",
+     "total_msrp": "$55,760.00"
+    }
+   },
+   "fields": {
+    "vin": "5LMPJ8J40RJ868365",
+    "model_line": "Lincoln Nautilus",
+    "model": "Lincoln Nautilus",
+    "trim_drivetrain": "2024 Awd Premiere I",
+    "seating": "5-Passenger",
+    "transmission": "Cvt Auto Electric Transmiss",
+    "exterior_color": "White Platinum Met 3C",
+    "interior_color": "Lincoln Soft Touch Blk Onyx",
+    "msrp": "$55,760.00",
+    "year": "2024"
+   },
+   "vehicle": {
+    "year": "2024",
+    "model": "Lincoln Nautilus",
+    "exterior_color": "White Platinum Metallic 3C",
+    "interior_color": "Lincoln Soft Touch Blk Onyx",
+    "vin": "5LMPJ8J40RJ868365",
+    "msrp": "55760"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FM5K7LC6PGA37873",
+     "model_line": "Explorer",
+     "trim_drivetrain": "2023 Explorer Kng Ranch Rwd",
+     "engine": "3.0L Ecoboost V6 Engine",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Star White Met Tri-Coat",
+     "interior_trim": "Mesa/Norias Leather Seats",
+     "model": "2023 Explorer Explorer Kng Ranch Rwd"
+    },
+    "pricing": {
+     "base_price": "$54,075.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$58,085.00",
+     "total_msrp": "$59,680.00"
+    }
+   },
+   "fields": {
+    "vin": "1FM5K7LC6PGA37873",
+    "model_line": "Explorer",
+    "model": "Explorer",
+    "trim_drivetrain": "2023 Explorer Kng Ranch Rwd",
+    "engine": "3.0L EcoBoost V6 Engine",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Star White Met Tri-Coat",
+    "interior_color": "Mesa/Norias Leather Seats",
+    "msrp": "$59,680.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "Explorer",
+    "exterior_color": "Star White Metallic Tri-Coat",
+    "interior_color": "Mesa/Norias Leather Seats",
+    "vin": "1FM5K7LC6PGA37873",
+    "msrp": "59680"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1ED4NFB75608",
+     "model_line": "F-150",
+     "trim_drivetrain": "2022 F-150 4X4 Supercrew",
+     "transmission": "Hybrid Elec 10-Spd Auto Tra",
+     "exterior_color": "Carbonized Gray Metallic",
+     "interior_trim": "Black Int W/Black Leather",
+     "model": "2022 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$67,200.00",
+     "destination_and_delivery": "$1,795.00",
+     "total_vehicle_and_options": "$76,630.00",
+     "total_msrp": "$77,925.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1ED4NFB75608",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2022 F-150 4X4 Supercrew",
+    "transmission": "Hybrid Elec 10-Spd Auto Tra",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Int W/Black Leather",
+    "msrp": "$77,925.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "F-150",
+    "exterior_color": "Carbonized Gray Metallic",
+    "interior_color": "Black Int With Black Leather",
+    "vin": "1FTFW1ED4NFB75608",
+    "msrp": "77925"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTFW1ED1PFD09848",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "transmission": "Hybrid Elec 10-Spd Auto Tra",
+     "exterior_color": "Oxford White",
+     "interior_trim": "Black Sport 40/Console/40",
+     "model": "2023 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$50,220.00",
+     "destination_and_delivery": "$1,995.00",
+     "total_vehicle_and_options": "$64,545.00",
+     "total_msrp": "$62,640.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTFW1ED1PFD09848",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "transmission": "Hybrid Elec 10-Spd Auto Tra",
+    "exterior_color": "Oxford White",
+    "interior_color": "Black Sport 40/Console/40",
+    "msrp": "$62,640.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Oxford White",
+    "interior_color": "Black Sport 40/Console/40",
+    "vin": "1FTFW1ED1PFD09848",
+    "msrp": "62640"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "1FTEW1E8XPFA85543",
+     "model_line": "F-150",
+     "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+     "engine": "3.5L V6 Ecoboost",
+     "transmission": "Elec Ten-Speed Auto W/Tow M",
+     "exterior_color": "Avalanche",
+     "interior_trim": "Black Unique Lthr 40/Con/40",
+     "model": "2023 F-150 F-150 4X4 Supercrew"
+    },
+    "pricing": {
+     "base_price": "$61,110.00",
+     "destination_and_delivery": "$1,895.00",
+     "total_vehicle_and_options": "$72,760.00",
+     "total_msrp": "$74,655.00"
+    }
+   },
+   "fields": {
+    "vin": "1FTEW1E8XPFA85543",
+    "model_line": "F-150",
+    "model": "F-150",
+    "trim_drivetrain": "2023 F-150 4X4 Supercrew",
+    "engine": "3.5L V6 EcoBoost",
+    "transmission": "Elec Ten-Speed Auto With Tow M",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Unique Lthr 40/Con/40",
+    "msrp": "$74,655.00",
+    "year": "2023"
+   },
+   "vehicle": {
+    "year": "2023",
+    "model": "F-150",
+    "exterior_color": "Avalanche",
+    "interior_color": "Black Unique Lthr 40/Con/40",
+    "vin": "1FTEW1E8XPFA85543",
+    "msrp": "74655"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "5LM5J6WC4SGL19833",
+     "model_line": "Lincoln Aviator",
+     "trim_drivetrain": "2025 Rwd Premiere I",
+     "transmission": "10-Speed Auto Transmission",
+     "exterior_color": "Crystal White Met Cc",
+     "interior_trim": "Lt Space Gray Sft Touch Sea",
+     "model": "2025 Lincoln Aviator Rwd Premiere I"
+    },
+    "pricing": {
+     "base_price": "$58,930.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$59,880.00",
+     "total_msrp": "$61,475.00"
+    }
+   },
+   "fields": {
+    "vin": "5LM5J6WC4SGL19833",
+    "model_line": "Lincoln Aviator",
+    "model": "Lincoln Aviator",
+    "trim_drivetrain": "2025 Rwd Premiere I",
+    "transmission": "10-Speed Auto Transmission",
+    "exterior_color": "Crystal White Met Cc",
+    "interior_color": "Lt Space Gray Sft Touch Sea",
+    "msrp": "$61,475.00",
+    "year": "2025"
+   },
+   "vehicle": {
+    "year": "2025",
+    "model": "Lincoln Aviator",
+    "exterior_color": "Crystal White Metallic Cc",
+    "interior_color": "LT Space Gray Sft Touch Sea",
+    "vin": "5LM5J6WC4SGL19833",
+    "msrp": "61475"
+   }
+  },
+  {
+   "record": {
+    "overview": {
+     "vin": "3FMCR9B64NRE08738",
+     "model_line": "Bronco Sport",
+     "trim_drivetrain": "2022 Big Bend 4X4",
+     "seating_capacity": "5-Passenger",
+     "engine": "1.5L Ecoboost Engine",
+     "transmission": "8-Spd Auto Transmission",
+     "exterior_color": "Cactus Gray",
+     "interior_trim": "Ebony Black Unique Cloth",
+     "model": "2022 Bronco Sport Big Bend 4X4"
+    },
+    "pricing": {
+     "base_price": "$30,530.00",
+     "destination_and_delivery": "$1,595.00",
+     "total_vehicle_and_options": "$32,880.00",
+     "total_msrp": "$34,475.00"
+    }
+   },
+   "fields": {
+    "vin": "3FMCR9B64NRE08738",
+    "model_line": "Bronco Sport",
+    "model": "Bronco Sport",
+    "trim_drivetrain": "2022 Big Bend 4X4",
+    "seating": "5-Passenger",
+    "engine": "1.5L EcoBoost Engine",
+    "transmission": "8-Spd Auto Transmission",
+    "exterior_color": "Cactus Gray",
+    "interior_color": "Ebony Black Unique Cloth",
+    "msrp": "$34,475.00",
+    "year": "2022"
+   },
+   "vehicle": {
+    "year": "2022",
+    "model": "Bronco Sport",
+    "exterior_color": "Cactus Gray",
+    "interior_color": "Ebony Black Unique Cloth",
+    "vin": "3FMCR9B64NRE08738",
+    "msrp": "34475"
+   }
+  }
+ ],
+ "casing": [
+  [
+   "2.0l ecoboost i-4 engine",
+   "2.0L EcoBoost I-4 Engine"
+  ],
+  [
+   "10-speed automatic trans",
+   "10-Speed Automatic Transmission"
+  ],
+  [
+   "RAPID RED METALLIC TINTED CLEARCOAT",
+   "Rapid Red Metallic Tinted Clearcoat"
+  ],
+  [
+   "AZURE GRAY MET TRI-COAT",
+   "Azure Gray Metallic Tri-Coat"
+  ],
+  [
+   "Antimatter Blue Met",
+   "Antimatter Blue Metallic"
+  ],
+  [
+   "ebony actvx w/ miko suede",
+   "Ebony Actvx With Miko Suede"
+  ],
+  [
+   "siriusxm w/ 360l",
+   "SiriusXM With 360L"
+  ],
+  [
+   "alum wheels pkg incl",
+   "Aluminum Wheels Package Included"
+  ],
+  [
+   "480hp 5.0l v8",
+   "480HP 5.0L V8"
+  ],
+  [
+   "a/c am/fm sync 4",
+   "A/C AM/FM SYNC 4"
+  ],
+  [
+   "powerboost full hybrid",
+   "PowerBoost Full Hybrid"
+  ],
+  [
+   "w/navigation",
+   "With Navigation"
+  ],
+  [
+   "tc",
+   "Tri-Coat"
+  ],
+  [
+   "conn nav",
+   "Connected Nav"
+  ],
+  [
+   "metalic gray",
+   "Metallic Gray"
+  ],
+  [
+   "xlt 4x4 supercrew",
+   "XLT 4x4 Supercrew"
+  ],
+  [
+   "3.5L PFDI V6 FHEV",
+   "3.5L PFDI V6 FHEV"
+  ],
+  [
+   "HEV ti-vct gtdi",
+   "HEV Ti-VCT GTDI"
+  ],
+  [
+   "",
+   ""
+  ],
+  [
+   "x",
+   "X"
+  ],
+  [
+   "4wd/awd",
+   "4wd/AWD"
+  ],
+  [
+   "rs st-line",
+   "RS ST-Line"
+  ],
+  [
+   "z71 trail boss",
+   "Z71 Trail Boss"
+  ]
+ ]
+}

@@ -18,6 +18,7 @@ from pathlib import Path
 import requests
 from PIL import Image
 
+from lotstretcher import core
 from lotstretcher import spec as _spec
 from lotstretcher.imaging.sticker import find_panel_split_x, parse_sticker
 from lotstretcher.scrape import Vehicle, download_file
@@ -61,9 +62,15 @@ def parse_window_sticker(v: Vehicle, pdf_path: Path, out_dir: Path) -> None:
                            "using site-listed features as fallback.")
         return
     v.sticker = data
-    # The listing's own trim wins; a sticker only fills a blank one.
-    if not getattr(v, "trim", None) and data.get("overview", {}).get("trim"):
-        v.trim = data["overview"]["trim"]
+    # The sticker's facts as the vehicle's fields, the browser's reading
+    # (core sticker_fields.rs): the listing's own values win, and the
+    # sticker fills only what it left blank (a local folder's, mostly).
+    flat = core.call({"op": "sticker_fields", "record": data})
+    for attr, value in (*flat["vehicle"].items(), *((k, flat["fields"].get(k)) for k in ("engine", "transmission", "drivetrain"))):
+        if attr in ("vin", "msrp") or not value or not hasattr(v, attr):
+            continue
+        if not getattr(v, attr, None):
+            setattr(v, attr, value)
     (out_dir / "window-sticker.json").write_text(json.dumps(data, indent=2))
     v.warnings.append("Extracted structured feature data from window sticker (window-sticker.json).")
 

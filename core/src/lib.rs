@@ -32,6 +32,7 @@ pub mod interior;
 pub mod mask;
 pub mod matting;
 pub mod sticker;
+pub mod sticker_fields;
 pub mod copy;
 pub mod text;
 pub mod frame_style;

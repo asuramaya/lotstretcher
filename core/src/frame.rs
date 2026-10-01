@@ -269,6 +269,8 @@ pub enum Op {
     CutoutGate { alpha: Slice, #[serde(default = "yes")] strict: bool },
     /// The spec's junk template a pHash matches, by name, or null.
     JunkMatch { hash: String },
+    /// A parse_sticker record as the vehicle's fields (sticker_fields.rs).
+    StickerFields { record: serde_json::Value },
     /// The background field for a generated backdrop (controls.rs).
     BackdropSpec { kind: String, seed: String, #[serde(default)] exterior: serde_json::Value, #[serde(default)] interior: serde_json::Value,
                    #[serde(default)] color: serde_json::Value, #[serde(default)] color2: serde_json::Value, #[serde(default)] angle: serde_json::Value },
@@ -460,6 +462,7 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
         }
         Op::Phash { image } => { let img = slice_image(arena, &image)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::phash::phash(&img) }).unwrap()) }
         Op::JunkMatch { hash } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::phash::junk_match(&hash) }).unwrap()),
+        Op::StickerFields { record } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::sticker_fields::sticker_fields(&record) }).unwrap()),
         Op::SeededAngle { seed } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::prng::Rng::from_seed(&seed).uniform(0.0, 360.0) }).unwrap()),
         Op::CutoutGate { alpha, strict } => { let a = slice_image(arena, &alpha)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::gate::cutout_gate(&a, strict) }).unwrap()) }
         Op::Blend { a, b, t } => {
