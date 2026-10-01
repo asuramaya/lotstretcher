@@ -253,7 +253,6 @@ def controls_from_args(args) -> dict:
         "videoMusic": args.video_music,
         "videoFlagBackground": args.video_flag_background,
         "nvenc": args.nvenc,
-        "videoDuration": args.video_duration,
         "videoFps": args.video_fps,
         "videoBpm": args.video_bpm,
         "videoPush": args.video_push,
@@ -369,9 +368,6 @@ def main():
     add_spotlight_args(parser)
     parser.add_argument("--margin-frac", type=float, default=0.06, metavar="FRAC",
                          help="Breathing room inside each layout box, as a fraction (default: 0.06).")
-    parser.add_argument("--video-duration", type=float, default=None, metavar="SECONDS",
-                         help="Target video length. Rounded to whole audio loops when music is on, "
-                              "since the carousel is beat-synced; exact when it is off.")
     parser.add_argument("--video-fps", type=float, default=None, metavar="FPS",
                          help="Video frame rate (default: 25 for the beat-synced CLI render, "
                               "30 in the browser, which has no audio to sync to).")

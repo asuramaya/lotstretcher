@@ -180,17 +180,18 @@ pub fn backdrop_spec(kind: &str, seed: &str, exterior: &Value, interior: &Value,
     Ok(Value::Object(out))
 }
 
-/// The names a turning clip gradient reads its two stops from: the
-/// user's own for a coloured kind (one colour given is both stops),
-/// else the paint's. The same stops the still's backdrop takes; the CLI's
-/// clip used to drop a second colour.
-pub fn gradient_names(kind: &str, exterior: &Value, interior: &Value, color: &Value, color2: &Value) -> (Value, Value) {
-    if in_list("colouredBackdrops", kind) && (truthy(color) || truthy(color2)) {
-        let a = if truthy(color) { color.clone() } else { color2.clone() };
-        let b = if truthy(color2) { color2.clone() } else { color.clone() };
-        return (a, b);
+/// The two stops a clip's turning gradient is drawn between, as bytes,
+/// the same as a still's backdrop takes them (gradient.rs::stop_pair):
+/// for a coloured kind, two colours of the user's own exactly, one colour
+/// as its backdrop-safe dark and light; else the paint's backdrop-safe
+/// pair, measured off `sample` when the record names no colour.
+pub fn gradient_stops(kind: &str, exterior: Option<&str>, interior: Option<&str>, color: Option<&str>, color2: Option<&str>,
+                      sample: Option<&crate::Image>) -> ([u8; 3], [u8; 3]) {
+    let given = |c: Option<&str>| c.is_some_and(|c| !c.trim().is_empty());
+    if in_list("colouredBackdrops", kind) && (given(color) || given(color2)) {
+        return crate::gradient::stop_pair(None, None, None, color.filter(|c| given(Some(c))), color2.filter(|c| given(Some(c))));
     }
-    (exterior.clone(), interior.clone())
+    crate::palette::vehicle_gradient_colors(exterior, interior, sample)
 }
 
 pub fn styles(o: &Value) -> Value {

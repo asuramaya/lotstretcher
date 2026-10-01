@@ -451,7 +451,11 @@ export class Preview {
 
     const clips = o.videoFormats || [];
     if (clips.length) {
-      const dur = Number(o.videoDuration) || specGet('video').fpsBrowser && 8;
+      // A clip is one pass of the shots: a bar each on the conveyor, one
+      // loop for one or two (core carousel.rs), at the spec's tempo.
+      const v = specGet('video');
+      const bar = v.beatsPerBar * 60 / v.defaultBpm;
+      const dur = photos >= 3 ? photos * bar : v.barsPerLoop * bar;
       const fps = Number(o.videoFps) || specGet('video').fpsBrowser;
       let ms = 0; let mb = 0;
       for (const f of clips) {

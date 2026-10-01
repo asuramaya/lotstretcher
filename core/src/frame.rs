@@ -272,9 +272,9 @@ pub enum Op {
     /// The background field for a generated backdrop (controls.rs).
     BackdropSpec { kind: String, seed: String, #[serde(default)] exterior: serde_json::Value, #[serde(default)] interior: serde_json::Value,
                    #[serde(default)] color: serde_json::Value, #[serde(default)] color2: serde_json::Value, #[serde(default)] angle: serde_json::Value },
-    /// The colour names a clip's turning gradient reads its stops from.
-    GradientNames { kind: String, #[serde(default)] exterior: serde_json::Value, #[serde(default)] interior: serde_json::Value,
-                    #[serde(default)] color: serde_json::Value, #[serde(default)] color2: serde_json::Value },
+    /// The two stops of a clip's turning gradient (controls.rs::gradient_stops).
+    GradientStops { kind: String, #[serde(default)] exterior: Option<String>, #[serde(default)] interior: Option<String>,
+                    #[serde(default)] color: Option<String>, #[serde(default)] color2: Option<String>, #[serde(default)] sample: Option<Slice> },
     /// A named layout's [(box, anchor)] for a window (layout.rs::layout).
     Layout { name: String, window: [i64; 4], n_extra: usize },
     /// Where a (width x height) cutout sits in a box (layout.rs::compute_placement).
@@ -453,8 +453,11 @@ pub fn call(op_json: &str, arena: &[u8]) -> Result<OpResult, String> {
         Op::TextFacts { text } => OpResult::Json(serde_json::to_string(&Scalar { value: serde_json::json!({"wants_text": crate::controls::wants_text(&text), "fonts": crate::controls::fonts_in(&text)}) }).unwrap()),
         Op::BackdropSpec { kind, seed, exterior, interior, color, color2, angle } =>
             OpResult::Json(serde_json::to_string(&Scalar { value: crate::controls::backdrop_spec(&kind, &seed, &exterior, &interior, &color, &color2, &angle)? }).unwrap()),
-        Op::GradientNames { kind, exterior, interior, color, color2 } =>
-            OpResult::Json(serde_json::to_string(&Scalar { value: crate::controls::gradient_names(&kind, &exterior, &interior, &color, &color2) }).unwrap()),
+        Op::GradientStops { kind, exterior, interior, color, color2, sample } => {
+            let s = match sample { Some(s) => Some(slice_image(arena, &s)?), None => None };
+            let stops = crate::controls::gradient_stops(&kind, exterior.as_deref(), interior.as_deref(), color.as_deref(), color2.as_deref(), s.as_deref());
+            OpResult::Json(serde_json::to_string(&Scalar { value: stops }).unwrap())
+        }
         Op::Phash { image } => { let img = slice_image(arena, &image)?; OpResult::Json(serde_json::to_string(&Scalar { value: crate::phash::phash(&img) }).unwrap()) }
         Op::JunkMatch { hash } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::phash::junk_match(&hash) }).unwrap()),
         Op::SeededAngle { seed } => OpResult::Json(serde_json::to_string(&Scalar { value: crate::prng::Rng::from_seed(&seed).uniform(0.0, 360.0) }).unwrap()),

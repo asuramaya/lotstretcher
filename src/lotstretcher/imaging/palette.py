@@ -11,7 +11,6 @@ just avoids a file read when the answer is already written down.
 """
 from __future__ import annotations
 
-import colorsys
 from pathlib import Path
 
 # Base color words, longest-first at lookup time so "dark blue" doesn't
@@ -126,75 +125,18 @@ def sample_cutout_color(cutout_path: Path) -> tuple[int, int, int] | None:
     return tuple(int(round(c)) for c in np.median(bright, axis=0))
 
 
-def _to_backdrop(rgb: tuple[int, int, int]) -> tuple[float, float, float]:
-    """(h, s, v) compressed into the backdrop bands above."""
-    h, s, v = colorsys.rgb_to_hsv(*[c / 255 for c in rgb])
-    if s > NEUTRAL_SATURATION_CEILING:
-        lo, hi = BACKDROP_SATURATION_RANGE
-        s = min(max(s, lo), hi)
-    v = BACKDROP_VALUE_MIN + v * (BACKDROP_VALUE_MAX - BACKDROP_VALUE_MIN)
-    # Orange, amber and yellow darken into brown and olive (spec palette.warmHueRange).
-    if s > NEUTRAL_SATURATION_CEILING and WARM_HUE_RANGE[0] <= h <= WARM_HUE_RANGE[1]:
-        v = max(v, WARM_VALUE_MIN)
-    return h, s, v
-
-
-def _hsv_bytes(h: float, s: float, v: float) -> tuple[int, int, int]:
-    r, g, b = colorsys.hsv_to_rgb(h % 1.0, max(0.0, min(1.0, s)), max(0.0, min(1.0, v)))
-    return round(r * 255), round(g * 255), round(b * 255)
-
-
 def vehicle_gradient_colors(exterior: str | None, interior: str | None,
                              sample_path: Path | None = None) -> tuple[tuple[int, int, int], tuple[int, int, int]]:
-    """(exterior_stop, interior_stop) as backdrop-safe RGB.
+    """(exterior_stop, interior_stop) as backdrop-safe RGB, from the core
+    (core/src/palette.rs, the rules this module's constants document):
+    the exterior is measured off the cutout at `sample_path` when its name
+    carries no colour word; the interior defaults to near-black."""
+    from PIL import Image
 
-    Exterior falls back to measuring the cutout when its name carries no
-    color word; interior has no equivalent fallback (there's no interior
-    cutout to measure) and defaults to near-black, which is what the
-    overwhelming majority of them actually are.
-    """
-    ext = parse_color_name(exterior)
-    if ext is None and sample_path is not None:
-        ext = sample_cutout_color(sample_path)
-    if ext is None:
-        ext = COLOR_WORDS["steel"]
+    from lotstretcher import core
 
-    inr = parse_color_name(interior) or COLOR_WORDS["black"]
-
-    h1, s1, v1 = _to_backdrop(ext)
-    h2, s2, v2 = _to_backdrop(inr)
-    # Neutrality has to be judged on the SOURCE, not on s1/s2: those are
-    # already clamped up into BACKDROP_SATURATION_RANGE, so the stock
-    # "black" swatch (a 13%-saturated blue-black) came out at 0.28 and
-    # was mistaken for a real color -- which sent black-on-black down the
-    # rotate-hue path, where the shift is invisible at near-black value.
-    src_neutral = max(colorsys.rgb_to_hsv(*[c / 255 for c in ext])[1],
-                      colorsys.rgb_to_hsv(*[c / 255 for c in inr])[1]) <= NEUTRAL_SATURATION_CEILING * 1.5
-
-    # A grey-on-black vehicle (very common) lands both stops within a few
-    # percent of each other, which renders as a flat field -- push them
-    # apart around their midpoint so there's always a visible ramp.
-    if abs(v1 - v2) < MIN_STOP_SEPARATION:
-        mid = (v1 + v2) / 2
-        half = MIN_STOP_SEPARATION / 2
-        v1, v2 = (mid + half, mid - half) if v1 >= v2 else (mid - half, mid + half)
-        v1 = min(max(v1, BACKDROP_VALUE_MIN), BACKDROP_VALUE_MAX)
-        v2 = min(max(v2, BACKDROP_VALUE_MIN), BACKDROP_VALUE_MAX)
-
-    if abs((h1 - h2 + 0.5) % 1.0 - 0.5) < 0.02 and abs(s1 - s2) < 0.05:
-        if src_neutral:
-            # Tint the LIGHTER stop. A hue is invisible at near-black
-            # values, so tinting the dark end of a black-on-black pair
-            # does nothing -- measured (40,40,56)->(21,18,26), still
-            # effectively monochrome.
-            if v1 >= v2:
-                h1, s1 = NEUTRAL_TINT_HUE, NEUTRAL_TINT_SATURATION
-            else:
-                h2, s2 = NEUTRAL_TINT_HUE, NEUTRAL_TINT_SATURATION
-        else:
-            h2 += MATCHING_HUE_SHIFT
-
-    return _hsv_bytes(h1, s1, v1), _hsv_bytes(h2, s2, v2)
+    sample = Image.open(sample_path).convert("RGBA") if sample_path is not None else None
+    return core.vehicle_gradient_colors(exterior, interior, sample)
 
 
 def colors_from_details(vehicle_folder) -> tuple[str | None, str | None]:

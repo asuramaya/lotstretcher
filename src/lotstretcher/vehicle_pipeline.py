@@ -63,8 +63,8 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
 
     spec = VIDEO_FORMATS[fmt]
     from lotstretcher.imaging.compose import render_hero_video
-    from lotstretcher.imaging.palette import colors_from_details, vehicle_gradient_colors
-    from lotstretcher.imaging.text import backdrop_spec, gradient_color_names
+    from lotstretcher.imaging.palette import colors_from_details
+    from lotstretcher.imaging.text import backdrop_spec, gradient_stops
     from lotstretcher.library_ops import vehicle_record
     from lotstretcher.imaging.select import load_angles, order_for_conveyor_start, pick_all_for_carousel
 
@@ -86,10 +86,9 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
 
     gradient_colors = None
     if hero_opts.video_background is None:
-        ext, inr = gradient_color_names(*colors_from_details(folder), hero_opts.backdrop, hero_opts.backdrop_color,
-                                        hero_opts.backdrop_color2)
         sample = next(iter(sorted(cutout_dir.glob("*.png"))), None)
-        start, end = vehicle_gradient_colors(ext, inr, sample)
+        start, end = gradient_stops(hero_opts.backdrop, *colors_from_details(folder), hero_opts.backdrop_color,
+                                    hero_opts.backdrop_color2, sample)
         gradient_colors = (core.call({"op": "seeded_angle", "seed": folder.name}), start, end)
 
     return render_hero_video(
@@ -125,7 +124,6 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         background_image=hero_opts.background_path if not hero_opts.gradient else None,
         encoder=hero_opts.video_encoder,
         hood_sides=hood_sides,
-        target_duration_s=hero_opts.video_duration_s,
         **({"fps": hero_opts.video_fps} if hero_opts.video_fps else {}),
     )
 
@@ -149,10 +147,9 @@ class HeroOptions:
     spotlight: bool | dict = True
     margin_frac: float = 0.06
     video: bool = True
-    # --video-fps / --video-duration; None means the renderer's own
-    # defaults (25 fps, one full pass of the shot library).
+    # --video-fps; None means the renderer's own 25 fps. A clip's length
+    # is never set: it is one full pass of the shot library.
     video_fps: float | None = None
-    video_duration_s: float | None = None
     # --video-bpm / --video-budget-mb; None means the spec's defaultBpm
     # and each format's own size budget.
     video_bpm: float | None = None

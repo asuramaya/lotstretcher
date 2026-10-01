@@ -305,14 +305,23 @@ def backdrop_spec(kind: str, seed: str, exterior: str | None, interior: str | No
         raise ValueError(str(e).split("failed: ", 1)[-1]) from None
 
 
-def gradient_color_names(exterior: str | None, interior: str | None, kind: str, color: str | None,
-                         color2: str | None = None) -> tuple[str | None, str | None]:
-    """The names a turning video gradient reads its two stops from: the
-    chosen colours for a coloured kind (one colour is both stops), else
-    the paint's -- the stops the still's backdrop takes too."""
-    a, b = core.call({"op": "gradient_names", "kind": kind, "exterior": exterior, "interior": interior,
-                      "color": color, "color2": color2})
-    return a, b
+def gradient_stops(kind: str, exterior: str | None, interior: str | None, color: str | None = None,
+                   color2: str | None = None, sample_path: Path | None = None) -> tuple[tuple, tuple]:
+    """The two stops a clip's turning gradient is drawn between, as a
+    still's backdrop takes them (core/src/controls.rs): two colours of the
+    user's own exactly for a coloured kind, one as its backdrop-safe dark
+    and light, else the paint's, measured off `sample_path` when the record
+    names no colour."""
+    from PIL import Image
+
+    op = {"op": "gradient_stops", "kind": kind, "exterior": exterior, "interior": interior,
+          "color": color or None, "color2": color2 or None}
+    images = []
+    if sample_path is not None:
+        op["sample"] = {"$image": 0}
+        images.append(Image.open(sample_path).convert("RGBA"))
+    a, b = core.call(op, images)
+    return tuple(a), tuple(b)
 
 
 REFLECTION_STRENGTH = float(_spec.control_default("reflectionStrength", 0.35))

@@ -100,7 +100,8 @@ The CLI's flags and the app's controls meet in one place: `library_ops.hero_opti
 the pipeline's options from the app's control values, and `cli.py` converts its own flags to those same
 values before calling it. A control-parity test also fails if `cli.py` defines a flag it never reads,
 which is how `--no-spotlight`, `--margin-frac`, `--video-duration` and `--video-fps` were found to be
-accepted and ignored, and fixed.
+accepted and ignored, and fixed. (`--video-duration` and the Length lever were later removed: a clip is
+one pass of its shots, a bar each, or one loop for one or two, so its length follows the photos.)
 
 **The Library pane** browses what the pipeline has produced: every vehicle folder under `new/` and
 `used/`, its hero stills, framed and interior sets, clips, the three posts, and the record it was built

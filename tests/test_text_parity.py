@@ -323,14 +323,15 @@ def test_a_chosen_colour_puts_the_bands_and_the_sweep_in_that_hue():
     """--backdrop-color: hue bands and the sweep take the colour, on
     both builds; the Python parser reads the same hex the core does."""
     from lotstretcher.imaging.palette import parse_color_name
-    from lotstretcher.imaging.text import backdrop_color, gradient_color_names
+    from lotstretcher.imaging.text import backdrop_color, gradient_stops
+    from lotstretcher.imaging.palette import vehicle_gradient_colors
     assert parse_color_name("#ff8800") == (255, 136, 0)
     assert parse_color_name("#F80") == (255, 136, 0)
     assert parse_color_name("Rapid Red") == parse_color_name("rapid red")
     assert backdrop_color({"backdrop": "sweep", "backdropColor": "#ff8800"}) == "#ff8800"
     assert backdrop_color({"backdrop": "vehicle", "backdropColor": "#ff8800"}) is None
-    assert gradient_color_names("Blue", None, "generic", "#ff8800") == ("#ff8800", "#ff8800")
-    assert gradient_color_names("Blue", None, "vehicle", "#ff8800") == ("Blue", None)
+    assert gradient_stops("generic", "Blue", None, "#ff8800") == vehicle_gradient_colors("#ff8800", "#ff8800")
+    assert gradient_stops("vehicle", "Blue", None, "#ff8800") == vehicle_gradient_colors("Blue", None)
     for kind in ("generic", "sweep"):
         orange = np.asarray(core.render_frame([], 120, 120, {"kind": kind, "seed": "s", "exterior": None, "interior": None, "color": "#ff8800"})).astype(int)
         plain = np.asarray(core.render_frame([], 120, 120, {"kind": kind, "seed": "s", "exterior": "Deep Blue", "interior": None})).astype(int)

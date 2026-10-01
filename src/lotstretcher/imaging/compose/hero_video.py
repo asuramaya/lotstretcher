@@ -362,7 +362,6 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        backdrop_spec: dict | None = None,
                        encoder: str = "libx264",
                        hood_sides: dict[str, str] | None = None,
-                       target_duration_s: float | None = None,
                        push: float | None = None, crossfade: float | None = None) -> dict:
     """
     carousel_paths: the FULL shot library, in conveyor order (see
@@ -501,16 +500,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
     # loops-of-audio length was set by the soundtrack, which knows
     # nothing about how many photos this vehicle has). `loops` still
     # forces the old audio-driven length when given.
-    if target_duration_s is not None:
-        # --video-duration. With music the carousel is beat-synced, so
-        # the length rounds to whole audio loops; without it, exact.
-        if audio_path is not None:
-            loops = max(1, round(target_duration_s / audio_loop_s))
-            total_seconds = audio_loop_s * loops
-        else:
-            total_seconds = max(target_duration_s, 1.0 / fps)
-    else:
-        total_seconds = carousel_period if loops is None else audio_loop_s * loops
+    total_seconds = carousel_period if loops is None else audio_loop_s * loops
 
     total_frames = round(total_seconds * fps)
     total_seconds = total_frames / fps  # snap to an exact frame count

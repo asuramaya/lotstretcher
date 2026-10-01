@@ -127,7 +127,7 @@ def test_hero_options_defaults_are_the_cli_defaults():
     for field in ("enabled", "glow", "glow_color", "glow_radius", "glow_intensity", "spotlight",
                   "margin_frac", "gradient", "video", "video_encoder", "interiors",
                   "interior_captions", "vision_seat_check", "background_path", "border_path",
-                  "video_fps", "video_duration_s"):
+                  "video_fps"):
         assert getattr(got, field) == getattr(base, field), field
     assert got.video_formats == tuple(VIDEO_FORMATS)
     assert got.hero_formats == ("square", "portrait")
@@ -152,9 +152,9 @@ def test_hero_options_carry_the_studio_levers():
 
 def test_hero_options_apply_the_once_dead_flags():
     got = library_ops.hero_options_from_controls(
-        {"spotlight": False, "margin": 0.1, "videoFps": 30, "videoDuration": 8, "videoFormats": []})
+        {"spotlight": False, "margin": 0.1, "videoFps": 30, "videoFormats": []})
     assert got.spotlight is False and got.margin_frac == 0.1
-    assert got.video_fps == 30.0 and got.video_duration_s == 8.0
+    assert got.video_fps == 30.0
     assert got.video is False, "an empty format list is --no-video"
 
 

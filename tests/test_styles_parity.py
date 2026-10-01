@@ -81,10 +81,14 @@ def test_backdrop_requests_keep_to_their_kinds():
 
 
 def test_a_clip_gradient_takes_the_same_stops_as_the_still():
-    assert T.gradient_color_names("Red", "Black", "sweep", "#ff0000", "navy") == ("#ff0000", "navy")
-    assert T.gradient_color_names("Red", "Black", "sweep", "#ff0000") == ("#ff0000", "#ff0000")
-    assert T.gradient_color_names("Red", "Black", "sweep", None, "navy") == ("navy", "navy")
-    assert T.gradient_color_names("Red", "Black", "vehicle", "#ff0000", "navy") == ("Red", "Black")
+    """Operator ruling 2026-10-01: two picked colours are used exactly,
+    in stills and clips alike; one keeps the backdrop-safe pair."""
+    from lotstretcher.imaging.palette import vehicle_gradient_colors
+    assert T.gradient_stops("sweep", "Red", "Black", "#ff0000", "#001080") == ((255, 0, 0), (0, 16, 128))
+    one = T.gradient_stops("sweep", "Red", "Black", "#ff0000")
+    assert one == vehicle_gradient_colors("#ff0000", "#ff0000") and one[0] != (255, 0, 0)
+    assert T.gradient_stops("sweep", "Red", "Black", None, "#ff0000") == one
+    assert T.gradient_stops("vehicle", "Red", "Black", "#ff0000", "#001080") == vehicle_gradient_colors("Red", "Black")
 
 
 def test_wasm_backdrops_match_native():
@@ -95,7 +99,7 @@ def test_wasm_backdrops_match_native():
     cases = [{"kind": k, "seed": "s", "exterior": e, "interior": i, "color": c, "color2": c2, "angle": a}
              for k in ("vehicle", "generic", "sweep", "radial", "horizon") for e, i in ((None, None), ("Red", "Black"))
              for c, c2 in itertools.product((None, "#ff0000"), (None, "navy")) for a in (None, 30)]
-    native = [[core.call({"op": "backdrop_spec", **c}), core.call({"op": "gradient_names", **{k: v for k, v in c.items() if k not in ("seed", "angle")}})]
+    native = [[core.call({"op": "backdrop_spec", **c}), core.call({"op": "gradient_stops", **{k: v for k, v in c.items() if k not in ("seed", "angle")}})]
               for c in cases]
     wasm = REPO / "web" / "public" / "core" / "lotstretcher_core_bg.wasm"
     script = f"""
@@ -104,7 +108,7 @@ def test_wasm_backdrops_match_native():
       await loadCore(fs.readFileSync('{wasm.as_posix()}'));
       const cases = JSON.parse(fs.readFileSync(0, 'utf8'));
       process.stdout.write(JSON.stringify(cases.map((c) => {{ const {{ seed, angle, ...g }} = c;
-        return [call({{ op: 'backdrop_spec', ...c }}), call({{ op: 'gradient_names', ...g }})]; }})));
+        return [call({{ op: 'backdrop_spec', ...c }}), call({{ op: 'gradient_stops', ...g }})]; }})));
     """
     run = subprocess.run([node, "--input-type=module", "-e", script], input=json.dumps(cases), capture_output=True, text=True, check=True)
     assert json.loads(run.stdout) == native

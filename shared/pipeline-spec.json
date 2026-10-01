@@ -1940,20 +1940,6 @@
         "label": "Video",
         "controls": [
           {
-            "key": "videoDuration",
-            "label": "Length",
-            "hint": "",
-            "type": "range",
-            "default": 8,
-            "min": 3,
-            "max": 20,
-            "step": 1,
-            "unit": "s",
-            "cli": "--video-duration",
-            "tooltip": "How long the clip runs",
-            "tab": "motion"
-          },
-          {
             "key": "videoFps",
             "label": "Frame rate",
             "hint": "",

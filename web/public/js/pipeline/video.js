@@ -18,7 +18,6 @@ import { get as specGet } from '../spec.js';
 const MUXER_URL = '../../vendor/mp4/mp4-muxer.mjs';
 
 export const DEFAULT_FPS = 30;
-export const DEFAULT_DURATION_S = 8;
 
 /* The backdrop turns a full circle across the clip, as the CLI's does. */
 const GRADIENT_TURNS = 1.0;
@@ -139,7 +138,7 @@ function drawConveyorFrame(ctx, prepared, { width, height, shots, t, duration, p
  * preview can draw one frame of the very clip a run would render. */
 export function prepareClip(cutouts, {
   width = 1254, height = 1254, seed = 'lotstretcher', angles = null,
-  exterior = null, interior = null, generic = false, spotlight = true, duration = null,
+  exterior = null, interior = null, generic = false, spotlight = true,
   backdrop = null,            // the generated backdrop's kind: a sweep is drawn once and held like a photo
   backdropColor = null,       // #rrggbb: the coloured backdrops' first stop, rather than the paint's
   backdropColor2 = null,      // the second stop
@@ -150,8 +149,9 @@ export function prepareClip(cutouts, {
   push = null,                // one or two shots: how far each scales across its dwell (videoPush)
   crossfade = null,           // one or two shots: seconds of blend between them (videoCrossfade)
 } = {}) {
-  const explicitDuration = duration !== null;
-  if (duration === null) duration = DEFAULT_DURATION_S;
+  // A clip is one pass of its shots (the core's plan.period); its length
+  // is never set by hand.
+  let duration = 0;
   // A photo backdrop is fitted once and held for the clip; the gradient
   // is the fallback, rebuilt per frame because it rotates.
   let bgData = background
@@ -184,14 +184,12 @@ export function prepareClip(cutouts, {
     : frameWindow;
   const palette = cutouts.map((cut, i) => {
     const s = `${seed}:v${i}`;
-    let start; let end;
-    // Generic means no colour names: the palette is measured off the
-    // cutout's own paint, which is what the core does with no names. The
-    // user's own colours are the stops for a coloured kind (the core's
-    // gradient_names, as the CLI's clip takes them).
-    const [a, b] = core.call({ op: 'gradient_names', kind: generic ? 'generic' : (backdrop || 'vehicle'),
-      exterior: generic ? null : exterior, interior: generic ? null : interior, color: backdropColor || null, color2: backdropColor2 || null });
-    [start, end] = core.vehicleGradientColors(a, b, shots[i].data);
+    // The stops the still's backdrop takes (core controls.rs): two of the
+    // user's own colours exactly, one as its dark and light, else the
+    // paint's, measured off this shot when the names give none.
+    const [start, end] = core.call({ op: 'gradient_stops', kind: generic ? 'generic' : (backdrop || 'vehicle'),
+      exterior: generic ? null : exterior, interior: generic ? null : interior, color: backdropColor || null,
+      color2: backdropColor2 || null, sample: { $image: 0 } }, [shots[i].data]);
     // The angle is the seed's, as the still's would be.
     const angle = core.call({ op: 'seeded_angle', seed: s });
     return { start, end, angle };
@@ -212,7 +210,7 @@ export function prepareClip(cutouts, {
       shots: shots.map((sh, i) => ({ image: { $image: i + 1 }, pannable: (angles?.[i] || null) === v.panAngleLabel, hood_side: null })),
       audio_loop_s: loopS, window, push, crossfade,
     }, [{ width, height, channels: 3, data: bg.data }, ...shots.map((sh) => sh.data)]);
-    if (!explicitDuration) duration = plan.period;
+    duration = plan.period;
   }
 
   return { shots, palette, plan, duration, width, height, overlays, window, background: bgData, frame };
@@ -286,7 +284,6 @@ export async function renderHeroVideoHere(cutouts, {
   width = 1254,
   height = 1254,
   fps = DEFAULT_FPS,
-  duration = null,
   seed = 'lotstretcher',
   angles = null,              // per-cutout angle labels; only the spec's pan angle pans
   exterior = null,
@@ -314,8 +311,6 @@ export async function renderHeroVideoHere(cutouts, {
   onProgress = null,
   signal = null,
 } = {}) {
-  const explicitDuration = duration !== null;
-  if (duration === null) duration = DEFAULT_DURATION_S;
   if (!cutouts.length) throw new Error('no cutouts to animate');
 
   const config = await pickCodec(width, height, fps);
@@ -362,9 +357,9 @@ export async function renderHeroVideoHere(cutouts, {
       : new Promise((resolve) => { drained = resolve; })
   );
 
-  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, backdrop, backdropColor, backdropColor2, spotlight, duration: explicitDuration ? duration : null, text, background, frameStyle, vehicle, push, crossfade });
+  const prepared = prepareClip(cutouts, { width, height, seed, angles, exterior, interior, generic, backdrop, backdropColor, backdropColor2, spotlight, text, background, frameStyle, vehicle, push, crossfade });
   const { shots, palette, plan } = prepared;
-  duration = prepared.duration;
+  const duration = prepared.duration;
 
   const canvas = makeCanvas(width, height);
   const ctx = ctxOf(canvas);
