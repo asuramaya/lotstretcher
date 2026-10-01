@@ -8,7 +8,7 @@
  * server. */
 
 import { get as specGet } from '../spec.js';
-import { makeCanvas, ctxOf, coverFit } from '../lib/imageio.js';
+import { makeCanvas, ctxOf, pixelsOf } from '../lib/imageio.js';
 import * as core from '../core.js';
 
 /* Compose one hero image. `cutout` is a cropped RGBA canvas. */
@@ -47,8 +47,9 @@ export function composeHero(cutout, {
   let bg;
   let backgroundImage = null;
   if (background) {
-    const fitted = coverFit(background, width, height);
-    backgroundImage = ctxOf(fitted, { willReadFrequently: true }).getImageData(0, 0, width, height);
+    // The photo as it is: the core cover-fits it (Lanczos), as it does
+    // the CLI's --photo-background.
+    backgroundImage = pixelsOf(background);
     bg = { kind: 'image' };
   } else {
     // The request for a generated backdrop is the core's (controls.rs),

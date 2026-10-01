@@ -11,7 +11,7 @@
  * Encoding is WebCodecs, measured at 3-4x realtime during the research
  * loop, with software encode only 16% slower than hardware. */
 
-import { makeCanvas, ctxOf, coverFit } from '../lib/imageio.js';
+import { makeCanvas, ctxOf, pixelsOf } from '../lib/imageio.js';
 import * as core from '../core.js';
 import { get as specGet } from '../spec.js';
 
@@ -155,8 +155,10 @@ export function prepareClip(cutouts, {
   let duration = 0;
   // A photo backdrop is fitted once and held for the clip; the gradient
   // is the fallback, rebuilt per frame because it rotates.
+  // The core cover-fits it once (Lanczos), as it does the CLI's.
   let bgData = background
-    ? ctxOf(coverFit(background, width, height), { willReadFrequently: true }).getImageData(0, 0, width, height)
+    ? core.toImageData(core.call({ op: 'render_frame', width, height, background: { kind: 'image', image: { $image: 0 } }, cars: [], rgba: true },
+      [pixelsOf(background)]))
     : null;
   // One palette per shot (the CLI seeds per image too), and each shot's
   // pixels and spotlight dim measured once. The gradient itself is

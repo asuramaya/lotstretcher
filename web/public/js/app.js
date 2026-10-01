@@ -20,7 +20,7 @@ import { composeHero } from './pipeline/compose.js';
 import { renderHeroVideoHere, videoThreads, setVideoThreads, isSupported as videoSupported } from './pipeline/video.js';
 import { CoreWorker } from './pipeline/core-worker.js';
 import { buildAllPosts, vehicleTitle, PLATFORMS } from './pipeline/copy.js';
-import { decode, makeCanvas, ctxOf, canvasToBlob } from './lib/imageio.js';
+import { decode, makeCanvas, ctxOf, canvasToBlob, pixelsOf } from './lib/imageio.js';
 import { makeZip, deliver } from './lib/zip.js';
 import * as OPTS from './options.js';
 import {
@@ -1513,14 +1513,6 @@ function readVehicle() {
     city_tags: $('f-citytags').value.split(',').map((s) => s.trim()).filter(Boolean),
   };
   saveDealer();
-}
-
-/* A bitmap or canvas as RGBA ImageData, for a core op that measures it. */
-function pixelsOf(source) {
-  const c = makeCanvas(source.width, source.height);
-  const x = ctxOf(c, { willReadFrequently: true });
-  x.drawImage(source, 0, 0);
-  return x.getImageData(0, 0, c.width, c.height);
 }
 
 /* `source` with `top` and `bottom` rows cut off, or `source` itself when

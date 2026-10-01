@@ -100,14 +100,12 @@ export async function canvasToBlob(canvas, type = 'image/png', quality) {
   return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
 }
 
-/* Cover-fit, matching compose/background.py::fit_background() --
- * scale to fill, crop the overflow, centred. */
-export function coverFit(src, w, h) {
-  const c = makeCanvas(w, h);
-  const ctx = ctxOf(c);
-  const scale = Math.max(w / src.width, h / src.height);
-  const dw = src.width * scale, dh = src.height * scale;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(src, (w - dw) / 2, (h - dh) / 2, dw, dh);
-  return c;
+/* A canvas, bitmap or image as RGBA ImageData at its own size, for a
+ * core op that reads its pixels. */
+export function pixelsOf(source) {
+  if (source instanceof ImageData) return source;
+  const c = makeCanvas(source.width, source.height);
+  const x = ctxOf(c, { willReadFrequently: true });
+  x.drawImage(source, 0, 0);
+  return x.getImageData(0, 0, c.width, c.height);
 }
