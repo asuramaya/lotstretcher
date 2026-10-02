@@ -10,6 +10,10 @@
   display: grid;
   height: 100dvh;                  /* dvh, not vh: vh is wrong while iOS
                                     * Safari's toolbar is collapsing */
+  /* One column the width of the screen: without minmax(0, 1fr) a long
+     line inside (a field's own width, a row of buttons) widens it past
+     a phone's edge and the right of every pane is cut off. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr auto;
   grid-template-areas: "top" "main" "nav";
 }
@@ -188,6 +192,24 @@
 @media (min-width: 560px) { .source-actions { grid-template-columns: 1fr 1fr; max-width: 460px; } }
 .source-actions:has(> .hidden:only-of-type), .source-actions:has(> :nth-child(2).hidden) { grid-template-columns: 1fr; max-width: 330px; }
 .source-more { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--s-2); }
+
+/* The listing link: one row, the field taking the room. */
+.linkbar {
+  display: flex; align-items: center; gap: var(--s-2);
+  width: 100%; max-width: 460px;
+  padding: var(--s-1) var(--s-1) var(--s-1) var(--s-3);
+  border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--bg);
+}
+.linkbar:focus-within { border-color: var(--accent); }
+.linkbar svg { width: 18px; height: 18px; flex: none; color: var(--ink-3); }
+.linkbar .field { flex: 1 1 0; width: 0; min-width: 0; border: 0; background: transparent; padding: var(--s-2) 0; box-shadow: none; }
+.linkbar .field:focus { outline: none; box-shadow: none; }
+.link-note { display: block; width: 100%; max-width: 460px; min-height: 1.2em; }
+.link-note:empty { display: none; }
+.link-note.is-err { color: var(--err); }
+.link-note.is-ok { color: var(--ok); }
+.dropzone.has-photos .linkbar { order: 3; max-width: 420px; flex: 1 1 260px; }
+.dropzone.has-photos .link-note { order: 4; flex-basis: 100%; max-width: none; }
 
 /* ---------- photo grid -------------------------------------------- */
 .grid {

@@ -109,12 +109,25 @@
             <button class="btn btn-primary" id="pickBtn">Add photos</button>
             <button class="btn hidden" id="cameraBtn">Take photo</button>
           </div>
+          <!-- The quickest start: a listing's address brings its photos,
+               price and details; a VIN fills the vehicle. -->
+          <form class="linkbar" id="linkBar" autocomplete="off">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>
+            </svg>
+            <input class="field" id="linkInput" type="text" inputmode="url" spellcheck="false" autocapitalize="off"
+              placeholder="Paste a listing link or a VIN" aria-label="A listing link or a VIN">
+            <button class="btn btn-sm hidden" type="button" id="linkPasteBtn">Paste</button>
+            <button class="btn btn-sm btn-primary" type="submit" id="linkGoBtn">Read</button>
+            <span class="spin" id="linkBusy" hidden aria-label="Reading"></span>
+          </form>
+          <output class="link-note small dim" id="linkNote" aria-live="polite"></output>
           <div class="source-more">
             <button class="btn btn-ghost btn-sm" id="folderBtn">A folder</button>
             <button class="btn btn-ghost btn-sm" id="urlBtn">Image links</button>
-            <button class="btn btn-ghost btn-sm" id="listingBtn">A listing or VIN</button>
+            <button class="btn btn-ghost btn-sm" id="listingBtn">A saved page</button>
           </div>
-          <p class="xs dim">Or drop files here, or paste: photos, image links, a listing address or a VIN all land in the right place.</p>
+          <p class="xs dim">Or drop files here, or paste anywhere: photos, image links, a listing address or a VIN all land in the right place.</p>
         </div>
 
         <input type="file" id="fileInput" multiple accept="image/*" class="sr-only">

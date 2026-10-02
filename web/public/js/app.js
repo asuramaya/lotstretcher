@@ -1509,13 +1509,14 @@ function readPastedText(text) {
   if (links.length) { addUrls(links.join('\n')); return true; }
   const one = tokens.length === 1 ? tokens[0] : null;
   if (one && (/^https?:\/\//i.test(one) || one.replace(/[^A-Za-z0-9]/g, '').length === 17)) {
-    importListingText(one, (m) => showSourceNote(m));
+    readLinkRef ? readLinkRef(one) : importListingText(one, (m) => showSourceNote(m));
     return true;
   }
   return false;
 }
 
 let readListingHtmlRef = null;
+let readLinkRef = null;   // the link bar's reader, so a paste anywhere shows its progress there
 function showSourceNote(text) { setStatus('vehicleStatus', text); }
 
 /* ---------- listing import --------------------------------------------
@@ -1742,37 +1743,82 @@ async function init() {
     if (f) readListingHtml(await f.text(), f.name);
   });
 
-  /* The box reads itself: on paste, on Enter, on leaving it. A small
-   * state machine says where it is (idle, reading, done, failed). */
+  /* A box that reads itself: on paste, on Enter, on leaving it. A small
+   * state machine says where it is (idle, reading, done, failed). Two
+   * boxes use it: the link bar on the Photos step and the sheet's. */
+  const readOut = (show) => {
+    const v = state.listing || {};
+    const bits = [v.title || [v.year, v.make, v.model].filter(Boolean).join(' ')];
+    if (v.photo_urls?.length) bits.push(`${v.photo_urls.length} photo${v.photo_urls.length === 1 ? '' : 's'}`);
+    const price = Number(String(v.display_price ?? '').replace(/[^0-9.]/g, ''));
+    if (price > 0) bits.push(`$${price.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
+    show('done', bits.filter(Boolean).join(' · ') || 'Read.');
+  };
+  const listingReader = (input, show, onDone = () => {}) => {
+    let reading = false;
+    const read = async () => {
+      const text = input.value.trim();
+      if (!text || reading) return;
+      reading = true;
+      show('reading', looksLikeHtml(text) ? 'Reading the page…' : /^https?:/i.test(text) && can('scrape') ? 'Your server is reading the page…' : 'Reading…');
+      try {
+        const failed = [];
+        const ok = looksLikeHtml(text)
+          ? readListingHtml(text, 'the pasted source')
+          : await importListingText(text, (m) => { failed.push(m); show('reading', m); });
+        if (ok) { input.value = ''; readOut(show); onDone(); }
+        else show('failed', failed.at(-1) || 'Nothing readable there: paste the listing\'s address, a VIN, or the page\'s source.');
+      } catch (e) {
+        show('failed', String(e.message || e));
+      } finally {
+        reading = false;
+      }
+    };
+    input.addEventListener('paste', () => setTimeout(read, 0));
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); read(); } });
+    input.addEventListener('change', read);
+    return read;
+  };
+  const busy = (status, message) => {
+    if (!state.preparing && !state.running) topProgress(status === 'reading' ? 'busy' : null, status === 'reading' ? message : null);
+  };
   const readState = (status, note = '') => {
     const n = $('listingUrlNote');
     n.textContent = note;
     n.className = `small ${status === 'failed' ? 'is-err' : status === 'done' ? 'is-ok' : 'dim'}`;
     $('listingBusy').hidden = status !== 'reading';
-    if (!state.preparing && !state.running) topProgress(status === 'reading' ? 'busy' : null, status === 'reading' ? 'Reading the listing…' : null);
     $('listingUrlInput').disabled = status === 'reading';
+    busy(status, 'Reading the listing…');
   };
-  let reading = false;
-  const readBox = async () => {
-    const text = $('listingUrlInput').value.trim();
-    if (!text || reading) return;
-    reading = true;
-    readState('reading', looksLikeHtml(text) ? 'Reading the page…' : /^https?:/i.test(text) && can('scrape') ? 'Your server is reading the page…' : 'Reading…');
-    try {
-      let ok;
-      if (looksLikeHtml(text)) ok = readListingHtml(text, 'the pasted source');
-      else ok = await importListingText(text, (m) => readState('reading', m));
-      if (ok) { readState('done'); closeSheet('listingSheet'); $('listingUrlInput').value = ''; }
-      else if ($('listingUrlNote').className.includes('dim')) readState('failed', $('listingUrlNote').textContent || 'Nothing readable there.');
-    } catch (e) {
-      readState('failed', String(e.message || e));
-    } finally {
-      reading = false;
-    }
+  listingReader($('listingUrlInput'), readState, () => closeSheet('listingSheet'));
+
+  const linkState = (status, note = '') => {
+    const n = $('linkNote');
+    n.textContent = note;
+    n.className = `link-note small ${status === 'failed' ? 'is-err' : status === 'done' ? 'is-ok' : 'dim'}`;
+    $('linkBusy').hidden = status !== 'reading';
+    $('linkGoBtn').disabled = status === 'reading';
+    busy(status, 'Reading the listing…');
   };
-  $('listingUrlInput').addEventListener('paste', () => setTimeout(readBox, 0));
-  $('listingUrlInput').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); readBox(); } });
-  $('listingUrlInput').addEventListener('change', readBox);
+  const readLink = listingReader($('linkInput'), linkState);
+  readLinkRef = (text) => { $('linkInput').value = text; readLink(); };
+  $('linkBar').addEventListener('submit', (e) => { e.preventDefault(); readLink(); });
+  // A Paste button where the page may read the clipboard (a tap on a
+  // phone, where long-press-paste into a small field is fiddly).
+  if (navigator.clipboard?.readText) {
+    $('linkPasteBtn').classList.remove('hidden');
+    $('linkPasteBtn').onclick = async () => {
+      try {
+        const text = (await navigator.clipboard.readText()).trim();
+        if (!text) { linkState('failed', 'The clipboard is empty.'); return; }
+        $('linkInput').value = text;
+        readLink();
+      } catch {
+        linkState('failed', 'The browser would not share the clipboard; paste into the box instead.');
+        $('linkInput').focus();
+      }
+    };
+  }
 
   $('fileInput').onchange = (e) => { addFiles(e.target.files, 'chosen'); e.target.value = ''; };
   $('folderInput').onchange = (e) => { addFiles(e.target.files, 'folder'); e.target.value = ''; };
@@ -1975,7 +2021,7 @@ async function init() {
   if (sharedText) {
     history.replaceState(null, '', location.pathname);
     const link = sharedText.match(/https?:\/\/\S+/)?.[0];
-    if (link) importListingText(link, (m) => showSourceNote(m));
+    if (link) readLinkRef(link);
     else readPastedText(sharedText);
   }
 
