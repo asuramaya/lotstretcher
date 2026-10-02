@@ -199,6 +199,57 @@ def add_short_clip_args(parser) -> None:
                              f"(default: {_spec.control_default('videoCrossfade', 0.5)}).")
 
 
+def add_video_args(parser) -> None:
+    """The clip's flags, shared by lotstretcher and hero-video so one
+    spelling means one thing everywhere. The older spellings each tool had
+    (--format, --bpm, --music, --audio, --flag-background, --background-video,
+    --budget-mb, --video-flag-background) are kept as aliases."""
+    parser.add_argument("--video-format", "--format", action="append", metavar="FORMAT", dest="video_format",
+                        help="Frame shape for the clip; repeatable, or 'all': square 1254x1254 (Marketplace/feed), "
+                             "vertical 1080x1920 (Reels/Stories/TikTok/Shorts), horizontal 1920x1080 (YouTube). "
+                             "The edit is identical in every shape; only the blocking changes.")
+    parser.add_argument("--video-fps", type=float, default=None, metavar="FPS",
+                        help="Frame rate (default: 25 for the beat-synced CLI render, 30 in the browser).")
+    parser.add_argument("--video-bpm", "--bpm", type=float, default=None, metavar="BPM", dest="video_bpm",
+                        help="Tempo the cuts and pulse follow when there is no music (default: the spec's "
+                             "defaultBpm). With --video-music the track's own bars set the clock.")
+    parser.add_argument("--video-music", "--music", action="store_true", dest="video_music",
+                        help="Score the clip with a looping track (silent unless given); the cuts are "
+                             "bar/beat-locked either way.")
+    parser.add_argument("--video-track", "--audio", default=None, metavar="TRACK", dest="video_track",
+                        help="Which track --video-music plays: a name, tag or path (default: the library's); "
+                             "naming one turns the music on.")
+    parser.add_argument("--video-backdrop", "--video-flag-background", "--flag-background", action="store_true",
+                        dest="video_backdrop",
+                        help="Loop a stock video clip behind the shots instead of the gradient.")
+    parser.add_argument("--video-clip", "--background-video", default=None, metavar="CLIP", dest="video_clip",
+                        help="Which clip --video-backdrop loops: a name, tag or path (default: the library's); "
+                             "naming one turns the backdrop on.")
+    parser.add_argument("--video-bitrate", type=float, default=None, metavar="MBPS",
+                        help="The clip's bitrate in Mbps (default: automatic, filling --video-budget-mb).")
+    parser.add_argument("--video-budget-mb", "--budget-mb", type=float, default=None, metavar="MB",
+                        dest="video_budget_mb",
+                        help="With an automatic bitrate, fill this file size (default: each shape's own budget "
+                             "from the spec).")
+    parser.add_argument("--nvenc", action="store_true",
+                        help="Encode on the GPU (h264_nvenc); the compositing stays on the CPU.")
+    add_short_clip_args(parser)
+
+
+def controls_from_video_args(args) -> dict:
+    return {
+        "videoMusic": bool(args.video_music or args.video_track),
+        "videoBackdrop": bool(args.video_backdrop or args.video_clip),
+        "videoFps": args.video_fps,
+        "videoBpm": args.video_bpm,
+        "videoBitrate": args.video_bitrate,
+        "videoBudgetMb": args.video_budget_mb,
+        "videoPush": args.video_push,
+        "videoCrossfade": args.video_crossfade,
+        "nvenc": args.nvenc,
+    }
+
+
 def add_spotlight_args(parser) -> None:
     """The spotlight's flags, shared by the CLIs: off, a chosen strength
     in place of the measured dim, and a spread for the pool of light."""

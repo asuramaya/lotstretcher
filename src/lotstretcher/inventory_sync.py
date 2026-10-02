@@ -209,8 +209,15 @@ def run_sync(config: dict, dry_run: bool = False, headed: bool = False,
     # cold model load (measured 18-63s) for one photo's worth of inference.
     # Batching keeps the model warm across the run and unloads it once at
     # the very end, same safety property, paid once instead of N times.
-    hero_opts = HeroOptions(interior_classifier=interior_classifier, vision_seat_check=False,
-                             video_encoder="h264_nvenc")
+    # The dealer config's lever values ("studio": {"glow": true, ...}), the
+    # same ones the CLI takes; the GPU encoder unless they say otherwise.
+    from lotstretcher.dealer_config import get as dealer
+    from lotstretcher.library_ops import hero_options_from_controls
+    studio = dealer().studio
+    hero_opts = hero_options_from_controls(studio, interior_classifier=interior_classifier)
+    hero_opts.vision_seat_check = False
+    if "nvenc" not in studio:
+        hero_opts.video_encoder = "h264_nvenc"
 
     to_fetch = []
     for url in urls:

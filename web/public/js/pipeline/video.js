@@ -45,7 +45,7 @@ export function isSupported() {
 /* The first codec this browser will encode at this size.
  * Returns null when none will, which is a real outcome on some devices
  * and has to be reported rather than thrown past. */
-export async function pickCodec(width, height, fps = defaultFps()) {
+export async function pickCodec(width, height, fps = defaultFps(), bitrate = null) {
   if (typeof VideoEncoder === 'undefined') return null;
   for (const codec of CODEC_CANDIDATES) {
     const config = {
@@ -53,7 +53,7 @@ export async function pickCodec(width, height, fps = defaultFps()) {
       width,
       height,
       framerate: fps,
-      bitrate: bitrateFor(width, height),
+      bitrate: bitrate || bitrateFor(width, height),
       avc: { format: 'avc' },
     };
     try {
@@ -64,9 +64,9 @@ export async function pickCodec(width, height, fps = defaultFps()) {
   return null;
 }
 
-/* Roughly matches compute_video_bitrate_kbps()'s budget thinking: enough
- * for a clean gradient and a sharp vehicle edge, not so much that a
- * phone spends a minute writing the file. */
+/* The automatic bitrate (the Bitrate lever at 0): enough for a clean
+ * gradient and a sharp vehicle edge, not so much that a phone spends a
+ * minute writing the file. */
 function bitrateFor(width, height) {
   const pixels = width * height;
   return Math.round(Math.min(12e6, Math.max(3e6, pixels * 4.5)));
@@ -291,6 +291,7 @@ export async function renderHeroVideoHere(cutouts, {
   width = specGet('canvas', 'default')[0],
   height = specGet('canvas', 'default')[1],
   fps = defaultFps(),
+  bitrate = null,             // bits per second (the Bitrate lever); null is automatic
   seed = 'lotstretcher',
   angles = null,              // per-cutout angle labels; only the spec's pan angle pans
   exterior = null,
@@ -321,7 +322,7 @@ export async function renderHeroVideoHere(cutouts, {
 } = {}) {
   if (!cutouts.length) throw new Error('no cutouts to animate');
 
-  const config = await pickCodec(width, height, fps);
+  const config = await pickCodec(width, height, fps, bitrate);
   if (!config) {
     throw new Error('This browser will not encode H.264 at this size. Try a smaller format.');
   }

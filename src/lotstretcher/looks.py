@@ -90,17 +90,34 @@ def assignments(look: dict, parser) -> dict[str, object]:
     return out
 
 
-def apply_look(args, parser, argv=None) -> list[str]:
-    """Apply `args.look` (if any) onto `args`, leaving every explicitly
-    given flag alone. Returns the attribute names it set, for a log line."""
-    look_id = getattr(args, "look", None)
-    if not look_id:
-        return []
+def apply_values(args, parser, values: dict, argv=None, label: str = "config") -> list[str]:
+    """Set the control `values` ({key: value}, the Studio's keys) onto
+    `args` through their flags, leaving every explicitly given flag alone.
+    A key this command has no flag for is passed over. Returns the
+    attribute names it set."""
     given = explicit_dests(parser, argv)
     touched = []
-    for dest, value in assignments(find(look_id), parser).items():
-        if dest in given:
+    for key, value in values.items():
+        try:
+            pairs = assignments({"id": label, "values": {key: value}}, parser).items()
+        except ValueError:
             continue
-        setattr(args, dest, value)
-        touched.append(dest)
+        for dest, v in pairs:
+            if dest in given or not hasattr(args, dest):
+                continue
+            setattr(args, dest, v)
+            touched.append(dest)
+    return touched
+
+
+def apply_look(args, parser, argv=None) -> list[str]:
+    """The dealer config's own lever values first (lotstretcher-config.json's
+    "studio" object: {"glow": true, "videoBitrate": 12}), then `args.look`
+    (if any) over them, leaving every explicitly given flag alone. Returns
+    the attribute names set, for a log line."""
+    from lotstretcher.dealer_config import get as dealer
+    touched = apply_values(args, parser, dealer().studio, argv)
+    look_id = getattr(args, "look", None)
+    if look_id:
+        touched += apply_values(args, parser, find(look_id)["values"], argv, label=look_id)
     return touched

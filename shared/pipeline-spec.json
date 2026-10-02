@@ -2020,18 +2020,18 @@
             "tab": "output"
           },
           {
-            "key": "videoFlagBackground",
-            "label": "Flag backdrop",
+            "key": "videoBackdrop",
+            "label": "Moving backdrop",
             "hint": "",
             "type": "toggle",
             "default": false,
-            "cli": "--video-flag-background",
+            "cli": "--video-backdrop",
             "surfaces": [
               "cli",
               "server"
             ],
             "requires": "filesystem",
-            "tooltip": "Loop the waving-flag video behind the carousel instead of the gradient",
+            "tooltip": "Loop a stock video clip behind the shots instead of the gradient; --video-clip names another",
             "tab": "output"
           },
           {
@@ -2051,6 +2051,20 @@
             ],
             "tooltip": "Beats per minute the cuts and pulse follow when there is no music",
             "tab": "sound"
+          },
+          {
+            "key": "videoBitrate",
+            "label": "Bitrate",
+            "hint": "",
+            "type": "range",
+            "default": 0,
+            "min": 0,
+            "max": 24,
+            "step": 1,
+            "unit": "Mbps",
+            "cli": "--video-bitrate",
+            "tooltip": "The clip's bitrate; 0 is automatic: a server fills the size budget, the browser keeps files phone-sized (3-12 Mbps)",
+            "tab": "output"
           },
           {
             "key": "videoBudgetMb",

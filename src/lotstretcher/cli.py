@@ -76,8 +76,8 @@ from lotstretcher.imaging.dedupe import DEFAULT_TEMPLATES_DIR, JunkFilter
 from lotstretcher.listing import expand_listing_url, is_vdp_url
 from lotstretcher.local_source import is_local_source, load_local_vehicle, local_vehicle_key
 from lotstretcher.scrape import USER_AGENT
-from lotstretcher.imaging.text import (add_short_clip_args, add_backdrop_arg, add_glow_args, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
-                                       controls_from_glow_args, controls_from_spotlight_args,
+from lotstretcher.imaging.text import (add_video_args, add_backdrop_arg, add_glow_args, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
+                                       controls_from_glow_args, controls_from_spotlight_args, controls_from_video_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args)
 from lotstretcher.library_ops import hero_options_from_controls
@@ -211,14 +211,10 @@ def controls_from_args(args) -> dict:
         # name that is not a shape, are hero_options_from_controls' to read.
         "videoFormats": [] if args.no_video else args.video_format,
         "heroFormats": args.hero_format,
-        "videoMusic": args.video_music,
-        "videoFlagBackground": args.video_flag_background,
-        "nvenc": args.nvenc,
-        "videoFps": args.video_fps,
-        "videoBpm": args.video_bpm,
-        "videoPush": args.video_push,
-        "videoCrossfade": args.video_crossfade,
-        "videoBudgetMb": args.video_budget_mb,
+        **controls_from_video_args(args),
+        # Which track and which clip, when named; not levers of their own.
+        "videoTrack": args.video_track,
+        "videoClip": args.video_clip,
         "interiors": not args.no_interiors and not args.no_photo_sort,
         "interiorCaptions": args.interior_captions,
         "visionSeatCheck": args.vision_seat_check and not args.no_photo_sort and not args.no_interiors,
@@ -309,36 +305,15 @@ def build_parser() -> argparse.ArgumentParser:
                               "across every post is what got flagged, so this is opt-in.")
     parser.add_argument("--no-video", action="store_true",
                          help="Skip the animated hero video (bundle/hero-video.mp4)")
-    parser.add_argument("--video-music", action="store_true",
-                         help="Score the hero video. Silent is the default; timing is bar/beat-locked either way.")
-    parser.add_argument("--video-flag-background", action="store_true",
-                         help="Use the backdrop video clip instead of the default rotating vehicle-color gradient.")
+    add_video_args(parser)
     parser.add_argument("--hero-format", action="append", metavar="FORMAT",
                          help="Shape(s) for the hero still; repeatable, or 'all'. The video's three: "
                               "square 1254x1254 (Marketplace), portrait 1080x1920 (Stories, Reels, TikTok), "
                               "horizontal 1920x1080 (YouTube, landscape feed). Default: square + portrait. "
                               "framed/ is always square.")
-    parser.add_argument("--video-format", action="append", metavar="FORMAT",
-                         help="Frame shape for the hero video; repeatable, or 'all'. "
-                              "square 1254x1254 (Marketplace/feed), vertical 1080x1920 "
-                              "(Reels/Stories/TikTok/Shorts), horizontal 1920x1080 (YouTube). "
-                              "Default: all three. The edit is identical in every format -- only "
-                              "the blocking changes.")
-    parser.add_argument("--nvenc", action="store_true",
-                         help="Encode the hero video on the GPU (h264_nvenc).")
     add_spotlight_args(parser)
     parser.add_argument("--margin-frac", type=float, default=0.06, metavar="FRAC",
                          help="Breathing room inside each layout box, as a fraction (default: 0.06).")
-    parser.add_argument("--video-fps", type=float, default=None, metavar="FPS",
-                         help="Video frame rate (default: 25 for the beat-synced CLI render, "
-                              "30 in the browser, which has no audio to sync to).")
-    parser.add_argument("--video-bpm", type=float, default=None, metavar="BPM",
-                         help="Tempo the cuts and pulse follow when there is no music (default: the "
-                              "spec's defaultBpm). With --video-music the track's own bars set the clock.")
-    add_short_clip_args(parser)
-    parser.add_argument("--video-budget-mb", type=float, default=None, metavar="MB",
-                         help="Bitrate is chosen to fill this file size. Default: each format's own budget "
-                              "from the spec.")
     add_glow_args(parser)
     parser.add_argument("--dealer-config",
                          help="Path to a JSON dealer-config file (overrides env vars and defaults)")
@@ -374,10 +349,14 @@ def main():
     if args.cutout_model != "standard":
         from lotstretcher.imaging.cutout import set_cutout_model
         set_cutout_model(args.cutout_model)
-    apply_look(args, parser)
-
+    # The dealer's config: the one named, else the one at the library root
+    # (as the server reads it), else the working directory's.
+    library_config = Path(args.out) / "lotstretcher-config.json"
     if args.dealer_config:
         dealer_config.reload(args.dealer_config)
+    elif library_config.is_file() and dealer_config._json_path() is None:
+        dealer_config.reload(library_config)
+    apply_look(args, parser)
 
 
     if args.list_assets:

@@ -101,7 +101,9 @@ export function stillOptions(o) {
 }
 export function clipOptions(o) {
   const { borderStyle, borderFit, marginFrac, ...rest } = stillOptions(o);
-  return { ...rest, frameStyle: borderStyle, push: numOrNull(o.videoPush), crossfade: numOrNull(o.videoCrossfade), fps: numOrNull(o.videoFps) ?? undefined };
+  return { ...rest, frameStyle: borderStyle, push: numOrNull(o.videoPush), crossfade: numOrNull(o.videoCrossfade), fps: numOrNull(o.videoFps) ?? undefined,
+    // Mbps on the lever, bits per second for the encoder; 0 is automatic.
+    bitrate: Number(o.videoBitrate) > 0 ? Number(o.videoBitrate) * 1e6 : null };
 }
 
 /* A stock frame's name, when the Frame picker names one (not none, your

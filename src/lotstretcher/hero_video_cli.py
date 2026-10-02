@@ -7,9 +7,10 @@ loops of an audio track.
 
     hero_video_cli.py ~/Documents/listings/2023-Ford-F-150-Raptor-PFA15687
 
-The backdrop clip and audio loop come from assets/manifest.json, same as
-backgrounds and borders -- override with --background-video/--audio by
-manifest name, tag, or a one-off path.
+The moving backdrop (--video-backdrop) and the music (--video-music) come
+from assets/manifest.json, same as backgrounds and borders -- name another
+with --video-clip / --video-track by manifest name, tag, or a one-off path.
+Every --video-* flag is the lotstretcher command's own.
 
 See compose_cli.py for the equivalent still-image tool this mirrors.
 """
@@ -25,7 +26,7 @@ from lotstretcher.imaging.compose import render_hero_video
 from lotstretcher.imaging.compose.hero_video import (BARS_PER_LOOP, DEFAULT_BPM, DEFAULT_VIDEO_FORMAT,
                                           VIDEO_FORMATS)
 from lotstretcher.imaging.select import order_for_conveyor_start, pick_all_for_carousel
-from lotstretcher.imaging.text import (add_glow_args, add_short_clip_args, add_backdrop_arg, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
+from lotstretcher.imaging.text import (add_glow_args, add_video_args, add_backdrop_arg, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args, frame_style,
                                        reflection_style, shadow_style, spotlight_style, controls_from_spotlight_args, text_options)
@@ -60,33 +61,16 @@ def resolve_audio(value: str | None) -> tuple[Path, int]:
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("vehicle_folder", help="A folder the lotstretcher command produced (contains images/exterior/cutout/)")
-    parser.add_argument("--background-video", help="Video name/tag from assets/manifest.json, or a path "
-                                                    "(default: American Flag Waving)")
-    parser.add_argument("--audio", help="Audio name/tag from assets/manifest.json, or a path (default: Its Mine). "
-                                         "Must be a seamless loop of a whole number of bars -- the manifest entry's "
-                                         "`bars` is what the beat math divides by.")
     parser.add_argument("--border", help="Border name or tag (default: first available)")
-    parser.add_argument("--format", default=DEFAULT_VIDEO_FORMAT,
-                         choices=[*VIDEO_FORMATS, "all"],
-                         help="Frame shape. " + "; ".join(
-                             f"{k} {v['canvas'][0]}x{v['canvas'][1]} ({v['note']})"
-                             for k, v in VIDEO_FORMATS.items()) +
-                              ". 'all' renders each in turn. The edit is identical in every "
-                              "format -- only the blocking changes.")
-    parser.add_argument("--budget-mb", type=float, default=None,
-                         help="Target max file size in MB. Defaults to the format's own budget "
-                              "(square 50, the others 66 -- the 50MB cap is Marketplace's and "
-                              "does not apply to Reels/Shorts/TikTok).")
+    add_video_args(parser)
     add_glow_args(parser)
-    parser.add_argument("--flag-background", action="store_true",
-                         help="Use the backdrop video clip instead of the default rotating vehicle-color gradient.")
     parser.add_argument("--frame", action="store_true",
                          help="Composite the dealer frame back on (frameless is the default).")
     parser.add_argument("--frame-fit", default="slice", choices=["fit", "fill", "stretch", "slice"],
                          help="How the frame meets a format of another shape: slice (default; corners kept, edges stretched), fit, fill or stretch.")
     parser.add_argument("--photo-background", action="store_true",
                          help="A still photo from the asset library behind the clip (the stills' backdrop), "
-                              "instead of the rotating gradient. --flag-background wins when both are given.")
+                              "instead of the rotating gradient. --video-backdrop wins when both are given.")
     parser.add_argument("--background", help="Background name or tag for --photo-background (default: the library's).")
     add_text_args(parser)
     add_frame_style_args(parser)
@@ -95,15 +79,6 @@ def main():
     add_reflection_args(parser)
     add_backdrop_arg(parser)
     add_look_arg(parser)
-    parser.add_argument("--music", action="store_true",
-                         help="Score the video. Silent is the default; timing comes from --bpm either way, so "
-                              "the cut/pump cadence is identical.")
-    parser.add_argument("--bpm", type=float, default=None,
-                         help=f"Tempo driving the bar/beat grid when silent (default: {DEFAULT_BPM:g}, which "
-                              "reproduces the scored version's exact cadence).")
-    add_short_clip_args(parser)
-    parser.add_argument("--nvenc", action="store_true",
-                         help="Encode on the GPU (h264_nvenc). Only the encode moves; the frame compositing is CPU either way, so expect a modest win.")
     parser.add_argument("--out", help="Output path (default: <vehicle_folder>/bundle/hero-video.mp4)")
     args = parser.parse_args()
     apply_look(args, parser)
@@ -116,7 +91,7 @@ def main():
 
     border_path = resolve_asset_arg("borders", args.border) if args.frame else None
     background_video = resolve_asset_arg(
-        "videos", args.background_video, default_name="American Flag Waving") if args.flag_background else None
+        "videos", args.video_clip, default_name="American Flag Waving") if (args.video_backdrop or args.video_clip) else None
 
     background_image = (resolve_asset_arg("backgrounds", args.background, default_name="American Flag")
                         if args.photo_background and background_video is None else None)
@@ -135,8 +110,8 @@ def main():
             args.backdrop_spec = backdrop_spec(args.backdrop, vehicle_folder.name, ext, inr, args.backdrop_color,
                                                args.backdrop_color2, args.backdrop_angle)
 
-    if args.music or args.audio:
-        audio_path, bars_per_loop = resolve_audio(args.audio)
+    if args.video_music or args.video_track:
+        audio_path, bars_per_loop = resolve_audio(args.video_track)
     else:
         audio_path, bars_per_loop = None, BARS_PER_LOOP
 
@@ -147,7 +122,12 @@ def main():
     carousel_paths = [p for p, _label in carousel]
     carousel_labels = [label for _p, label in carousel]
 
-    formats = list(VIDEO_FORMATS) if args.format == "all" else [args.format]
+    # One shape unless more are asked for; 'all' is every one.
+    asked = args.video_format or [DEFAULT_VIDEO_FORMAT]
+    formats = list(VIDEO_FORMATS) if "all" in asked else list(dict.fromkeys(asked))
+    unknown = [f for f in formats if f not in VIDEO_FORMATS]
+    if unknown:
+        parser.error(f"unknown --video-format {unknown[0]!r}; choose from {', '.join(VIDEO_FORMATS)} or 'all'")
     for fmt in formats:
         render_one(fmt, args, vehicle_folder, border_path, background_video, gradient_colors,
                     audio_path, bars_per_loop, carousel_paths, carousel_labels, background_image)
@@ -168,10 +148,12 @@ def render_one(fmt, args, vehicle_folder, border_path, background_video, gradien
         audio_path=audio_path,
         bars_per_loop=bars_per_loop,
         gradient_colors=gradient_colors,
-        bpm=args.bpm or DEFAULT_BPM,
+        bpm=args.video_bpm or DEFAULT_BPM,
+        **({"fps": args.video_fps} if args.video_fps else {}),
         out_path=out_path,
         canvas_size=spec["canvas"],
-        budget_mb=args.budget_mb if args.budget_mb is not None else spec["budget_mb"],
+        budget_mb=args.video_budget_mb if args.video_budget_mb is not None else spec["budget_mb"],
+        bitrate_kbps=round(args.video_bitrate * 1000) if args.video_bitrate else None,
         glow=args.glow,
         glow_color=args.glow_color,
         glow_radius=args.glow_radius,

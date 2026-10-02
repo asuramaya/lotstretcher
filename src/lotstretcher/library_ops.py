@@ -180,6 +180,7 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
         video_fps=float(options["videoFps"]) if options.get("videoFps") else None,
         video_bpm=float(options["videoBpm"]) if options.get("videoBpm") else None,
         video_budget_mb=float(options["videoBudgetMb"]) if options.get("videoBudgetMb") else None,
+        video_bitrate_mbps=float(options["videoBitrate"]) if options.get("videoBitrate") else None,
         video_push=float(options["videoPush"]) if options.get("videoPush") not in (None, "") else None,
         video_crossfade=float(options["videoCrossfade"]) if options.get("videoCrossfade") not in (None, "") else None,
     )
@@ -189,12 +190,21 @@ def hero_options_from_controls(options: dict, interior_classifier=None):
                                                       default_name="American Flag")
         if frame:
             opts.border_path = assets.resolve_arg("borders", stock_border(options))
-        if options.get("videoFlagBackground"):
-            opts.video_background = assets.resolve_arg("videos", None, default_name="American Flag Waving")
-        if options.get("videoMusic"):
-            entry = assets.entry_for("audio", None, default_name="Its Mine")
-            opts.video_audio = assets.resolve(entry)
-            opts.video_bars_per_loop = int(entry.get("bars", 4))
+        # The moving backdrop and the music: the library's own unless a clip
+        # or a track is named (videoFlagBackground is the backdrop's old key).
+        clip, track = options.get("videoClip") or None, options.get("videoTrack") or None
+        if options.get("videoBackdrop") or options.get("videoFlagBackground") or clip:
+            opts.video_background = Path(clip) if clip and Path(clip).exists() else \
+                assets.resolve_arg("videos", clip, default_name="American Flag Waving")
+        if options.get("videoMusic") or track:
+            # A file of one's own cannot say its bar count: four, as the
+            # renderer assumes; a library track carries its own.
+            if track and Path(track).exists():
+                opts.video_audio, opts.video_bars_per_loop = Path(track), 4
+            else:
+                entry = assets.entry_for("audio", track, default_name="Its Mine")
+                opts.video_audio = assets.resolve(entry)
+                opts.video_bars_per_loop = int(entry.get("bars", 4))
     return opts
 
 

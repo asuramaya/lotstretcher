@@ -347,7 +347,7 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
                        audio_path: Path | None, out_path: Path, carousel_labels: list[str] | None = None,
                        gradient_colors: tuple | None = None, bpm: float = DEFAULT_BPM,
                        fps: float = DEFAULT_FPS, canvas_size: tuple[int, int] = DEFAULT_CANVAS_SIZE,
-                       budget_mb: float = 50.0, layout: str = "conveyor", n_accents: int = 2,
+                       budget_mb: float = 50.0, bitrate_kbps: int | None = None, layout: str = "conveyor", n_accents: int = 2,
                        bars_per_loop: int = BARS_PER_LOOP,
                        glow: bool = False, glow_color=DEFAULT_GLOW_COLOR,
                        glow_radius: int = 24, glow_intensity: float = 0.75,
@@ -502,9 +502,11 @@ def render_hero_video(background_video: Path | None, border_path: Path | None, c
 
     total_frames = round(total_seconds * fps)
     total_seconds = total_frames / fps  # snap to an exact frame count
-    bitrate_kbps = compute_video_bitrate_kbps(
-        total_seconds, budget_mb=budget_mb,
-        audio_kbps=AUDIO_BITRATE_KBPS if audio_path is not None else 0)
+    # A bitrate asked for is used as given; otherwise it fills the budget.
+    if not bitrate_kbps:
+        bitrate_kbps = compute_video_bitrate_kbps(
+            total_seconds, budget_mb=budget_mb,
+            audio_kbps=AUDIO_BITRATE_KBPS if audio_path is not None else 0)
 
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)

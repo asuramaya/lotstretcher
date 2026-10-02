@@ -426,10 +426,12 @@ export class Preview {
         // A frame is lighter than a still (bilinear, cached cars), so
         // the still's cost is scaled down; measured about 0.4 of it.
         if (perPixelMs) ms += perPixelMs * w * h * 0.4 * dur * fps;
-        mb += fmt.budgetMb || 0;
+        // A bitrate asked for decides the size; the automatic one stays
+        // inside the shape's budget.
+        mb += Number(o.videoBitrate) > 0 ? Number(o.videoBitrate) * dur / 8 : fmt.budgetMb || 0;
       }
       const time = ms ? `, about ${fmtSeconds(ms / 1000)} to render` : '';
-      const size = mb ? `, up to ${mb} MB` : '';
+      const size = mb ? `, ${Number(o.videoBitrate) > 0 ? 'about' : 'up to'} ${Math.round(mb)} MB` : '';
       row('Video', `${clips.length} clip${clips.length === 1 ? '' : 's'} of ${dur} s at ${fps} fps${time}${size}`);
     } else {
       row('Video', 'none');

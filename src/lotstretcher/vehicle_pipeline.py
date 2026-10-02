@@ -102,6 +102,7 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         out_path=video_output_path(folder, fmt),
         canvas_size=spec["canvas"],
         budget_mb=hero_opts.video_budget_mb or spec["budget_mb"],
+        bitrate_kbps=round(hero_opts.video_bitrate_mbps * 1000) if hero_opts.video_bitrate_mbps else None,
         **({"bpm": hero_opts.video_bpm} if hero_opts.video_bpm else {}),
         push=hero_opts.video_push,
         crossfade=hero_opts.video_crossfade,
@@ -154,6 +155,8 @@ class HeroOptions:
     # and each format's own size budget.
     video_bpm: float | None = None
     video_budget_mb: float | None = None
+    # --video-bitrate in Mbps; None fills the size budget.
+    video_bitrate_mbps: float | None = None
     # --video-push / --video-crossfade: a clip of one or two shots (the
     # conveyor needs three); None means the spec's control defaults.
     video_push: float | None = None

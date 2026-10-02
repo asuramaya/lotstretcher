@@ -55,6 +55,12 @@ class DealerConfig:
     # configured rather than guessing.
     inventory_urls: dict[str, str] = field(default_factory=dict)
 
+    # -- The Studio's levers, by their keys --------------------------------
+    # Defaults for this dealer's runs on every command ({"glow": true,
+    # "videoBitrate": 12}); a flag typed on the command line, or a --look,
+    # wins over them. inventory-sync's runs take them too.
+    studio: dict = field(default_factory=dict)
+
 
 def _env(key: str, default: str | None = None) -> str | None:
     return os.environ.get(f"LOTSTRETCHER_{key}", default)
@@ -94,6 +100,8 @@ def load(path: str | Path | None = None) -> DealerConfig:
             cfg.city_tags = raw["city_tags"]
         if raw.get("inventory_urls"):
             cfg.inventory_urls.update(raw["inventory_urls"])
+        if isinstance(raw.get("studio"), dict):
+            cfg.studio = dict(raw["studio"])
 
     # Layer 2: env vars
     for env_key, attr in [

@@ -188,7 +188,7 @@ COMPOSITION_FLAGS = {
     "--glow", "--glow-color", "--glow-radius", "--glow-intensity",
     "--no-hero", "--frame", "--border", "--background", "--photo-background",
     "--no-interiors", "--no-photo-sort", "--no-strict-cutouts", "--upscale",
-    "--video-music", "--nvenc", "--video-flag-background", "--video-bpm", "--video-budget-mb",
+    "--video-music", "--nvenc", "--video-backdrop", "--video-bpm", "--video-budget-mb", "--video-bitrate",
     "--video-fps", "--no-spotlight", "--margin-frac",
 }
 
