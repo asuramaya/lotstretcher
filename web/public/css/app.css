@@ -969,3 +969,11 @@ body:has(.lightbox:not([hidden])) .nav { visibility: hidden; }
 .lib-run.is-failed { border-color: var(--err); }
 .lib-run-what a { color: var(--accent); text-decoration: none; }
 @media (max-width: 559px) { .lib-run { grid-template-columns: 1fr auto; } .lib-run-what { grid-column: 1 / -1; } }
+
+/* Under the results' head: where the run was saved, and the auto-save switch. */
+.savebar { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; margin: calc(-1 * var(--s-2)) 0 var(--s-4); }
+.savebar > .small { flex: 1 1 200px; min-width: 0; }
+.savebar > .small.is-ok { color: var(--ok); }
+.savebar > .small.is-err { color: var(--err); }
+.savebar-auto { display: inline-flex; align-items: center; gap: var(--s-2); cursor: pointer; color: var(--ink-2); }
+.savebar a { color: var(--accent); cursor: pointer; }

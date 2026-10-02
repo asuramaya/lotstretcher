@@ -26,7 +26,6 @@ import dataclasses
 import re
 import sys
 import time
-import unicodedata
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -255,39 +254,30 @@ def normalize_vehicle(url: str, html: str) -> Vehicle:
 # Output folder naming
 # --------------------------------------------------------------------------
 
-def slugify(*parts: str, maxlen: int = 80) -> str:
-    text = "-".join(p for p in parts if p)
-    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
-    text = re.sub(r"[^\w\s-]", "", text)
-    text = re.sub(r"[\s_]+", "-", text).strip("-")
-    return text[:maxlen] or "vehicle"
+def library_place(v: "Vehicle", url: str | None = None) -> dict:
+    """{bucket, folder}: where this vehicle lives in a listings library,
+    decided by the core (library_place.rs) so the browser's Save to
+    library files a run in the same folder the CLI does.
+
+    The bucket is "new" or "used". CPO counts as used: a certified vehicle
+    is a used vehicle with a warranty, priced, posted and shopped as used.
+    Without a scraped condition the URL slug decides ("/Used-2023-Ford-...",
+    validated 17/17 against real conditions), and unknown sorts to used,
+    since filing a used vehicle as new puts factory-warranty language on
+    the wrong post. The folder is year, make, model, trim and the last
+    eight characters of the stock number (else the VIN)."""
+    from lotstretcher import core
+    record = {k: getattr(v, k, None) for k in ("year", "make", "model", "trim", "stock_number", "vin", "condition")}
+    return core.call({"op": "library_place", "record": record, "url": url or ""})
 
 
 def condition_bucket(v: "Vehicle", url: str | None = None) -> str:
-    """"new" or "used" -- the top-level split of the listings folder.
-
-    CPO counts as used: a certified vehicle is a used vehicle with a
-    warranty, and it's priced, posted and shopped as used (see
-    facebook_post.py, which already treats anything non-new the same way).
-
-    Prefers the scraped condition, falling back to the URL slug, which
-    carries the same fact ("/Used-2023-Ford-F--150-..." vs
-    "/2026-Ford-Mustang-...") and was validated 17/17 against real
-    scraped conditions when the Carfax gate needed it. Unknown sorts to
-    "used" rather than "new": mis-filing a used vehicle as new is the
-    error that would put factory-warranty language on the wrong post.
-    """
-    condition = (v.condition or "").strip().lower()
-    if condition:
-        return "new" if condition == "new" else "used"
-    if url:
-        return "used" if "used" in url.lower() else "new"
-    return "used"
+    """"new" or "used" -- the top-level split of the listings folder."""
+    return library_place(v, url)["bucket"]
 
 
 def vehicle_folder_name(v: Vehicle) -> str:
-    tail = (v.stock_number or v.vin or "unknown")[-8:]
-    return slugify(v.year or "", v.make or "", v.model or "", v.trim or "", tail)
+    return library_place(v)["folder"]
 
 
 # --------------------------------------------------------------------------

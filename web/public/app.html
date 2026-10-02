@@ -264,7 +264,16 @@
         <div class="section" id="heroSection" hidden>
           <div class="section-head">
             <h2>Images</h2>
+            <button class="btn btn-sm hidden" id="saveLibBtn">Save to library</button>
             <button class="btn btn-primary btn-sm" id="downloadBtn">Download bundle</button>
+          </div>
+          <!-- Where the run went, and whether the next one goes there by itself. -->
+          <div class="savebar">
+            <span class="small dim" id="saveNote" aria-live="polite"></span>
+            <label class="savebar-auto">
+              <span class="xs" id="autoSaveLabel">Save every run</span>
+              <span class="switch"><input type="checkbox" id="autoSaveToggle"><i></i></span>
+            </label>
           </div>
           <div class="shape-groups" id="resultGrid"></div>
         </div>

@@ -116,6 +116,17 @@ from disk and the same pane reads it in the browser. One reader, two sources, an
 [`tests/test_library_parity.py`](tests/test_library_parity.py) feeds both the same synthetic library and
 requires the same index back.
 
+**Save to library** goes the other way: a browser run is written into a library folder in exactly the
+layout `vehicle_pipeline` writes (`web/public/js/lib/save.js`), under the bucket and folder name the core
+decides for both surfaces (`library_place`, which `scrape.py` now calls too), so the Library pane,
+`recompose` and a later run find one folder per vehicle whoever made it. Saving again replaces that
+folder's `bundle/` and keeps its record's other keys. "Save every run" does it as each run finishes,
+but never over a folder the command line made without a press. Writing needs folder access (Chrome,
+Edge); elsewhere the switch downloads the bundle instead.
+
+The Photos step's link field reads a listing from its address (`/api/vdp` on the site, `/scrape` on your
+server) with a Paste button for phones, and says what it read; a VIN fills the vehicle.
+
 `POST /compose` receives the **cutout, never the source photograph**. Matting already happened on
 your device, so the original image stays there; only the cut-out vehicle travels, and only when you
 ask for something the server can do and a browser cannot. Anything it could not honour, such as a

@@ -154,7 +154,9 @@ export class DirectorySource {
       }
       tree.set(bucket, folders);
     }
-    return new DirectorySource(tree, root.name);
+    const source = new DirectorySource(tree, root.name);
+    source.handle = root;
+    return source;
   }
 
   static fromInput() {
@@ -216,7 +218,8 @@ export class DirectorySource {
         try { details = await this.json({ bucket, folder }, layout.details); } catch { /* card stays thin */ }
         const card = Object.fromEntries(CARD_KEYS.map((k) => [k, details[k] ?? null]));
         const entry = map.get(layout.details);
-        const modified = entry instanceof File ? Math.floor(entry.lastModified / 1000) : 0;
+        let modified = 0;
+        try { modified = Math.floor((entry instanceof File ? entry : await entry.getFile()).lastModified / 1000); } catch { /* unreadable: sorts last */ }
         const record = details.vehicle || details;
         vehicles.push({ bucket, folder, modified, card, files, images, delisted: record.delisted_at || null });
       }

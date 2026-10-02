@@ -42,6 +42,7 @@ import { el } from './lib/widgets.js';
 import { canvasItem, openLightbox, wireLightbox } from './lib/lightbox.js';
 import { cropRows, sameShotAs, walkaround, clipOrder } from './pipeline/shots.js';
 import { saveOne, saveInterior, downloadBundle } from './lib/bundle.js';
+import { saveToLibrary, libraryFolder, pickLibraryFolder, canSaveToFolder, autoSave, setAutoSave, MadeByCli } from './lib/save.js';
 import { studioArt } from './lib/studio-art.js';
 import { HttpSource, DirectorySource } from './library/source.js';
 
@@ -1318,6 +1319,7 @@ async function run() {
     setProgress(1);
     state.runMs = performance.now() - state.runStart;
     state.done = true;
+    afterRunRef?.();
 
     if (state.errors.length) {
       const b = el('div', 'banner banner-err');
@@ -1405,6 +1407,8 @@ async function importSticker(source) {
   note.textContent = 'Reading the PDF...';
   try {
     const { parseSticker, stickerToVehicle, stickerPriceApplies } = await import('./pipeline/sticker.js');
+    // The PDF itself, when it came as a file, is saved with the run.
+    const pdf = source instanceof ArrayBuffer ? new Blob([source.slice(0)], { type: 'application/pdf' }) : null;
     const parsed = await parseSticker(source);
 
     if (parsed.placeholder) {
@@ -1435,6 +1439,7 @@ async function importSticker(source) {
      * optional equipment and the spec lines feed the post copy, and
      * there is nowhere on the form to put them. */
     state.sticker = parsed;
+    state.stickerPdf = pdf;
     for (const k of EXTRA_KEYS) {
       if (parsed[k]) state.vehicle[k] = parsed[k];
     }
@@ -1516,7 +1521,8 @@ function readPastedText(text) {
 }
 
 let readListingHtmlRef = null;
-let readLinkRef = null;   // the link bar's reader, so a paste anywhere shows its progress there
+let readLinkRef = null;
+let afterRunRef = null;   // auto-save, once the library pane is set up   // the link bar's reader, so a paste anywhere shows its progress there
 function showSourceNote(text) { setStatus('vehicleStatus', text); }
 
 /* ---------- listing import --------------------------------------------
@@ -2057,6 +2063,72 @@ async function init() {
     }
   };
   if (can('library')) libraryView.setSource(new HttpSource());
+
+  /* Save to library: the run written into the library folder in the
+   * CLI's layout (lib/save.js), so it shows in the Library pane and a
+   * later run or `recompose` finds it. Auto-save does it after every run
+   * once the folder may be written; without folder access (Safari,
+   * Firefox) the auto choice is the bundle's download instead. */
+  const saveNote = (text, cls = 'dim', link = false) => {
+    const n = $('saveNote');
+    n.className = `small ${cls}`;
+    n.textContent = text;
+    if (link) {
+      const open = el('a', null, 'Open in library');
+      open.onclick = () => go('library');
+      const other = el('a', null, 'Another folder');
+      other.onclick = async () => {
+        try { await pickLibraryFolder(); saveRun({ ask: true }); } catch { /* cancelled */ }
+      };
+      n.append(' · ', open, ' · ', other);
+    }
+  };
+  const saveRun = async ({ ask }) => {
+    if (!state.done) return;
+    let handle;
+    try { handle = await libraryFolder({ ask }); } catch (e) {
+      if (!/abort/i.test(String(e))) saveNote(String(e.message || e), 'is-err');
+      return;
+    }
+    if (!handle) {
+      saveNote(ask ? 'Not saved: the folder was not opened for writing.' : 'Press Save to library once to let this page write to your library folder.', ask ? 'is-err' : 'dim');
+      $('saveLibBtn').classList.add('btn-primary');
+      return;
+    }
+    $('saveLibBtn').disabled = true;
+    try {
+      const r = await saveToLibrary(handle, state, (f) => saveNote(`Saving… ${Math.round(f * 100)}%`), { replaceCli: ask });
+      saveNote(`${r.replaced ? 'Saved over' : 'Saved to'} ${handle.name}/${r.bucket}/${r.folder}`, 'is-ok', true);
+      $('saveLibBtn').classList.remove('btn-primary');
+      libraryView.setSource(await DirectorySource.fromHandle(handle)).catch(() => {});
+    } catch (e) {
+      if (e instanceof MadeByCli) {
+        saveNote(`Not saved by itself: ${e.message} was made by the command line. Press Save to library to replace its bundle.`);
+        $('saveLibBtn').classList.add('btn-primary');
+      } else {
+        saveNote(`Not saved: ${String(e.message || e)}`, 'is-err');
+      }
+    } finally {
+      $('saveLibBtn').disabled = false;
+    }
+  };
+  if (canSaveToFolder()) {
+    $('saveLibBtn').classList.remove('hidden');
+    $('saveLibBtn').onclick = () => saveRun({ ask: true });
+  } else {
+    $('autoSaveLabel').textContent = 'Download every run';
+  }
+  $('autoSaveToggle').checked = autoSave();
+  $('autoSaveToggle').onchange = (e) => {
+    setAutoSave(e.target.checked);
+    if (e.target.checked && state.done && canSaveToFolder()) saveRun({ ask: true });
+  };
+  afterRunRef = () => {
+    saveNote('');
+    if (!autoSave()) return;
+    if (canSaveToFolder()) saveRun({ ask: false });
+    else downloadBundle(state);
+  };
 
   /* A debug handle.
    *

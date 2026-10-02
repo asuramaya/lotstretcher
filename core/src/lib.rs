@@ -41,6 +41,7 @@ pub mod select;
 pub mod listing;
 pub mod letterbox;
 pub mod controls;
+pub mod library_place;
 pub mod phash;
 pub mod gate;
 mod entities;
