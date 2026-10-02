@@ -40,6 +40,7 @@ import { recordFromText } from './pipeline/vin.js';
 import { LibraryView } from './library/view.js';
 import { el } from './lib/widgets.js';
 import { canvasItem, openLightbox, wireLightbox } from './lib/lightbox.js';
+import { stretchCutout } from './lib/stretch.js';
 import { cropRows, sameShotAs, walkaround, clipOrder } from './pipeline/shots.js';
 import { saveOne, saveInterior, downloadBundle } from './lib/bundle.js';
 import { saveToLibrary, libraryFolder, pickLibraryFolder, canSaveToFolder, autoSave, setAutoSave, MadeByCli } from './lib/save.js';
@@ -602,7 +603,8 @@ function renderResults() {
       img.alt = `${label} still from ${p.name}`;
       pic.append(img);
       tile.append(pic, tagOf(angleLabel(p.angle)));
-      stillItems.push(canvasItem(canvas, `${p.name} \u00b7 ${label}`, angleLabel(p.angle), () => saveOne(state, p, fmt)));
+      const stretch = p.cutout && p.composed?.[fmt] ? (k) => composeHero(stretchCutout(p.cutout, k), p.composed[fmt]) : null;
+      stillItems.push(canvasItem(canvas, `${p.name} \u00b7 ${label}`, angleLabel(p.angle), () => saveOne(state, p, fmt), 0.92, stretch));
       const at = stillItems.length - 1;
       openable(tile, img, `Open ${label} still from ${p.name}`, () => openLightbox(stillItems, at));
       row.appendChild(tile);
@@ -1190,6 +1192,7 @@ async function run() {
     for (let i = 0; i < cut.length; i++) {
       const p = cut[i];
       p.heroes = {};
+      p.composed = {};
       for (const fmt of formats) {
         const [w, h] = OPTS.HERO_FORMATS[fmt].size;
 
@@ -1242,6 +1245,7 @@ async function run() {
           border: state.options.border === 'custom' ? state.options.customFrame || null : stockBorder,
           text,
         };
+        (p.composed ||= {})[fmt] = composeOpts;   // for Stretch, the lightbox's easter egg
         if (cw) {
           try { p.heroes[fmt] = await cw.compose(p.cutout, composeOpts); }
           catch (e) { console.warn('core worker compose fell back to the page:', e); p.heroes[fmt] = composeHero(p.cutout, composeOpts); }

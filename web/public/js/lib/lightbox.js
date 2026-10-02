@@ -5,15 +5,17 @@
  * stills and interiors all open here. */
 
 import { canvasToBlob } from './imageio.js';
+import { deliver } from './zip.js';
+import { STRETCHES, stretchLabel } from './stretch.js';
 
 const $ = (id) => document.getElementById(id);
 let lightboxItems = [];
 let lightboxAt = -1;
 const made = new Set();   // object URLs this box made, revoked on close
-export function canvasItem(canvas, name, tag, save, quality = 0.92) {
+export function canvasItem(canvas, name, tag, save, quality = 0.92, stretch = null) {
   let url = null;
   return {
-    name, tag, save,
+    name, tag, save, stretch,
     // Encoded again once the box has closed and revoked the last one.
     src: async () => { if (!made.has(url)) { url = URL.createObjectURL(await canvasToBlob(canvas, 'image/jpeg', quality)); made.add(url); } return url; },
   };
@@ -38,9 +40,42 @@ async function showLightbox() {
   $('lightboxCap').textContent = `${at + 1} of ${lightboxItems.length} · ${item.name}${item.tag ? ` · ${item.tag}` : ''}`;
   $('lightboxSave').hidden = !item.save;
   $('lightboxSave').onclick = (e) => { e.stopPropagation(); item.save?.(); };
+  stretchAt = 0;
+  $('lightboxStretch').hidden = !item.stretch;
+  $('lightboxStretch').textContent = stretchLabel(0);
   $('lightboxPrev').disabled = at === 0;
   $('lightboxNext').disabled = at === lightboxItems.length - 1;
 }
+/* Stretch (lib/stretch.js): each press a longer car, then back. The
+ * stretched still is what Save gives while it is showing. */
+let stretchAt = 0;
+async function stretchLightbox() {
+  const at = lightboxAt;
+  const item = lightboxItems[at];
+  if (!item?.stretch) return;
+  stretchAt = (stretchAt + 1) % STRETCHES.length;
+  const k = STRETCHES[stretchAt];
+  const btn = $('lightboxStretch');
+  btn.disabled = true;
+  try {
+    if (k === 1) { await showLightbox(); return; }
+    const canvas = await item.stretch(k);
+    if (at !== lightboxAt) return;
+    const url = URL.createObjectURL(await canvasToBlob(canvas, 'image/jpeg', 0.92));
+    made.add(url);
+    $('lightboxImg').src = url;
+    $('lightboxCap').textContent = `${at + 1} of ${lightboxItems.length} · ${item.name} · ${k}× the car it was`;
+    $('lightboxSave').onclick = async (e) => {
+      e.stopPropagation();
+      const base = item.name.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      await deliver(await canvasToBlob(canvas, 'image/png'), `${base}-stretched-${k}x.png`);
+    };
+    btn.textContent = stretchLabel(stretchAt);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 function stepLightbox(d) { if ($('lightbox').hidden) return; lightboxAt = Math.max(0, Math.min(lightboxAt + d, lightboxItems.length - 1)); showLightbox(); }
 function closeLightbox() {
   $('lightbox').hidden = true;
@@ -53,6 +88,7 @@ function closeLightbox() {
 /* Close, step, swipe and keys; once, at start-up. */
 export function wireLightbox() {
   $('lightboxClose').onclick = closeLightbox;
+  $('lightboxStretch').onclick = (e) => { e.stopPropagation(); stretchLightbox(); };
   $('lightboxPrev').onclick = (e) => { e.stopPropagation(); stepLightbox(-1); };
   $('lightboxNext').onclick = (e) => { e.stopPropagation(); stepLightbox(1); };
   $('lightbox').onclick = (e) => { if (e.target === $('lightbox')) closeLightbox(); };
