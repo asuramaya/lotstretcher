@@ -34,7 +34,7 @@ import { loadCapabilities, can, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlsToFlags, affectsPreview, renderLooks, openSubTab } from './controls.js';
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { image as libraryImage } from './lib/library.js';
-import { textOptions, textRequest, stillOptions, clipOptions, stockFrame } from './lib/text.js';
+import { textOptions, textRequest, stillOptions, clipOptions, stockFrame, pieceSeed } from './lib/text.js';
 import { describesVehicle, recordFromHtml, fetchListing } from './pipeline/listing.js';
 import { recordFromText } from './pipeline/vin.js';
 import { LibraryView } from './library/view.js';
@@ -1148,7 +1148,6 @@ async function run() {
     readVehicle();
     const cut = walkaround(exteriors.filter((p) => p.cutout));
     const formats = state.options.heroFormats.length ? state.options.heroFormats : ['square'];
-    const vid = state.vehicle.vin || state.vehicle.stock_number || 'v';
     // Nothing an earlier run made is shown or bundled with this one's.
     for (const p of state.photos) { p.hero = null; p.heroes = null; }
     state.videos = null;
@@ -1199,7 +1198,7 @@ async function run() {
           try {
             const { blob, warnings } = await composeOnServer(p.cutout, {
               width: w, height: h,
-              seed: `${vid}:${p.name}:${fmt}`,
+              seed: pieceSeed('still', state.vehicle, p.name, fmt),
               exteriorColor: state.vehicle.exterior_color,
               interiorColor: state.vehicle.interior_color,
               ...serialisable(state.options),
@@ -1230,7 +1229,7 @@ async function run() {
          * vehicle's nose off; recomposing re-fits it to the new box. */
         const composeOpts = {
           ...look,
-          seed: `${vid}:${p.name}:${fmt}`,
+          seed: pieceSeed('still', state.vehicle, p.name, fmt),
           exterior: state.vehicle.exterior_color,
           interior: state.vehicle.interior_color,
           width: w, height: h,
@@ -1283,7 +1282,7 @@ async function run() {
             ...clipOptions(state.options),
             angles: clipShots.map((p) => p.angle || null),
             width: w, height: h,
-            seed: `${vid}:video:${fmt}`,
+            seed: pieceSeed('clip', state.vehicle, '', fmt),
             exterior: state.vehicle.exterior_color,
             interior: state.vehicle.interior_color,
             text,

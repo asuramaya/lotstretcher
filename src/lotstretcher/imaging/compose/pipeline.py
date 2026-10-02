@@ -20,7 +20,7 @@ from pathlib import Path
 
 from .hero import compose_hero
 from ..select import pick_adaptive, pick_for_conveyor
-from ..text import text_request
+from ..text import piece_seed, text_request
 
 # The conveyor layout is sized assuming a tighter inset than the other
 # layouts' 0.06 -- see conveyor_layout(). hero_video.py splits this into
@@ -43,7 +43,7 @@ HERO_STILL_FORMATS = _spec.sizes("heroStillFormats")
 DEFAULT_HERO_STILL_FORMAT = _spec.get("heroStillFormats", "default", default="square")
 
 
-def _backdrop(background_path, out_dir: Path, image_key: str, gradient: bool,
+def _backdrop(background_path, out_dir: Path, seed: str, gradient: bool,
                exterior: str | None, interior: str | None, sample_path: Path | None,
                canvas: tuple[int, int] | None = None, backdrop: str = "vehicle",
                backdrop_color: str | None = None, backdrop_color2: str | None = None,
@@ -54,7 +54,8 @@ def _backdrop(background_path, out_dir: Path, image_key: str, gradient: bool,
     Seeded per (vehicle, image) rather than globally: a single shared
     backdrop across every post is what got flagged, so every image needs
     its own, while a rerun must still reproduce the same file rather than
-    churning the whole bundle."""
+    churning the whole bundle. `seed` is piece_seed()'s, the template the
+    browser fills too."""
     if not gradient:
         return background_path
     # A SPEC, not pixels: compose_hero() hands it to the Rust core, which
@@ -64,7 +65,7 @@ def _backdrop(background_path, out_dir: Path, image_key: str, gradient: bool,
     # needed here. `canvas` is decided by the caller of compose_hero.
     del canvas, sample_path
     from ..text import backdrop_spec
-    return backdrop_spec(backdrop, f"{out_dir.parent.name}/{image_key}", exterior, interior, backdrop_color,
+    return backdrop_spec(backdrop, seed, exterior, interior, backdrop_color,
                          backdrop_color2, backdrop_angle)
 
 
@@ -122,7 +123,7 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
             # Seeded per format as well as per vehicle: two shapes of the
             # same hero sharing one gradient would be the same near-
             # duplicate backdrop the per-image seeding exists to avoid.
-            hero_bg = _backdrop(background_path, out_dir, f"hero/{fmt}", gradient,
+            hero_bg = _backdrop(background_path, out_dir, piece_seed("hero", vehicle, out_dir.parent.name, fmt=fmt), gradient,
                                  exterior_color, interior_color, hero_cutouts[0], canvas, backdrop=backdrop,
                                  backdrop_color=backdrop_color, backdrop_color2=backdrop_color2, backdrop_angle=backdrop_angle)
             hero_img = compose_hero(hero_bg, border_path, hero_cutouts, layout=layout,
@@ -155,7 +156,7 @@ def compose_vehicle(cutout_dir: Path, out_dir: Path, background_path, border_pat
                 stale.unlink()
     framed_dir.mkdir(parents=True, exist_ok=True)
     for cutout in cutout_files:
-        bg = _backdrop(background_path, out_dir, f"framed/{cutout.name}", gradient,
+        bg = _backdrop(background_path, out_dir, piece_seed("still", vehicle, out_dir.parent.name, cutout.name), gradient,
                         exterior_color, interior_color, cutout, backdrop=backdrop, backdrop_color=backdrop_color,
                         backdrop_color2=backdrop_color2, backdrop_angle=backdrop_angle)
         img = compose_hero(bg, border_path, [cutout], layout="single",
@@ -215,7 +216,7 @@ def compose_wheel_shots(wheel_cutout_dir: Path, out_dir: Path, background_path, 
     framed_dir.mkdir(parents=True, exist_ok=True)
     results = []
     for cutout in wheel_files:
-        bg = _backdrop(background_path, out_dir, f"framed/{cutout.name}", gradient,
+        bg = _backdrop(background_path, out_dir, piece_seed("still", vehicle, out_dir.parent.name, cutout.name), gradient,
                         exterior_color, interior_color, cutout, backdrop=backdrop, backdrop_color=backdrop_color,
                         backdrop_color2=backdrop_color2, backdrop_angle=backdrop_angle)
         img = compose_hero(bg, border_path, [cutout], layout="single",

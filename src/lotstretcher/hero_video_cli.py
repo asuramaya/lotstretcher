@@ -95,20 +95,23 @@ def main():
 
     background_image = (resolve_asset_arg("backgrounds", args.background, default_name="American Flag")
                         if args.photo_background and background_video is None else None)
-    gradient_colors = None
-    if background_video is None:
-        # (base_angle, start, end) -- the renderer spins base_angle over
-        # the run, so only the seeded starting angle is decided here.
+    def gradient_for(fmt):
+        """(base_angle, start, end) and the held backdrop for one shape, seeded
+        as the pipeline and the browser seed a clip (compose.seeds.clip). The
+        renderer spins base_angle over the run, so only the start is decided."""
+        if background_video is not None:
+            return None, None
         from lotstretcher.imaging.palette import colors_from_details
-        from lotstretcher.imaging.text import gradient_stops
+        from lotstretcher.imaging.text import backdrop_spec, gradient_stops, piece_seed
+        from lotstretcher.manifest import vehicle_record
         ext, inr = colors_from_details(vehicle_folder)
         sample = next(iter(sorted(cutout_dir.glob("*.png"))), None)
         start, end = gradient_stops(args.backdrop, ext, inr, args.backdrop_color, args.backdrop_color2, sample)
-        gradient_colors = (core.call({"op": "seeded_angle", "seed": vehicle_folder.name}), start, end)
-        if args.backdrop != "vehicle" and background_image is None:
-            from lotstretcher.imaging.text import backdrop_spec
-            args.backdrop_spec = backdrop_spec(args.backdrop, vehicle_folder.name, ext, inr, args.backdrop_color,
-                                               args.backdrop_color2, args.backdrop_angle)
+        seed = piece_seed("clip", vehicle_record(vehicle_folder), vehicle_folder.name, fmt=fmt)
+        held = (backdrop_spec(args.backdrop, f"{seed}:{args.backdrop}", ext, inr, args.backdrop_color,
+                              args.backdrop_color2, args.backdrop_angle)
+                if args.backdrop != "vehicle" and background_image is None else None)
+        return (core.call({"op": "seeded_angle", "seed": seed}), start, end), held
 
     if args.video_music or args.video_track:
         audio_path, bars_per_loop = resolve_audio(args.video_track)
@@ -129,6 +132,7 @@ def main():
     if unknown:
         parser.error(f"unknown --video-format {unknown[0]!r}; choose from {', '.join(VIDEO_FORMATS)} or 'all'")
     for fmt in formats:
+        gradient_colors, args.backdrop_spec = gradient_for(fmt)
         render_one(fmt, args, vehicle_folder, border_path, background_video, gradient_colors,
                     audio_path, bars_per_loop, carousel_paths, carousel_labels, background_image)
 

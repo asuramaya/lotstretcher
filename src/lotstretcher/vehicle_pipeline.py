@@ -64,7 +64,7 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
     spec = VIDEO_FORMATS[fmt]
     from lotstretcher.imaging.compose import render_hero_video
     from lotstretcher.imaging.palette import colors_from_details
-    from lotstretcher.imaging.text import backdrop_spec, gradient_stops
+    from lotstretcher.imaging.text import backdrop_spec, gradient_stops, piece_seed
     from lotstretcher.library_ops import vehicle_record
     from lotstretcher.imaging.select import load_angles, order_for_conveyor_start, pick_all_for_carousel
 
@@ -84,12 +84,13 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
     hood_sides = {name: info["hood_side"] for name, info in load_angles(cutout_dir).items()
                   if "hood_side" in info}
 
+    seed = piece_seed("clip", vehicle_record(folder), folder.name, fmt=fmt)
     gradient_colors = None
     if hero_opts.video_background is None:
         sample = next(iter(sorted(cutout_dir.glob("*.png"))), None)
         start, end = gradient_stops(hero_opts.backdrop, *colors_from_details(folder), hero_opts.backdrop_color,
                                     hero_opts.backdrop_color2, sample)
-        gradient_colors = (core.call({"op": "seeded_angle", "seed": folder.name}), start, end)
+        gradient_colors = (core.call({"op": "seeded_angle", "seed": seed}), start, end)
 
     return render_hero_video(
         background_video=hero_opts.video_background,
@@ -117,7 +118,7 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
         border_style=hero_opts.border_style,
         shadow=hero_opts.shadow,
         reflection=hero_opts.reflection,
-        backdrop_spec=(backdrop_spec(hero_opts.backdrop, folder.name, *colors_from_details(folder), hero_opts.backdrop_color,
+        backdrop_spec=(backdrop_spec(hero_opts.backdrop, f"{seed}:{hero_opts.backdrop}", *colors_from_details(folder), hero_opts.backdrop_color,
                                      hero_opts.backdrop_color2, hero_opts.backdrop_angle)
                        if hero_opts.backdrop != "vehicle" else None),
         # --photo-background / --background NAME: the same photo the

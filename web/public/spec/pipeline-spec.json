@@ -348,7 +348,13 @@
       "sweep",
       "radial",
       "horizon"
-    ]
+    ],
+    "seeds": {
+      "$comment": "What a generated backdrop is seeded by, so the CLI and the browser give the same photo of the same vehicle the same gradient. {vehicle} is the VIN, else the stock number, else the folder; {photo} the photo's name without its extension; {format} the shape. Seeded per piece, never globally: one backdrop on every post is what got flagged.",
+      "still": "{vehicle}/{photo}/{format}",
+      "hero": "{vehicle}/hero/{format}",
+      "clip": "{vehicle}/clip/{format}"
+    }
   },
   "palette": {
     "$comment": "imaging/palette.py",

@@ -370,6 +370,17 @@ def backdrop_angle(options: dict) -> float | None:
     return styles(options)["backdrop"]["angle"]
 
 
+def piece_seed(kind: str, vehicle: dict | None, fallback: str, photo: str = "", fmt: str = "square") -> str:
+    """The seed a generated backdrop is drawn with: the spec's compose.seeds
+    template for this piece (still, hero, clip), filled exactly as the
+    browser's lib/text.js pieceSeed fills it."""
+    v = vehicle or {}
+    template = _spec.get("compose", "seeds", kind, default="{vehicle}/{photo}/{format}")
+    stem = photo.rsplit(".", 1)[0] if "." in photo else photo
+    return (template.replace("{vehicle}", str(v.get("vin") or v.get("stock_number") or fallback))
+            .replace("{photo}", stem).replace("{format}", fmt))
+
+
 def backdrop_spec(kind: str, seed: str, exterior: str | None, interior: str | None,
                   color: str | None = None, color2: str | None = None, angle: float | None = None) -> dict:
     """The core's background field for a generated backdrop of `kind`

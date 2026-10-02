@@ -5,6 +5,7 @@
 
 import * as core from '../core.js';
 import { library } from './library.js';
+import { get as specGet } from '../spec.js';
 
 export const DEFAULT_FONT = 'Lato Bold';
 const loaded = new Set();
@@ -142,4 +143,15 @@ export function planOverlaysNow(width, height, vehicle, text, onReady) {
   if (!wantsText(text)) return [];
   if (!fontsReady(text, onReady)) return [];
   return core.overlayPlan(width, height, vehicle, { ...text, font: text.font || DEFAULT_FONT });
+}
+
+/* The seed a generated backdrop is drawn with: the spec's compose.seeds
+ * template for this piece (still, hero, clip), filled as
+ * imaging/text.py's piece_seed fills it, so a photo of a vehicle gets the
+ * same gradient on either surface. */
+export function pieceSeed(kind, vehicle, photo = '', format = 'square') {
+  const template = specGet('compose', 'seeds', kind) || '{vehicle}/{photo}/{format}';
+  const stem = photo.includes('.') ? photo.slice(0, photo.lastIndexOf('.')) : photo;
+  return template.replace('{vehicle}', String(vehicle?.vin || vehicle?.stock_number || 'v'))
+    .replace('{photo}', stem).replace('{format}', format);
 }
