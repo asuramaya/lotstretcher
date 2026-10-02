@@ -8,6 +8,11 @@
   "orientation": "any",
   "background_color": "#0b0c0e",
   "theme_color": "#0b0c0e",
+  "share_target": {
+    "action": "/app.html",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  },
   "icons": [
     { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "icons/icon-180.png", "sizes": "180x180", "type": "image/png" },

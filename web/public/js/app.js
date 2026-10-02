@@ -1954,6 +1954,18 @@ async function init() {
   state.restoring = true;   // until offerResume has looked
   offerResume();
 
+  // A listing shared to the installed app from the phone's browser
+  // (Android's share sheet: the manifest's share_target) arrives as ?url=,
+  // or inside ?text= with words around it; it takes the paste's route.
+  const shared = new URLSearchParams(location.search);
+  const sharedText = ['url', 'text', 'title'].map((k) => shared.get(k)).filter(Boolean).join(' ');
+  if (sharedText) {
+    history.replaceState(null, '', location.pathname);
+    const link = sharedText.match(/https?:\/\/\S+/)?.[0];
+    if (link) importListingText(link, (m) => showSourceNote(m));
+    else readPastedText(sharedText);
+  }
+
   renderOptions();
   renderPhotos();
   renderResults();

@@ -279,3 +279,9 @@ since been run on a real iPhone (2026-09-29), so the WebKit memory
 ceiling against the measured ~466 MB floor holds in practice;
 [`docs/ios-checklist.md`](../docs/ios-checklist.md) is the ten-minute
 test to repeat on another device.
+
+Installed to the home screen on Android, the app is a share target: Share
+on a dealer's vehicle page and pick lotstretcher, and the address arrives
+as if pasted (the manifest's `share_target`). On the site that fills what
+the address says (year, make, model, VIN); a self-hosted server reads the
+whole page. iOS has no web share target.

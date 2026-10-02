@@ -346,6 +346,17 @@ Pass it on any command with `--dealer-config` or by setting the `LOTSTRETCHER_CO
 lotstretcher <vdp-url> --dealer-config /path/to/dealer-config.json
 ```
 
+#### The Studio's levers, set once for a dealer
+
+A `studio` object in the same file sets any lever, by the Studio's own key, as the default for this
+dealer's runs: `lotstretcher`, `recompose`, `hero-video` and the daily `inventory-sync` all take it, a
+flag typed on the command line or a `--look` wins over it, and `lotstretcher` also reads the file at the
+library root (`--out`), as the self-hosted server does.
+
+```json
+{ "studio": { "glow": true, "glowColor": "gold", "videoBitrate": 12, "shadow": true } }
+```
+
 ### 2. Environment Variables
 
 You can also configure lotstretcher directly using environment variables (ideal for Docker or CI/CD pipelines):
@@ -624,8 +635,8 @@ trucks in the top corners and below on a square, stacked on a portrait,
 a staggered lineup on a wide one, the hero across the front and the
 accents behind it at the edges), and sits
 on the same backdrop as the stills: `--photo-background` puts the photo
-behind the clip too, unless `--video-flag-background` asks for the
-flag video instead.
+behind the clip too, unless `--video-backdrop` asks for a moving
+stock clip instead (`--video-clip NAME` picks which).
 
 ---
 
@@ -761,7 +772,7 @@ first to see what it would do.
 recompose ~/Documents/listings --resweep --interiors --dry-run   # preview
 recompose ~/Documents/listings --resweep --interiors             # apply
 # then, for any vehicle it reports as changed:
-hero-video ~/Documents/listings/used/2023-Ford-.../ --format all
+hero-video ~/Documents/listings/used/2023-Ford-.../ --video-format all
 ```
 
 ### 5. `compose` — Custom Single-Vehicle Hero Composer
@@ -780,7 +791,16 @@ Generates animated MP4 video carousels with multi-angle cutouts timed to backgro
 
 ```bash
 hero-video ~/Documents/listings/used/2023-Ford-F-150-Raptor-PFA30435/
+hero-video <folder> --video-format all --video-music --video-bitrate 12
 ```
+
+Its clip flags are `lotstretcher`'s own, shared so one spelling means one thing: `--video-format`,
+`--video-fps`, `--video-bpm`, `--video-music` (and `--video-track NAME` for another track),
+`--video-backdrop` (a moving stock clip behind the shots; `--video-clip NAME` for another),
+`--video-bitrate MBPS` (automatic unless set: a server fills the size budget, the browser keeps files
+phone-sized), `--video-budget-mb`, `--nvenc`, `--video-push` and `--video-crossfade`. The older
+spellings (`--format`, `--bpm`, `--music`, `--audio`, `--flag-background`, `--background-video`,
+`--budget-mb`, `--video-flag-background`) still work.
 
 ### 7. `export-feed` — Inventory Syndication Feed
 Builds a CSV/TSV inventory feed from vehicles already scraped, in the shape third-party listing platforms
