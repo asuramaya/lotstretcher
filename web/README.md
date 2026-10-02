@@ -282,6 +282,22 @@ test to repeat on another device.
 
 Installed to the home screen on Android, the app is a share target: Share
 on a dealer's vehicle page and pick lotstretcher, and the address arrives
-as if pasted (the manifest's `share_target`). On the site that fills what
-the address says (year, make, model, VIN); a self-hosted server reads the
-whole page. iOS has no web share target.
+as if pasted (the manifest's `share_target`). iOS has no web share target;
+pasting the address does the same.
+
+## Reading a listing from its address
+
+A dealer's public site sits behind a Cloudflare challenge no plain fetch
+passes, and a browser cannot read another site's page anyway. For the
+dealers in the spec's `listing.dealers` table, the site's one route,
+`/api/vdp?u=<vehicle page>` (`src/worker.js`), fetches the same page from
+the dealer platform's origin host, which serves it without the challenge
+(Tomball Ford runs Jazel: `tomballford-m2en.a5.prod2.jazelc.com`), and the
+browser reads it with the core's `listing_record`: photos, price, mileage,
+the lot. The route keeps nothing, takes only listed hosts and only
+`/vehicle/<VIN>/...` paths, caps the size, caches ten minutes at the edge,
+and hands the page back as sandboxed plain text, never as a page of this
+site. Any other dealer falls back to what the address says, or to the
+page's source pasted or saved. Authorized by the operator on 2026-10-02;
+the platform can close its origin host to outside fetches at any time,
+and the fallbacks then carry on. A self-hosted server reads pages itself.

@@ -35,7 +35,7 @@ import { renderControls, controlsToFlags, affectsPreview, renderLooks, openSubTa
 import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
 import { image as libraryImage } from './lib/library.js';
 import { textOptions, textRequest, stillOptions, clipOptions, stockFrame } from './lib/text.js';
-import { describesVehicle, recordFromHtml } from './pipeline/listing.js';
+import { describesVehicle, recordFromHtml, fetchListing } from './pipeline/listing.js';
 import { recordFromText } from './pipeline/vin.js';
 import { LibraryView } from './library/view.js';
 import { el } from './lib/widgets.js';
@@ -1468,6 +1468,18 @@ async function importSticker(source) {
 async function importListingText(text, note = () => {}) {
   const isUrl = /^https?:\/\//i.test(text);
   const local = recordFromText(text);
+  // A listed dealer's page, read on the site through /api/vdp: the photos,
+  // the price and the rest, as the CLI's scrape gets them.
+  if (isUrl && !can('scrape')) {
+    note('Reading the dealer\'s page…');
+    try {
+      const record = await fetchListing(text);
+      if (record) { applyVehicle(record); return true; }
+    } catch (e) {
+      note(`${String(e.message || e)}. Filled what the address says instead.`);
+      local.warnings.push(`The page could not be read (${String(e.message || e)}); only the address was read.`);
+    }
+  }
   if (!isUrl || !can('scrape')) {
     if (!local.vin && !local.year && !local.make) { note(local.warnings.join(' ') || 'That is neither an address nor a VIN.'); return false; }
     applyVehicle(local);
@@ -1694,7 +1706,7 @@ async function init() {
     // or the page's own source pasted in (Ctrl+U, select all, copy).
     $('listingHint').textContent = can('scrape')
       ? 'Or load the page you saved from the listing.'
-      : 'For the photos and the price too: on the listing press Ctrl+U, select all, copy, and paste that here; or save the page (Ctrl+S, "HTML only") and load it.';
+      : 'A page from a dealer lotstretcher knows is read in full. For any other, to get the photos and the price too: on the listing press Ctrl+U, select all, copy, and paste that here; or save the page (Ctrl+S, "HTML only") and load it.';
     readState('idle');
     setTimeout(() => $('listingUrlInput').focus(), 50);
     openSheet('listingSheet');

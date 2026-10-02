@@ -2195,6 +2195,21 @@
       "saved-page reader both call it): the analytics blob Jazel (FordDirect's dealer platform) embeds at analyticsMarker, and every",
       "/resize/WxH/ segment of a photo address pointed at photoSize."
     ],
+    "dealers": {
+      "_": [
+        "Dealer sites lotstretcher.org can read from a pasted address (web/src/worker.js, /api/vdp): the site's",
+        "host, and the platform's origin host that serves the same vehicle page without the Cloudflare",
+        "challenge in front of the public one (authorized by the operator 2026-10-02). A host not listed falls",
+        "back to the address alone, or to the page's source pasted or saved. vdpPath is the only path fetched."
+      ],
+      "hosts": {
+        "www.tomballford.com": "tomballford-m2en.a5.prod2.jazelc.com",
+        "tomballford.com": "tomballford-m2en.a5.prod2.jazelc.com"
+      },
+      "vdpPath": "^/vehicle/[A-HJ-NPR-Z0-9]{17}/[A-Za-z0-9_.~-]*/?$",
+      "maxBytes": 4000000,
+      "cacheSeconds": 600
+    },
     "analyticsGlobal": "jzlAnalyticsObject",
     "analyticsMarker": "jzlAnalyticsObject = ",
     "photoSize": "2048x2048",

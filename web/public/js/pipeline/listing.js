@@ -13,6 +13,26 @@
  * builds to the records the Python gave before it was deleted. */
 
 import { call } from '../core.js';
+import { get as specGet } from '../spec.js';
+
+/* A listed dealer's vehicle page, read through the site's /api/vdp route
+ * (web/src/worker.js), which fetches it from the dealer platform's origin
+ * host: the record, with the dealer's own address kept as its url. Null
+ * when the host is not one the route reads (spec listing.dealers) or the
+ * route is not there (the dev server, a self-hosted server); a refusal
+ * from the route throws its reason. */
+export async function fetchListing(url) {
+  let page;
+  try { page = new URL(url); } catch { return null; }
+  const dealers = specGet('listing', 'dealers');
+  if (!dealers.hosts[page.hostname.toLowerCase()] || !new RegExp(dealers.vdpPath).test(page.pathname)) return null;
+  let res;
+  try { res = await fetch(`/api/vdp?u=${encodeURIComponent(page.href)}`); } catch { return null; }
+  if (res.status === 404 && !(res.headers.get('content-type') || '').includes('json')) return null;
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `the page could not be read (${res.status})`);
+  const record = recordFromHtml(await res.text(), page.href);
+  return describesVehicle(record) ? record : null;
+}
 
 /* The Vehicle record (the CLI dataclass's own field names) a page's
  * HTML describes. With no `url`, the page's canonical address is used. */

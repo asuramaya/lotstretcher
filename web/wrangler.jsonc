@@ -1,8 +1,10 @@
 {
-  // Static assets only. There is no Worker script: every request is a
-  // file, and all computation happens in the visitor's browser. That is
-  // the product decision, not a limitation -- it is what keeps hosting
-  // free and leaves no server-side data to leak.
+  // Static files, and one stateless route. Every request is a file except
+  // /api/vdp (src/worker.js), which reads a listed dealer's vehicle page
+  // from the platform's origin host so a phone can paste an address; it
+  // keeps nothing. All computation still happens in the visitor's
+  // browser: that is what keeps hosting free and leaves no server-side
+  // data to leak.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "lotstretcher",
   "compatibility_date": "2026-09-22",
@@ -15,8 +17,13 @@
     { "pattern": "www.lotstretcher.org", "custom_domain": true }
   ],
 
+  "main": "src/worker.js",
+
   "assets": {
     "directory": "./public",
+    "binding": "ASSETS",
+    // Only /api/* reaches the script; every file is served as before.
+    "run_worker_first": ["/api/*"],
     // Unknown paths get public/404.html (with a 404 status), which links
     // back to both pages. The app is two real pages, so this mostly
     // catches typos.
