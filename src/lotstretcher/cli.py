@@ -218,6 +218,9 @@ def controls_from_args(args) -> dict:
         "interiors": not args.no_interiors and not args.no_photo_sort,
         "interiorCaptions": args.interior_captions,
         "visionSeatCheck": args.vision_seat_check and not args.no_photo_sort and not args.no_interiors,
+        "junkFilter": not args.no_junk_filter,
+        "upscale": args.upscale,
+        "upscaleModel": args.upscale_model,
     }
 
 

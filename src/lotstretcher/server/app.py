@@ -333,8 +333,10 @@ def library_recompose(bucket: str, folder: str, body: RecomposeRequest):
     except ValueError as e:
         raise HTTPException(422, str(e))
     target = Path(root) / bucket / folder
+    captions = resolved["interiors"] and resolved["interior_captions"]
     return jobs.start(_state["executor"], "recompose", f"{bucket}/{folder}",
-                      lambda: recompose_folder(target, resolved))
+                      lambda: recompose_folder(target, resolved,
+                                               _models().interior_for(body.options) if captions else None))
 
 
 @app.post("/library/sync")

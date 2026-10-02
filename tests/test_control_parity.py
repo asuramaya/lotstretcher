@@ -190,6 +190,7 @@ COMPOSITION_FLAGS = {
     "--no-interiors", "--no-photo-sort", "--no-strict-cutouts", "--upscale",
     "--video-music", "--nvenc", "--video-backdrop", "--video-bpm", "--video-budget-mb", "--video-bitrate",
     "--video-fps", "--no-spotlight", "--margin-frac",
+    "--interior-captions", "--vision-seat-check", "--upscale-model", "--no-junk-filter",
 }
 
 

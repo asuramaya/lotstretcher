@@ -2119,6 +2119,21 @@
             "tooltip": "Separate exteriors, interiors and detail shots"
           },
           {
+            "key": "junkFilter",
+            "label": "Drop dealer graphics",
+            "hint": "",
+            "type": "toggle",
+            "default": true,
+            "cli": "--no-junk-filter",
+            "cliInvert": true,
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "filesystem",
+            "tooltip": "Skip the dealer's marketing slides and placeholder images, matched against known ones"
+          },
+          {
             "key": "interiors",
             "label": "Include interiors",
             "hint": "",
@@ -2127,6 +2142,36 @@
             "cli": "--no-interiors",
             "cliInvert": true,
             "tooltip": "Keep interior shots in the bundle"
+          },
+          {
+            "key": "interiorCaptions",
+            "label": "Caption interiors",
+            "hint": "",
+            "type": "toggle",
+            "default": false,
+            "cli": "--interior-captions",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "filesystem",
+            "showWhen": "interiors",
+            "tooltip": "Print a feature the listing confirms onto the interior photo that shows it; off because text on a listing photo is easy to get wrong"
+          },
+          {
+            "key": "visionSeatCheck",
+            "label": "Check the seats",
+            "hint": "",
+            "type": "toggle",
+            "default": false,
+            "cli": "--vision-seat-check",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "filesystem",
+            "showWhen": "interiors",
+            "tooltip": "Read the seat layout off the interior photos as a second opinion on the sticker; writes vision-equipment.json"
           },
           {
             "key": "hero",
@@ -2184,6 +2229,31 @@
             ],
             "requires": "upscale",
             "tooltip": "SwinIR or Real-ESRGAN on a GPU"
+          },
+          {
+            "key": "upscaleModel",
+            "label": "Upscaler",
+            "hint": "",
+            "type": "select",
+            "default": "swinir",
+            "choices": [
+              {
+                "value": "swinir",
+                "label": "SwinIR"
+              },
+              {
+                "value": "realesrnet",
+                "label": "Real-ESRNet"
+              }
+            ],
+            "cli": "--upscale-model",
+            "surfaces": [
+              "cli",
+              "server"
+            ],
+            "requires": "upscale",
+            "presentation": "segment",
+            "tooltip": "The model that sharpens wheel shots, and every cutout when Upscale is on"
           }
         ]
       }

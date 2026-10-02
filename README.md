@@ -102,6 +102,10 @@ values before calling it. A control-parity test also fails if `cli.py` defines a
 which is how `--no-spotlight`, `--margin-frac`, `--video-duration` and `--video-fps` were found to be
 accepted and ignored, and fixed. (`--video-duration` and the Length lever were later removed: a clip is
 one pass of its shots, a bar each, or one loop for one or two, so its length follows the photos.)
+`recompose` and the Library pane's rebuild share `library_ops.resolve_recompose_options()` the same way.
+On a server, the Pipeline group also offers `--interior-captions`, `--vision-seat-check`,
+`--upscale-model` and `--no-junk-filter` (Caption interiors, Check the seats, Upscaler, Drop dealer
+graphics); the interior model they need loads on first use.
 
 **The Library pane** browses what the pipeline has produced: every vehicle folder under `new/` and
 `used/`, its hero stills, framed and interior sets, clips, the three posts, and the record it was built

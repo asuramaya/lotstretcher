@@ -234,8 +234,17 @@ class Models:
             self.spare = SpareTireClassifier()
             self.tiebreak = InteriorExteriorTiebreakClassifier()
             if interior_captions or vision_seat_check:
-                from lotstretcher.imaging.interior import InteriorSubjectClassifier
-                self.interior = InteriorSubjectClassifier()
+                self.interior_for({"interiorCaptions": True})
+
+    def interior_for(self, options: dict):
+        """The interior classifier when these controls want it (captions or
+        the seat check), loaded on first ask: a long-lived server builds
+        Models() bare and would otherwise ignore both."""
+        if self.interior is None and self.classifier is not None \
+                and (options.get("interiorCaptions") or options.get("visionSeatCheck")):
+            from lotstretcher.imaging.interior import InteriorSubjectClassifier
+            self.interior = InteriorSubjectClassifier()
+        return self.interior
 
 
 def rescrape(url: str, out_root: Path, options: dict, models: Models) -> dict:
@@ -254,7 +263,7 @@ def rescrape(url: str, out_root: Path, options: dict, models: Models) -> dict:
     from lotstretcher.scrape import USER_AGENT
     from lotstretcher.vehicle_pipeline import process_vehicle
 
-    hero_opts = hero_options_from_controls(options, interior_classifier=models.interior)
+    hero_opts = hero_options_from_controls(options, interior_classifier=models.interior_for(options))
     session = requests.Session()
     session.headers.update({"User-Agent": USER_AGENT})
     run_at = time.strftime("%Y-%m-%dT%H:%M:%S%z")
@@ -262,7 +271,7 @@ def rescrape(url: str, out_root: Path, options: dict, models: Models) -> dict:
         with sync_playwright() as p:
             folder = process_vehicle(
                 p, session, url, out_root, int(options.get("stickerDpi") or 200), False,
-                models.junk_filter, models.classifier, bool(options.get("upscale")),
+                models.junk_filter if options.get("junkFilter", True) else None, models.classifier, bool(options.get("upscale")),
                 options.get("upscaleModel") or "swinir", models.angle, hero_opts,
                 models.wheel, models.spare, models.tiebreak,
                 bool(options.get("strictCutouts", True)))
