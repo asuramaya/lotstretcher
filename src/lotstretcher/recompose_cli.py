@@ -25,21 +25,45 @@ import argparse
 import sys
 from pathlib import Path
 
-from lotstretcher.imaging import assets
-from lotstretcher.imaging.text import (add_glow_args, add_backdrop_arg, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
-                                       controls_from_spotlight_args, spotlight_style,
-                                       controls_from_frame_style_args, controls_from_reflection_args,
-                                       controls_from_shadow_args, controls_from_text_args, frame_style,
-                                       reflection_style, shadow_style, text_options)
+from lotstretcher.imaging.text import (add_backdrop_arg, add_frame_style_args, add_glow_args, add_margin_arg, add_reflection_args,
+                                       add_shadow_args, add_spotlight_args, add_text_args, controls_from_frame_style_args,
+                                       controls_from_glow_args, controls_from_reflection_args, controls_from_shadow_args,
+                                       controls_from_spotlight_args, controls_from_text_args)
 # The rebuild itself lives in library_ops so the server's
 # POST /library/.../recompose runs the identical path.
 from lotstretcher.looks import add_look_arg, apply_look
-from lotstretcher.library_ops import find_vehicle_folders, recompose_folder
+from lotstretcher.library_ops import find_vehicle_folders, recompose_folder, resolve_recompose_options
 
 
-def resolve_asset_arg(category: str, value: str | None, default_name: str | None = None) -> Path:
+def controls_from_recompose_args(args) -> dict:
+    """These flags as the app's control values, so the rebuild is the one
+    resolve_recompose_options() gives the server's Library pane."""
+    return {
+        **controls_from_glow_args(args),
+        **controls_from_spotlight_args(args),
+        **controls_from_text_args(args),
+        **controls_from_frame_style_args(args),
+        **controls_from_shadow_args(args),
+        **controls_from_reflection_args(args),
+        "margin": args.margin_frac,
+        "photoBackground": args.photo_background,
+        "background": args.background,
+        "frame": args.frame,
+        "border": args.border if args.frame else None,
+        "frameFit": args.frame_fit,
+        "backdrop": args.backdrop,
+        "backdropColor": args.backdrop_color,
+        "backdropColor2": args.backdrop_color2,
+        "backdropAngle": args.backdrop_angle,
+        "heroFormats": args.hero_format,
+        "interiors": args.interiors,
+        "interiorCaptions": args.interior_captions,
+    }
+
+
+def resolved_options(args) -> dict:
     try:
-        return assets.resolve_arg(category, value, default_name=default_name)
+        return resolve_recompose_options(controls_from_recompose_args(args))
     except ValueError as e:
         sys.exit(str(e))
 
@@ -65,6 +89,7 @@ def main():
     add_spotlight_args(parser)
     add_reflection_args(parser)
     add_backdrop_arg(parser)
+    add_margin_arg(parser)
     add_look_arg(parser)
     parser.add_argument("--hero-format", action="append", metavar="FORMAT",
                          help="Shape(s) for the hero still; repeatable, or 'all'. square 1254x1254 "
@@ -108,11 +133,9 @@ def main():
     if not folders:
         sys.exit(f"No vehicle folders (with images/exterior/cutout/) found under {root}")
 
-    gradient = not args.photo_background
-    background_path = None if gradient else resolve_asset_arg(
-        "backgrounds", args.background, default_name="American Flag")
-    border_path = resolve_asset_arg("borders", args.border) if args.frame else None
-    print(f"background: {'per-image vehicle-color gradient' if gradient else background_path.name}")
+    resolved = resolved_options(args)
+    background_path, border_path = resolved["background_path"], resolved["border_path"]
+    print(f"background: {'per-image vehicle-color gradient' if background_path is None else background_path.name}")
     print(f"border: {'none (frameless)' if border_path is None else border_path.name}")
     print(f"{len(folders)} vehicle(s)\n")
 
@@ -180,35 +203,6 @@ def main():
             print(f"  would rebuild {f.name}")
         return
 
-    from lotstretcher.imaging.compose.pipeline import DEFAULT_HERO_STILL_FORMAT, HERO_STILL_FORMATS
-    if not args.hero_format:
-        hero_formats = (DEFAULT_HERO_STILL_FORMAT,)
-    elif "all" in args.hero_format:
-        hero_formats = tuple(HERO_STILL_FORMATS)
-    else:
-        bad = [f for f in args.hero_format if f not in HERO_STILL_FORMATS]
-        if bad:
-            sys.exit(f"Unknown --hero-format {bad[0]!r}; choose from "
-                     f"{', '.join(HERO_STILL_FORMATS)} or 'all'")
-        hero_formats = tuple(dict.fromkeys(args.hero_format))
-
-    resolved = {
-        "background_path": background_path,
-        "border_path": border_path,
-        "hero_formats": hero_formats,
-        "style": dict(glow=args.glow, glow_color=args.glow_color,
-                      glow_radius=args.glow_radius, glow_intensity=args.glow_intensity,
-                      gradient=gradient, border_fit=args.frame_fit,
-                      text=text_options(controls_from_text_args(args)),
-                      border_style=frame_style(controls_from_frame_style_args(args)),
-                      shadow=shadow_style(controls_from_shadow_args(args)),
-                      reflection=reflection_style(controls_from_reflection_args(args)),
-                      spotlight=spotlight_style(controls_from_spotlight_args(args)),
-                      backdrop=args.backdrop, backdrop_color=args.backdrop_color,
-                      backdrop_color2=args.backdrop_color2, backdrop_angle=args.backdrop_angle),
-        "interiors": args.interiors,
-        "interior_captions": args.interior_captions,
-    }
     interior_classifier = None
     if args.interiors and args.interior_captions:
         from lotstretcher.imaging.interior import InteriorSubjectClassifier

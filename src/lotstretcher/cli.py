@@ -76,7 +76,7 @@ from lotstretcher.imaging.dedupe import DEFAULT_TEMPLATES_DIR, JunkFilter
 from lotstretcher.listing import expand_listing_url, is_vdp_url
 from lotstretcher.local_source import is_local_source, load_local_vehicle, local_vehicle_key
 from lotstretcher.scrape import USER_AGENT
-from lotstretcher.imaging.text import (add_video_args, add_backdrop_arg, add_glow_args, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
+from lotstretcher.imaging.text import (add_video_args, add_backdrop_arg, add_glow_args, add_margin_arg, add_frame_style_args, add_reflection_args, add_shadow_args, add_spotlight_args, add_text_args,
                                        controls_from_glow_args, controls_from_spotlight_args, controls_from_video_args,
                                        controls_from_frame_style_args, controls_from_reflection_args,
                                        controls_from_shadow_args, controls_from_text_args)
@@ -312,8 +312,7 @@ def build_parser() -> argparse.ArgumentParser:
                               "horizontal 1920x1080 (YouTube, landscape feed). Default: square + portrait. "
                               "framed/ is always square.")
     add_spotlight_args(parser)
-    parser.add_argument("--margin-frac", type=float, default=0.06, metavar="FRAC",
-                         help="Breathing room inside each layout box, as a fraction (default: 0.06).")
+    add_margin_arg(parser)
     add_glow_args(parser)
     parser.add_argument("--dealer-config",
                          help="Path to a JSON dealer-config file (overrides env vars and defaults)")

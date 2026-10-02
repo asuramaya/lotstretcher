@@ -23,7 +23,8 @@ def test_defaults_match_the_recompose_cli():
     r = library_ops.resolve_recompose_options({})
     assert r["background_path"] is None and r["border_path"] is None
     assert r["style"] == {"glow": False, "glow_color": "white", "glow_radius": 24,
-                          "glow_intensity": 0.75, "gradient": True, "border_fit": "slice",
+                          "glow_intensity": 0.75, "margin_frac": 0.06, "spotlight": True,
+                          "gradient": True, "border_fit": "slice",
                           "text": {"title": "none", "custom_title": None, "price_badge": False, "subtitle": None,
                                    "position": "bl", "color": "white", "size": 0.05,
                                    "case": "as-is", "boxed": False, "shadow": True, "subtitle_size": 0.62,
@@ -32,6 +33,13 @@ def test_defaults_match_the_recompose_cli():
                           "border_style": None, "shadow": None, "reflection": None, "backdrop": "vehicle",
                           "backdrop_color": None, "backdrop_color2": None, "backdrop_angle": None}
     assert r["hero_formats"] == ("square",)
+
+
+def test_spotlight_and_margin_reach_the_rebuild():
+    # The Library pane's rebuild once dropped both and composed with the defaults.
+    r = library_ops.resolve_recompose_options({"spotlight": False, "margin": 0.12})
+    assert r["style"]["spotlight"] is False and r["style"]["margin_frac"] == 0.12
+    assert r["interiors"] is True  # the Studio's default, as the pipeline has it
 
 
 def test_unknown_hero_format_is_refused():

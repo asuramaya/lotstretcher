@@ -107,7 +107,8 @@ def resolve_recompose_options(options: dict) -> dict:
         "border_path": border_path,
         "hero_formats": tuple(dict.fromkeys(formats)),
         "style": {
-            **{k: v for k, v in look_kwargs(options).items() if k != "margin_frac"},
+            **look_kwargs(options),
+            "spotlight": spotlight_style(options),
             "gradient": not wants_photo,
             "text": text_options(options),
             "border_style": frame_style(options),
@@ -118,7 +119,7 @@ def resolve_recompose_options(options: dict) -> dict:
             "backdrop_color2": backdrop_color2(options),
             "backdrop_angle": backdrop_angle(options),
         },
-        "interiors": bool(options.get("interiors", False)),
+        "interiors": bool(options.get("interiors", _spec.control_default("interiors"))),
         "interior_captions": bool(options.get("interiorCaptions", False)),
     }
 

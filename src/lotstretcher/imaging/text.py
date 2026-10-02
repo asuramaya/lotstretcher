@@ -291,6 +291,13 @@ def add_glow_args(parser) -> None:
     parser.add_argument("--glow-intensity", type=float, default=intensity, help=f"Glow opacity, 0-1 (default: {intensity}).")
 
 
+def add_margin_arg(parser) -> None:
+    """The layout margin's flag, shared by the CLIs, with the Studio's default."""
+    margin = _spec.control_default("margin", 0.06)
+    parser.add_argument("--margin-frac", type=float, default=margin, metavar="FRAC",
+                        help=f"Breathing room inside each layout box, as a fraction (default: {margin}).")
+
+
 def controls_from_glow_args(args) -> dict:
     return {"glow": bool(args.glow), "glowColor": args.glow_color, "glowRadius": args.glow_radius,
             "glowIntensity": args.glow_intensity}
