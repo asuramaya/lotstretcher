@@ -18,7 +18,6 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent / "public"
-PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8787
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -47,10 +46,11 @@ Handler.extensions_map.update({
 
 
 def main():
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8787
     socketserver.TCPServer.allow_reuse_address = True
     handler = functools.partial(Handler, directory=str(ROOT))
-    with socketserver.ThreadingTCPServer(("127.0.0.1", PORT), handler) as httpd:
-        print(f"lotstretcher dev server -> http://127.0.0.1:{PORT}")
+    with socketserver.ThreadingTCPServer(("127.0.0.1", port), handler) as httpd:
+        print(f"lotstretcher dev server -> http://127.0.0.1:{port}")
         print(f"  serving {ROOT}")
         print("  COOP/COEP on (cross-origin isolation enabled)")
         try:

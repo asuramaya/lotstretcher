@@ -981,6 +981,8 @@ async function sortAndCut(stages, errors) {
         clock('cut', t0);
         p.ambiguous = gate.ambiguous;
         p.coverage = gate.coverage;
+        // Where the cutout sat in the photo, at the size it was decoded to.
+        p.cutBox = gate.bbox ? { box: gate.bbox, size: [p.bitmap.width, p.bitmap.height] } : null;
 
         if (p.onTrial) {
           // On trial (a whole car the scene model called a detail): a

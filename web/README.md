@@ -25,6 +25,9 @@ web/
 │   ├── core-threads/    the same, threaded; loaded only inside the worker
 │   ├── models/          NOT in git — see below
 │   └── ort/             NOT in git — see below
+├── src/worker.js        the site's one route, /api/vdp (a listed dealer's vehicle page, as text)
+├── tools/               make-demo-assets.py (the landing's images and clips, rendered by
+│                        the app itself), export-models.py, train-scene.py
 ├── build-core.sh        core/ → public/core/ (cargo + wasm-bindgen + wasm-opt)
 ├── dev-server.py        static server that sets the isolation headers
 └── build-icons.py       rasterises icons/icon.svg to PNG
