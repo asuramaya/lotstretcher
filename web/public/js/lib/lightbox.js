@@ -27,10 +27,21 @@ export function openLightbox(items, i) {
   $('lightbox').hidden = false;
   showLightbox();
 }
-async function showLightbox() {
+/* Showing a still is async (it is encoded when first looked at); Stretch
+ * waits for the one in flight, or a late arrival repaints the plain
+ * still over the limo and resets its length. */
+let showing = Promise.resolve();
+function showLightbox() {
+  showing = paintLightbox();
+  return showing;
+}
+async function paintLightbox() {
   const at = lightboxAt;
   const item = lightboxItems[at];
   if (!item) { closeLightbox(); return; }
+  stretchAt = 0;
+  $('lightboxStretch').hidden = !item.stretch;
+  $('lightboxStretch').textContent = stretchLabel(0);
   const img = $('lightboxImg');
   if (item.cors) img.crossOrigin = 'anonymous'; else img.removeAttribute('crossorigin');
   const src = typeof item.src === 'function' ? await item.src() : item.src;
@@ -40,9 +51,6 @@ async function showLightbox() {
   $('lightboxCap').textContent = `${at + 1} of ${lightboxItems.length} · ${item.name}${item.tag ? ` · ${item.tag}` : ''}`;
   $('lightboxSave').hidden = !item.save;
   $('lightboxSave').onclick = (e) => { e.stopPropagation(); item.save?.(); };
-  stretchAt = 0;
-  $('lightboxStretch').hidden = !item.stretch;
-  $('lightboxStretch').textContent = stretchLabel(0);
   $('lightboxPrev').disabled = at === 0;
   $('lightboxNext').disabled = at === lightboxItems.length - 1;
 }
@@ -50,6 +58,7 @@ async function showLightbox() {
  * stretched still is what Save gives while it is showing. */
 let stretchAt = 0;
 async function stretchLightbox() {
+  await showing;
   const at = lightboxAt;
   const item = lightboxItems[at];
   if (!item?.stretch) return;
