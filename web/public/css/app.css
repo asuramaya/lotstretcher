@@ -454,6 +454,12 @@ body:has(.lightbox:not([hidden])) .nav { visibility: hidden; }
 .lightbox-nav.prev { left: var(--s-3); } .lightbox-nav.next { right: var(--s-3); }
 .lightbox-nav:disabled { opacity: .25; cursor: default; }
 .lightbox-cap { position: absolute; bottom: var(--s-4); left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: var(--s-3); flex-wrap: wrap; padding: 0 var(--s-4); color: rgba(255,255,255,.7); font-size: var(--t-sm); }
+/* The caption on its own line and the Stretch button one width, so the
+   buttons stay put while the words and the label change under a
+   repeated press (a moved button let the next press land on the
+   backdrop, which closes the box). */
+#lightboxCap { flex-basis: 100%; text-align: center; }
+#lightboxStretch { min-width: 8.5em; }
 
 /* ---------- VIN scan ---------- */
 .scan-video { width: 100%; aspect-ratio: 4 / 3; background: #000; border-radius: var(--r-md); object-fit: cover; }
