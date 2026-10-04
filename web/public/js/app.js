@@ -1491,7 +1491,15 @@ async function importListingText(text, note = () => {}) {
     }
   }
   if (!isUrl || !can('scrape')) {
-    if (!local.vin && !local.year && !local.make) { note(local.warnings.join(' ') || 'That is neither an address nor a VIN.'); return false; }
+    if (!local.vin && !local.year && !local.make) {
+      // A near-VIN (a character short, a typo) is told what is wrong with
+      // it; words or a stray paste are not called a VIN.
+      const compact = text.replace(/[\s-]/g, '');
+      const vinShaped = /^[A-Za-z0-9]{11,20}$/.test(compact) && /\d/.test(compact);
+      note(isUrl || vinShaped ? (local.warnings.join(' ') || 'That is neither a link nor a VIN.')
+        : 'That is neither a listing link nor a VIN: paste the address of the vehicle\'s page, or its 17-character VIN.');
+      return false;
+    }
     applyVehicle(local);
     return true;
   }

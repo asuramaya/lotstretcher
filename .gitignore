@@ -25,3 +25,8 @@ core/target/
 #   cp package/dist/{ort.webgpu.min.mjs,ort-wasm-simd-threaded.jsep.mjs,ort-wasm-simd-threaded.jsep.wasm} web/public/bench/gpu/
 web/public/bench/gpu/*.wasm
 web/public/bench/gpu/*.mjs
+
+# wrangler dev's local state and caches (the account cache above is tracked)
+web/.wrangler/state/
+web/.wrangler/tmp/
+web/.wrangler/cache/cf.json
