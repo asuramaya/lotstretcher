@@ -76,6 +76,8 @@ def capabilities(state: dict) -> dict:
         # are things a process with the folder can do. The edge site has
         # neither, and does not pretend to.
         "recompose": bool(state.get("library")),
+        # A browser run can be filed into it (POST /library/save).
+        "librarySave": bool(state.get("library")),
         "rescrape": bool(state.get("library")),
         "libraryRoot": str(state.get("library")) if state.get("library") else None,
         "servingWebApp": root is not None,

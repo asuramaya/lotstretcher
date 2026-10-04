@@ -24,6 +24,7 @@ import { get as specGet } from '../spec.js';
 import { call as coreCall } from '../core.js';
 import { walkaround } from '../pipeline/shots.js';
 import { DirectorySource } from '../library/source.js';
+import { makeZip } from './zip.js';
 
 const nn = (i) => String(i + 1).padStart(2, '0');
 const ext = (name, fallback) => (/\.(jpe?g|png|webp|heic|avif)$/i.exec(name || '')?.[0] || fallback).toLowerCase();
@@ -133,6 +134,19 @@ export async function saveToLibrary(root, state, onProgress = () => {}, { replac
   await write(dir, layout.details, JSON.stringify(record, null, 2));
   onProgress(1);
   return { bucket, folder, count: files.length + 1, replaced: existed };
+}
+
+/* On a self-hosted server with a library: the run as a zip of its
+ * folder, filed by POST /library/save (library_ops.save_vehicle), which
+ * keeps the same rules. Any browser, no folder to pick. */
+export async function saveToServer(state, { replaceCli = false } = {}) {
+  const layout = specGet('library');
+  const files = (await libraryFiles(state)).map((f) => ({ name: f.rel, data: f.data }));
+  files.push({ name: layout.details, data: JSON.stringify({ ...savedRecord(state), saved_at: new Date().toISOString() }, null, 2) });
+  const res = await fetch(`library/save${replaceCli ? '?replace=true' : ''}`, { method: 'POST', body: await makeZip(files) });
+  if (res.status === 409) throw new MadeByCli(`${placeFor(state).bucket}/${placeFor(state).folder}`);
+  if (!res.ok) throw new Error((await res.json().catch(() => null))?.detail || `the server said ${res.status}`);
+  return res.json();
 }
 
 /* ---- the library folder this device saves into ----

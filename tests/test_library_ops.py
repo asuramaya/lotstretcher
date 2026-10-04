@@ -252,3 +252,55 @@ def test_video_configuration_surface_reaches_the_renderer():
     assert got.video_bpm == 120.0 and got.video_budget_mb == 30.0
     assert library_ops.hero_options_from_controls({"videoBudgetMb": 0}).video_budget_mb is None, \
         "0 means each format's own budget"
+
+
+def _run_zip(record: dict, extra: dict | None = None) -> bytes:
+    import io
+    import zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("details.json", json.dumps(record))
+        z.writestr("bundle/hero.png", b"png")
+        z.writestr("bundle/framed/01.png", b"png")
+        z.writestr("images/exterior/01.jpg", b"jpg")
+        for name, data in (extra or {}).items():
+            z.writestr(name, data)
+    return buf.getvalue()
+
+
+MAVERICK = {"year": "2026", "make": "Ford", "model": "Maverick", "trim": "XLT", "stock_number": "RB41981",
+            "condition": "New", "title": "2026 Ford Maverick XLT", "saved_at": "2026-10-03T10:00:00"}
+
+
+def test_save_files_a_browser_run_where_the_cli_would(served):
+    client, root = served
+    record = {**MAVERICK, "stock_number": "RB99999"}
+    r = client.post("/library/save", content=_run_zip(record))
+    assert r.status_code == 200, r.text
+    assert r.json() == {"bucket": "new", "folder": "2026-Ford-Maverick-XLT-RB99999", "count": 4, "replaced": False}
+    d = root / "new" / "2026-Ford-Maverick-XLT-RB99999"
+    assert (d / "bundle" / "framed" / "01.png").read_bytes() == b"png"
+    assert json.loads((d / "details.json").read_text())["saved_at"] == MAVERICK["saved_at"]
+
+
+def test_save_never_replaces_a_cli_folder_unless_asked(served):
+    client, root = served
+    d = root / "new" / "2026-Ford-Maverick-XLT-RB41981"
+    (d / "bundle").mkdir()
+    (d / "bundle" / "old-wheel.png").write_bytes(b"old")
+    record = {k: v for k, v in MAVERICK.items() if k != "saved_at"}
+    assert client.post("/library/save", content=_run_zip(record)).status_code == 409
+    assert (d / "bundle" / "old-wheel.png").exists()
+    r = client.post("/library/save?replace=true", content=_run_zip(record))
+    assert r.status_code == 200 and r.json()["replaced"] is True
+    assert not (d / "bundle" / "old-wheel.png").exists(), "bundle/ is replaced"
+    kept = json.loads((d / "details.json").read_text())
+    assert kept["title"] == "2026 Ford Maverick XLT" and kept["saved_at"]
+
+
+def test_save_refuses_paths_outside_the_folder(served):
+    client, root = served
+    r = client.post("/library/save", content=_run_zip({**MAVERICK, "stock_number": "X1"}, {"../../evil.txt": b"x"}))
+    assert r.status_code == 400
+    assert not (root / "evil.txt").exists() and not (root.parent / "evil.txt").exists()
+    assert not (root / "new" / "2026-Ford-Maverick-XLT-X1").exists(), "nothing written before the check"

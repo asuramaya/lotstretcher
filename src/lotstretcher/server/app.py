@@ -42,7 +42,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -375,6 +375,30 @@ def _vehicle_folder(bucket: str, folder: str) -> Path:
     except FileNotFoundError:
         raise HTTPException(404, "no such vehicle")
     return Path(root) / bucket / folder
+
+
+@app.post("/library/save")
+async def library_save(request: Request, replace: bool = False):
+    """A browser run filed into the configured library: the body is a zip
+    of its vehicle folder (the app's Save to library on a self-hosted
+    host). 409 when the folder was made by the command line and `replace`
+    was not asked for."""
+    from ..library_ops import MadeByCli, save_vehicle
+    root = _state.get("library")
+    if not root:
+        raise HTTPException(404, "no library configured on this host")
+    body = await request.body()
+    if len(body) > SAVE_MAX_BYTES:
+        raise HTTPException(413, "that run is too large to save here")
+    try:
+        return save_vehicle(Path(root), body, replace_cli=replace)
+    except MadeByCli as e:
+        raise HTTPException(409, f"{e} was made by the command line")
+    except (ValueError, KeyError) as e:
+        raise HTTPException(400, str(e))
+
+
+SAVE_MAX_BYTES = 1 << 30   # a gigabyte: a run's stills and clips, with room
 
 
 @app.post("/library/{bucket}/{folder}/delist")

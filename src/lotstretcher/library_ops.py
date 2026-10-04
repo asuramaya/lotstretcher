@@ -306,6 +306,70 @@ def mark_delisted(folder: Path, now: str | None = None) -> bool:
     return True
 
 
+class MadeByCli(Exception):
+    """The folder a save would land in was made by the command line."""
+
+
+def save_vehicle(root: Path, archive: bytes, replace_cli: bool = False) -> dict:
+    """File a browser run, sent as a zip of its vehicle folder, into the
+    library: the server's half of the app's Save to library, with the same
+    rules as the browser's own folder writer (web/public/js/lib/save.js).
+
+    Where it goes is the core's library_place on the run's details.json,
+    as a scrape is filed. bundle/ is replaced (it is all derived output);
+    other files are written over by name; the record keeps the keys it
+    had that this run does not set. A folder whose record has no saved_at
+    was made by the command line, and is replaced only with
+    `replace_cli`. Returns {bucket, folder, count, replaced}."""
+    import io
+    import shutil
+    import time
+    import zipfile
+
+    from lotstretcher import core
+
+    layout = _spec.get("library")
+    with zipfile.ZipFile(io.BytesIO(archive)) as z:
+        names = [n for n in z.namelist() if not n.endswith("/")]
+        if layout["details"] not in names:
+            raise ValueError(f"the archive has no {layout['details']}")
+        record = json.loads(z.read(layout["details"]))
+        place = core.call({"op": "library_place", "record": record, "url": record.get("url") or ""})
+        root = Path(root).resolve()
+        folder = (root / place["bucket"] / place["folder"]).resolve()
+        if folder.parent != (root / place["bucket"]).resolve():
+            raise ValueError("bad folder")
+        details = folder / layout["details"]
+        prior = {}
+        if details.is_file():
+            try:
+                before = json.loads(details.read_text())
+                prior = before.get("vehicle", before)
+            except ValueError:
+                prior = {}
+        existed = folder.is_dir() and details.is_file()
+        if existed and not prior.get("saved_at") and not replace_cli:
+            raise MadeByCli(f"{place['bucket']}/{place['folder']}")
+        # Every path checked before anything is touched.
+        targets = []
+        for name in names:
+            if name == layout["details"]:
+                continue
+            target = (folder / name).resolve()
+            if folder not in target.parents:
+                raise ValueError(f"{name} would land outside the vehicle folder")
+            targets.append((name, target))
+        shutil.rmtree(folder / layout["bundle"]["dir"], ignore_errors=True)
+        for name, target in targets:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(z.read(name))
+        count = len(targets)
+    merged = {**prior, **record, "saved_at": record.get("saved_at") or time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+    folder.mkdir(parents=True, exist_ok=True)
+    details.write_text(json.dumps(merged, indent=2) + "\n")
+    return {"bucket": place["bucket"], "folder": place["folder"], "count": count + 1, "replaced": existed}
+
+
 def delete_vehicle(root: Path, bucket: str, folder_name: str) -> dict:
     """Remove a vehicle folder for good, and its manifest entry, so a
     later sync fetches it afresh rather than believing it is still on

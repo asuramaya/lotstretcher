@@ -43,7 +43,7 @@ import { canvasItem, openLightbox, wireLightbox } from './lib/lightbox.js';
 import { stretchCutout } from './lib/stretch.js';
 import { cropRows, sameShotAs, walkaround, clipOrder } from './pipeline/shots.js';
 import { saveOne, saveInterior, downloadBundle } from './lib/bundle.js';
-import { saveToLibrary, libraryFolder, pickLibraryFolder, canSaveToFolder, autoSave, setAutoSave, MadeByCli } from './lib/save.js';
+import { saveToLibrary, saveToServer, libraryFolder, pickLibraryFolder, canSaveToFolder, autoSave, setAutoSave, MadeByCli } from './lib/save.js';
 import { studioArt } from './lib/studio-art.js';
 import { HttpSource, DirectorySource } from './library/source.js';
 
@@ -2089,6 +2089,7 @@ async function init() {
   };
   const saveRun = async ({ ask }) => {
     if (!state.done) return;
+    if (can('librarySave')) return saveRunToServer({ ask });
     let handle;
     try { handle = await libraryFolder({ ask }); } catch (e) {
       if (!/abort/i.test(String(e))) saveNote(String(e.message || e), 'is-err');
@@ -2116,7 +2117,30 @@ async function init() {
       $('saveLibBtn').disabled = false;
     }
   };
-  if (canSaveToFolder()) {
+  // Your own server's library, when it has one: any browser can save there.
+  const saveRunToServer = async ({ ask }) => {
+    $('saveLibBtn').disabled = true;
+    saveNote('Saving to your server…');
+    try {
+      const r = await saveToServer(state, { replaceCli: ask });
+      saveNote(`${r.replaced ? 'Saved over' : 'Saved to'} ${r.bucket}/${r.folder} on your server`, 'is-ok');
+      const open = el('a', null, 'Open in library');
+      open.onclick = () => go('library');
+      $('saveNote').append(' · ', open);
+      $('saveLibBtn').classList.remove('btn-primary');
+      libraryView.setSource(new HttpSource()).catch(() => {});
+    } catch (e) {
+      if (e instanceof MadeByCli) {
+        saveNote(`Not saved by itself: ${e.message} was made by the command line. Press Save to library to replace its bundle.`);
+        $('saveLibBtn').classList.add('btn-primary');
+      } else {
+        saveNote(`Not saved: ${String(e.message || e)}`, 'is-err');
+      }
+    } finally {
+      $('saveLibBtn').disabled = false;
+    }
+  };
+  if (canSaveToFolder() || can('librarySave')) {
     $('saveLibBtn').classList.remove('hidden');
     $('saveLibBtn').onclick = () => saveRun({ ask: true });
   } else {
@@ -2125,12 +2149,12 @@ async function init() {
   $('autoSaveToggle').checked = autoSave();
   $('autoSaveToggle').onchange = (e) => {
     setAutoSave(e.target.checked);
-    if (e.target.checked && state.done && canSaveToFolder()) saveRun({ ask: true });
+    if (e.target.checked && state.done && (canSaveToFolder() || can('librarySave'))) saveRun({ ask: true });
   };
   afterRunRef = () => {
     saveNote('');
     if (!autoSave()) return;
-    if (canSaveToFolder()) saveRun({ ask: false });
+    if (canSaveToFolder() || can('librarySave')) saveRun({ ask: false });
     else downloadBundle(state);
   };
 
