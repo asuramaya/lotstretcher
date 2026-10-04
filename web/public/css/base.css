@@ -106,6 +106,8 @@ button, input, select, textarea {
               transform var(--dur-1) var(--ease),
               opacity var(--dur-1) var(--ease);
 }
+/* .btn's own display would otherwise beat the hidden attribute. */
+.btn[hidden] { display: none; }
 .btn:hover:not(:disabled) { background: var(--surface-3); }
 /* Press feedback is a scale, not a color change -- it reads as physical
  * and it works on touch, where :hover never fires. */

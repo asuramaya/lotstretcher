@@ -983,3 +983,14 @@ body:has(.lightbox:not([hidden])) .nav { visibility: hidden; }
 .savebar > .small.is-err { color: var(--err); }
 .savebar-auto { display: inline-flex; align-items: center; gap: var(--s-2); cursor: pointer; color: var(--ink-2); }
 .savebar a { color: var(--accent); cursor: pointer; }
+
+/* A cutout shown as what it is: the car on a checkerboard, so what the
+   matte kept and dropped is plain (the booth strip's Cutout view, the
+   lightbox's Show cutout). */
+.checker, .tile.is-cutout img, .lightbox img.is-cutout {
+  background-color: var(--surface-2);
+  background-image: conic-gradient(var(--surface-3) 25%, transparent 0 50%, var(--surface-3) 0 75%, transparent 0);
+  background-size: 16px 16px;
+}
+.tile.is-cutout img { object-fit: contain; }
+.lightbox img.is-cutout { background-size: 24px 24px; }

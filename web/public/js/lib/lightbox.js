@@ -1,5 +1,7 @@
 /* The lightbox: one image at full size, and the next.
- * Items are {src, name, tag, cors, save}: `src` a URL or a function
+ * Items are {src, name, tag, cors, save, alt}: `alt` an optional second
+ * view of the same item ({src, label}: a booth photo's cutout), which
+ * Show cutout / Show photo (or C) flips to and keeps while stepping; `src` a URL or a function
  * making one (a result's canvas is encoded only when looked at), `save`
  * an action for the Save button. The booth's photos and the run's
  * stills and interiors all open here. */
@@ -20,8 +22,9 @@ export function canvasItem(canvas, name, tag, save, quality = 0.92, stretch = nu
     src: async () => { if (!made.has(url)) { url = URL.createObjectURL(await canvasToBlob(canvas, 'image/jpeg', quality)); made.add(url); } return url; },
   };
 }
-export function openLightbox(items, i) {
+export function openLightbox(items, i, { alt = false } = {}) {
   if (!items.length) return;
+  altOn = alt;
   lightboxItems = items;
   lightboxAt = Math.max(0, Math.min(i, items.length - 1));
   $('lightbox').hidden = false;
@@ -43,17 +46,31 @@ async function paintLightbox() {
   $('lightboxStretch').hidden = !item.stretch;
   $('lightboxStretch').textContent = stretchLabel(0);
   const img = $('lightboxImg');
-  if (item.cors) img.crossOrigin = 'anonymous'; else img.removeAttribute('crossorigin');
-  const src = typeof item.src === 'function' ? await item.src() : item.src;
+  const showAlt = altOn && !!item.alt;
+  const view = showAlt ? item.alt : item;
+  $('lightboxView').hidden = !item.alt;
+  $('lightboxView').textContent = showAlt ? 'Show photo' : `Show ${item.alt?.label || 'cutout'}`;
+  if (item.cors && !showAlt) img.crossOrigin = 'anonymous'; else img.removeAttribute('crossorigin');
+  const src = typeof view.src === 'function' ? await view.src() : view.src;
+  img.classList.toggle('is-cutout', showAlt);
   if (at !== lightboxAt) return;   // stepped on while encoding
   img.src = src;
   img.alt = item.name;
-  $('lightboxCap').textContent = `${at + 1} of ${lightboxItems.length} · ${item.name}${item.tag ? ` · ${item.tag}` : ''}`;
+  $('lightboxCap').textContent = `${at + 1} of ${lightboxItems.length} · ${item.name}${item.tag ? ` · ${item.tag}` : ''}${showAlt ? ` · ${item.alt.label || 'cutout'}` : ''}`;
   $('lightboxSave').hidden = !item.save;
   $('lightboxSave').onclick = (e) => { e.stopPropagation(); item.save?.(); };
   $('lightboxPrev').disabled = at === 0;
   $('lightboxNext').disabled = at === lightboxItems.length - 1;
 }
+/* The second view (a photo's cutout), kept on while stepping so a run's
+ * cutouts can be flicked through. */
+let altOn = false;
+function flipLightbox() {
+  if ($('lightbox').hidden || !lightboxItems[lightboxAt]?.alt) return;
+  altOn = !altOn;
+  showLightbox();
+}
+
 /* Stretch (lib/stretch.js): each press a longer car, then back. The
  * stretched still is what Save gives while it is showing. */
 let stretchAt = 0;
@@ -98,6 +115,7 @@ function closeLightbox() {
 export function wireLightbox() {
   $('lightboxClose').onclick = closeLightbox;
   $('lightboxStretch').onclick = (e) => { e.stopPropagation(); stretchLightbox(); };
+  $('lightboxView').onclick = (e) => { e.stopPropagation(); flipLightbox(); };
   $('lightboxPrev').onclick = (e) => { e.stopPropagation(); stepLightbox(-1); };
   $('lightboxNext').onclick = (e) => { e.stopPropagation(); stepLightbox(1); };
   $('lightbox').onclick = (e) => { if (e.target === $('lightbox')) closeLightbox(); };
@@ -106,6 +124,7 @@ export function wireLightbox() {
     if (e.key === 'Escape') closeLightbox();
     else if (e.key === 'ArrowLeft') stepLightbox(-1);
     else if (e.key === 'ArrowRight') stepLightbox(1);
+    else if (e.key === 'c' || e.key === 'C') flipLightbox();
   });
   // A swipe on the photo steps it.
   let touchX = null;

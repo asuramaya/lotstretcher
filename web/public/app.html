@@ -138,6 +138,11 @@
           <div class="section-head">
             <h2 id="photoCount">Photos</h2>
             <span class="head-status" id="photosStatus"></span>
+            <!-- Once cutouts exist: the strip as the photos, or as what was cut from them. -->
+            <div class="segment hidden" id="boothView" role="group" aria-label="Show">
+              <button type="button" class="seg" data-view="photo" aria-pressed="true">Photo</button>
+              <button type="button" class="seg" data-view="cutout" aria-pressed="false">Cutout</button>
+            </div>
             <button class="btn btn-ghost btn-sm" id="clearBtn">Clear</button>
           </div>
           <div id="warnBox"></div>
@@ -375,7 +380,7 @@
   <button class="lightbox-nav prev" id="lightboxPrev" aria-label="Previous">‹</button>
   <img id="lightboxImg" alt="">
   <button class="lightbox-nav next" id="lightboxNext" aria-label="Next">›</button>
-  <div class="lightbox-cap"><span id="lightboxCap"></span> <button class="btn btn-sm" id="lightboxStretch" hidden>Stretch</button> <button class="btn btn-primary btn-sm" id="lightboxSave" hidden>Save</button></div>
+  <div class="lightbox-cap"><span id="lightboxCap"></span> <button class="btn btn-sm" id="lightboxView" hidden>Show cutout</button> <button class="btn btn-sm" id="lightboxStretch" hidden>Stretch</button> <button class="btn btn-primary btn-sm" id="lightboxSave" hidden>Save</button></div>
 </div>
 
 <div class="sheet" id="scanSheet" hidden>

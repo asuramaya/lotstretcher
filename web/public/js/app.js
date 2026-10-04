@@ -406,6 +406,12 @@ function renderPhotos() {
     warn.appendChild(b);
   }
 
+  // Photo | Cutout, once there is a cutout to show.
+  const anyCut = state.photos.some((p) => p.cutout);
+  $('boothView').classList.toggle('hidden', !anyCut);
+  if (!anyCut) state.boothView = 'photo';
+  for (const b of $('boothView').querySelectorAll('.seg')) b.setAttribute('aria-pressed', String(b.dataset.view === (state.boothView || 'photo')));
+
   const grid = $('photoGrid');
   grid.innerHTML = '';
   for (const p of state.photos) {
@@ -418,7 +424,14 @@ function renderPhotos() {
     // a plain cross-origin image; asking for CORS lets one the CDN
     // allows (the dealer's does) through, and the decode uses CORS too.
     if (p.url) img.crossOrigin = 'anonymous';
-    img.src = p.thumb;
+    // The strip's Cutout view: what was cut from the photo, where there is a cutout.
+    if (state.boothView === 'cutout' && p.cutout) {
+      tile.classList.add('is-cutout');
+      img.removeAttribute('crossorigin');
+      cutoutUrl(p).then((u) => { img.src = u; });
+    } else {
+      img.src = p.thumb;
+    }
     img.alt = p.name;
     img.loading = 'lazy';
     img.decoding = 'async';
@@ -439,7 +452,7 @@ function renderPhotos() {
       tag.onclick = (e) => { e.stopPropagation(); if (!state.running) pickScene(p, tag); };
       tile.appendChild(tag);
     }
-    openable(tile, img, `Open ${p.name}`, () => openLightbox(boothItems(), state.photos.indexOf(p)));
+    openable(tile, img, `Open ${p.name}`, () => openLightbox(boothItems(), state.photos.indexOf(p), { alt: state.boothView === 'cutout' && !!p.cutout }));
 
     if (!state.running) {
       const x = el('button', 'tile-x', '×');
@@ -1617,7 +1630,21 @@ function boothItems() {
   return state.photos.map((p) => ({
     src: p.thumb, name: p.name, cors: !!p.url,
     tag: p.rejected ? 'skipped' : p.scene ? (p.angle ? `${p.scene} · ${angleLabel(p.angle)}` : p.scene) : '',
+    alt: p.cutout ? { src: () => cutoutUrl(p), label: 'cutout' } : null,
   }));
+}
+
+/* A photo's cutout as a transparent PNG's URL, made once per cutout. */
+function cutoutUrl(p) {
+  // The promise is what is kept: the strip redraws while a run prepares,
+  // and two encodes of one cutout would each revoke the other's URL.
+  if (p.cutoutUrl?.for !== p.cutout) {
+    const old = p.cutoutUrl;
+    const made = canvasToBlob(p.cutout, 'image/png').then((b) => URL.createObjectURL(b));
+    p.cutoutUrl = { for: p.cutout, url: made };
+    if (old) old.url.then((u) => URL.revokeObjectURL(u));
+  }
+  return p.cutoutUrl.url;
 }
 
 /* The first visit downloads the models (56MB) while the person is still
@@ -1717,6 +1744,9 @@ async function init() {
 
   $('pickBtn').onclick = () => $('fileInput').click();
   $('folderBtn').onclick = () => $('folderInput').click();
+  for (const b of $('boothView').querySelectorAll('.seg')) {
+    b.onclick = () => { state.boothView = b.dataset.view; renderPhotos(); };
+  }
   $('cameraBtn').onclick = () => $('cameraInput').click();
   $('urlBtn').onclick = () => openSheet('urlSheet');
   $('listingBtn').onclick = () => {
