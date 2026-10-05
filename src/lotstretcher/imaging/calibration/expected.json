@@ -270,5 +270,21 @@
       "category": "exterior",
       "wheel_routed": false
     }
+  },
+  {
+    "photo": "2026-Ford-Maverick-XLT-RB41981__interior_15.jpg",
+    "note": "studio rear shot under a text banner ('2026 Maverick XLT IN STOCK#'): scene calls it document (0.58) and it was dropped; the tiebreak is certain it is a car body (1.00) and the cutout finds it clear of the frame, so it is rescued (pipeline.py DOCUMENT_RESCUE_THRESHOLD). The only document call in 6,000 library photos, 2026-10.",
+    "expect": {
+      "category": "exterior",
+      "wheel_routed": false
+    }
+  },
+  {
+    "photo": "2024-Ford-Mustang-GT-Premium-R5430042__window-sticker.jpg",
+    "note": "a real document (the window sticker page): it must stay a document; the tiebreak calls it cabin (0.62), so the document rescue does not touch it.",
+    "expect": {
+      "category": "document",
+      "wheel_routed": false
+    }
   }
 ]

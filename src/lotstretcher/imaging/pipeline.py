@@ -85,6 +85,10 @@ from .letterbox import strip_banner
 MARKETING_LABEL = "marketing"
 DETAIL_LABEL = "detail"
 INTERIOR_LABEL = "interior"
+DOCUMENT_LABEL = "document"
+# A document call is overturned only on a near-certain car body: the one
+# real case scored 1.00, and there is no second to place a line between.
+DOCUMENT_RESCUE_THRESHOLD = 0.9
 MIN_MARGIN_FRACTION = 0.02
 
 # Calibrated against 225 real interior photos: the one real bug (a genuine
@@ -204,6 +208,23 @@ def evaluate_photo(content: bytes, classifier: SceneClassifier,
             if t.label == "exterior_body" and t.confidence >= INTERIOR_TIEBREAK_THRESHOLD:
                 return PhotoVerdict("exterior", True, c.label, c.confidence, rembg_checked=False)
         return PhotoVerdict("interior", False, c.label, c.confidence, rembg_checked=False)
+
+    if c.label == DOCUMENT_LABEL and interior_tiebreak_classifier is not None:
+        # A studio shot under a text banner ("2026 Maverick XLT IN STOCK#")
+        # can read as a document and was dropped as one: the one document
+        # call in 6,000 library photos (2026-10) was that, a whole rear
+        # shot. Rescued only when the cutout finds a subject clear of the
+        # frame AND the tiebreak is sure it is a car body; a photographed
+        # sticker or form is neither (calibration: window-sticker page).
+        t = interior_tiebreak_classifier.classify(content)
+        if t.label == "exterior_body" and t.confidence >= DOCUMENT_RESCUE_THRESHOLD:
+            cutout = remove_background(content)
+            if cutout.bbox is not None:
+                from PIL import Image
+                import io
+                margins = _margins(cutout.bbox, Image.open(io.BytesIO(content)).size)
+                if min(margins) >= MIN_MARGIN_FRACTION:
+                    return PhotoVerdict("exterior", True, c.label, c.confidence, rembg_checked=True, margins=margins)
 
     if c.label != MARKETING_LABEL:
         # CLIP alone was accurate on exterior/document calls in testing --
