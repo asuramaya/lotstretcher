@@ -172,3 +172,26 @@ export async function composeOnServer(cutoutCanvas, options, { signal } = {}) {
     warnings: warningHeader ? warningHeader.split('; ').filter(Boolean) : [],
   };
 }
+
+/* Render one clip shape on the server (POST /video): the run's cutouts,
+ * each with its angle, and the control values. The pipeline's own
+ * renderer does it there, so music, a moving backdrop and GPU encode
+ * apply. Returns the MP4 as a Blob. */
+export async function renderClipOnServer(photos, options, format, { signal } = {}) {
+  const form = new FormData();
+  for (let i = 0; i < photos.length; i++) {
+    const c = photos[i].cutout;
+    const blob = c.convertToBlob ? await c.convertToBlob({ type: 'image/png' }) : await new Promise((r) => c.toBlob(r, 'image/png'));
+    form.append('cutouts', blob, `${String(i + 1).padStart(2, '0')}.png`);
+  }
+  form.append('shots', JSON.stringify(photos.map((p) => ({ angle: p.angle || '', confidence: p.angleConf || 0 }))));
+  form.append('options', JSON.stringify(options));
+  form.append('format', format);
+  const res = await fetch('video', { method: 'POST', body: form, signal });
+  if (!res.ok) {
+    let detail = `${res.status}`;
+    try { detail = (await res.json()).detail || detail; } catch { /* not JSON */ }
+    throw new Error(`the server could not render the clip: ${detail}`);
+  }
+  return res.blob();
+}

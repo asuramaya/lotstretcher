@@ -377,6 +377,34 @@ def _vehicle_folder(bucket: str, folder: str) -> Path:
     return Path(root) / bucket / folder
 
 
+@app.post("/video")
+def video_delegated(cutouts: list[UploadFile] = File(...), shots: str = Form("[]"),
+                    options: str = Form("{}"), format: str = Form("vertical")):
+    """Render a run's clip here: the browser sends its cutouts (never the
+    photos) with each one's angle, and gets the MP4 back. Rendered by the
+    pipeline's own renderer, so the server-only clip controls (music, a
+    moving backdrop, GPU encode) apply, which a browser render cannot."""
+    import json
+
+    from .delegate import parse_options, render_clip
+
+    try:
+        opts = parse_options(options)
+        meta = json.loads(shots or "[]")
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    if len(meta) != len(cutouts):
+        raise HTTPException(422, "one angle entry per cutout")
+    try:
+        mp4 = render_clip([(c.file.read(), m.get("angle"), m.get("confidence"))
+                           for c, m in zip(cutouts, meta)], opts, format)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"the clip could not be rendered: {e}")
+    return Response(content=mp4, media_type="video/mp4")
+
+
 @app.post("/library/save")
 async def library_save(request: Request, replace: bool = False):
     """A browser run filed into the configured library: the body is a zip

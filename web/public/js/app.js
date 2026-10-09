@@ -32,7 +32,7 @@ import { mountBrand, wireSurfaceLinks } from './chrome.js';
 import { Preview } from './preview.js';
 import { loadCapabilities, can, isSelfHosted, whyUnavailable } from './host.js';
 import { renderControls, controlsToFlags, affectsPreview, renderLooks, openSubTab } from './controls.js';
-import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps } from './lib/delegate.js';
+import { loadAssets, needsServer, composeOnServer, scrapeOnServer, libraryOps, renderClipOnServer } from './lib/delegate.js';
 import { image as libraryImage } from './lib/library.js';
 import { textOptions, textRequest, stillOptions, clipOptions, stockFrame, pieceSeed } from './lib/text.js';
 import { describesVehicle, recordFromHtml, fetchListing } from './pipeline/listing.js';
@@ -1294,6 +1294,7 @@ async function run() {
       renderStages(stages);
       state.videos = {};
       const clipShots = clipOrder(cut);
+      let renderedOn = null;
       for (const fmt of wantVideo) {
         const [w, h] = OPTS.VIDEO_FORMATS[fmt].size;
         try {
@@ -1311,6 +1312,18 @@ async function run() {
             onProgress: (f) => setProgress(0.85 + 0.15 * f),
           };
           const shots = clipShots.map((p) => p.cutout);
+          /* Your own server renders clips with the pipeline's renderer:
+           * faster, and its clip controls (music, a moving backdrop, GPU
+           * encode) apply. Where it cannot, the browser renders here. */
+          if (can('videoRender')) {
+            try {
+              state.videos[fmt] = await renderClipOnServer(cut, { ...serialisable(state.options), vehicle: state.vehicle }, fmt);
+              renderedOn = 'your server';
+              continue;
+            } catch (e) {
+              state.errors.push(`video ${fmt}: ${e.message || e}; rendered in the browser instead`);
+            }
+          }
           if (cw) {
             try { state.videos[fmt] = await cw.video(shots, videoOpts); }
             catch (e) { console.warn('core worker video fell back to the page:', e); state.videos[fmt] = await renderHeroVideoHere(shots, videoOpts); }
@@ -1324,7 +1337,7 @@ async function run() {
       const made = Object.keys(state.videos).length;
       stages[4].state = 'done';
       // Where it was rendered: the worker's threaded core, or the page.
-      const where = videoThreads() ? ` on ${videoThreads()} threads` : '';
+      const where = renderedOn ? ` on ${renderedOn}` : videoThreads() ? ` on ${videoThreads()} threads` : '';
       stages[4].detail = made ? `${made} clip${made === 1 ? '' : 's'}${where}` : 'failed';
       renderStages(stages);
     }

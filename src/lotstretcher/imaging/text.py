@@ -9,6 +9,7 @@ for one canvas size. Nothing here decides where a word goes.
 from __future__ import annotations
 
 import argparse
+import threading
 from pathlib import Path
 
 from lotstretcher import core
@@ -46,19 +47,26 @@ def _font_files() -> dict[str, str]:
 
 FONT_FILES = _font_files()
 FONTS = tuple(FONT_FILES)
-_loaded: set[str] = set()
+# Per thread, as the core keeps them (core/src/text.rs: thread_local
+# FONTS): the server answers on a pool of threads, and a font one thread
+# loaded is not in another's core. Remembering them per process told the
+# server's /video thread a font was there when it was not.
+_tls = threading.local()
 
 
 def ensure_font(name: str = DEFAULT_FONT) -> str:
-    """Load `name` into the core once per process. Returns the name."""
-    if name in _loaded:
+    """Load `name` into this thread's core once. Returns the name."""
+    loaded = getattr(_tls, "fonts", None)
+    if loaded is None:
+        loaded = _tls.fonts = set()
+    if name in loaded:
         return name
     rel = FONT_FILES.get(name)
     if rel is None:
         raise ValueError(f"unknown font {name!r}; one of {sorted(FONT_FILES)}")
     path = Path(ASSETS_DIR) / rel
     core.load_font(name, path.read_bytes())
-    _loaded.add(name)
+    loaded.add(name)
     return name
 
 

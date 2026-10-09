@@ -184,6 +184,51 @@ def compose(cutout_png: bytes, options: dict[str, Any],
     return buf.getvalue(), warnings
 
 
+MAX_CLIP_SHOTS = 40
+
+
+def render_clip(shots: list[tuple[bytes, str, float]], options: dict[str, Any], fmt: str) -> bytes:
+    """A run's clip in one shape, rendered here rather than in the browser:
+    the cutouts (in any order; the core picks and orders them as for a
+    scrape) with each one's angle and confidence, and the app's control
+    values. The cutouts are laid out as a vehicle folder and handed to the
+    pipeline's own render_vehicle_video, so a delegated clip is the clip
+    `lotstretcher` would make from the same shots, music, moving backdrop
+    and GPU encode included. Returns the MP4's bytes."""
+    import json
+    import tempfile
+
+    from PIL import Image
+
+    from ..imaging.compose.hero_video import VIDEO_FORMATS
+    from ..library_ops import hero_options_from_controls
+    from ..vehicle_pipeline import render_vehicle_video, video_output_path
+
+    if fmt not in VIDEO_FORMATS:
+        raise ValueError(f"unknown clip shape {fmt!r}; choose from {', '.join(VIDEO_FORMATS)}")
+    if not shots:
+        raise ValueError("no cutouts to animate")
+    if len(shots) > MAX_CLIP_SHOTS:
+        raise ValueError(f"at most {MAX_CLIP_SHOTS} cutouts per clip")
+    with tempfile.TemporaryDirectory(prefix="lotstretcher-clip-") as tmp:
+        folder = Path(tmp) / "vehicle"
+        cutout_dir = folder / "images" / "exterior" / "cutout"
+        cutout_dir.mkdir(parents=True)
+        angles = {}
+        for i, (png, angle, confidence) in enumerate(shots):
+            if len(png) > MAX_CUTOUT_BYTES:
+                raise ValueError(f"cutout {i + 1} exceeds {MAX_CUTOUT_BYTES // (1024 * 1024)}MB")
+            name = f"{i + 1:02d}.png"
+            Image.open(io.BytesIO(png)).convert("RGBA").save(cutout_dir / name)
+            angles[name] = {"angle": angle or "", "confidence": float(confidence or 0)}
+        (cutout_dir / "angles.json").write_text(json.dumps(angles))
+        (folder / "details.json").write_text(json.dumps(options.get("vehicle") or {}))
+        hero_opts = hero_options_from_controls({**options, "videoFormats": [fmt]})
+        if render_vehicle_video(folder, hero_opts, fmt) is None:
+            raise ValueError("not enough usable shots for a clip")
+        return video_output_path(folder, fmt).read_bytes()
+
+
 def parse_options(raw: str | None) -> dict:
     """Control values arrive as a JSON string in a multipart field."""
     if not raw:

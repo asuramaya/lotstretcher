@@ -64,9 +64,15 @@ def render_vehicle_video(folder: Path, hero_opts, fmt: str = "square") -> dict |
     spec = VIDEO_FORMATS[fmt]
     from lotstretcher.imaging.compose import render_hero_video
     from lotstretcher.imaging.palette import colors_from_details
-    from lotstretcher.imaging.text import backdrop_spec, gradient_stops, piece_seed
+    from lotstretcher.imaging.text import backdrop_spec, ensure_fonts, gradient_stops, piece_seed
     from lotstretcher.library_ops import vehicle_record
     from lotstretcher.imaging.select import load_angles, order_for_conveyor_start, pick_all_for_carousel
+
+    # The clip's words need their fonts in this process's core; a caller
+    # that composed no stills first (the server's POST /video, a worker
+    # process) has not loaded them.
+    if hero_opts.text:
+        ensure_fonts(hero_opts.text)
 
     cutout_dir = folder / "images" / "exterior" / "cutout"
     carousel = pick_all_for_carousel(cutout_dir, wheel_dir=folder / "images" / "exterior" / "wheels")

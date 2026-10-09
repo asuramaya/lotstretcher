@@ -21,6 +21,7 @@ error to explain it. The middleware below mirrors web/public/_headers.
 from __future__ import annotations
 
 import os
+import shutil
 from pathlib import Path
 
 # repo_root/src/lotstretcher/server/webapp.py -> repo_root/web/public
@@ -78,6 +79,8 @@ def capabilities(state: dict) -> dict:
         "recompose": bool(state.get("library")),
         # A browser run can be filed into it (POST /library/save).
         "librarySave": bool(state.get("library")),
+        # Clips rendered here (POST /video) by the pipeline's renderer.
+        "videoRender": shutil.which("ffmpeg") is not None,
         "rescrape": bool(state.get("library")),
         "libraryRoot": str(state.get("library")) if state.get("library") else None,
         "servingWebApp": root is not None,
