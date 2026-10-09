@@ -128,7 +128,15 @@ SIMILARITY_FLOOR = DOUBTFUL_SIMILARITY
 # Euclidean RGB distance from the median paint colour of the other
 # cutouts, via palette.sample_cutout_color(). Genuine cutouts top out at
 # 120.2 across the fleet; the two real failures sit at 136.3 and 188.1.
-COLOR_DISTANCE_CEILING = 110.0
+# 110 sat below that measured genuine top, and in 2026-10 it demoted three
+# real shots of the library (a Maverick and an Expedition rear three-
+# quarter, 115.8 and 122.5, whose lit tailgates read paler than their
+# fronts; a Malibu close front, 112.0). Measured over every gallery on
+# disk with 5,175 injected cross-vehicle cutouts: 110 flags those 3 and
+# catches 42.8% of impostors; 130 flags none and catches 37.8%. 130 sits
+# between the worst genuine shot (122.5) and the nearer real failure
+# (136.3); gross impostors are the certain key's, whatever the ceiling.
+COLOR_DISTANCE_CEILING = 130.0
 
 # Safety valve: if more than half a gallery fails, the siblings forming
 # the reference are themselves suspect and demoting the minority would be
