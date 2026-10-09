@@ -100,9 +100,32 @@ async function write(dir, rel, data) {
   const name = parts.pop();
   const parent = await dirAt(dir, parts);
   const handle = await parent.getFileHandle(name, { create: true });
+  if (typeof handle.createWritable !== 'function') { await writeInWorker(parent, name, data); return; }
   const w = await handle.createWritable();
   await w.write(data);
   await w.close();
+}
+
+/* Safari before 18.4 writes the browser's private storage only from a
+ * worker (a sync access handle); the device library lives there. */
+let writer = null;
+let asked = 0;
+async function writeInWorker(parent, name, data) {
+  const opfs = await navigator.storage.getDirectory();
+  const path = await opfs.resolve(parent);
+  if (!path) throw new Error('this browser cannot write that folder');
+  writer ||= new Worker(new URL('./opfs-writer.js', import.meta.url));
+  const id = ++asked;
+  const bytes = data instanceof Blob ? await data.arrayBuffer() : new TextEncoder().encode(String(data)).buffer;
+  await new Promise((resolve, reject) => {
+    const done = (e) => {
+      if (e.data?.id !== id) return;
+      writer.removeEventListener('message', done);
+      if (e.data.error) reject(new Error(e.data.error)); else resolve();
+    };
+    writer.addEventListener('message', done);
+    writer.postMessage({ id, path, name, bytes }, [bytes]);
+  });
 }
 
 /* Write the run into `root` (a directory handle with write permission).
@@ -153,6 +176,16 @@ export async function saveToServer(state, { replaceCli = false } = {}) {
  * The Library pane's own remembered folder (one folder for reading and
  * saving), asked for write access on first save. */
 export const canSaveToFolder = () => DirectorySource.supportsPicker();
+export const canSaveToDevice = () => DirectorySource.supportsDevice();
+
+/* This device's own library (library/source.js): the same writer, into the
+ * browser's private storage. Nothing the command line made can be there. */
+export async function saveToDevice(state, onProgress = () => {}) {
+  // Ask to be kept, without waiting: Firefox answers with a prompt, and an
+  // unanswered prompt would hold the save forever.
+  try { navigator.storage.persist?.().catch(() => {}); } catch { /* best effort */ }
+  return saveToLibrary(await DirectorySource.deviceRoot(), state, onProgress, { replaceCli: true });
+}
 
 export async function libraryFolder({ ask = false } = {}) {
   const r = await DirectorySource.remembered();

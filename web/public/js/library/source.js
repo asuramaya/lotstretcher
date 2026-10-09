@@ -138,8 +138,8 @@ export class DirectorySource {
     return DirectorySource.fromHandle(handle);
   }
 
-  static async fromHandle(root) {
-    DirectorySource.remember(root);
+  static async fromHandle(root, { remember = true } = {}) {
+    if (remember) DirectorySource.remember(root);
     const layout = get('library');
     const tree = new Map();
     for (const bucket of layout.buckets) {
@@ -157,6 +157,49 @@ export class DirectorySource {
     const source = new DirectorySource(tree, root.name);
     source.handle = root;
     return source;
+  }
+
+  /* ---- this device's own library ----
+   * The browser's private storage (the origin-private file system: Safari
+   * on an iPhone, Firefox, Chrome alike), holding a library in the very
+   * layout a listings folder has, so the same reader and the same writer
+   * (lib/save.js) serve it. For where there is no folder to pick and no
+   * server: a phone. */
+  static supportsDevice() { return typeof navigator !== 'undefined' && typeof navigator.storage?.getDirectory === 'function'; }
+
+  static async deviceRoot() {
+    const opfs = await navigator.storage.getDirectory();
+    return opfs.getDirectoryHandle('library', { create: true });
+  }
+
+  static async device() {
+    const source = await DirectorySource.fromHandle(await DirectorySource.deviceRoot(), { remember: false });
+    source.kind = 'device';
+    source.label = 'this device';
+    return source;
+  }
+
+  static async deviceHasVehicles() {
+    if (!DirectorySource.supportsDevice()) return false;
+    try {
+      const root = await DirectorySource.deviceRoot();
+      for (const bucket of get('library').buckets) {
+        try {
+          const b = await root.getDirectoryHandle(bucket);
+          for await (const [, h] of b.entries()) if (h.kind === 'directory') return true;
+        } catch { /* no such bucket yet */ }
+      }
+    } catch { /* storage blocked */ }
+    return false;
+  }
+
+  /* Remove one vehicle from this device's library (the device's own
+   * storage only; a picked folder is never written here). */
+  async removeVehicle(v) {
+    if (this.kind !== 'device') throw new Error('only this device\'s library can be pruned here');
+    const bucket = await this.handle.getDirectoryHandle(v.bucket);
+    await bucket.removeEntry(v.folder, { recursive: true });
+    this.tree.get(v.bucket)?.delete(v.folder);
   }
 
   static fromInput() {

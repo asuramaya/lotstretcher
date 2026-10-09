@@ -43,7 +43,7 @@ import { canvasItem, openLightbox, wireLightbox } from './lib/lightbox.js';
 import { stretchCutout } from './lib/stretch.js';
 import { cropRows, sameShotAs, walkaround, clipOrder } from './pipeline/shots.js';
 import { saveOne, saveInterior, downloadBundle } from './lib/bundle.js';
-import { saveToLibrary, saveToServer, libraryFolder, pickLibraryFolder, canSaveToFolder, autoSave, setAutoSave, MadeByCli } from './lib/save.js';
+import { saveToLibrary, saveToServer, saveToDevice, libraryFolder, pickLibraryFolder, canSaveToFolder, canSaveToDevice, autoSave, setAutoSave, MadeByCli } from './lib/save.js';
 import { studioArt } from './lib/studio-art.js';
 import { HttpSource, DirectorySource } from './library/source.js';
 
@@ -2141,6 +2141,7 @@ async function init() {
   const saveRun = async ({ ask }) => {
     if (!state.done) return;
     if (can('librarySave')) return saveRunToServer({ ask });
+    if (!canSaveToFolder()) return saveRunToDevice();
     let handle;
     try { handle = await libraryFolder({ ask }); } catch (e) {
       if (!/abort/i.test(String(e))) saveNote(String(e.message || e), 'is-err');
@@ -2168,6 +2169,22 @@ async function init() {
       $('saveLibBtn').disabled = false;
     }
   };
+  // No folder to pick and no server (a phone): this device's own library.
+  const saveRunToDevice = async () => {
+    $('saveLibBtn').disabled = true;
+    try {
+      const r = await saveToDevice(state, (f) => saveNote(`Saving… ${Math.round(f * 100)}%`));
+      saveNote(`${r.replaced ? 'Saved over' : 'Saved'} ${r.bucket}/${r.folder} on this device`, 'is-ok');
+      const open = el('a', null, 'Open in library');
+      open.onclick = () => go('library');
+      $('saveNote').append(' · ', open);
+      libraryView.setSource(await DirectorySource.device()).catch(() => {});
+    } catch (e) {
+      saveNote(`Not saved: ${String(e.message || e)}`, 'is-err');
+    } finally {
+      $('saveLibBtn').disabled = false;
+    }
+  };
   // Your own server's library, when it has one: any browser can save there.
   const saveRunToServer = async ({ ask }) => {
     $('saveLibBtn').disabled = true;
@@ -2191,7 +2208,9 @@ async function init() {
       $('saveLibBtn').disabled = false;
     }
   };
-  if (canSaveToFolder() || can('librarySave')) {
+  // Somewhere to save: your server, a picked folder, or this device.
+  const canSave = () => can('librarySave') || canSaveToFolder() || canSaveToDevice();
+  if (canSave()) {
     $('saveLibBtn').classList.remove('hidden');
     $('saveLibBtn').onclick = () => saveRun({ ask: true });
   } else {
@@ -2200,12 +2219,12 @@ async function init() {
   $('autoSaveToggle').checked = autoSave();
   $('autoSaveToggle').onchange = (e) => {
     setAutoSave(e.target.checked);
-    if (e.target.checked && state.done && (canSaveToFolder() || can('librarySave'))) saveRun({ ask: true });
+    if (e.target.checked && state.done && canSave()) saveRun({ ask: true });
   };
   afterRunRef = () => {
     saveNote('');
     if (!autoSave()) return;
-    if (canSaveToFolder() || can('librarySave')) saveRun({ ask: false });
+    if (canSave()) saveRun({ ask: false });
     else downloadBundle(state);
   };
 

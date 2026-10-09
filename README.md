@@ -122,7 +122,7 @@ decides for both surfaces (`library_place`, which `scrape.py` now calls too), so
 `recompose` and a later run find one folder per vehicle whoever made it. Saving again replaces that
 folder's `bundle/` and keeps its record's other keys. "Save every run" does it as each run finishes,
 but never over a folder the command line made without a press. Writing needs folder access (Chrome,
-Edge); elsewhere the switch downloads the bundle instead.
+Edge). Where there is neither a folder picker nor a server (a phone, Firefox) the run is saved on the device itself, in the browser's private storage in the same layout, and the Library pane reads it under This device; Remove from this device prunes it. On your own server, Save to library files the run there (`POST /library/save`) from any browser, and clips render there too (`POST /video`, the pipeline's own renderer, so music, a moving backdrop and GPU encode apply).
 
 The Photos step's link field reads a listing from its address (`/api/vdp` on the site, `/scrape` on your
 server) with a Paste button for phones, and says what it read; a VIN fills the vehicle.

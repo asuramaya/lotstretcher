@@ -55,7 +55,11 @@ export class LibraryView {
       if (r && r.granted && !this.source) {
         DirectorySource.reopen(r.handle).then((s) => this.setSource(s)).catch(() => this.render());
       } else if (!this.source) {
-        this.render();
+        // Runs saved on this device (a phone) open by themselves.
+        DirectorySource.deviceHasVehicles().then(async (yes) => {
+          if (yes && !this.source) this.setSource(await DirectorySource.device());
+          else this.render();
+        });
       }
     });
     this.source = null;
@@ -258,10 +262,16 @@ export class LibraryView {
     const srcRow = el('div', 'row wrap', null);
     srcRow.style.gap = 'var(--s-3)';
     srcRow.style.marginBottom = 'var(--s-4)';
-    const label = this.source
-      ? `${this.source.kind === 'server' ? 'Served by your server from' : 'Folder'} ${this.source.label}`
-      : 'No library open.';
+    const label = !this.source ? 'No library open.'
+      : this.source.kind === 'device' ? 'Saved on this device'
+        : `${this.source.kind === 'server' ? 'Served by your server from' : 'Folder'} ${this.source.label}`;
     srcRow.append(el('span', 'small muted grow', label));
+    // This device's own library: runs saved where there is no folder or server.
+    if (DirectorySource.supportsDevice() && this.source?.kind !== 'device') {
+      const device = el('button', 'btn btn-sm', 'This device');
+      device.onclick = async () => { this.setSource(await DirectorySource.device()); };
+      srcRow.appendChild(device);
+    }
     const pick = el('button', 'btn btn-sm', this.source ? 'Open another folder' : 'Open a listings folder');
     pick.onclick = () => this.onPick?.();
     srcRow.appendChild(pick);
@@ -290,7 +300,8 @@ export class LibraryView {
       h.appendChild(el('p', 'small muted',
         'What has been made, read as the command line writes it: a listings folder of new/ '
         + 'and used/, one folder per vehicle with its stills, framed and interior sets, clips '
-        + 'and posts. Open one to browse it here; your own server opens its configured library for you.'));
+        + 'and posts. Open one to browse it here; your own server opens its configured library for you. '
+        + 'Runs saved on this device (Save to library on a phone) are under This device.'));
       return;
     }
     if (!this.index) {
@@ -422,6 +433,21 @@ export class LibraryView {
         }
       };
       actions.appendChild(load);
+    }
+    // This device's library is pruned here: the browser's storage is finite.
+    if (src.kind === 'device' && src.removeVehicle) {
+      const rm = el('button', 'btn btn-ghost btn-sm', 'Remove from this device');
+      rm.onclick = async () => {
+        if (rm.dataset.armed !== '1') { rm.dataset.armed = '1'; rm.textContent = 'Press again to remove it'; return; }
+        rm.disabled = true;
+        try {
+          await src.removeVehicle(v);
+          this.open = null;
+          this.index = await src.index();
+          this.render();
+        } catch (e) { rm.textContent = String(e.message || e); }
+      };
+      actions.appendChild(rm);
     }
     /* Rebuild in place, with whatever the Options pane says right now.
      * The same rebuild the `recompose` CLI does, without the round trip
